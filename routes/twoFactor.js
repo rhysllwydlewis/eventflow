@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const { encrypt, decrypt, hash, verifyHash } = require('../utils/encryption');
 
 const router = express.Router();
@@ -21,7 +22,7 @@ const router = express.Router();
  * POST /api/me/2fa/setup
  * Generate 2FA secret and QR code
  */
-router.post('/setup', csrfProtection, authRequired, async (req, res) => {
+router.post('/setup', csrfProtection, writeLimiter, authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -77,7 +78,7 @@ router.post('/setup', csrfProtection, authRequired, async (req, res) => {
  * POST /api/me/2fa/verify
  * Verify 2FA token and enable 2FA
  */
-router.post('/verify', csrfProtection, authRequired, async (req, res) => {
+router.post('/verify', csrfProtection, writeLimiter, authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const { token } = req.body;
@@ -145,7 +146,7 @@ router.post('/verify', csrfProtection, authRequired, async (req, res) => {
  * POST /api/me/2fa/disable
  * Disable 2FA (requires current 2FA token or backup code)
  */
-router.post('/disable', csrfProtection, authRequired, async (req, res) => {
+router.post('/disable', csrfProtection, writeLimiter, authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const { token, backupCode } = req.body;

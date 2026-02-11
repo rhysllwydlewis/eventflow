@@ -10,7 +10,7 @@ const crypto = require('crypto');
 
 const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
-const { csrfProtection } = require('../middleware/csrf');
+// csrfProtection is available but not used in GET endpoints
 const { resendEmailLimiter } = require('../middleware/rateLimits');
 const postmark = require('../utils/postmark');
 
