@@ -159,9 +159,9 @@ async function authRequired(req, res, next) {
   // For most use cases, the indexed MongoDB query provides sufficient performance
   try {
     const dbUnified = require('../db-unified');
-    const userExists = await dbUnified.findOne('users', { id: u.id });
+    const dbUser = await dbUnified.findOne('users', { id: u.id });
     
-    if (!userExists) {
+    if (!dbUser) {
       return res.status(401).json({
         error: 'Unauthenticated',
         message: 'User account not found. Please log in again.',
