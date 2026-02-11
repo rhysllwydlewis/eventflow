@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { ObjectId } = require('mongodb');
 
 // Dependencies injected by server.js
 let authRequired;
@@ -281,7 +282,108 @@ router.delete('/threads/:id', applyAuthRequired, applyCsrfProtection, ensureServ
 });
 
 // =========================
-// Messaging
+// Specific Message Routes (must come before generic parameter routes)
+// =========================
+
+/**
+ * GET /api/v2/messages/unread
+ * Get total unread message count for current user
+ */
+router.get('/unread', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threads = await messagingService.getUserThreads(userId);
+
+    let totalUnread = 0;
+    threads.forEach(t => {
+      if (t.unreadCount && t.unreadCount[userId]) {
+        totalUnread += t.unreadCount[userId];
+      }
+    });
+
+    res.json({ count: totalUnread });
+  } catch (error) {
+    logger.error('Get unread count error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to fetch unread count',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/v2/messages/drafts
+ * Get all draft messages for current user
+ */
+router.get('/drafts', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const messages = await messagingService.messagesCollection
+      .find({
+        senderId: userId,
+        isDraft: true,
+        deletedAt: null,
+      })
+      .sort({ updatedAt: -1 })
+      .toArray();
+
+    res.json({ success: true, drafts: messages });
+  } catch (error) {
+    logger.error('Get drafts error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to fetch drafts',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/v2/messages/sent
+ * Get all sent messages for current user
+ */
+router.get('/sent', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const messages = await messagingService.messagesCollection
+      .find({
+        senderId: userId,
+        isDraft: false,
+        deletedAt: null,
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json({ success: true, messages });
+  } catch (error) {
+    logger.error('Get sent messages error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to fetch sent messages',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/v2/messages/conversations
+ * Alias for GET /threads - List all conversations/threads
+ * Provides backward compatibility with v1 API
+ */
+router.get('/conversations', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threads = await messagingService.getUserThreads(userId);
+    res.json({ success: true, conversations: threads });
+  } catch (error) {
+    logger.error('Get conversations error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to fetch conversations',
+      message: error.message,
+    });
+  }
+});
+
+// =========================
+// Messaging (Generic Routes - must come after specific routes)
 // =========================
 
 /**
@@ -404,6 +506,112 @@ router.post('/:threadId', applyAuthRequired, applyCsrfProtection, ensureServices
 
     res.status(500).json({
       error: 'Failed to send message',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/v2/messages/:messageId
+ * Update/edit a message (drafts only for now, expand later for edit feature)
+ */
+router.put('/:messageId', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+    const { content } = req.body;
+
+    if (!content || typeof content !== 'string') {
+      return res.status(400).json({ error: 'Message content is required' });
+    }
+
+    const message = await messagingService.messagesCollection.findOne({
+      _id: ObjectId.isValid(messageId)
+        ? new ObjectId(messageId)
+        : messageId,
+    });
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Only the sender can edit their message
+    if (message.senderId !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // For now, only allow editing drafts
+    if (!message.isDraft) {
+      return res.status(400).json({
+        error: 'Only draft messages can be edited',
+        hint: 'Full message editing feature coming soon',
+      });
+    }
+
+    const updatedMessage = await messagingService.messagesCollection.findOneAndUpdate(
+      {
+        _id: message._id,
+        senderId: userId,
+      },
+      {
+        $set: {
+          content,
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: 'after' }
+    );
+
+    res.json({ success: true, message: updatedMessage.value });
+  } catch (error) {
+    logger.error('Update message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to update message',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/v2/messages/:messageId
+ * Delete a message (soft delete)
+ */
+router.delete('/:messageId', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+
+    const message = await messagingService.messagesCollection.findOne({
+      _id: ObjectId.isValid(messageId)
+        ? new ObjectId(messageId)
+        : messageId,
+    });
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Only the sender can delete their message
+    if (message.senderId !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Soft delete the message
+    await messagingService.messagesCollection.updateOne(
+      { _id: message._id },
+      {
+        $set: {
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Delete message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to delete message',
       message: error.message,
     });
   }
@@ -815,6 +1023,106 @@ router.get('/limits', applyAuthRequired, ensureServices, async (req, res) => {
     });
   }
 });
+
+/**
+ * POST /api/v2/messages/threads/:threadId/mark-unread
+ * Mark a thread as unread for the current user
+ */
+router.post(
+  '/threads/:threadId/mark-unread',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { threadId } = req.params;
+
+      const thread = await messagingService.threadsCollection.findOne({
+        _id: ObjectId.isValid(threadId)
+          ? new ObjectId(threadId)
+          : threadId,
+      });
+
+      if (!thread) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
+
+      // Verify user is a participant
+      if (!thread.participants || !thread.participants.includes(userId)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // Increment unread count for this user
+      await messagingService.threadsCollection.updateOne(
+        { _id: thread._id },
+        {
+          $inc: { [`unreadCount.${userId}`]: 1 },
+          $set: { updatedAt: new Date() },
+        }
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Mark thread unread error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to mark thread as unread',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v2/messages/threads/:threadId/unarchive
+ * Unarchive a thread
+ */
+router.post(
+  '/threads/:threadId/unarchive',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { threadId } = req.params;
+
+      const thread = await messagingService.threadsCollection.findOne({
+        _id: ObjectId.isValid(threadId)
+          ? new ObjectId(threadId)
+          : threadId,
+      });
+
+      if (!thread) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
+
+      // Verify user is a participant
+      if (!thread.participants || !thread.participants.includes(userId)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // Update thread status to active
+      await messagingService.threadsCollection.updateOne(
+        { _id: thread._id },
+        {
+          $set: {
+            status: 'active',
+            updatedAt: new Date(),
+          },
+        }
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Unarchive thread error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to unarchive thread',
+        message: error.message,
+      });
+    }
+  }
+);
 
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;

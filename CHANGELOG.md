@@ -7,8 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Messaging API v2 Complete Feature Parity**: Added 8 missing endpoints to `/api/v2/messages` for full backward compatibility
+  - `GET /unread` - Get total unread message count
+  - `GET /drafts` - Get all draft messages
+  - `GET /sent` - Get all sent messages  
+  - `GET /conversations` - Alias for `/threads` (backward compatibility)
+  - `PUT /:messageId` - Edit messages (currently drafts only, expandable for full edit history)
+  - `DELETE /:messageId` - Soft delete messages
+  - `POST /threads/:threadId/mark-unread` - Mark thread as unread
+  - `POST /threads/:threadId/unarchive` - Unarchive archived threads
+- **API Version Configuration**: Created centralized API version constant (`public/assets/js/config/api-version.js`) to prevent future version drift
+
 ### Changed
 
+- **Messaging API Standardization**: All frontend messaging code now uses `/api/v2/messages` endpoints exclusively
+  - Updated `public/assets/js/messaging.js` (6 endpoints migrated from v1 to v2)
+  - Updated `public/assets/js/conversation-handler.js` (7 endpoints migrated from v1 to v2)
+  - Zero `/api/v1/messages` references remain in frontend code
+  - **Migration Note**: If using messaging API v1 endpoints, change `v1` to `v2` in URLs. Main change: `/threads/:id/mark-read` → `/threads/:id/read`
 - **Server Architecture Refactoring**: Modular architecture with 24% reduction in server.js size
   - Extracted inline middleware to dedicated files (`middleware/seo.js`, `middleware/adminPages.js`)
   - Enhanced `middleware/auth.js` with `userExtractionMiddleware()`

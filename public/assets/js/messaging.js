@@ -549,7 +549,7 @@ class MessagingSystem {
 
   async fetchMessagesFromAPI(conversationId, callback) {
     try {
-      const response = await fetch(`/api/v1/messages/${conversationId}`, {
+      const response = await fetch(`/api/v2/messages/${conversationId}`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -567,7 +567,7 @@ class MessagingSystem {
 
   async sendMessageViaAPI(conversationId, messageData) {
     try {
-      const response = await fetch(`/api/v1/messages/${conversationId}`, {
+      const response = await fetch(`/api/v2/messages/${conversationId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -590,7 +590,7 @@ class MessagingSystem {
 
   async markMessagesAsReadViaAPI(conversationId, userId) {
     try {
-      await fetch(`/api/v1/messages/${conversationId}/read`, {
+      await fetch(`/api/v2/messages/${conversationId}/read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -607,7 +607,7 @@ class MessagingSystem {
   async fetchUnreadCountFromAPI(userId, userType, callback) {
     try {
       // Use the authenticated endpoint - no need for userId/userType params
-      const response = await fetch('/api/v1/messages/unread', {
+      const response = await fetch('/api/v2/messages/unread', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -936,7 +936,7 @@ class MessagingManager {
    */
   async markMessagesAsRead(threadId) {
     try {
-      const response = await fetch(`/api/v1/messages/threads/${threadId}/mark-read`, {
+      const response = await fetch(`/api/v2/messages/threads/${threadId}/mark-read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -964,7 +964,7 @@ class MessagingManager {
    */
   async refreshUnreadCount() {
     try {
-      const response = await fetch('/api/v1/messages/unread', {
+      const response = await fetch('/api/v2/messages/unread', {
         credentials: 'include',
       });
 
