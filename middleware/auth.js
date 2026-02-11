@@ -153,29 +153,15 @@ async function authRequired(req, res, next) {
   }
 
   // Verify user still exists in database - prevents stale JWT issues
+  // Uses indexed query for O(1) performance instead of loading all users
   // 
-  // ⚠️ PERFORMANCE WARNING - KNOWN ISSUE
-  // =====================================
-  // This reads the entire users collection on every auth request.
-  // Current complexity: O(n) where n = number of users
-  // 
-  // At scale (1000+ users), this MUST be optimized. Solutions:
-  // 1. Redis user cache with 5-minute TTL (recommended)
-  // 2. MongoDB indexed query: db.users.findOne({ id: u.id })
-  // 3. In-memory LRU cache with 100-user limit
-  // 
-  // For now, this is acceptable for early-stage platform with <500 users.
-  // 
-  // TODO: Optimize auth middleware for scale
-  // Priority: High (before 1000 users)
-  // Tracking: See GitHub issue for implementation details
-  // =====================================
+  // Note: Redis caching could be added if auth request volume exceeds 1000 req/sec
+  // For most use cases, the indexed MongoDB query provides sufficient performance
   try {
     const dbUnified = require('../db-unified');
-    const users = await dbUnified.read('users');
-    const userExists = users.find(dbUser => dbUser.id === u.id);
+    const dbUser = await dbUnified.findOne('users', { id: u.id });
     
-    if (!userExists) {
+    if (!dbUser) {
       return res.status(401).json({
         error: 'Unauthenticated',
         message: 'User account not found. Please log in again.',
