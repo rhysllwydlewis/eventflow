@@ -204,17 +204,24 @@ router.post(
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const ownIsPro = supplierIsProActive(own);
+    // Check subscription and get package limit
+    const subscriptionService = require('../services/subscriptionService');
+    const subscription = await subscriptionService.getSubscriptionByUserId(req.user.id);
+    const features = await subscriptionService.getUserFeatures(req.user.id);
+    const packageLimit = features.features.maxPackages;
 
-    // Enforce a simple Free vs Pro package limit:
-    // - Free suppliers can create up to FREE_PACKAGE_LIMIT packages (default 3)
-    // - Pro suppliers have no limit
+    // Count existing packages for this supplier
     const allPkgs = await dbUnified.read('packages');
     const existingForSupplier = allPkgs.filter(p => p.supplierId === supplierId);
-    const freeLimit = Number(process.env.FREE_PACKAGE_LIMIT || 3);
-    if (!ownIsPro && existingForSupplier.length >= freeLimit) {
+    const existingCount = existingForSupplier.length;
+
+    // Check if limit is reached (packageLimit = -1 means unlimited)
+    if (packageLimit !== -1 && existingCount >= packageLimit) {
       return res.status(403).json({
-        error: `Free suppliers can create up to ${freeLimit} packages. Upgrade to Pro to add more.`,
+        error: `Your ${subscription?.plan || 'free'} plan allows up to ${packageLimit} packages. Upgrade to create more.`,
+        currentCount: existingCount,
+        limit: packageLimit,
+        upgradeUrl: '/supplier/subscription.html',
       });
     }
 

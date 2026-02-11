@@ -1,20 +1,17 @@
 /**
  * Subscription Management for EventFlow Suppliers
- * Handles subscription plan selection, Google Pay integration, and subscription management
+ * Handles subscription plan selection and Stripe integration
+ * Replaces Google Pay/Firebase with Stripe implementation
  */
 
-import {
-  initializeGooglePay,
-  isGooglePayAvailable,
-  processGooglePayPayment,
-  createGooglePayButton,
-} from './googlepay-config.js';
+// Error display timeout constant (10 seconds)
+const ERROR_DISPLAY_TIMEOUT = 10000;
 
-// Subscription plans
+// Subscription plans - aligned with updated pricing
 const PLANS = {
   pro_monthly: {
     id: 'pro_monthly',
-    name: 'Pro Monthly',
+    name: 'Professional',
     tier: 'pro',
     price: 39.0,
     billingCycle: 'monthly',
@@ -31,7 +28,7 @@ const PLANS = {
   },
   pro_plus_monthly: {
     id: 'pro_plus_monthly',
-    name: 'Pro+ Monthly',
+    name: 'Professional Plus',
     tier: 'pro_plus',
     price: 199.0,
     billingCycle: 'monthly',
@@ -51,7 +48,7 @@ const PLANS = {
   },
   pro_yearly: {
     id: 'pro_yearly',
-    name: 'Pro Yearly',
+    name: 'Professional Yearly',
     tier: 'pro',
     price: 468.0,
     billingCycle: 'yearly',
@@ -64,12 +61,12 @@ const PLANS = {
       'Priority listing in search results',
       'Up to 50 event bookings per month',
       'Email support',
-      'Save vs monthly billing',
+      'Save £240 vs monthly',
     ],
   },
   pro_plus_yearly: {
     id: 'pro_plus_yearly',
-    name: 'Pro+ Yearly',
+    name: 'Professional Plus Yearly',
     tier: 'pro_plus',
     price: 2388.0,
     billingCycle: 'yearly',
@@ -85,584 +82,520 @@ const PLANS = {
       'Priority phone support',
       'Custom branding options',
       'Featured in homepage carousel',
-      'Save vs monthly billing',
+      'Save vs monthly',
     ],
   },
 };
 
-let paymentsClient = null;
-let currentSupplier = null;
+// eslint-disable-next-line no-unused-vars
+let currentUser = null;
+let currentSubscription = null;
+let stripeConfig = null; // Store Stripe configuration
 
 /**
- * Initialize the subscription page
+ * Initialize subscription page
  */
-async function init() {
+async function initSubscriptionPage() {
   try {
-    // Check authentication via cookie-based auth
-    const authResponse = await fetch('/api/auth/me', {
-      credentials: 'include',
-    });
+    console.log('[Subscription] Initializing subscription page...');
 
-    if (!authResponse.ok) {
-      console.error('Failed to fetch auth status');
-      window.location.href = '/auth.html';
+    // Check authentication with retry logic
+    let user = await checkAuth();
+
+    // Retry once if auth check fails (handles race conditions)
+    if (!user) {
+      console.log('[Subscription] First auth check failed, retrying...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      user = await checkAuth();
+    }
+
+    if (!user) {
+      console.error('[Subscription] Authentication required - redirecting to login');
+      // Preserve the current URL to return after login
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/auth.html?redirect=${returnUrl}`;
       return;
     }
 
-    const authData = await authResponse.json();
-    if (!authData.user) {
-      window.location.href = '/auth.html';
+    console.log('[Subscription] User authenticated:', user.email, 'Role:', user.role);
+    currentUser = user;
+
+    // Verify user is a supplier
+    if (user.role !== 'supplier') {
+      console.error('[Subscription] User role is not supplier:', user.role);
+      showError(
+        'This page is only available to suppliers. Please register as a supplier to access subscription plans.'
+      );
       return;
     }
 
-    // Load supplier data
-    await loadSupplierData();
+    // Load current subscription status
+    console.log('[Subscription] Loading subscription status...');
+    await loadSubscriptionStatus();
 
-    // Initialize Google Pay
-    await initGooglePayAPI();
+    // Load Stripe configuration
+    console.log('[Subscription] Loading Stripe configuration...');
+    await loadStripeConfig();
 
     // Render subscription plans
+    console.log('[Subscription] Rendering subscription plans...');
     renderSubscriptionPlans();
 
-    // Display current subscription status
-    displayCurrentSubscription();
+    // Set up manage billing button
+    console.log('[Subscription] Setting up billing portal...');
+    setupBillingPortal();
+
+    console.log('[Subscription] Initialization complete');
   } catch (error) {
-    console.error('Error initializing subscription page:', error);
-    showError('Failed to load subscription page. Please try again.');
+    console.error('[Subscription] Error initializing subscription page:', error);
+    console.error('[Subscription] Error stack:', error.stack);
+    showError(
+      'Failed to load subscription information. Please refresh the page or contact support.'
+    );
   }
 }
 
 /**
- * Load supplier data for current user
+ * Check user authentication
  */
-async function loadSupplierData() {
+async function checkAuth() {
   try {
-    const response = await fetch('/api/me/suppliers', {
+    console.log('[Subscription] Checking authentication...');
+    const response = await fetch('/api/auth/me', {
       credentials: 'include',
     });
 
+    console.log('[Subscription] Auth check response status:', response.status);
+
     if (!response.ok) {
-      showError('Failed to load supplier data. Please try again.');
+      console.error('[Subscription] Auth check failed with status:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('[Subscription] Auth check successful, user:', data.user?.email);
+
+    // Verify user has supplier role
+    if (!data.user) {
+      console.error('[Subscription] No user data in response');
+      return null;
+    }
+
+    return data.user;
+  } catch (error) {
+    console.error('[Subscription] Auth check failed:', error);
+    console.error('[Subscription] Error stack:', error.stack);
+    return null;
+  }
+}
+
+/**
+ * Load user's current subscription status
+ */
+async function loadSubscriptionStatus() {
+  try {
+    console.log('[Subscription] Fetching subscription status from API...');
+    const response = await fetch('/api/payments', {
+      credentials: 'include',
+    });
+
+    console.log('[Subscription] Subscription status response:', response.status);
+
+    if (!response.ok) {
+      console.error('[Subscription] Failed to load subscription status:', response.status);
+      throw new Error('Failed to load subscription status');
+    }
+
+    const data = await response.json();
+    console.log('[Subscription] Payments data received:', data.payments?.length, 'payments');
+
+    // Find active subscription
+    const activeSubscription = data.payments.find(
+      p =>
+        p.type === 'subscription' &&
+        p.status === 'succeeded' &&
+        p.subscriptionDetails &&
+        !p.subscriptionDetails.cancelAtPeriodEnd
+    );
+
+    if (activeSubscription) {
+      console.log(
+        '[Subscription] Active subscription found:',
+        activeSubscription.subscriptionDetails?.planId
+      );
+    } else {
+      console.log('[Subscription] No active subscription found');
+    }
+
+    currentSubscription = activeSubscription;
+    displaySubscriptionStatus(activeSubscription);
+  } catch (error) {
+    console.error('[Subscription] Error loading subscription:', error);
+    console.error('[Subscription] Error stack:', error.stack);
+    // Don't show error - user might not have subscription yet
+  }
+}
+
+/**
+ * Load Stripe configuration
+ */
+async function loadStripeConfig() {
+  try {
+    console.log('[Subscription] Fetching Stripe configuration from API...');
+    const response = await fetch('/api/payments/config', {
+      credentials: 'include',
+    });
+
+    console.log('[Subscription] Stripe config response:', response.status);
+
+    if (!response.ok) {
+      console.error('[Subscription] Failed to load Stripe config:', response.status);
       return;
     }
 
     const data = await response.json();
+    console.log(
+      '[Subscription] Stripe config loaded, intro pricing enabled:',
+      data.introPricingEnabled
+    );
 
-    if (!data.items || data.items.length === 0) {
-      showError('No supplier profile found. Please create a supplier profile first.');
-      setTimeout(() => {
-        window.location.href = '/dashboard-supplier.html';
-      }, 3000);
-      return;
-    }
-
-    // Get the first supplier (in case user has multiple)
-    currentSupplier = data.items[0];
-
-    // Store supplier ID for payment processing
-    sessionStorage.setItem('selectedSupplierId', currentSupplier.id);
+    stripeConfig = data;
   } catch (error) {
-    console.error('Error loading supplier data:', error);
-    throw error;
-  }
-}
-
-/**
- * Initialize Google Pay API
- */
-async function initGooglePayAPI() {
-  try {
-    paymentsClient = await initializeGooglePay();
-
-    if (!paymentsClient) {
-      console.warn('Google Pay not available - buttons will not render');
-      return;
-    }
-
-    const available = await isGooglePayAvailable(paymentsClient);
-
-    if (!available) {
-      console.warn('Google Pay not ready on this device');
-      paymentsClient = null;
-    }
-  } catch (error) {
-    console.error('Error initializing Google Pay:', error);
-    paymentsClient = null;
-  }
-}
-
-/**
- * Render subscription plan cards
- */
-function renderSubscriptionPlans() {
-  const container = document.getElementById('subscription-plans');
-  if (!container) {
-    return;
-  }
-
-  container.innerHTML = '';
-
-  // Group plans by billing cycle
-  const monthlyPlans = Object.values(PLANS).filter(p => p.billingCycle === 'monthly');
-  const yearlyPlans = Object.values(PLANS).filter(p => p.billingCycle === 'yearly');
-
-  // Create tabs
-  const tabsHtml = `
-    <div class="subscription-tabs">
-      <button class="tab-button active" data-tab="monthly">Monthly</button>
-      <button class="tab-button" data-tab="yearly">Yearly (Save 17%)</button>
-    </div>
-  `;
-
-  container.innerHTML = tabsHtml;
-
-  // Create plan containers
-  const monthlyContainer = document.createElement('div');
-  monthlyContainer.id = 'monthly-plans';
-  monthlyContainer.className = 'plans-container active';
-
-  const yearlyContainer = document.createElement('div');
-  yearlyContainer.id = 'yearly-plans';
-  yearlyContainer.className = 'plans-container';
-
-  // Render monthly plans
-  monthlyPlans.forEach(plan => {
-    monthlyContainer.appendChild(createPlanCard(plan));
-  });
-
-  // Render yearly plans
-  yearlyPlans.forEach(plan => {
-    yearlyContainer.appendChild(createPlanCard(plan));
-  });
-
-  container.appendChild(monthlyContainer);
-  container.appendChild(yearlyContainer);
-
-  // Add tab switching logic
-  document.querySelectorAll('.tab-button').forEach(button => {
-    button.addEventListener('click', () => {
-      const tab = button.dataset.tab;
-      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.plans-container').forEach(c => c.classList.remove('active'));
-      button.classList.add('active');
-      document.getElementById(`${tab}-plans`).classList.add('active');
-    });
-  });
-}
-
-/**
- * Create a subscription plan card
- */
-function createPlanCard(plan) {
-  const card = document.createElement('div');
-  card.className = 'subscription-card';
-
-  // Pro Plus is NOT featured/promoted per requirements
-  // Removed featured class for pro_plus
-
-  const isCurrentPlan = currentSupplier?.subscription?.planId === plan.id;
-
-  // Show introductory pricing for Pro plan
-  let priceHtml = '';
-  const featuresArray = [...plan.features]; // Create a copy to avoid mutation
-
-  if (plan.introductoryPrice && plan.regularPrice && plan.introductoryMonths) {
-    priceHtml = `
-      <div class="plan-price">
-        <span class="price">£${plan.introductoryPrice.toFixed(2)}</span>
-        <span class="period">/${plan.billingCycle}</span>
-      </div>
-      <p class="plan-pricing-note">
-        £${plan.regularPrice.toFixed(2)}/${plan.billingCycle} after ${plan.introductoryMonths} months
-      </p>
-    `;
-
-    // Add introductory pricing info to features dynamically
-    const pricingFeature = `£${plan.introductoryPrice.toFixed(2)}/${plan.billingCycle} for first ${plan.introductoryMonths} months, then £${plan.regularPrice.toFixed(2)}/${plan.billingCycle}`;
-    featuresArray.push(pricingFeature);
-  } else {
-    priceHtml = `
-      <div class="plan-price">
-        <span class="price">£${plan.price.toFixed(2)}</span>
-        <span class="period">/${plan.billingCycle}</span>
-      </div>
-    `;
-  }
-
-  card.innerHTML = `
-    <div class="plan-header">
-      <h3>${plan.name}</h3>
-    </div>
-    ${priceHtml}
-    <div class="plan-trial">
-      <span class="trial-badge">${plan.trialDays}-day free trial</span>
-    </div>
-    <div class="plan-features">
-      <ul>
-        ${featuresArray.map(feature => `<li>${feature}</li>`).join('')}
-      </ul>
-    </div>
-    <div class="plan-action">
-      ${
-        isCurrentPlan
-          ? '<button class="btn-current" disabled>Current Plan</button>'
-          : `<button class="btn-select" data-plan-id="${plan.id}">Select Plan</button>`
-      }
-      <div class="gpay-button-container" data-plan-id="${plan.id}"></div>
-    </div>
-  `;
-
-  // Add event listener for plan selection
-  const selectButton = card.querySelector('.btn-select');
-  if (selectButton) {
-    selectButton.addEventListener('click', () => handlePlanSelection(plan));
-  }
-
-  // Add Google Pay button if available
-  if (paymentsClient) {
-    const gpayContainer = card.querySelector('.gpay-button-container');
-    createGooglePayButton(gpayContainer, () => handleGooglePayClick(plan));
-  }
-
-  return card;
-}
-
-/**
- * Handle plan selection (non-Google Pay)
- */
-async function handlePlanSelection(plan) {
-  try {
-    showLoading('Processing your selection...');
-
-    // Store selected plan details
-    sessionStorage.setItem('selectedPlanId', plan.id);
-    sessionStorage.setItem('selectedPlanAmount', plan.price.toString());
-
-    // For now, show a message
-    // In a full implementation, this would redirect to another payment method
-    showMessage(`Plan ${plan.name} selected. Please use Google Pay to complete purchase.`);
-  } catch (error) {
-    console.error('Error selecting plan:', error);
-    showError('Failed to select plan. Please try again.');
-  } finally {
-    hideLoading();
-  }
-}
-
-/**
- * Handle Google Pay button click
- */
-async function handleGooglePayClick(plan) {
-  try {
-    showLoading('Processing payment...');
-
-    // Store selected plan details
-    sessionStorage.setItem('selectedPlanId', plan.id);
-    sessionStorage.setItem('selectedPlanAmount', plan.price.toString());
-
-    // Process payment through Google Pay
-    const result = await processGooglePayPayment(paymentsClient, plan.price, plan.id, plan.name);
-
-    hideLoading();
-
-    if (result.success) {
-      showSuccess('Payment successful! Your subscription is being activated...');
-
-      // Redirect to dashboard
-      setTimeout(() => {
-        window.location.href = '/dashboard-supplier.html?subscription=success';
-      }, 2000);
-    } else if (result.cancelled) {
-      // User cancelled payment - don't show error
-      console.log('Payment cancelled by user');
-    } else {
-      showError(result.error || 'Payment failed. Please try again.');
-    }
-  } catch (error) {
-    console.error('Error processing Google Pay payment:', error);
-    hideLoading();
-    showError('Payment failed. Please try again.');
+    console.error('[Subscription] Error loading Stripe config:', error);
+    console.error('[Subscription] Error stack:', error.stack);
   }
 }
 
 /**
  * Display current subscription status
  */
-function displayCurrentSubscription() {
+function displaySubscriptionStatus(subscription) {
   const statusContainer = document.getElementById('current-subscription-status');
   if (!statusContainer) {
     return;
   }
 
-  const subscription = currentSupplier?.subscription;
-
-  if (!subscription || subscription.tier === 'free' || !subscription.status) {
+  if (!subscription) {
     statusContainer.innerHTML = `
-      <div class="subscription-status">
-        <h3>Current Subscription</h3>
-        <p class="status-free">Free Plan</p>
-        <p class="small">Upgrade to unlock premium features and boost your visibility.</p>
+      <div class="subscription-status-card">
+        <div class="status-badge free">Free Plan</div>
+        <h3>You're currently on the Free plan</h3>
+        <p>Upgrade to unlock premium features and boost your visibility on EventFlow.</p>
       </div>
     `;
     return;
   }
 
-  const plan = PLANS[subscription.planId];
-  const statusClass =
-    subscription.status === 'active'
-      ? 'status-active'
-      : subscription.status === 'trial'
-        ? 'status-trial'
-        : 'status-expired';
-
-  let statusText = subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
-  if (subscription.status === 'trial') {
-    const trialEndDate =
-      subscription.trialEndDate instanceof Date
-        ? subscription.trialEndDate
-        : new Date(subscription.trialEndDate);
-    const daysLeft = Math.max(0, Math.ceil((trialEndDate - new Date()) / (1000 * 60 * 60 * 24)));
-    statusText = `Trial (${daysLeft} days left)`;
-  }
-
-  const endDateStr = subscription.endDate
-    ? new Date(subscription.endDate).toLocaleDateString('en-GB', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : 'N/A';
-
-  // Check if renewal is needed soon (within 14 days)
-  const daysUntilRenewal = subscription.endDate
-    ? Math.ceil((new Date(subscription.endDate) - new Date()) / (1000 * 60 * 60 * 24))
-    : 0;
-  const showRenewalPrompt =
-    !subscription.autoRenew && daysUntilRenewal > 0 && daysUntilRenewal <= 14;
+  const details = subscription.subscriptionDetails;
+  const planName = details.planName || 'Pro Plan';
+  const endDate = new Date(details.currentPeriodEnd);
+  const isCancelling = details.cancelAtPeriodEnd;
 
   statusContainer.innerHTML = `
-    <div class="subscription-status">
-      <h3>Current Subscription</h3>
-      <div class="subscription-badge ${subscription.tier}">
-        ${subscription.tier === 'pro' ? 'Pro' : 'Pro+'}
+    <div class="subscription-status-card active">
+      <div class="status-badge ${isCancelling ? 'cancelling' : 'active'}">${isCancelling ? 'Cancelling' : 'Active'}</div>
+      <h3>Your Current Plan: ${planName}</h3>
+      <div class="subscription-details">
+        <p><strong>Status:</strong> ${isCancelling ? 'Active until ' : 'Renews on '} ${endDate.toLocaleDateString('en-GB')}</p>
+        <p><strong>Billing:</strong> ${details.interval === 'month' ? 'Monthly' : 'Yearly'}</p>
+        <p><strong>Amount:</strong> £${subscription.amount.toFixed(2)}</p>
       </div>
-      <p class="${statusClass}">${statusText}</p>
-      <p class="small">Plan: ${plan ? plan.name : subscription.planId}</p>
       ${
-        subscription.cancelledAt
-          ? `<p class="small">Cancelled - Access until: ${endDateStr}</p>`
-          : `<p class="small">${subscription.autoRenew ? 'Renews' : 'Expires'}: ${endDateStr}</p>`
-      }
-      <p class="small">Auto-renew: ${subscription.autoRenew ? 'Yes' : 'No'}</p>
-      
-      ${
-        showRenewalPrompt
+        isCancelling
           ? `
-        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; padding: 12px; margin: 15px 0;">
-          <p style="margin: 0 0 10px; color: #856404; font-size: 14px; font-weight: 600;">
-            ⚠️ Your subscription expires in ${daysUntilRenewal} days
-          </p>
-          <p style="margin: 0; color: #856404; font-size: 13px;">
-            Renew now to keep your premium features without interruption.
-          </p>
+        <div class="cancellation-notice">
+          <p>⚠️ Your subscription will be cancelled at the end of the current billing period.</p>
         </div>
       `
           : ''
       }
-      
-      <div class="subscription-actions">
+      <button class="btn btn-secondary" id="manage-billing-btn">Manage Billing</button>
+    </div>
+  `;
+
+  // Set up manage billing button
+  document.getElementById('manage-billing-btn')?.addEventListener('click', openBillingPortal);
+}
+
+/**
+ * Render subscription plans
+ */
+function renderSubscriptionPlans() {
+  const plansContainer = document.getElementById('subscription-plans');
+  if (!plansContainer) {
+    return;
+  }
+
+  const plansHtml = Object.values(PLANS)
+    .map(plan => {
+      const isCurrentPlan =
+        currentSubscription && currentSubscription.subscriptionDetails?.planId?.includes(plan.id);
+      const isFeatured = plan.tier === 'pro_plus';
+
+      return `
+      <div class="pricing-card ${isFeatured ? 'featured' : ''}">
+        ${isFeatured ? '<div class="popular-badge">PREMIUM</div>' : ''}
+        <h3>${plan.name}</h3>
+        <div class="price">
+          £${plan.price.toFixed(2)}
+          <span class="period">/month</span>
+        </div>
         ${
-          (subscription.status === 'active' || subscription.status === 'trial') &&
-          !subscription.cancelledAt
+          plan.introductoryPrice && plan.regularPrice && plan.introductoryMonths
             ? `
-          <button class="btn-manage" id="cancel-subscription-btn">Cancel Subscription</button>
-          <button class="btn-manage" id="change-plan-btn">Change Plan</button>
+          <div class="price-note">First ${plan.introductoryMonths} months, then £${plan.regularPrice}/month</div>
         `
-            : subscription.cancelledAt
-              ? `<button class="btn-manage" id="reactivate-subscription-btn">Reactivate Subscription</button>`
-              : ''
+            : ''
+        }
+        <div class="trial-badge">
+          ${plan.trialDays}-day free trial
+        </div>
+        <ul class="features">
+          ${plan.features.map(feature => `<li>${feature}</li>`).join('')}
+        </ul>
+        ${
+          isCurrentPlan
+            ? `
+          <button class="btn btn-current" disabled>Current Plan</button>
+        `
+            : `
+          <button class="btn btn-primary" 
+                  data-plan-id="${plan.id}"
+                  onclick="handleSubscribe('${plan.id}')">
+            ${currentSubscription ? 'Switch Plan' : 'Start Free Trial'}
+          </button>
+        `
         }
       </div>
+    `;
+    })
+    .join('');
+
+  plansContainer.innerHTML = `
+    <div class="pricing-grid">
+      ${plansHtml}
     </div>
   `;
+}
 
-  // Add event listeners
-  const cancelBtn = document.getElementById('cancel-subscription-btn');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', handleCancelSubscription);
+/**
+ * Handle subscription button click
+ */
+async function handleSubscribe(planId) {
+  console.log('[Subscription] Handle subscribe clicked for plan:', planId);
+
+  const plan = PLANS[planId];
+  if (!plan) {
+    console.error('[Subscription] Invalid plan selected:', planId);
+    showError('Invalid plan selected');
+    return;
   }
 
-  const changeBtn = document.getElementById('change-plan-btn');
-  if (changeBtn) {
-    changeBtn.addEventListener('click', () => {
-      document.getElementById('subscription-plans').scrollIntoView({ behavior: 'smooth' });
+  console.log('[Subscription] Selected plan:', plan.name, 'Price:', plan.price);
+
+  const button = document.querySelector(`button[data-plan-id="${planId}"]`);
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Processing...';
+  }
+
+  try {
+    // Check if this is the Professional plan and intro pricing is enabled
+    const isProfessionalPlan =
+      (plan.name.toLowerCase().includes('professional') ||
+        plan.name.toLowerCase().includes('pro')) &&
+      !plan.name.toLowerCase().includes('plus');
+    const useIntroPricing =
+      stripeConfig?.introPricingEnabled && stripeConfig?.proPriceId && isProfessionalPlan;
+
+    let requestBody;
+
+    if (useIntroPricing) {
+      // Use subscription with intro pricing
+      console.log('[Subscription] Using subscription mode with intro pricing');
+      requestBody = {
+        type: 'subscription',
+        priceId: stripeConfig.proPriceId,
+        planName: plan.name,
+      };
+    } else {
+      // Fallback to one-time payment
+      console.log('[Subscription] Using one-time payment mode (fallback)');
+      const amount = Math.round(plan.price * 100); // Convert to pence
+      requestBody = {
+        type: 'one_time',
+        amount: amount,
+        currency: 'gbp',
+        planName: plan.name,
+      };
+    }
+
+    console.log('[Subscription] Creating checkout session with:', requestBody);
+
+    const response = await fetch('/api/payments/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(requestBody),
     });
-  }
 
-  const reactivateBtn = document.getElementById('reactivate-subscription-btn');
-  if (reactivateBtn) {
-    reactivateBtn.addEventListener('click', handleReactivateSubscription);
+    console.log('[Subscription] Checkout session response status:', response.status);
+
+    const data = await response.json();
+    console.log('[Subscription] Checkout session response data:', data);
+
+    if (!response.ok) {
+      console.error('[Subscription] API error:', data.error || 'Unknown error');
+      console.error('[Subscription] Full response:', data);
+      throw new Error(data.error || 'Failed to create checkout session');
+    }
+
+    // Redirect to Stripe checkout
+    if (data.url) {
+      console.log('[Subscription] Redirecting to Stripe checkout:', data.url);
+      window.location.href = data.url;
+    } else {
+      console.error('[Subscription] No checkout URL in response');
+      throw new Error('No checkout URL returned');
+    }
+  } catch (error) {
+    console.error('[Subscription] Subscription error:', error);
+    console.error('[Subscription] Error stack:', error.stack);
+    showError(error.message || 'Failed to start subscription. Please try again.');
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = currentSubscription ? 'Switch Plan' : 'Start Free Trial';
+    }
   }
 }
 
 /**
- * Handle subscription reactivation
+ * Set up billing portal
  */
-async function handleReactivateSubscription() {
-  if (
-    !confirm(
-      'Would you like to reactivate your subscription? Your premium features will continue without interruption.'
-    )
-  ) {
-    return;
-  }
-
-  try {
-    showLoading('Reactivating subscription...');
-
-    // TODO: Call server-side API to reactivate subscription
-    // For now, show a message that this feature needs to be implemented
-    showError(
-      'Subscription reactivation is currently unavailable. Please contact support to reactivate your subscription.'
-    );
-
-    // When the API is implemented, it should:
-    // 1. Update the supplier document to re-enable auto-renewal
-    // 2. Clear the cancelledAt timestamp
-    // 3. Update the lastUpdated timestamp
-    //
-    // Example implementation:
-    // const response = await fetch(`/api/me/suppliers/${currentSupplier.id}/subscription/reactivate`, {
-    //   method: 'POST',
-    //   credentials: 'include',
-    //   headers: { 'Content-Type': 'application/json' },
-    // });
-    //
-    // if (response.ok) {
-    //   showSuccess('Subscription reactivated successfully!');
-    //   setTimeout(() => window.location.reload(), 1500);
-    // } else {
-    //   throw new Error('Failed to reactivate subscription');
-    // }
-  } catch (error) {
-    console.error('Error reactivating subscription:', error);
-    showError('Failed to reactivate subscription. Please try again or contact support.');
-  } finally {
-    hideLoading();
+function setupBillingPortal() {
+  const manageBillingBtn = document.getElementById('manage-billing-btn');
+  if (manageBillingBtn) {
+    manageBillingBtn.addEventListener('click', openBillingPortal);
   }
 }
 
 /**
- * Handle subscription cancellation
+ * Open Stripe billing portal
  */
-async function handleCancelSubscription() {
-  const endDate = currentSupplier.subscription?.endDate
-    ? new Date(currentSupplier.subscription.endDate).toLocaleDateString('en-GB', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : 'the end of your billing period';
-
-  const confirmMessage = `Are you sure you want to cancel your subscription?\n\nYou'll lose access to premium features after ${endDate}.\n\nYou can reactivate anytime before this date.`;
-
-  if (!confirm(confirmMessage)) {
-    return;
-  }
-
+async function openBillingPortal(event) {
   try {
-    showLoading('Cancelling subscription...');
+    console.log('[Subscription] Opening billing portal...');
 
-    // TODO: Call server-side API to cancel subscription
-    // For now, show a message that this feature needs to be implemented
-    showError(
-      'Subscription cancellation is currently unavailable. Please contact support to cancel your subscription.'
-    );
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = 'Loading...';
 
-    // When the API is implemented, it should:
-    // 1. Update the supplier document to disable auto-renewal
-    // 2. Set the cancelledAt timestamp
-    // 3. Keep access until the end of the billing period
-    //
-    // Example implementation:
-    // const response = await fetch(`/api/me/suppliers/${currentSupplier.id}/subscription/cancel`, {
-    //   method: 'POST',
-    //   credentials: 'include',
-    //   headers: { 'Content-Type': 'application/json' },
-    // });
-    //
-    // if (response.ok) {
-    //   showSuccess('Subscription cancelled successfully.');
-    //   setTimeout(() => window.location.reload(), 2000);
-    // } else {
-    //   throw new Error('Failed to cancel subscription');
-    // }
+    const response = await fetch('/api/payments/create-portal-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        returnUrl: window.location.href,
+      }),
+    });
+
+    console.log('[Subscription] Portal session response status:', response.status);
+
+    const data = await response.json();
+    console.log('[Subscription] Portal session response data:', data);
+
+    if (!response.ok) {
+      console.error('[Subscription] API error:', data.error || 'Unknown error');
+      console.error('[Subscription] Full response:', data);
+      throw new Error(data.error || 'Failed to open billing portal');
+    }
+
+    // Redirect to Stripe billing portal
+    if (data.url) {
+      console.log('[Subscription] Redirecting to billing portal:', data.url);
+      window.location.href = data.url;
+    } else {
+      console.error('[Subscription] No portal URL in response');
+      throw new Error('No portal URL returned');
+    }
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    showError('Failed to cancel subscription. Please try again or contact support.');
-  } finally {
-    hideLoading();
+    console.error('[Subscription] Billing portal error:', error);
+    console.error('[Subscription] Error stack:', error.stack);
+    showError(error.message || 'Failed to open billing portal. Please try again.');
+
+    if (event && event.target) {
+      const button = event.target;
+      button.disabled = false;
+      button.textContent = 'Manage Billing';
+    }
   }
 }
 
-// UI Helper Functions
-
-function showLoading(message) {
-  const overlay = document.createElement('div');
-  overlay.id = 'loading-overlay';
-  overlay.className = 'loading-overlay';
-  overlay.innerHTML = `
-    <div class="loading-content">
-      <div class="spinner"></div>
-      <p>${message}</p>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-function hideLoading() {
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) {
-    overlay.remove();
-  }
-}
-
-function showMessage(message) {
-  if (typeof window.EventFlowNotifications !== 'undefined') {
-    window.EventFlowNotifications.info(message);
-  } else {
-    console.warn('EventFlowNotifications not loaded:', message);
-  }
-}
-
-function showSuccess(message) {
-  if (typeof window.EventFlowNotifications !== 'undefined') {
-    window.EventFlowNotifications.success(message);
-  } else {
-    console.warn('EventFlowNotifications not loaded:', message);
-  }
-}
-
+/**
+ * Show error message
+ */
 function showError(message) {
-  if (typeof window.EventFlowNotifications !== 'undefined') {
-    window.EventFlowNotifications.error(message);
+  console.log('[Subscription] Showing error:', message);
+
+  const errorContainer = document.getElementById('error-message');
+  if (errorContainer) {
+    errorContainer.innerHTML = `
+      <div class="alert alert-error alert-error-styled">
+        <strong>Error:</strong> ${message}
+      </div>
+    `;
+    errorContainer.style.display = 'block';
+
+    // Auto-scroll to error message
+    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Auto-hide after ERROR_DISPLAY_TIMEOUT (10 seconds)
+    setTimeout(() => {
+      errorContainer.style.display = 'none';
+    }, ERROR_DISPLAY_TIMEOUT);
   } else {
-    console.error('EventFlowNotifications not loaded:', message);
+    alert(message);
   }
 }
 
+/**
+ * Show success message
+ */
 // eslint-disable-next-line no-unused-vars
-function showWarning(message) {
-  if (typeof window.EventFlowNotifications !== 'undefined') {
-    window.EventFlowNotifications.warning(message);
-  } else {
-    console.warn('EventFlowNotifications not loaded:', message);
+function showSuccess(message) {
+  console.log('[Subscription] Showing success:', message);
+
+  const successContainer = document.getElementById('success-message');
+  if (successContainer) {
+    successContainer.innerHTML = `
+      <div class="alert alert-success">
+        ${message}
+      </div>
+    `;
+    successContainer.style.display = 'block';
+
+    // Auto-scroll to success message
+    successContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Auto-hide after ERROR_DISPLAY_TIMEOUT (10 seconds)
+    setTimeout(() => {
+      successContainer.style.display = 'none';
+    }, ERROR_DISPLAY_TIMEOUT);
   }
 }
+
+// Make functions available globally
+window.handleSubscribe = handleSubscribe;
+window.openBillingPortal = openBillingPortal;
 
 // Initialize on page load
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', initSubscriptionPage);
 } else {
-  init();
+  initSubscriptionPage();
 }
