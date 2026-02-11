@@ -201,7 +201,8 @@
 <script type="module">
   // Import verification badges utility
   import { renderVerificationBadges, renderVerificationSection } from '/assets/js/utils/verification-badges.js';
-  // Make available globally for supplier-profile.js
+  // Make available globally for supplier-profile.js (non-module script)
+  // TODO: Refactor supplier-profile.js to use ES6 modules to remove global exposure
   window.renderVerificationBadges = renderVerificationBadges;
   window.renderVerificationSection = renderVerificationSection;
 </script>

@@ -148,7 +148,7 @@ const verificationSectionHTML = renderVerificationSection(supplier);
 
 4. **`public/supplier.html`**
    - Added badges.css stylesheet
-  - Imported verification-badges module
+   - Imported verification-badges module
    - Made functions globally available
 
 5. **`public/suppliers.html`**

@@ -140,6 +140,22 @@ export function renderVerificationBadges(supplier, options = {}) {
 }
 
 /**
+ * Format date for display
+ * @param {string} dateString - ISO date string
+ * @returns {string} Formatted date (e.g., "15/01/2025")
+ */
+function formatVerificationDate(dateString) {
+  if (!dateString) {
+    return '';
+  }
+  try {
+    return new Date(dateString).toLocaleDateString('en-GB');
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
  * Generate detailed verification section HTML for supplier profile page
  * @param {Object} supplier - Supplier object with verification fields
  * @returns {string} HTML string for verification section
@@ -165,13 +181,15 @@ export function renderVerificationSection(supplier) {
   // Email Verification
   const emailVerified =
     supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified;
-  const emailDate = supplier.verifications?.email?.verifiedAt || supplier.createdAt;
+  const emailDate = formatVerificationDate(
+    supplier.verifications?.email?.verifiedAt || supplier.createdAt
+  );
 
   verifications.push({
     icon: emailVerified ? '✓' : '○',
     title: 'Email Address',
     description: emailVerified
-      ? `Verified ${emailDate ? new Date(emailDate).toLocaleDateString('en-GB') : ''}`
+      ? `Verified ${emailDate}`
       : 'Not yet verified',
     verified: emailVerified,
     class: 'email',
@@ -179,13 +197,13 @@ export function renderVerificationSection(supplier) {
 
   // Phone Verification
   const phoneVerified = supplier.phoneVerified || supplier.verifications?.phone?.verified;
-  const phoneDate = supplier.verifications?.phone?.verifiedAt;
+  const phoneDate = formatVerificationDate(supplier.verifications?.phone?.verifiedAt);
 
   verifications.push({
     icon: phoneVerified ? '✓' : '○',
     title: 'Phone Number',
     description: phoneVerified
-      ? `Verified ${phoneDate ? new Date(phoneDate).toLocaleDateString('en-GB') : ''}`
+      ? `Verified ${phoneDate}`
       : 'Not yet verified',
     verified: phoneVerified,
     class: 'phone',
@@ -193,13 +211,13 @@ export function renderVerificationSection(supplier) {
 
   // Business Verification
   const businessVerified = supplier.businessVerified || supplier.verifications?.business?.verified;
-  const businessDate = supplier.verifications?.business?.verifiedAt;
+  const businessDate = formatVerificationDate(supplier.verifications?.business?.verifiedAt);
 
   verifications.push({
     icon: businessVerified ? '✓' : '○',
     title: 'Business Documents',
     description: businessVerified
-      ? `Verified ${businessDate ? new Date(businessDate).toLocaleDateString('en-GB') : ''}`
+      ? `Verified ${businessDate}`
       : 'Not yet verified',
     verified: businessVerified,
     class: 'business',
