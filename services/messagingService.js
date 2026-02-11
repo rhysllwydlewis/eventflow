@@ -18,6 +18,10 @@ const {
   createThread,
 } = require('../models/Message');
 
+// Import security services
+const { sanitizeMessage } = require('./contentSanitizer');
+const { checkSpam } = require('./spamDetection');
+
 class MessagingService {
   constructor(db) {
     this.db = db;
@@ -209,8 +213,30 @@ class MessagingService {
    */
   async sendMessage(data, subscriptionTier = 'free') {
     try {
+      // SECURITY: Sanitize message content before any processing
+      const sanitizedData = sanitizeMessage(data, false);
+
+      // SECURITY: Check for spam before processing
+      if (sanitizedData.content) {
+        const spamCheck = checkSpam(sanitizedData.senderId, sanitizedData.content, {
+          maxUrlCount: 5,
+          maxPerMinute: parseInt(process.env.MAX_MESSAGES_PER_MINUTE || '30', 10),
+          checkDuplicates: true,
+          checkKeywords: true,
+        });
+
+        if (spamCheck.isSpam) {
+          logger.warn('Spam message blocked', {
+            userId: sanitizedData.senderId,
+            reason: spamCheck.reason,
+            score: spamCheck.score,
+          });
+          throw new Error(`Message blocked: ${spamCheck.reason}`);
+        }
+      }
+
       // Check message limit
-      const limitCheck = await this.checkMessageLimit(data.senderId, subscriptionTier);
+      const limitCheck = await this.checkMessageLimit(sanitizedData.senderId, subscriptionTier);
       if (!limitCheck.allowed) {
         throw new Error(
           `Daily message limit reached (${limitCheck.limit}). Upgrade your plan for more messages.`
@@ -219,29 +245,29 @@ class MessagingService {
 
       // Check message length
       const limits = MESSAGE_LIMITS[subscriptionTier] || MESSAGE_LIMITS.free;
-      if (data.content && data.content.length > limits.maxMessageLength) {
+      if (sanitizedData.content && sanitizedData.content.length > limits.maxMessageLength) {
         throw new Error(`Message too long. Maximum ${limits.maxMessageLength} characters allowed.`);
       }
 
       // Validate message data
-      const validationErrors = validateMessage(data);
+      const validationErrors = validateMessage(sanitizedData);
       if (validationErrors) {
         throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
       }
 
       // Verify thread exists
-      const thread = await this.getThread(data.threadId);
+      const thread = await this.getThread(sanitizedData.threadId);
       if (!thread) {
         throw new Error('Thread not found');
       }
 
       // Verify sender is a participant
-      if (!thread.participants.includes(data.senderId)) {
+      if (!thread.participants.includes(sanitizedData.senderId)) {
         throw new Error('Sender is not a participant in this thread');
       }
 
-      // Create message
-      const message = createMessage(data);
+      // Create message with sanitized data
+      const message = createMessage(sanitizedData);
 
       await this.messagesCollection.insertOne(message);
 

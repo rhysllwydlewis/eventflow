@@ -1373,6 +1373,10 @@ router.put('/:messageId/edit', applyAuthRequired, ensureServices, async (req, re
       return res.status(400).json({ error: 'Content is required' });
     }
 
+    // SECURITY: Sanitize content before processing
+    const { sanitizeContent } = require('../services/contentSanitizer');
+    const sanitizedContent = sanitizeContent(content, false);
+
     if (!ObjectId.isValid(messageId)) {
       return res.status(400).json({ error: 'Invalid message ID' });
     }
@@ -1414,7 +1418,7 @@ router.put('/:messageId/edit', applyAuthRequired, ensureServices, async (req, re
       { _id: new ObjectId(messageId) },
       {
         $set: {
-          content: content.trim(),
+          content: sanitizedContent,
           editedAt: now,
           editHistory,
           updatedAt: now,
@@ -1426,7 +1430,7 @@ router.put('/:messageId/edit', applyAuthRequired, ensureServices, async (req, re
     if (wsServerV2) {
       wsServerV2.to(message.threadId).emit('message:edited', {
         messageId,
-        content: content.trim(),
+        content: sanitizedContent,
         editedAt: now,
         senderId: userId,
       });
@@ -1435,7 +1439,7 @@ router.put('/:messageId/edit', applyAuthRequired, ensureServices, async (req, re
     res.json({ 
       success: true, 
       editedAt: now,
-      content: content.trim() 
+      content: sanitizedContent 
     });
   } catch (error) {
     logger.error('Edit message error', { error: error.message, userId: req.user.id });
