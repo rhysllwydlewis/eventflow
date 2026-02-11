@@ -36,7 +36,7 @@ The EventFlow subscription system provides a complete payment and subscription m
   - Up to 3 packages
   - Up to 10 event bookings per month
   - Messaging enabled
-  - Basic analytics
+  - No analytics
   
 #### Pro Monthly
 - **Price**: £39/month for first 3 months, then £59/month

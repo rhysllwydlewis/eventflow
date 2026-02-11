@@ -12,9 +12,9 @@ const MESSAGE_LIMITS = {
     maxMessageLength: 500,
   },
   pro: {
-    messagesPerDay: 50,
-    threadsPerDay: 10,
-    maxMessageLength: 2000,
+    messagesPerDay: -1, // unlimited
+    threadsPerDay: -1, // unlimited
+    maxMessageLength: 5000,
   },
   pro_plus: {
     messagesPerDay: -1, // unlimited
