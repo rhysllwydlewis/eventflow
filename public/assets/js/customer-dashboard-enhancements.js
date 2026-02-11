@@ -17,9 +17,7 @@
 
     // Use MutationObserver instead of setTimeout
     const observer = new MutationObserver(() => {
-      const statsSection = document.querySelector(
-        '.dashboard-stats, #stats-section, .dashboard-content'
-      );
+      const statsSection = document.querySelector('#customer-stats-grid');
 
       if (!statsSection) {
         return;
@@ -57,22 +55,13 @@
 
   /**
    * Trigger confetti on first plan creation
+   * NOTE: Disabled - customer dashboard has no plan creation trigger elements
    */
   function setupPlanCreationConfetti() {
-    // Listen for plan creation success
-    const createPlanBtn = document.querySelector('#create-plan-btn, [data-action="create-plan"]');
-    if (createPlanBtn) {
-      createPlanBtn.addEventListener('click', () => {
-        // Wait for the success response
-        setTimeout(() => {
-          // Check if this is the first plan (basic heuristic)
-          const plansList = document.querySelectorAll('.plan-card, [data-plan-id]');
-          if (plansList.length === 1 && typeof triggerSuccessConfetti === 'function') {
-            triggerSuccessConfetti();
-          }
-        }, 1500);
-      });
-    }
+    // Customer dashboard doesn't have #create-plan-btn or [data-action="create-plan"]
+    // Plan creation happens on a different page (/start or /plan.html)
+    // Confetti should be triggered there, not here
+    return;
   }
 
   /**
