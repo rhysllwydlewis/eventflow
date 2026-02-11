@@ -155,8 +155,8 @@ async function authRequired(req, res, next) {
   // Verify user still exists in database - prevents stale JWT issues
   // Uses indexed query for O(1) performance instead of loading all users
   // 
-  // TODO: Implement Redis caching with 5-min TTL to reduce DB load further
-  // For now, using indexed query provides acceptable performance at scale
+  // Note: Redis caching could be added if auth request volume exceeds 1000 req/sec
+  // For most use cases, the indexed MongoDB query provides sufficient performance
   try {
     const dbUnified = require('../db-unified');
     const userExists = await dbUnified.findOne('users', { id: u.id });
