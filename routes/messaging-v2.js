@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { ObjectId } = require('mongodb');
 
 // Dependencies injected by server.js
 let authRequired;
@@ -525,8 +526,8 @@ router.put('/:messageId', applyAuthRequired, applyCsrfProtection, ensureServices
     }
 
     const message = await messagingService.messagesCollection.findOne({
-      _id: require('mongodb').ObjectId.isValid(messageId)
-        ? new require('mongodb').ObjectId(messageId)
+      _id: ObjectId.isValid(messageId)
+        ? new ObjectId(messageId)
         : messageId,
     });
 
@@ -581,8 +582,8 @@ router.delete('/:messageId', applyAuthRequired, applyCsrfProtection, ensureServi
     const { messageId } = req.params;
 
     const message = await messagingService.messagesCollection.findOne({
-      _id: require('mongodb').ObjectId.isValid(messageId)
-        ? new require('mongodb').ObjectId(messageId)
+      _id: ObjectId.isValid(messageId)
+        ? new ObjectId(messageId)
         : messageId,
     });
 
@@ -1038,8 +1039,8 @@ router.post(
       const { threadId } = req.params;
 
       const thread = await messagingService.threadsCollection.findOne({
-        _id: require('mongodb').ObjectId.isValid(threadId)
-          ? new require('mongodb').ObjectId(threadId)
+        _id: ObjectId.isValid(threadId)
+          ? new ObjectId(threadId)
           : threadId,
       });
 
@@ -1087,8 +1088,8 @@ router.post(
       const { threadId } = req.params;
 
       const thread = await messagingService.threadsCollection.findOne({
-        _id: require('mongodb').ObjectId.isValid(threadId)
-          ? new require('mongodb').ObjectId(threadId)
+        _id: ObjectId.isValid(threadId)
+          ? new ObjectId(threadId)
           : threadId,
       });
 
