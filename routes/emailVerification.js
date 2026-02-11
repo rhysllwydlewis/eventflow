@@ -45,7 +45,8 @@ router.post('/send-verification', resendEmailLimiter, authRequired, async (req, 
 
     // Generate verification token
     const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 24 * 3600000); // 24 hours
+    const expiresIn = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    const expires = new Date(Date.now() + expiresIn);
 
     // Save token
     await dbUnified.updateOne(

@@ -477,7 +477,7 @@ router.post('/login', authLimiter, async (req, res) => {
     const tempToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role, requires2FA: true },
       JWT_SECRET,
-      { expiresIn: '5m' } // Short-lived token for 2FA verification
+      { expiresIn: '2m' } // Short-lived token for 2FA verification
     );
     return res.json({
       ok: false,

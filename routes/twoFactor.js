@@ -60,7 +60,6 @@ router.post('/setup', csrfProtection, writeLimiter, authRequired, async (req, re
     res.json({
       ok: true,
       qrCode,
-      secret: secret.base32,
       backupCodes,
       message: 'Scan the QR code with your authenticator app, then verify to enable 2FA',
     });
