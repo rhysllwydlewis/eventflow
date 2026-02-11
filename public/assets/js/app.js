@@ -2670,7 +2670,7 @@ async function initDashSupplier() {
   async function loadSuppliers() {
     try {
       const d = await api('/api/me/suppliers');
-      const items = Array.isArray(d?.items) ? d.items : [];
+      const items = d?.items && Array.isArray(d.items) ? d.items : [];
     // If this user has at least one Pro supplier, treat them as Pro.
     currentIsPro = items.some(s => !!s.isPro);
 
@@ -2975,7 +2975,7 @@ async function initDashSupplier() {
       }
       const note = document.getElementById('pkg-limit-note');
       const d = await api('/api/me/packages');
-      const items = Array.isArray(d?.items) ? d.items : [];
+      const items = d?.items && Array.isArray(d.items) ? d.items : [];
       const count = items.length;
     const freeLimit = 3; // keep in sync with server FREE_PACKAGE_LIMIT default
 
