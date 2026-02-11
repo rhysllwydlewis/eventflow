@@ -221,11 +221,13 @@ router.get('/suppliers/:id/packages', async (req, res) => {
  */
 router.get('/me/suppliers', applyAuthRequired, applyRoleRequired('supplier'), async (req, res) => {
   const listRaw = (await dbUnified.read('suppliers')).filter(s => s.ownerUserId === req.user.id);
-  const list = listRaw.map(s => ({
-    ...s,
-    isPro: supplierIsProActive(s),
-    proExpiresAt: s.proExpiresAt || null,
-  }));
+  const list = await Promise.all(
+    listRaw.map(async s => ({
+      ...s,
+      isPro: await supplierIsProActive(s),
+      proExpiresAt: s.proExpiresAt || null,
+    }))
+  );
   res.json({ items: list });
 });
 
