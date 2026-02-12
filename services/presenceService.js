@@ -32,6 +32,11 @@ class PresenceService {
     // Cleanup interval
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000); // Every minute
 
+    // Don't let housekeeping timers prevent process exit in test/CLI contexts.
+    if (typeof this.cleanupInterval.unref === 'function') {
+      this.cleanupInterval.unref();
+    }
+
     logger.info('PresenceService initialized', { useRedis: this.useRedis });
   }
 

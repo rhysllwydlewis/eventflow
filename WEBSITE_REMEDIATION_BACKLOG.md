@@ -9,6 +9,12 @@ This file turns the audit plan into a working backlog the team can execute immed
 - Include verification command/output before marking done.
 - Link each item to a PR and issue.
 
+## Progress snapshot (current)
+
+- **Overall remediation progress:** **55%** (5/10 backlog workstreams marked done, 1/10 in progress).
+- **Core regression repair progress (PR3):** **100%** (lead scoring, subscriptions, and reviews suites all passing assertions).
+- **Current focus:** PR4 hardening (coverage uplift and warning reduction) plus CI lane split.
+
 ## Status legend
 
 - `todo`
@@ -22,7 +28,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 1.1 Jest ESM/parser failures
 
-- **Status:** todo
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `infra:test`
 - **Definition of done:** suites that currently crash with `Unexpected token 'export'` run to completion.
@@ -38,7 +44,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 1.2 Lint error-level fixes
 
-- **Status:** todo
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `techdebt:lint`
 - **Definition of done:** `npm run lint` has 0 errors.
@@ -92,7 +98,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 3.1 Lead scoring
 
-- **Status:** todo
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `bug:lead-scoring`
 - **Definition of done:** medium/spam/postcode-related expectations pass consistently.
@@ -105,7 +111,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 3.2 Subscription lifecycle
 
-- **Status:** todo
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `bug:subscriptions`
 - **Definition of done:** lifecycle state transitions and subscription IDs are correct.
@@ -119,7 +125,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 3.3 Reviews flow
 
-- **Status:** todo
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `bug:reviews`
 - **Definition of done:** eligibility/verification + review creation behave as expected.
@@ -147,7 +153,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 4.2 Coverage uplift in critical modules
 
-- **Status:** todo
+- **Status:** in_progress
 - **Owner:** _unassigned_
 - **Issue label:** `techdebt:tests`
 - **Definition of done:** coverage improved for auth/subscriptions/reviews/messaging modules.
