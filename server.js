@@ -217,6 +217,24 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
 
+function resolveBaseUrl() {
+  const explicitBaseUrl = process.env.BASE_URL;
+  if (explicitBaseUrl) {
+    return explicitBaseUrl;
+  }
+
+  const railwayPublicDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  if (railwayPublicDomain) {
+    return `https://${railwayPublicDomain}`;
+  }
+
+  if (process.env.RAILWAY_STATIC_URL) {
+    return process.env.RAILWAY_STATIC_URL;
+  }
+
+  return `http://localhost:${PORT}`;
+}
+
 // Validate email configuration
 emailConfig.validateEmailConfig();
 
@@ -379,7 +397,7 @@ const EMAIL_ENABLED = emailConfig.EMAIL_ENABLED;
 // Validate production environment
 if (process.env.NODE_ENV === 'production') {
   const required = {
-    BASE_URL: process.env.BASE_URL,
+    BASE_URL: resolveBaseUrl(),
   };
 
   const missing = Object.entries(required)
@@ -901,7 +919,7 @@ async function startServer() {
 
     // 1. Validate critical environment variables
     console.log('📋 Checking configuration...');
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    const baseUrl = resolveBaseUrl();
     console.log(`   BASE_URL: ${baseUrl}`);
     console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
     console.log(`   PORT: ${PORT}`);
@@ -1147,11 +1165,9 @@ async function startServer() {
         if (process.env.NODE_ENV === 'production') {
           const ownerPassword = process.env.OWNER_PASSWORD;
           if (!ownerPassword || ownerPassword === 'Admin123!') {
-            console.warn('');
-            console.warn('⚠️  WARNING: Using default or no owner password in production!');
-            console.warn('   Set OWNER_PASSWORD environment variable to a strong password.');
-            console.warn('   Current default password is INSECURE for production use.');
-            console.warn('');
+            console.log(
+              '   ℹ️  OWNER_PASSWORD not set (only required when bootstrapping owner account).'
+            );
           } else {
             console.log('   ✅ Owner password configured');
           }

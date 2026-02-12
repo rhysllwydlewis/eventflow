@@ -15,6 +15,7 @@ const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
+const { normalizeTicketRecord } = require('../utils/ticketNormalization');
 
 const router = express.Router();
 
@@ -146,7 +147,7 @@ async function calculateDashboardStats() {
     dbUnified.count('photos', { rejected: true }),
     dbUnified.count('tickets'),
     dbUnified.count('tickets', { status: 'open' }),
-    dbUnified.count('tickets', { status: 'in-progress' }),
+    dbUnified.count('tickets', { status: 'in_progress' }),
     dbUnified.count('tickets', { status: 'closed' }),
     dbUnified.count('plans'),
     dbUnified.count('plans', { status: 'active' }),
@@ -193,13 +194,15 @@ async function calculateDashboardStats() {
     recentActivity7d = recent7dResult;
   } else {
     // Fallback for local storage - need to load and filter
-    const [users, photos, tickets, marketplaceListings, auditLogs] = await Promise.all([
+    const [users, photos, ticketsRaw, marketplaceListings, auditLogs] = await Promise.all([
       dbUnified.read('users'),
       dbUnified.read('photos'),
       dbUnified.read('tickets'),
       dbUnified.read('marketplace_listings'),
       dbUnified.read('audit_logs'),
     ]);
+
+    const tickets = ticketsRaw.map(ticket => normalizeTicketRecord(ticket, { generateId: uid }));
 
     recentSignups = users.filter(u => {
       const createdAt = new Date(u.createdAt);
@@ -2621,7 +2624,9 @@ const ADMIN_TICKET_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
  */
 router.get('/tickets', authRequired, roleRequired('admin'), async (_req, res) => {
   try {
-    const tickets = await dbUnified.read('tickets');
+    const tickets = (await dbUnified.read('tickets')).map(ticket =>
+      normalizeTicketRecord(ticket, { generateId: uid })
+    );
 
     // Sort by date (newest first)
     tickets.sort((a, b) => {
@@ -2643,7 +2648,9 @@ router.get('/tickets', authRequired, roleRequired('admin'), async (_req, res) =>
  */
 router.get('/tickets/:id', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const tickets = await dbUnified.read('tickets');
+    const tickets = (await dbUnified.read('tickets')).map(ticket =>
+      normalizeTicketRecord(ticket, { generateId: uid })
+    );
     const ticket = tickets.find(t => t.id === req.params.id);
 
     if (!ticket) {
@@ -2668,7 +2675,9 @@ router.put(
   csrfProtection,
   async (req, res) => {
     try {
-      const tickets = await dbUnified.read('tickets');
+      const tickets = (await dbUnified.read('tickets')).map(ticket =>
+        normalizeTicketRecord(ticket, { generateId: uid })
+      );
       const index = tickets.findIndex(t => t.id === req.params.id);
 
       if (index < 0) {
@@ -2719,7 +2728,9 @@ router.post(
   csrfProtection,
   async (req, res) => {
     try {
-      const tickets = await dbUnified.read('tickets');
+      const tickets = (await dbUnified.read('tickets')).map(ticket =>
+        normalizeTicketRecord(ticket, { generateId: uid })
+      );
       const index = tickets.findIndex(t => t.id === req.params.id);
 
       if (index < 0) {

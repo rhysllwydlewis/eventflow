@@ -45,21 +45,24 @@ function renderTickets(tickets) {
   let html = '<div class="ticket-list">';
 
   tickets.forEach(ticket => {
-    const statusClass = ticketingSystem.getStatusClass(ticket.status);
-    const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
-    const createdAt = ticketingSystem.formatTimestamp(ticket.createdAt);
-    const responseCount = ticket.responses ? ticket.responses.length : 0;
+    const status = ticket?.status || 'open';
+    const priority = ticket?.priority || 'medium';
+    const message = typeof ticket?.message === 'string' ? ticket.message : '';
+    const statusClass = ticketingSystem.getStatusClass(status);
+    const priorityClass = ticketingSystem.getPriorityClass(priority);
+    const createdAt = ticketingSystem.formatTimestamp(ticket?.createdAt);
+    const responseCount = Array.isArray(ticket?.responses) ? ticket.responses.length : 0;
 
     html += `
       <div class="ticket-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;" data-ticket-id="${ticket.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
           <strong>${escapeHtml(ticket.subject)}</strong>
           <div style="display:flex;gap:0.5rem;">
-            <span class="badge ${statusClass}">${ticket.status.replace('_', ' ')}</span>
-            <span class="badge ${priorityClass}">${ticket.priority}</span>
+            <span class="badge ${statusClass}">${status.replace('_', ' ')}</span>
+            <span class="badge ${priorityClass}">${priority}</span>
           </div>
         </div>
-        <p class="small" style="margin:0.5rem 0;color:#6b7280;">${escapeHtml(ticket.message.substring(0, 100))}${ticket.message.length > 100 ? '...' : ''}</p>
+        <p class="small" style="margin:0.5rem 0;color:#6b7280;">${escapeHtml(message.substring(0, 100))}${message.length > 100 ? '...' : ''}</p>
         <div class="small" style="color:#9ca3af;">
           Created ${createdAt} • ${responseCount} response${responseCount !== 1 ? 's' : ''}
         </div>
@@ -224,18 +227,21 @@ function viewTicket(ticketId) {
       return;
     }
 
-    const statusClass = ticketingSystem.getStatusClass(ticket.status);
-    const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
-    const createdAt = ticketingSystem.formatTimestamp(ticket.createdAt);
+    const status = ticket?.status || 'open';
+    const priority = ticket?.priority || 'medium';
+    const message = typeof ticket?.message === 'string' ? ticket.message : '';
+    const statusClass = ticketingSystem.getStatusClass(status);
+    const priorityClass = ticketingSystem.getPriorityClass(priority);
+    const createdAt = ticketingSystem.formatTimestamp(ticket?.createdAt);
 
     let html = `
       <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #e4e4e7;">
         <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
-          <span class="badge ${statusClass}">${ticket.status.replace('_', ' ')}</span>
-          <span class="badge ${priorityClass}">${ticket.priority}</span>
+          <span class="badge ${statusClass}">${status.replace('_', ' ')}</span>
+          <span class="badge ${priorityClass}">${priority}</span>
         </div>
         <h4 style="margin:0.5rem 0;">${escapeHtml(ticket.subject)}</h4>
-        <p style="margin:0.5rem 0;">${escapeHtml(ticket.message)}</p>
+        <p style="margin:0.5rem 0;">${escapeHtml(message)}</p>
         <p class="small" style="color:#9ca3af;margin:0.5rem 0 0;">Created ${createdAt}</p>
       </div>
     `;
@@ -269,7 +275,7 @@ function viewTicket(ticketId) {
         '<p class="small" style="color:#9ca3af;">No responses yet. Our team will reply soon.</p>';
     }
 
-    if (ticket.status !== 'closed') {
+    if (status !== 'closed') {
       html += `
         <form id="ticketReplyForm" style="margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem;">
           <label for="ticketReplyMessage" class="small" style="display:block;margin-bottom:0.5rem;color:#4b5563;">Add a reply</label>
