@@ -52,6 +52,9 @@ const cacheRoutes = require('./cache');
 const miscRoutes = require('./misc');
 const notificationsRoutes = require('./notifications');
 const adminConfigRoutes = require('./admin-config');
+const twoFactorRoutes = require('./twoFactor');
+const phoneVerificationRoutes = require('./phoneVerification');
+const emailVerificationRoutes = require('./emailVerification');
 
 /**
  * Mount all route modules
@@ -73,6 +76,18 @@ function mountRoutes(app, deps) {
   // Auth routes (registration, login, logout, etc.)
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/auth', authRoutes); // Backward compatibility
+
+  // Email verification routes
+  app.use('/api/v1/auth', emailVerificationRoutes);
+  app.use('/api/auth', emailVerificationRoutes); // Backward compatibility
+
+  // Two-factor authentication routes
+  app.use('/api/v1/me/2fa', twoFactorRoutes);
+  app.use('/api/me/2fa', twoFactorRoutes); // Backward compatibility
+
+  // Phone verification routes
+  app.use('/api/v1/me/phone', phoneVerificationRoutes);
+  app.use('/api/me/phone', phoneVerificationRoutes); // Backward compatibility
 
   // Admin routes
   app.use('/api/v1/admin', adminRoutes);
