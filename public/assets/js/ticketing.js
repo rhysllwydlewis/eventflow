@@ -68,12 +68,37 @@ class TicketingSystem {
     return data;
   }
 
+  normalizeTicket(rawTicket = {}) {
+    const ticket = rawTicket && typeof rawTicket === 'object' ? { ...rawTicket } : {};
+
+    const fallbackMessage =
+      typeof ticket.description === 'string' && ticket.description.trim().length > 0
+        ? ticket.description
+        : '';
+
+    ticket.status = typeof ticket.status === 'string' && ticket.status ? ticket.status : 'open';
+    ticket.priority =
+      typeof ticket.priority === 'string' && ticket.priority ? ticket.priority : 'medium';
+    ticket.subject = typeof ticket.subject === 'string' ? ticket.subject : 'No subject';
+    ticket.message = typeof ticket.message === 'string' ? ticket.message : fallbackMessage;
+
+    if (Array.isArray(ticket.responses)) {
+      // keep as-is
+    } else if (Array.isArray(ticket.replies)) {
+      ticket.responses = ticket.replies;
+    } else {
+      ticket.responses = [];
+    }
+
+    return ticket;
+  }
+
   async createTicket(ticketData) {
     const data = await this.request(`${this.apiBase}/tickets`, {
       method: 'POST',
       body: JSON.stringify(ticketData),
     });
-    return data.ticket;
+    return this.normalizeTicket(data.ticket);
   }
 
   async getUserTickets(_userId, _userType, limit = null) {
@@ -82,12 +107,12 @@ class TicketingSystem {
       url += `?limit=${encodeURIComponent(limit)}`;
     }
     const data = await this.request(url);
-    return data.tickets || [];
+    return (data.tickets || []).map(ticket => this.normalizeTicket(ticket));
   }
 
   async getTicket(ticketId) {
     const data = await this.request(`${this.apiBase}/tickets/${ticketId}`);
-    return data.ticket;
+    return this.normalizeTicket(data.ticket);
   }
 
   async addResponse(ticketId, message) {
@@ -95,7 +120,7 @@ class TicketingSystem {
       method: 'POST',
       body: JSON.stringify({ message }),
     });
-    return data.ticket;
+    return this.normalizeTicket(data.ticket);
   }
 
   async updateTicket(ticketId, updates) {
@@ -103,7 +128,7 @@ class TicketingSystem {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
-    return data.ticket;
+    return this.normalizeTicket(data.ticket);
   }
 
   async updateStatus(ticketId, status) {

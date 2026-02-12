@@ -13,26 +13,16 @@ const { featureRequired } = require('../middleware/features');
 const { auditLog } = require('../middleware/audit');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
+const {
+  normalizeTicketRecord,
+  canUserAccessTicket,
+  normalizePriority: normalizeTicketPriority,
+} = require('../utils/ticketNormalization');
 
 const router = express.Router();
 
 const ALLOWED_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
-const ALLOWED_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const TICKET_ROLES = ['customer', 'supplier'];
-
-function normalizePriority(priority) {
-  return ALLOWED_PRIORITIES.includes(priority) ? priority : 'medium';
-}
-
-function canAccessTicket(user, ticket) {
-  if (!user || !ticket) {
-    return false;
-  }
-  if (user.role === 'admin') {
-    return true;
-  }
-  return ticket.senderId === user.id && ticket.senderType === user.role;
-}
 
 /**
  * POST /api/tickets
@@ -79,7 +69,9 @@ router.post(
 
       // Create ticket
       const now = new Date().toISOString();
-      const tickets = await dbUnified.read('tickets');
+      const tickets = (await dbUnified.read('tickets')).map(ticket =>
+        normalizeTicketRecord(ticket, { generateId: uid })
+      );
 
       const newTicket = {
         id: uid(),
@@ -90,7 +82,7 @@ router.post(
         subject: subject.trim(),
         message: message.trim(),
         status: 'open',
-        priority: normalizePriority(priority),
+        priority: normalizeTicketPriority(priority),
         assignedTo: null,
         responses: [],
         createdAt: now,
@@ -128,7 +120,9 @@ router.get('/', authRequired, async (req, res) => {
     const userRole = req.user.role;
     const { status, limit } = req.query;
 
-    let tickets = await dbUnified.read('tickets');
+    let tickets = (await dbUnified.read('tickets')).map(ticket =>
+      normalizeTicketRecord(ticket, { generateId: uid })
+    );
 
     // Filter based on user role
     if (userRole === 'customer') {
@@ -179,7 +173,9 @@ router.get('/:id', authRequired, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const tickets = await dbUnified.read('tickets');
+    const tickets = (await dbUnified.read('tickets')).map(ticket =>
+      normalizeTicketRecord(ticket, { generateId: uid })
+    );
     const ticket = tickets.find(t => t.id === id);
 
     if (!ticket) {
@@ -187,7 +183,7 @@ router.get('/:id', authRequired, async (req, res) => {
     }
 
     // Check access permissions
-    if (!canAccessTicket(req.user, ticket)) {
+    if (!canUserAccessTicket(req.user, ticket)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -209,7 +205,9 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
     const { id } = req.params;
     const { status, response } = req.body;
 
-    const tickets = await dbUnified.read('tickets');
+    const tickets = (await dbUnified.read('tickets')).map(ticket =>
+      normalizeTicketRecord(ticket, { generateId: uid })
+    );
     const ticketIndex = tickets.findIndex(t => t.id === id);
 
     if (ticketIndex === -1) {
@@ -219,7 +217,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
     const ticket = tickets[ticketIndex];
 
     // Check access permissions
-    if (!canAccessTicket(req.user, ticket)) {
+    if (!canUserAccessTicket(req.user, ticket)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -283,7 +281,9 @@ router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, re
       return res.status(403).json({ error: 'Only admins can delete tickets' });
     }
 
-    const tickets = await dbUnified.read('tickets');
+    const tickets = (await dbUnified.read('tickets')).map(ticket =>
+      normalizeTicketRecord(ticket, { generateId: uid })
+    );
     const ticketIndex = tickets.findIndex(t => t.id === id);
 
     if (ticketIndex === -1) {
@@ -332,7 +332,9 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
       return res.status(400).json({ error: 'Reply message is too long (max 5000 characters)' });
     }
 
-    const tickets = await dbUnified.read('tickets');
+    const tickets = (await dbUnified.read('tickets')).map(ticket =>
+      normalizeTicketRecord(ticket, { generateId: uid })
+    );
     const ticketIndex = tickets.findIndex(t => t.id === id);
 
     if (ticketIndex === -1) {
@@ -342,7 +344,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
     const ticket = tickets[ticketIndex];
 
     // Check access: admins can reply to any ticket, users can only reply to their own
-    if (!canAccessTicket(req.user, ticket)) {
+    if (!canUserAccessTicket(req.user, ticket)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 

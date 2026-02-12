@@ -22,11 +22,11 @@ async function addDatabaseIndexes() {
 
     logger.info('Creating database indexes...');
 
-    // Get database instance
-    const db = mongoDb.db;
+    // Get active database instance from runtime connection state
+    const db = mongoDb.getDb ? mongoDb.getDb() : null;
 
     if (!db) {
-      logger.warn('Database instance not available');
+      logger.debug('Database instance not available yet; skipping index creation');
       return;
     }
 

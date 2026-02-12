@@ -93,6 +93,34 @@ describe('Tickets Routes Integration', () => {
     expect(dbUnified.write).toHaveBeenCalledTimes(1);
   });
 
+  it('normalizes legacy ticket fields for owner access and response rendering', async () => {
+    dbUnified.read.mockResolvedValue([
+      {
+        _id: 'legacy-ticket-1',
+        userId: 'user-1',
+        userType: 'supplier',
+        userEmail: 'legacy@example.com',
+        subject: 'Legacy ticket',
+        description: 'Legacy description body',
+        status: 'in-progress',
+        replies: [{ id: 'r1', message: 'Legacy reply', createdAt: new Date().toISOString() }],
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+
+    const response = await request(app)
+      .get('/api/tickets')
+      .set('x-test-user-id', 'user-1')
+      .set('x-test-user-role', 'supplier');
+
+    expect(response.status).toBe(200);
+    expect(response.body.tickets).toHaveLength(1);
+    expect(response.body.tickets[0].id).toBe('legacy-ticket-1');
+    expect(response.body.tickets[0].status).toBe('in_progress');
+    expect(response.body.tickets[0].message).toBe('Legacy description body');
+    expect(response.body.tickets[0].responses).toHaveLength(1);
+  });
+
   it('allows owner to reply and keeps status consistent', async () => {
     const existing = [
       {

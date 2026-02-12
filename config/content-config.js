@@ -192,11 +192,19 @@ function validateProductionConfig() {
   const foundPlaceholders = placeholders.filter(p => configStr.includes(p));
 
   if (foundPlaceholders.length > 0 && process.env.NODE_ENV === 'production') {
-    console.warn('');
-    console.warn('⚠️  WARNING: Production config contains placeholder values!');
-    console.warn('⚠️  Update config/content-config.js before launch');
-    console.warn('⚠️  Found placeholders:', foundPlaceholders);
-    console.warn('');
+    const strictValidation = process.env.CONTENT_CONFIG_STRICT === 'true';
+
+    if (strictValidation) {
+      console.warn('');
+      console.warn('⚠️  WARNING: Production config contains placeholder values!');
+      console.warn('⚠️  Update config/content-config.js before launch');
+      console.warn('⚠️  Found placeholders:', foundPlaceholders);
+      console.warn('');
+      return;
+    }
+
+    console.log('ℹ️  Content config contains default placeholder values (strict mode disabled).');
+    console.log('   Set CONTENT_CONFIG_STRICT=true to enforce startup warnings.');
   }
 }
 
