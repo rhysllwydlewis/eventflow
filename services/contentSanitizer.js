@@ -5,12 +5,8 @@
 
 'use strict';
 
-const { JSDOM } = require('jsdom');
-const createDOMPurify = require('dompurify');
-
-// Create DOMPurify instance with jsdom
-const window = new JSDOM('').window;
-const DOMPurify = createDOMPurify(window);
+let purifier = null;
+let purifierInitAttempted = false;
 
 // Configure DOMPurify to allow safe HTML
 const SANITIZE_CONFIG = {
@@ -42,6 +38,43 @@ const STRICT_CONFIG = {
   KEEP_CONTENT: true,
 };
 
+function basicSanitize(content, strict = false) {
+  if (!content || typeof content !== 'string') {
+    return '';
+  }
+
+  if (strict) {
+    return content.replace(/<[^>]*>/g, '');
+  }
+
+  // Conservative fallback if DOMPurify is unavailable in current runtime:
+  // remove script/style tags and event handler attributes.
+  return content
+    .replace(/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+    .replace(/<\s*style[^>]*>[\s\S]*?<\s*\/\s*style\s*>/gi, '')
+    .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/javascript:/gi, '');
+}
+
+function getPurifier() {
+  if (purifier || purifierInitAttempted) {
+    return purifier;
+  }
+
+  purifierInitAttempted = true;
+
+  try {
+    const { JSDOM } = require('jsdom');
+    const createDOMPurify = require('dompurify');
+    const window = new JSDOM('').window;
+    purifier = createDOMPurify(window);
+  } catch (error) {
+    purifier = null;
+  }
+
+  return purifier;
+}
+
 /**
  * Sanitize HTML content
  * @param {string} content - Raw HTML content
@@ -54,7 +87,13 @@ function sanitizeContent(content, strict = false) {
   }
 
   const config = strict ? STRICT_CONFIG : SANITIZE_CONFIG;
-  return DOMPurify.sanitize(content, config);
+  const safePurifier = getPurifier();
+
+  if (!safePurifier) {
+    return basicSanitize(content, strict);
+  }
+
+  return safePurifier.sanitize(content, config);
 }
 
 /**
@@ -78,7 +117,7 @@ function sanitizeMessage(message, strict = false) {
 
   // Sanitize attachment filenames
   if (Array.isArray(sanitized.attachments)) {
-    sanitized.attachments = sanitized.attachments.map((attachment) => ({
+    sanitized.attachments = sanitized.attachments.map(attachment => ({
       ...attachment,
       filename: sanitizeContent(attachment.filename || '', true),
     }));
@@ -112,7 +151,7 @@ function escapeHtml(text) {
     "'": '&#039;',
   };
 
-  return text.replace(/[&<>"']/g, (m) => map[m]);
+  return text.replace(/[&<>"']/g, m => map[m]);
 }
 
 /**
@@ -125,7 +164,7 @@ function stripHtml(html) {
     return '';
   }
 
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS: [], KEEP_CONTENT: true });
+  return sanitizeContent(html, true);
 }
 
 module.exports = {

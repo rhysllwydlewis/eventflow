@@ -11,44 +11,48 @@
    */
   const VALIDATION_RULES = {
     required: {
-      test: (value) => value && value.trim().length > 0,
+      test: value => value && value.trim().length > 0,
       message: 'This field is required',
     },
     email: {
-      test: (value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      test: value => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
       message: 'Please enter a valid email address',
     },
-    minLength: (min) => ({
-      test: (value) => !value || value.length >= min,
+    minLength: min => ({
+      test: value => !value || value.length >= min,
       message: `Must be at least ${min} characters`,
     }),
-    maxLength: (max) => ({
-      test: (value) => !value || value.length <= max,
+    maxLength: max => ({
+      test: value => !value || value.length <= max,
       message: `Must be no more than ${max} characters`,
     }),
     number: {
-      test: (value) => !value || !isNaN(parseFloat(value)),
+      test: value => !value || !isNaN(parseFloat(value)),
       message: 'Please enter a valid number',
     },
     positiveNumber: {
-      test: (value) => !value || (parseFloat(value) > 0),
+      test: value => !value || parseFloat(value) > 0,
       message: 'Must be a positive number',
     },
     integer: {
-      test: (value) => !value || Number.isInteger(parseFloat(value)),
+      test: value => !value || Number.isInteger(parseFloat(value)),
       message: 'Must be a whole number',
     },
     date: {
-      test: (value) => {
-        if (!value) return true;
+      test: value => {
+        if (!value) {
+          return true;
+        }
         const date = new Date(value);
         return !isNaN(date.getTime());
       },
       message: 'Please enter a valid date',
     },
     futureDate: {
-      test: (value) => {
-        if (!value) return true;
+      test: value => {
+        if (!value) {
+          return true;
+        }
         const date = new Date(value);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -57,8 +61,10 @@
       message: 'Date must be in the future',
     },
     postcode: {
-      test: (value) => {
-        if (!value) return true;
+      test: value => {
+        if (!value) {
+          return true;
+        }
         // UK postcode regex (simplified)
         return /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i.test(value.trim());
       },
@@ -144,17 +150,25 @@
    * @param {Object} result - Validation result
    */
   function applyValidationUI(field, result) {
-    if (!field) return;
+    if (!field) {
+      return;
+    }
 
     const formRow = field.closest('.form-row');
-    if (!formRow) return;
+    if (!formRow) {
+      return;
+    }
 
     // Remove existing validation states and messages
     formRow.classList.remove('valid', 'error');
     const existingError = formRow.querySelector('.error-message');
     const existingSuccess = formRow.querySelector('.success-message');
-    if (existingError) existingError.remove();
-    if (existingSuccess) existingSuccess.remove();
+    if (existingError) {
+      existingError.remove();
+    }
+    if (existingSuccess) {
+      existingSuccess.remove();
+    }
 
     if (!field.value || field.value.trim() === '') {
       // Empty field - no validation UI
@@ -164,7 +178,7 @@
     if (result.valid) {
       // Valid field
       formRow.classList.add('valid');
-      
+
       // Add success message if configured
       if (field.dataset.showSuccess) {
         const successDiv = document.createElement('div');
@@ -175,7 +189,7 @@
     } else {
       // Invalid field
       formRow.classList.add('error');
-      
+
       // Add error message
       const errorDiv = document.createElement('div');
       errorDiv.className = 'error-message';
@@ -195,13 +209,15 @@
     let isValid = true;
 
     switch (stepIndex) {
-      case 0: // Event type
+      case 0: {
+        // Event type
         const typeResult = validateField('eventType', data.eventType);
         if (!typeResult.valid) {
           errors.eventType = typeResult.errors;
           isValid = false;
         }
         break;
+      }
 
       case 1: // Location and details
         // Location is optional, but validate if provided
@@ -249,7 +265,9 @@
    * @param {string} fieldName - Field name for validation
    */
   function setupFieldValidation(field, fieldName) {
-    if (!field) return;
+    if (!field) {
+      return;
+    }
 
     let validationTimeout;
 
@@ -293,7 +311,7 @@
       const state = window.WizardState?.getState();
       return !!(state && state.eventType);
     }
-    
+
     // All other steps are optional/skippable
     return true;
   }
