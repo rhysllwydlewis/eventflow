@@ -118,7 +118,8 @@ function isValidUKPostcode(postcode) {
   }
 
   // UK postcode regex pattern
-  const postcodeRegex = /^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}$/i;
+  const postcodeRegex =
+    /^(GIR ?0AA|[A-PR-UWYZ][A-HK-Y]?[0-9][0-9ABEHMNPRV-Y]? ?[0-9][ABD-HJLNP-UW-Z]{2})$/i;
   return postcodeRegex.test(postcode.trim());
 }
 
@@ -146,7 +147,7 @@ function isValidPhone(phone) {
  * @returns {Object} { score: number, rating: string, flags: Array, breakdown: Object }
  */
 function calculateLeadScore(enquiry) {
-  let score = 50; // Base score
+  let score = 32; // Base score
   const flags = [];
   const breakdown = {};
 
@@ -161,8 +162,8 @@ function calculateLeadScore(enquiry) {
 
       if (daysUntilEvent > 30 && daysUntilEvent < 365) {
         // Sweet spot: 1-12 months out
-        score += 20;
-        breakdown.eventDateScore = 20;
+        score += 15;
+        breakdown.eventDateScore = 15;
       } else if (daysUntilEvent >= 365 && daysUntilEvent < 730) {
         // 1-2 years out: still good
         score += 10;
@@ -208,7 +209,7 @@ function calculateLeadScore(enquiry) {
 
   if (enquiry.phone && enquiry.email) {
     // Bonus for both contact methods
-    contactScore += 5;
+    contactScore += 2;
   }
 
   score += contactScore;
@@ -242,7 +243,7 @@ function calculateLeadScore(enquiry) {
       // Detailed message
       score += 10;
       breakdown.messageScore = 10;
-    } else if (messageLength > 50) {
+    } else if (messageLength >= 40) {
       // Decent message
       score += 5;
       breakdown.messageScore = 5;
@@ -259,7 +260,7 @@ function calculateLeadScore(enquiry) {
     );
 
     if (hasSpamKeywords) {
-      score -= 20;
+      score -= 35;
       flags.push('spam-keywords');
       breakdown.spamDetected = true;
     }

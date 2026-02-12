@@ -8,7 +8,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
-const { uid } = require('../store');
+const store = require('../store');
 const sentimentAnalysis = require('../utils/sentimentAnalysis');
 const ReviewModel = require('../models/Review');
 const ReviewAnalytics = require('../models/ReviewAnalytics');
@@ -27,7 +27,7 @@ const MAX_RESPONSE_LENGTH = 2000; // Maximum characters for supplier response
  * @param {string} bookingId - Optional booking ID
  * @returns {Promise<Object>} Eligibility result
  */
-async function checkReviewEligibility(userId, supplierId, bookingId = null) {
+async function checkReviewEligibility(userId, supplierId, _bookingId = null) {
   const reviews = await dbUnified.read('reviews');
   const now = Date.now();
   const cooldownMs = REVIEW_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
@@ -64,16 +64,12 @@ async function checkReviewEligibility(userId, supplierId, bookingId = null) {
     };
   }
 
-  // Check booking verification if bookingId provided
-  let bookingVerified = false;
-  if (bookingId) {
-    // Check if booking exists and belongs to user
-    // For now, we'll check message threads as a proxy
-    const threads = await dbUnified.read('threads');
-    const thread = threads.find(t => t.customerId === userId && t.supplierId === supplierId);
-
-    bookingVerified = !!thread;
-  }
+  // Check booking verification via customer/supplier thread relationship.
+  // This is used as a booking proxy for both explicit booking checks and
+  // general review trust indicators.
+  const threads = await dbUnified.read('threads');
+  const thread = threads.find(t => t.customerId === userId && t.supplierId === supplierId);
+  const bookingVerified = !!thread;
 
   const deadline = new Date(now + cooldownMs).toISOString();
 
@@ -133,7 +129,7 @@ async function createReview(reviewData, userId) {
 
   // Create review object
   const review = ReviewModel.createReview({
-    _id: uid('rev'),
+    _id: store.uid('rev'),
     supplierId: reviewData.supplierId,
     authorId: userId,
     bookingId: reviewData.bookingId || null,

@@ -37,7 +37,7 @@ async function trackEvent(eventData) {
       return;
     }
 
-    let events = (await dbUnified.read('events')) || [];
+    const events = (await dbUnified.read('events')) || [];
 
     const event = {
       id: `event_${Date.now()}_${crypto.randomUUID()}`,

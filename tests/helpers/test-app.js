@@ -49,11 +49,11 @@ function createTestApp() {
         return null;
       },
     },
-    getToken: (req, res) => {
+    getToken: (_req, _res) => {
       return 'test-csrf-token';
     },
-    authLimiter: (req, res, next) => next(),
-    healthCheckLimiter: (req, res, next) => next(),
+    authLimiter: (_req, _res, next) => next(),
+    healthCheckLimiter: (_req, _res, next) => next(),
   };
 
   // Mount system routes with mocked dependencies

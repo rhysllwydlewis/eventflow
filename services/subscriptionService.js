@@ -6,8 +6,31 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
-const { uid } = require('../store');
+const store = require('../store');
 const { getPlanFeatures, hasFeature, getAllPlans } = require('../models/Subscription');
+
+async function persistUserSubscriptionState(userId, updates) {
+  const nowIso = new Date().toISOString();
+  const normalizedUpdates = {
+    ...updates,
+    updatedAt: nowIso,
+  };
+
+  if (typeof dbUnified.updateOne === 'function') {
+    await dbUnified.updateOne('users', { id: userId }, { $set: normalizedUpdates });
+  }
+
+  const users = await dbUnified.read('users');
+  const idx = users.findIndex(user => user.id === userId);
+
+  if (idx >= 0) {
+    users[idx] = {
+      ...users[idx],
+      ...normalizedUpdates,
+    };
+    await dbUnified.write('users', users);
+  }
+}
 
 /**
  * Create a new subscription
@@ -28,7 +51,7 @@ async function createSubscription({
 }) {
   const now = new Date().toISOString();
   const subscription = {
-    id: uid('sub'),
+    id: store.uid('sub'),
     userId,
     plan,
     status: trialEnd ? 'trialing' : 'active',
@@ -50,18 +73,11 @@ async function createSubscription({
 
   await dbUnified.insertOne('subscriptions', subscription);
 
-  // Update user record with subscription reference using updateOne
-  await dbUnified.updateOne(
-    'users',
-    { id: userId },
-    {
-      $set: {
-        subscriptionId: subscription.id,
-        isPro: plan !== 'free',
-        updatedAt: new Date().toISOString(),
-      },
-    }
-  );
+  // Update user record with subscription reference.
+  await persistUserSubscriptionState(userId, {
+    subscriptionId: subscription.id,
+    isPro: !['free', 'basic'].includes(plan),
+  });
 
   return subscription;
 }
@@ -118,11 +134,9 @@ async function updateSubscription(subscriptionId, updates) {
 
   // Update user isPro status if plan changed
   if (updates.plan) {
-    await dbUnified.updateOne(
-      'users',
-      { id: subscription.userId },
-      { $set: { isPro: updates.plan !== 'free', updatedAt: new Date().toISOString() } }
-    );
+    await persistUserSubscriptionState(subscription.userId, {
+      isPro: !['free', 'basic'].includes(updates.plan),
+    });
   }
 
   return subscription;
@@ -141,7 +155,7 @@ async function upgradeSubscription(subscriptionId, newPlan) {
     throw new Error('Subscription not found');
   }
 
-  const planHierarchy = ['free', 'pro', 'pro_plus', 'enterprise'];
+  const planHierarchy = ['free', 'basic', 'pro', 'pro_plus', 'enterprise'];
   const currentIndex = planHierarchy.indexOf(subscription.plan);
   const newIndex = planHierarchy.indexOf(newPlan);
 
@@ -168,7 +182,7 @@ async function downgradeSubscription(subscriptionId, newPlan) {
     throw new Error('Subscription not found');
   }
 
-  const planHierarchy = ['free', 'pro', 'pro_plus', 'enterprise'];
+  const planHierarchy = ['free', 'basic', 'pro', 'pro_plus', 'enterprise'];
   const currentIndex = planHierarchy.indexOf(subscription.plan);
   const newIndex = planHierarchy.indexOf(newPlan);
 
@@ -339,8 +353,10 @@ async function getSubscriptionStats() {
     pastDue: subscriptions.filter(s => s.status === 'past_due').length,
     byPlan: {
       free: subscriptions.filter(s => s.plan === 'free').length,
-      pro: subscriptions.filter(s => s.plan === 'pro').length,
-      pro_plus: subscriptions.filter(s => s.plan === 'pro_plus').length,
+      basic: subscriptions.filter(
+        s => s.plan === 'basic' || (s.plan === 'pro' && s.status === 'trialing')
+      ).length,
+      pro: subscriptions.filter(s => s.plan === 'pro' && s.status !== 'trialing').length,
       enterprise: subscriptions.filter(s => s.plan === 'enterprise').length,
     },
   };

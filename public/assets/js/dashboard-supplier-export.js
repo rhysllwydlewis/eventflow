@@ -5,10 +5,24 @@
  */
 
 (function () {
+  function sanitizeCsvCell(value) {
+    if (!value) {
+      return '';
+    }
+
+    const str = String(value);
+    // Prevent CSV injection by prefixing dangerous characters
+    if (/^[=+\-@]/.test(str)) {
+      return `'${str.replace(/"/g, '""')}`;
+    }
+
+    return str.replace(/"/g, '""');
+  }
+
   const exportBtn = document.getElementById('export-enquiries-btn');
 
   if (exportBtn) {
-    exportBtn.addEventListener('click', async function () {
+    exportBtn.addEventListener('click', async () => {
       try {
         // Show loading state with proper spinner icon
         exportBtn.disabled = true;
@@ -33,22 +47,11 @@
           return;
         }
 
-        // Helper function to sanitize CSV cells and prevent injection
-        function sanitizeCsvCell(value) {
-          if (!value) return '';
-          const str = String(value);
-          // Prevent CSV injection by prefixing dangerous characters
-          if (/^[=+\-@]/.test(str)) {
-            return `'${str.replace(/"/g, '""')}`;
-          }
-          return str.replace(/"/g, '""');
-        }
-
         // Generate CSV
         const csvRows = [];
         csvRows.push(['Date', 'Customer', 'Status', 'Last Message', 'Unread'].join(','));
 
-        threads.forEach((thread) => {
+        threads.forEach(thread => {
           const date = thread.createdAt
             ? new Date(thread.createdAt).toISOString().split('T')[0]
             : 'N/A';
@@ -60,9 +63,7 @@
           const unread = thread.unreadCount || 0;
 
           csvRows.push(
-            [`"${date}"`, `"${customer}"`, `"${status}"`, `"${lastMessage}"`, unread].join(
-              ','
-            )
+            [`"${date}"`, `"${customer}"`, `"${status}"`, `"${lastMessage}"`, unread].join(',')
           );
         });
 
@@ -73,10 +74,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute(
-          'download',
-          `enquiries-${new Date().toISOString().split('T')[0]}.csv`
-        );
+        link.setAttribute('download', `enquiries-${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();

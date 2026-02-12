@@ -32,7 +32,7 @@ const subscriptionSchema = {
           description: 'Stripe customer ID',
         },
         plan: {
-          enum: ['free', 'pro', 'pro_plus', 'enterprise'],
+          enum: ['free', 'basic', 'pro', 'pro_plus', 'enterprise'],
           description: 'Subscription plan tier',
         },
         status: {
@@ -141,10 +141,28 @@ const PLAN_FEATURES = {
       apiAccess: false,
     },
   },
+  basic: {
+    name: 'Basic',
+    price: 9.99,
+    interval: 'month',
+    features: {
+      maxSuppliers: 3,
+      maxPackages: 10,
+      maxPhotos: 100,
+      maxBookings: 20,
+      messaging: true,
+      analytics: true,
+      prioritySupport: false,
+      priorityListing: false,
+      badge: 'basic',
+      customBranding: false,
+      homepageCarousel: false,
+      apiAccess: false,
+    },
+  },
   pro: {
     name: 'Professional',
-    price: 39.0, // Introductory (first 3 months)
-    regularPrice: 59.0, // After 3 months
+    price: 29.99,
     interval: 'month',
     features: {
       maxSuppliers: 10,
@@ -163,7 +181,7 @@ const PLAN_FEATURES = {
   },
   pro_plus: {
     name: 'Professional Plus',
-    price: 199.0,
+    price: 59.0,
     interval: 'month',
     features: {
       maxSuppliers: -1, // unlimited
@@ -182,7 +200,7 @@ const PLAN_FEATURES = {
   },
   enterprise: {
     name: 'Enterprise',
-    price: 299.99,
+    price: 99.99,
     interval: 'month',
     features: {
       maxSuppliers: -1, // unlimited
@@ -226,9 +244,10 @@ function hasFeature(plan, feature) {
  * @returns {Array} Array of plan configurations
  */
 function getAllPlans() {
-  return Object.entries(PLAN_FEATURES).map(([key, value]) => ({
-    id: key,
-    ...value,
+  const orderedPlans = ['free', 'basic', 'pro', 'enterprise'];
+  return orderedPlans.map(planId => ({
+    id: planId,
+    ...PLAN_FEATURES[planId],
   }));
 }
 
