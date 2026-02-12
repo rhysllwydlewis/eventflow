@@ -2741,11 +2741,9 @@ router.post(
         createdAt: new Date().toISOString(),
       };
 
-      ticket.responses = Array.isArray(ticket.responses)
-        ? ticket.responses
-        : Array.isArray(ticket.replies)
-          ? ticket.replies
-          : [];
+      const legacyReplies = Array.isArray(ticket.replies) ? ticket.replies : [];
+      const existingResponses = Array.isArray(ticket.responses) ? ticket.responses : [];
+      ticket.responses = [...legacyReplies, ...existingResponses];
       ticket.responses.push(reply);
       ticket.updatedAt = new Date().toISOString();
       if (ticket.status === 'open') {
