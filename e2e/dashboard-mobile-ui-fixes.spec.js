@@ -178,8 +178,8 @@ test.describe('Notification Bell Touch Support', () => {
         const dropdownCount = await dropdown.count();
         
         if (dropdownCount > 0) {
-          // Wait a bit for dropdown to appear
-          await page.waitForTimeout(100);
+          // Wait for dropdown to have open class
+          await dropdown.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
           
           // Check if dropdown has open class
           const hasOpenClass = await dropdown.evaluate(el => 
@@ -215,8 +215,8 @@ test.describe('Notification Bell Touch Support', () => {
         const dropdownCount = await dropdown.count();
         
         if (dropdownCount > 0) {
-          // Wait a bit for dropdown to appear
-          await page.waitForTimeout(100);
+          // Wait for dropdown to have open class
+          await dropdown.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
           
           // Check if dropdown has open class
           const hasOpenClass = await dropdown.evaluate(el => 

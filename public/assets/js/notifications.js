@@ -670,6 +670,8 @@
     }
 
     // Toggle dropdown - Mobile-friendly event handling
+    let touchHandled = false;
+    
     const handleBellToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -684,9 +686,18 @@
     };
 
     // Add both touch and click support for mobile reliability
-    bell.addEventListener('click', handleBellToggle);
     bell.addEventListener('touchend', (e) => {
-      e.preventDefault(); // Prevent click from also firing
+      touchHandled = true;
+      handleBellToggle(e);
+      // Reset flag after a short delay to allow click events on non-touch devices
+      setTimeout(() => { touchHandled = false; }, 500);
+    }, { passive: false });
+    
+    bell.addEventListener('click', (e) => {
+      // Skip if already handled by touch event
+      if (touchHandled) {
+        return;
+      }
       handleBellToggle(e);
     });
 
