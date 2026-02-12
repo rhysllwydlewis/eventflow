@@ -18,6 +18,94 @@
 <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
 <link rel='icon' href='/favicon.svg'>
 <style>
+  .marketplace-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #042f2e, #0b8073 48%, #14b8a6);
+    color: #f8fafc;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
+  }
+  .marketplace-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(255,255,255,.22), transparent 48%);
+    pointer-events: none;
+  }
+  .marketplace-hero h1 {
+    margin: 0;
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+    color: #fff;
+  }
+  .marketplace-hero p {
+    margin: 10px 0 0;
+    max-width: 62ch;
+    color: rgba(248, 250, 252, 0.9);
+  }
+  .hero-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .hero-actions .cta.secondary {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+  }
+  .hero-actions .cta.secondary:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+  .hero-metrics {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+  }
+  .hero-metric {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .hero-metric .label {
+    font-size: 12px;
+    color: rgba(248, 250, 252, 0.82);
+  }
+  .hero-metric .value {
+    margin-top: 6px;
+    font-size: 23px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .admin-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .admin-stat-card {
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  }
+  .admin-stat-label {
+    color: #475569;
+  }
+  .admin-stat-value {
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .stat-footnote {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #64748b;
+  }
   .filter-btn.active {
     background: #0B8073 !important;
     color: white !important;
@@ -82,6 +170,10 @@
   .status-removed { background: #fee2e2; color: #991b1b; }
 
   @media (max-width: 900px) {
+    .marketplace-hero {
+      padding: 20px;
+      border-radius: 16px;
+    }
     .listing-card {
       grid-template-columns: 1fr;
     }
@@ -166,26 +258,50 @@
 
 <main id="main-content" class="admin-content" style="padding-top:80px;">
   <div class="container" style="max-width:1200px">
-    <h1 class="admin-page-title">🛒 Marketplace Management</h1>
-    <p class="small">Moderate and manage marketplace listings from users</p>
+    <section class="marketplace-hero">
+      <h1>🛒 Marketplace Management</h1>
+      <p>Moderate listings faster with live approval insights, conversion health, and streamlined controls for operations.</p>
+      <div class="hero-actions">
+        <button class="cta" id="heroReviewPendingBtn">Review Pending Listings</button>
+        <button class="cta secondary" id="heroRefreshBtn">Refresh Overview</button>
+      </div>
+      <div class="hero-metrics">
+        <div class="hero-metric">
+          <div class="label">Approval rate</div>
+          <div class="value" id="hero-approval-rate">0%</div>
+        </div>
+        <div class="hero-metric">
+          <div class="label">Sell-through rate</div>
+          <div class="value" id="hero-sell-through">0%</div>
+        </div>
+        <div class="hero-metric">
+          <div class="label">Pending oldest age</div>
+          <div class="value" id="hero-pending-age">—</div>
+        </div>
+      </div>
+    </section>
 
     <!-- Stats -->
     <div class="admin-stats-row" style="margin-bottom:24px">
       <div class="admin-stat-card">
         <div class="admin-stat-value" id="stat-total">0</div>
         <div class="admin-stat-label">Total Listings</div>
+        <div class="stat-footnote" id="stat-total-footnote">All listing states</div>
       </div>
       <div class="admin-stat-card">
         <div class="admin-stat-value" id="stat-pending">0</div>
         <div class="admin-stat-label">Pending Approval</div>
+        <div class="stat-footnote" id="stat-pending-footnote">Needs moderation</div>
       </div>
       <div class="admin-stat-card">
         <div class="admin-stat-value" id="stat-active">0</div>
         <div class="admin-stat-label">Active Listings</div>
+        <div class="stat-footnote" id="stat-active-footnote">Live in marketplace</div>
       </div>
       <div class="admin-stat-card">
         <div class="admin-stat-value" id="stat-sold">0</div>
         <div class="admin-stat-label">Sold</div>
+        <div class="stat-footnote" id="stat-sold-footnote">Completed transactions</div>
       </div>
     </div>
 
@@ -297,13 +413,35 @@
 
   // Update stats
   function updateStats() {
-    document.getElementById('stat-total').textContent = allListings.length;
-    document.getElementById('stat-pending').textContent = 
-      allListings.filter(l => l.status === 'pending').length;
-    document.getElementById('stat-active').textContent = 
-      allListings.filter(l => l.status === 'active').length;
-    document.getElementById('stat-sold').textContent = 
-      allListings.filter(l => l.status === 'sold').length;
+    const total = allListings.length;
+    const pendingCount = allListings.filter(l => l.status === 'pending').length;
+    const activeCount = allListings.filter(l => l.status === 'active').length;
+    const soldCount = allListings.filter(l => l.status === 'sold').length;
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-pending').textContent = pendingCount;
+    document.getElementById('stat-active').textContent = activeCount;
+    document.getElementById('stat-sold').textContent = soldCount;
+
+    const approvalRate = total > 0 ? Math.round(((activeCount + soldCount) / total) * 100) : 0;
+    const sellThroughRate = activeCount + soldCount > 0 ? Math.round((soldCount / (activeCount + soldCount)) * 100) : 0;
+    const pendingListings = allListings.filter(l => l.status === 'pending');
+    const oldestPendingTime = pendingListings
+      .map(l => new Date(l.createdAt).getTime())
+      .filter(time => Number.isFinite(time))
+      .sort((a, b) => a - b)[0];
+    const oldestPendingAge = oldestPendingTime
+      ? `${Math.max(1, Math.floor((Date.now() - oldestPendingTime) / (1000 * 60 * 60 * 24)))}d`
+      : '—';
+
+    document.getElementById('hero-approval-rate').textContent = `${approvalRate}%`;
+    document.getElementById('hero-sell-through').textContent = `${sellThroughRate}%`;
+    document.getElementById('hero-pending-age').textContent = oldestPendingAge;
+
+    document.getElementById('stat-total-footnote').textContent = total === 0 ? 'No listings yet' : 'All listing states';
+    document.getElementById('stat-pending-footnote').textContent = pendingCount > 0 ? `${pendingCount} awaiting review` : 'Queue clear';
+    document.getElementById('stat-active-footnote').textContent = activeCount > 0 ? `${activeCount} currently live` : 'No active inventory';
+    document.getElementById('stat-sold-footnote').textContent = soldCount > 0 ? `${soldCount} marked sold` : 'No completed sales yet';
   }
 
   // Render listings
@@ -776,6 +914,12 @@
   document.getElementById('searchInput').addEventListener('input', renderListings);
   document.getElementById('categoryFilter').addEventListener('change', renderListings);
   document.getElementById('refreshListingsBtn').addEventListener('click', loadListings);
+  document.getElementById('heroRefreshBtn').addEventListener('click', loadListings);
+  document.getElementById('heroReviewPendingBtn').addEventListener('click', () => {
+    document.querySelector('[data-filter="pending"]')?.click();
+    const listingsSection = document.getElementById('listings-container');
+    listingsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   // Sign out
   document.getElementById('signoutBtn').addEventListener('click', async () => {

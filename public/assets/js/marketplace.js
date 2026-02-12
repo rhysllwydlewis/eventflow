@@ -8,6 +8,7 @@
 
   let allListings = [];
   let currentUser = null;
+  let savedListingIds = new Set();
 
   // Issue 2 Fix: Initialization guards to prevent multiple calls
   let isInitialized = false;
@@ -30,6 +31,7 @@
 
     hydrateFiltersFromUrl();
     await checkAuth();
+    await loadSavedListings();
     await loadListings();
     initLocationModal();
     initFilters();
@@ -306,11 +308,13 @@
       tags.push(`<span class="marketplace-tag">${formatCondition(listing.condition)}</span>`);
     }
 
+    const isSaved = savedListingIds.has(listing.id);
+
     return `
       <div class="marketplace-item-card" data-listing-id="${listing.id}">
         <div class="marketplace-item-image">
           <img src="${image}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.src='${defaultImage}'">
-          <button class="marketplace-save-btn" aria-label="Save item">♡</button>
+          <button class="marketplace-save-btn ${isSaved ? 'saved' : ''}" aria-label="${isSaved ? 'Unsave item' : 'Save item'}" aria-pressed="${isSaved}" title="${isSaved ? 'Unsave' : 'Save'} item">${isSaved ? '♥' : '♡'}</button>
         </div>
         <div class="marketplace-item-details">
           <div class="marketplace-item-price">${formattedPrice}</div>
@@ -824,10 +828,89 @@
     return div.innerHTML;
   }
 
-  function toggleSave(btn, _listing) {
-    btn.classList.toggle('saved');
-    btn.textContent = btn.classList.contains('saved') ? '♥' : '♡';
-    showToast(btn.classList.contains('saved') ? 'Item saved' : 'Item unsaved');
+  async function loadSavedListings() {
+    if (!currentUser) {
+      savedListingIds = new Set();
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/v1/marketplace/saved', {
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to load saved listings');
+      }
+
+      const data = await res.json();
+      savedListingIds = new Set((data.savedItems || []).map(item => item.id));
+    } catch (error) {
+      console.error('Error loading saved listings:', error);
+      savedListingIds = new Set();
+    }
+  }
+
+  async function toggleSave(btn, listing) {
+    if (!listing || !listing.id) {
+      return;
+    }
+
+    if (!currentUser) {
+      showToast('Please log in to save items', 'error');
+      setTimeout(() => {
+        window.location.href = `/auth.html?redirect=${encodeURIComponent('/marketplace')}`;
+      }, 1200);
+      return;
+    }
+
+    const isCurrentlySaved = savedListingIds.has(listing.id);
+    btn.disabled = true;
+
+    try {
+      const endpoint = `/api/v1/marketplace/saved/${encodeURIComponent(listing.id)}`;
+      const res = await fetch(endpoint, {
+        method: isCurrentlySaved ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+        body: isCurrentlySaved ? undefined : JSON.stringify({ listingId: listing.id }),
+      });
+
+      if (res.status === 401) {
+        showToast('Session expired. Please log in again.', 'error');
+        setTimeout(() => {
+          window.location.href = `/auth.html?redirect=${encodeURIComponent('/marketplace')}`;
+        }, 1200);
+        return;
+      }
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || payload.message || 'Unable to update saved item');
+      }
+
+      if (isCurrentlySaved) {
+        savedListingIds.delete(listing.id);
+      } else {
+        savedListingIds.add(listing.id);
+      }
+
+      const nextSavedState = !isCurrentlySaved;
+      btn.classList.toggle('saved', nextSavedState);
+      btn.textContent = nextSavedState ? '♥' : '♡';
+      btn.setAttribute('aria-pressed', String(nextSavedState));
+      btn.setAttribute('aria-label', nextSavedState ? 'Unsave item' : 'Save item');
+      btn.setAttribute('title', `${nextSavedState ? 'Unsave' : 'Save'} item`);
+      showToast(nextSavedState ? 'Saved to your Saved Items list' : 'Removed from Saved Items');
+    } catch (error) {
+      console.error('Save toggle failed:', error);
+      showToast(error.message || 'Unable to save item right now', 'error');
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   // Initialize location modal
