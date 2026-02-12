@@ -22,6 +22,7 @@ const files = {
   settings: path.join(DATA_DIR, 'settings.json'),
   badges: path.join(DATA_DIR, 'badges.json'),
   marketplace_listings: path.join(DATA_DIR, 'marketplace_listings.json'),
+  marketplace_saved_items: path.join(DATA_DIR, 'marketplace_saved_items.json'),
   tickets: path.join(DATA_DIR, 'tickets.json'),
   newsletterSubscribers: path.join(DATA_DIR, 'newsletterSubscribers.json'),
 };

@@ -495,7 +495,14 @@ router.post(
         savedAt: new Date().toISOString(),
       });
 
-      await dbUnified.write('marketplace_saved_items', savedItems);
+      const didSave = await dbUnified.write('marketplace_saved_items', savedItems);
+      if (!didSave) {
+        logger.error('Failed to persist saved marketplace item', {
+          userId: req.user.id,
+          listingId,
+        });
+        return res.status(500).json({ error: 'Failed to save listing' });
+      }
 
       res.status(201).json({ ok: true, message: 'Listing saved' });
     } catch (error) {
@@ -525,7 +532,15 @@ router.delete(
         return res.status(404).json({ error: 'Saved listing not found' });
       }
 
-      await dbUnified.write('marketplace_saved_items', filtered);
+      const didUnsave = await dbUnified.write('marketplace_saved_items', filtered);
+      if (!didUnsave) {
+        logger.error('Failed to persist unsaved marketplace item', {
+          userId: req.user.id,
+          listingId,
+        });
+        return res.status(500).json({ error: 'Failed to unsave listing' });
+      }
+
       res.json({ ok: true, message: 'Listing unsaved' });
     } catch (error) {
       logger.error('Error removing saved marketplace listing:', error);
