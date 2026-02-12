@@ -29,6 +29,13 @@
   };
 
   // ==========================================
+  // CONSTANTS
+  // ==========================================
+
+  // Debounce delay to prevent double-firing of touch and click events on hybrid devices
+  const TOUCH_DEBOUNCE_MS = 500;
+
+  // ==========================================
   // LOADING STATE MANAGEMENT
   // ==========================================
 
@@ -689,8 +696,8 @@
     bell.addEventListener('touchend', (e) => {
       touchHandled = true;
       handleBellToggle(e);
-      // Reset flag after a short delay to allow click events on non-touch devices
-      setTimeout(() => { touchHandled = false; }, 500);
+      // Reset flag after debounce delay to allow click events on non-touch devices
+      setTimeout(() => { touchHandled = false; }, TOUCH_DEBOUNCE_MS);
     }, { passive: false });
     
     bell.addEventListener('click', (e) => {

@@ -215,8 +215,13 @@ test.describe('Notification Bell Touch Support', () => {
         const dropdownCount = await dropdown.count();
         
         if (dropdownCount > 0) {
-          // Wait for dropdown to have open class
-          await dropdown.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
+          // Wait for dropdown to become visible (may not exist or may timeout)
+          try {
+            await dropdown.waitFor({ state: 'visible', timeout: 1000 });
+          } catch (err) {
+            // Dropdown may not be present or may not become visible - test will continue
+            console.log('Dropdown did not become visible within timeout:', err.message);
+          }
           
           // Check if dropdown has open class
           const hasOpenClass = await dropdown.evaluate(el => 
