@@ -11,7 +11,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ## Progress snapshot (current)
 
-- **Overall remediation progress:** **55%** (5/10 backlog workstreams marked done, 1/10 in progress).
+- **Overall remediation progress:** **60%** (6/10 backlog workstreams marked done, 1/10 in progress).
 - **Core regression repair progress (PR3):** **100%** (lead scoring, subscriptions, and reviews suites all passing assertions).
 - **Current focus:** PR4 hardening (coverage uplift and warning reduction) plus CI lane split.
 
@@ -73,7 +73,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 2.1 Remove source-text assertions
 
-- **Status:** todo
+- **Status:** in_progress
 - **Owner:** _unassigned_
 - **Issue label:** `techdebt:tests`
 - **Definition of done:** affected suites assert behavior/contracts, not source code strings.
