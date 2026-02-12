@@ -669,8 +669,8 @@
       needsEventListeners = true;
     }
 
-    // Toggle dropdown - Use single event listener (no cloning)
-    bell.addEventListener('click', e => {
+    // Toggle dropdown - Mobile-friendly event handling
+    const handleBellToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
       
@@ -681,6 +681,13 @@
         positionDropdown(dropdown);
         fetchNotifications();
       }
+    };
+
+    // Add both touch and click support for mobile reliability
+    bell.addEventListener('click', handleBellToggle);
+    bell.addEventListener('touchend', (e) => {
+      e.preventDefault(); // Prevent click from also firing
+      handleBellToggle(e);
     });
 
     // Close on outside click (only attach once)

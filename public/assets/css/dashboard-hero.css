@@ -523,10 +523,24 @@
     grid-template-columns: 1fr;
   }
   
+  /* Mobile 2x2 grid layout for action buttons */
+  .dashboard-hero__actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
   .dashboard-action-chip {
-    flex: 1;
-    justify-content: center;
+    padding: 16px 12px;
+    font-size: 13px;
+    flex-direction: column;
+    text-align: center;
     min-width: 0;
+  }
+  
+  .dashboard-action-chip svg {
+    width: 20px;
+    height: 20px;
   }
   
   .dashboard-hero__tip {
