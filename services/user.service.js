@@ -271,15 +271,12 @@ class UserService {
    * @private
    */
   _sanitizeUser(user) {
-    // eslint-disable-next-line no-unused-vars
-    const {
-      passwordHash,
-      resetToken,
-      resetTokenExpiresAt,
-      verificationToken,
-      verificationTokenExpiresAt,
-      ...sanitized
-    } = user;
+    const sanitized = { ...user };
+    delete sanitized.passwordHash;
+    delete sanitized.resetToken;
+    delete sanitized.resetTokenExpiresAt;
+    delete sanitized.verificationToken;
+    delete sanitized.verificationTokenExpiresAt;
     return sanitized;
   }
 }

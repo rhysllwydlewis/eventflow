@@ -11,13 +11,15 @@
   let reconnectAttempts = 0;
   const MAX_RECONNECT_ATTEMPTS = 5;
   const BASE_RECONNECT_DELAY = 3000;
-  let originalTitle = document.title;
+  const originalTitle = document.title;
   let enquiryCount = 0;
   let fallbackNotificationShown = false;
 
   // Show user-facing notification when real-time is unavailable
   function showFallbackNotification() {
-    if (fallbackNotificationShown) return;
+    if (fallbackNotificationShown) {
+      return;
+    }
     fallbackNotificationShown = true;
 
     if (typeof Toast !== 'undefined' && Toast.info) {
@@ -77,7 +79,7 @@
         }
       };
 
-      ws.onerror = function (error) {
+      ws.onerror = function () {
         // Only log once per connection attempt
         if (reconnectAttempts === 0) {
           console.warn('WebSocket connection failed');
@@ -131,7 +133,7 @@
     if ('Notification' in window && Notification.permission === 'granted') {
       showDesktopNotification(data);
     } else if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(function (permission) {
+      Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
           showDesktopNotification(data);
         }
@@ -162,7 +164,7 @@
       body: data.message || 'You have a new customer enquiry',
       icon: '/favicon.svg',
       badge: '/favicon.svg',
-      tag: 'enquiry-' + Date.now(),
+      tag: `enquiry-${Date.now()}`,
     });
 
     notification.onclick = function () {
@@ -182,10 +184,7 @@
       }
 
       // Get volume from settings (default 30%)
-      const volumePercent = parseInt(
-        localStorage.getItem('ef_notification_volume') || '30',
-        10
-      );
+      const volumePercent = parseInt(localStorage.getItem('ef_notification_volume') || '30', 10);
       const volume = volumePercent / 100;
 
       // Create notification sound using Web Audio API
@@ -222,7 +221,7 @@
     document.title = `(${enquiryCount}) ${originalTitle}`;
   }
 
-  window.addEventListener('focus', function () {
+  window.addEventListener('focus', () => {
     enquiryCount = 0;
     document.title = originalTitle;
     updateBadge();

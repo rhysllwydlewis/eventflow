@@ -122,12 +122,10 @@
 
     for (const ruleName of config.rules) {
       let rule;
-      let ruleParams;
 
       // Check if rule has parameters (e.g., "minLength:3")
       if (ruleName.includes(':')) {
         const [name, params] = ruleName.split(':');
-        ruleParams = params;
         rule = VALIDATION_RULES[name](params);
       } else {
         rule = VALIDATION_RULES[ruleName];

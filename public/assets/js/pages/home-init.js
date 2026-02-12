@@ -386,9 +386,9 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     title: 'Could not load packages',
     message: 'Please refresh the page to try again.',
     showRetry: true,
-    retryCallback: () => loadPackagesCarousel({ endpoint, containerId, emptyMessage })
+    retryCallback: () => loadPackagesCarousel({ endpoint, containerId, emptyMessage }),
   });
-  
+
   // Show loading skeleton
   LoadingState.show(containerId, 'card', 3);
 
@@ -904,7 +904,7 @@ async function loadHeroCollageImages() {
         );
       }
     }
-    
+
     // Issue 4 Fix: Remove loading state on error
     collageFrames.forEach(frame => {
       frame.classList.remove('collage-loading');
@@ -1408,8 +1408,10 @@ async function loadHeroVideoWithRetry(videoUrl, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(videoUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.videos && data.videos.length > 0) {
         if (window.__videoMetrics__) {
@@ -1422,14 +1424,14 @@ async function loadHeroVideoWithRetry(videoUrl, maxRetries = 3) {
       if (window.__videoMetrics__) {
         window.__videoMetrics__.heroVideoFailures++;
       }
-      
+
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
       }
     }
   }
-  
+
   // All retries failed
   if (window.__videoMetrics__) {
     window.__videoMetrics__.lastError = 'Hero video failed after 3 attempts';
@@ -3047,16 +3049,20 @@ async function fetchMarketplacePreview() {
     title: 'Could not load marketplace items',
     message: 'Please refresh the page to try again.',
     showRetry: true,
-    retryCallback: fetchMarketplacePreview
+    retryCallback: fetchMarketplacePreview,
   });
-  
+
   // Show loading skeleton
   LoadingState.show('marketplace-preview', 'card', MARKETPLACE_PREVIEW_LIMIT);
 
   try {
     // Issue 7 Fix: Use fetch with retry
-    const response = await fetchWithRetry(`/api/v1/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`, {}, 3);
-    
+    const response = await fetchWithRetry(
+      `/api/v1/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`,
+      {},
+      3
+    );
+
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
       if (response.status === 404) {
@@ -3069,7 +3075,7 @@ async function fetchMarketplacePreview() {
 
     const data = await response.json();
     const listings = data.listings || [];
-    
+
     LoadingState.hide('marketplace-preview');
 
     if (listings.length === 0) {

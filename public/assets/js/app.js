@@ -2494,10 +2494,11 @@ function efMaybeShowOnboarding(page) {
     box.style.color = '#1f2937';
     box.style.padding = '2rem';
     box.style.borderRadius = '16px';
-    box.style.boxShadow = '0 12px 40px rgba(11, 128, 115, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
+    box.style.boxShadow =
+      '0 12px 40px rgba(11, 128, 115, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
     box.style.textAlign = 'center';
     box.style.border = '1px solid rgba(11, 128, 115, 0.15)';
-    
+
     box.innerHTML = `
       <div style="font-size: 3rem; margin-bottom: 1rem;" role="img" aria-label="celebration">🎉</div>
       <h2 style="color: #1f2937; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem;">Welcome to Your Supplier Dashboard!</h2>
@@ -2539,7 +2540,7 @@ function efMaybeShowOnboarding(page) {
         btn.style.transform = 'scale(1) translateY(0)';
         btn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
       });
-      
+
       // Save permanent dismissal and remove card
       btn.addEventListener('click', () => {
         try {
@@ -2671,86 +2672,91 @@ async function initDashSupplier() {
     try {
       const d = await api('/api/me/suppliers');
       const items = d?.items && Array.isArray(d.items) ? d.items : [];
-    // If this user has at least one Pro supplier, treat them as Pro.
-    currentIsPro = items.some(s => !!s.isPro);
+      // If this user has at least one Pro supplier, treat them as Pro.
+      currentIsPro = items.some(s => !!s.isPro);
 
-    if (proRibbon) {
-      if (currentIsPro) {
-        proRibbon.style.display = 'block';
-        proRibbon.innerHTML =
-          '<strong>You’re on EventFlow Pro.</strong> Your listing can appear higher in search and you have access to premium features as we roll them out.';
-      } else {
-        proRibbon.style.display = 'block';
-        proRibbon.innerHTML =
-          '<strong>You’re on the free plan.</strong> Upgrade to EventFlow Pro to boost your visibility, unlock more packages and get priority support.';
-      }
-    }
-
-    if (!supWrap) {
-      return;
-    }
-    
-    if (!items || items.length === 0) {
-      supWrap.innerHTML =
-        '<div class="card"><p>You have not created a supplier profile yet.</p></div>';
-      return;
-    }
-    supWrap.innerHTML = items
-      .map(s => {
-        // Safe access to supplier properties
-        if (!s) return '';
-        
-        // Enhanced badge rendering for Pro and Pro+ tiers
-        let proBadge = '';
-        // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
-        const tier =
-          s.subscriptionTier ||
-          (s.subscription && s.subscription.tier) ||
-          (s.isPro || s.pro ? 'pro' : null);
-
-        if (tier === 'pro_plus') {
-          proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
-        } else if (tier === 'pro') {
-          proBadge = '<span class="badge badge-pro">Professional</span>';
+      if (proRibbon) {
+        if (currentIsPro) {
+          proRibbon.style.display = 'block';
+          proRibbon.innerHTML =
+            '<strong>You’re on EventFlow Pro.</strong> Your listing can appear higher in search and you have access to premium features as we roll them out.';
+        } else {
+          proRibbon.style.display = 'block';
+          proRibbon.innerHTML =
+            '<strong>You’re on the free plan.</strong> Upgrade to EventFlow Pro to boost your visibility, unlock more packages and get priority support.';
         }
+      }
 
-        // Calculate profile completeness checklist with safe property access
-        const hasPhotos = s.photos && Array.isArray(s.photos) && s.photos.length > 0;
-        const hasDescription = s.description_long && typeof s.description_long === 'string' && s.description_long.length > 50;
-        const hasCategory = s.category && typeof s.category === 'string' && s.category.length > 0;
-        const hasLocation = s.location && typeof s.location === 'string' && s.location.length > 0;
-        const hasWebsite = s.website && typeof s.website === 'string' && s.website.length > 0;
+      if (!supWrap) {
+        return;
+      }
 
-        const checklistItems = [
-          { label: 'Photos uploaded', complete: hasPhotos },
-          { label: 'Detailed description', complete: hasDescription },
-          { label: 'Category set', complete: hasCategory },
-          { label: 'Location specified', complete: hasLocation },
-          { label: 'Website added', complete: hasWebsite },
-        ];
-        const completedCount = checklistItems.filter(item => item.complete).length;
-        const checklistHtml = checklistItems
-          .map(
-            item =>
-              `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:#667085;">
+      if (!items || items.length === 0) {
+        supWrap.innerHTML =
+          '<div class="card"><p>You have not created a supplier profile yet.</p></div>';
+        return;
+      }
+      supWrap.innerHTML = items
+        .map(s => {
+          // Safe access to supplier properties
+          if (!s) {
+            return '';
+          }
+
+          // Enhanced badge rendering for Pro and Pro+ tiers
+          let proBadge = '';
+          // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
+          const tier =
+            s.subscriptionTier ||
+            (s.subscription && s.subscription.tier) ||
+            (s.isPro || s.pro ? 'pro' : null);
+
+          if (tier === 'pro_plus') {
+            proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
+          } else if (tier === 'pro') {
+            proBadge = '<span class="badge badge-pro">Professional</span>';
+          }
+
+          // Calculate profile completeness checklist with safe property access
+          const hasPhotos = s.photos && Array.isArray(s.photos) && s.photos.length > 0;
+          const hasDescription =
+            s.description_long &&
+            typeof s.description_long === 'string' &&
+            s.description_long.length > 50;
+          const hasCategory = s.category && typeof s.category === 'string' && s.category.length > 0;
+          const hasLocation = s.location && typeof s.location === 'string' && s.location.length > 0;
+          const hasWebsite = s.website && typeof s.website === 'string' && s.website.length > 0;
+
+          const checklistItems = [
+            { label: 'Photos uploaded', complete: hasPhotos },
+            { label: 'Detailed description', complete: hasDescription },
+            { label: 'Category set', complete: hasCategory },
+            { label: 'Location specified', complete: hasLocation },
+            { label: 'Website added', complete: hasWebsite },
+          ];
+          const completedCount = checklistItems.filter(item => item.complete).length;
+          const checklistHtml = checklistItems
+            .map(
+              item =>
+                `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:#667085;">
             <span style="color:${item.complete ? '#10b981' : '#d1d5db'}">${item.complete ? '✓' : '○'}</span>
             <span>${item.label}</span>
           </div>`
-          )
-          .join('');
+            )
+            .join('');
 
-        // Safe access to all fields with defaults
-        const supplierId = String(s.id || '').replace(/"/g, '&quot;');
-        const name = String(s.name || 'Unnamed Supplier');
-        const photos = (s.photos && Array.isArray(s.photos)) ? s.photos : [];
-        const photoUrl = photos[0] || '/assets/images/collage-venue.svg';
-        const location = String(s.location || 'Location not set');
-        const category = String(s.category || 'Uncategorized');
-        const priceDisplay = s.price_display ? ` · ${s.price_display}` : '';
-        const description = String(s.description_short || '');
-        const approved = !!s.approved;
+          // Safe access to all fields with defaults
+          const supplierId = String(s.id || '').replace(/"/g, '&quot;');
+          const name = String(s.name || 'Unnamed Supplier');
+          const photos = s.photos && Array.isArray(s.photos) ? s.photos : [];
+          const photoUrl = photos[0] || '/assets/images/collage-venue.svg';
+          const location = String(s.location || 'Location not set');
+          const category = String(s.category || 'Uncategorized');
+          const priceDisplay = s.price_display ? ` · ${s.price_display}` : '';
+          const description = String(s.description_short || '');
+          const approved = !!s.approved;
 
-        return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${supplierId}">
+          return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${supplierId}">
       <img src="${photoUrl}" alt="${name} profile photo" onerror="console.warn('Failed to load supplier image:', this.src); this.src='/assets/images/collage-venue.svg'; this.onerror=null;">
       <div>
         <h3>${name} ${proBadge} ${approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
@@ -2776,61 +2782,64 @@ async function initDashSupplier() {
         </div>
       </div>
     </div>`;
-      })
-      .join('');
-
-    // Listing health based on smart score if present
-    const rows = supWrap.querySelectorAll('.supplier-card');
-    items.forEach((s, idx) => {
-      if (!s) return;
-      
-      const row = rows[idx];
-      if (!row) {
-        return;
-      }
-      const bar = row.querySelector('.listing-health-fill');
-      const label = row.querySelector('.listing-health-label');
-      const score = typeof s.aiScore === 'number' ? s.aiScore : 0;
-      if (bar) {
-        bar.style.width = `${score || 10}%`;
-      }
-      if (label) {
-        label.textContent = score
-          ? `Listing health: ${score}%`
-          : 'Listing health: add photos and details to improve this listing.';
-      }
-    });
-
-    if (select) {
-      select.innerHTML = items
-        .filter(s => s && s.id && s.name)
-        .map(s => `<option value="${s.id}">${s.name}</option>`)
+        })
         .join('');
-    }
 
-    // Auto-populate form with supplier's data
-    // If we're currently editing a supplier, restore that supplier's data
-    // Otherwise, populate with first supplier's data if exists
-    if (items.length > 0) {
-      let supplierToEdit = items[0];
-
-      // If we have a currently editing supplier ID, find it and use it
-      if (currentEditingSupplierId) {
-        const foundSupplier = items.find(s => s && s.id === currentEditingSupplierId);
-        if (foundSupplier) {
-          supplierToEdit = foundSupplier;
+      // Listing health based on smart score if present
+      const rows = supWrap.querySelectorAll('.supplier-card');
+      items.forEach((s, idx) => {
+        if (!s) {
+          return;
         }
+
+        const row = rows[idx];
+        if (!row) {
+          return;
+        }
+        const bar = row.querySelector('.listing-health-fill');
+        const label = row.querySelector('.listing-health-label');
+        const score = typeof s.aiScore === 'number' ? s.aiScore : 0;
+        if (bar) {
+          bar.style.width = `${score || 10}%`;
+        }
+        if (label) {
+          label.textContent = score
+            ? `Listing health: ${score}%`
+            : 'Listing health: add photos and details to improve this listing.';
+        }
+      });
+
+      if (select) {
+        select.innerHTML = items
+          .filter(s => s && s.id && s.name)
+          .map(s => `<option value="${s.id}">${s.name}</option>`)
+          .join('');
       }
 
-      populateSupplierForm(supplierToEdit);
-    }
-  } catch (err) {
-    console.error('Error loading suppliers:', err);
-    if (supWrap) {
-      supWrap.innerHTML = '<div class="card"><p>Error loading suppliers. Please try again.</p></div>';
+      // Auto-populate form with supplier's data
+      // If we're currently editing a supplier, restore that supplier's data
+      // Otherwise, populate with first supplier's data if exists
+      if (items.length > 0) {
+        let supplierToEdit = items[0];
+
+        // If we have a currently editing supplier ID, find it and use it
+        if (currentEditingSupplierId) {
+          const foundSupplier = items.find(s => s && s.id === currentEditingSupplierId);
+          if (foundSupplier) {
+            supplierToEdit = foundSupplier;
+          }
+        }
+
+        populateSupplierForm(supplierToEdit);
+      }
+    } catch (err) {
+      console.error('Error loading suppliers:', err);
+      if (supWrap) {
+        supWrap.innerHTML =
+          '<div class="card"><p>Error loading suppliers. Please try again.</p></div>';
+      }
     }
   }
-}
 
   /**
    * Populate supplier form with existing supplier data
@@ -2977,60 +2986,63 @@ async function initDashSupplier() {
       const d = await api('/api/me/packages');
       const items = d?.items && Array.isArray(d.items) ? d.items : [];
       const count = items.length;
-    const freeLimit = 3; // keep in sync with server FREE_PACKAGE_LIMIT default
+      const freeLimit = 3; // keep in sync with server FREE_PACKAGE_LIMIT default
 
-    // Update note about allowance
-    if (note) {
-      if (currentIsPro) {
-        note.textContent = count
-          ? `You have ${count} package${count === 1 ? '' : 's'}. As a Pro supplier you can create unlimited packages.`
-          : 'As a Pro supplier you can create unlimited packages.';
-      } else {
-        note.textContent = count
-          ? `You have ${count} of ${freeLimit} packages on the free plan. Upgrade to Pro to unlock more.`
-          : `On the free plan you can create up to ${freeLimit} packages.`;
-      }
-    }
-
-    // If at limit on free plan, gently disable the form
-    const pkgForm = document.getElementById('package-form');
-    const pkgStatus = document.getElementById('pkg-status');
-    const atLimit = !currentIsPro && count >= freeLimit;
-    if (pkgForm) {
-      const inputs = pkgForm.querySelectorAll('input, textarea, select, button[type="submit"]');
-      inputs.forEach(el => {
-        if (el.type === 'submit') {
-          el.disabled = atLimit;
+      // Update note about allowance
+      if (note) {
+        if (currentIsPro) {
+          note.textContent = count
+            ? `You have ${count} package${count === 1 ? '' : 's'}. As a Pro supplier you can create unlimited packages.`
+            : 'As a Pro supplier you can create unlimited packages.';
         } else {
-          el.disabled = atLimit;
-        }
-      });
-      if (pkgStatus) {
-        if (atLimit) {
-          pkgStatus.textContent =
-            'You have reached the package limit on the free plan. Upgrade to Pro to add more.';
-        } else {
-          pkgStatus.textContent = '';
+          note.textContent = count
+            ? `You have ${count} of ${freeLimit} packages on the free plan. Upgrade to Pro to unlock more.`
+            : `On the free plan you can create up to ${freeLimit} packages.`;
         }
       }
-    }
 
-    if (!items || items.length === 0) {
-      pkgsWrap.innerHTML = '<div class="card"><p>You have not created any packages yet.</p></div>';
-      return;
-    }
-    pkgsWrap.innerHTML = items
-      .map(p => {
-        if (!p) return '';
-        
-        const packageId = String(p.id || '').replace(/"/g, '&quot;');
-        const image = String(p.image || '/assets/images/package-placeholder.svg');
-        const title = String(p.title || 'Untitled Package');
-        const priceDisplay = String(p.price_display || '');
-        const description = String(p.description || '');
-        const featured = !!p.featured;
-        
-        return `<div class="card package-card" data-package-id="${packageId}">
+      // If at limit on free plan, gently disable the form
+      const pkgForm = document.getElementById('package-form');
+      const pkgStatus = document.getElementById('pkg-status');
+      const atLimit = !currentIsPro && count >= freeLimit;
+      if (pkgForm) {
+        const inputs = pkgForm.querySelectorAll('input, textarea, select, button[type="submit"]');
+        inputs.forEach(el => {
+          if (el.type === 'submit') {
+            el.disabled = atLimit;
+          } else {
+            el.disabled = atLimit;
+          }
+        });
+        if (pkgStatus) {
+          if (atLimit) {
+            pkgStatus.textContent =
+              'You have reached the package limit on the free plan. Upgrade to Pro to add more.';
+          } else {
+            pkgStatus.textContent = '';
+          }
+        }
+      }
+
+      if (!items || items.length === 0) {
+        pkgsWrap.innerHTML =
+          '<div class="card"><p>You have not created any packages yet.</p></div>';
+        return;
+      }
+      pkgsWrap.innerHTML = items
+        .map(p => {
+          if (!p) {
+            return '';
+          }
+
+          const packageId = String(p.id || '').replace(/"/g, '&quot;');
+          const image = String(p.image || '/assets/images/package-placeholder.svg');
+          const title = String(p.title || 'Untitled Package');
+          const priceDisplay = String(p.price_display || '');
+          const description = String(p.description || '');
+          const featured = !!p.featured;
+
+          return `<div class="card package-card" data-package-id="${packageId}">
       <img src="${image}" alt="${title} image" onerror="this.src='/assets/images/package-placeholder.svg'; this.onerror=null;">
       <div>
         <h3>${title}</h3>
@@ -3042,15 +3054,16 @@ async function initDashSupplier() {
         </div>
       </div>
     </div>`;
-      })
-      .join('');
-  } catch (err) {
-    console.error('Error loading packages:', err);
-    if (pkgsWrap) {
-      pkgsWrap.innerHTML = '<div class="card"><p>Error loading packages. Please try again.</p></div>';
+        })
+        .join('');
+    } catch (err) {
+      console.error('Error loading packages:', err);
+      if (pkgsWrap) {
+        pkgsWrap.innerHTML =
+          '<div class="card"><p>Error loading packages. Please try again.</p></div>';
+      }
     }
   }
-}
   await loadSuppliers();
   await loadPackages();
 

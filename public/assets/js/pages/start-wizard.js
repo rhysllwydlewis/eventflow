@@ -36,14 +36,14 @@
     restoreWizardState();
 
     wizardState = window.WizardState.getState();
-    
+
     // Set up autosave callback
     window.WizardState.setAutosaveCallback(handleAutosave);
-    
+
     // Check if user has started wizard before
     const timeSinceUpdate = window.WizardState.getTimeSinceLastUpdate();
     hasShownWelcome = timeSinceUpdate < WIZARD_DATA_EXPIRY_MS && wizardState.wizardStartedAt;
-    
+
     // Determine starting step
     if (hasShownWelcome && wizardState.currentStep >= 0) {
       currentStep = wizardState.currentStep;
@@ -100,7 +100,7 @@
   /**
    * Handle autosave callback
    */
-  function handleAutosave(state) {
+  function handleAutosave() {
     showAutosaveIndicator();
   }
 
@@ -109,7 +109,9 @@
    */
   function showAutosaveIndicator() {
     const summary = document.getElementById('plan-summary');
-    if (!summary) return;
+    if (!summary) {
+      return;
+    }
 
     // Check if indicator already exists
     let indicator = summary.querySelector('.wizard-autosave');
@@ -284,7 +286,7 @@
   function renderProgressIndicator(stepIndex) {
     const totalSteps = TOTAL_STEPS - 2; // Exclude welcome and success
     const progressPercent = Math.round(((stepIndex + 1) / totalSteps) * 100);
-    
+
     // Step titles
     const stepTitles = [
       'Event Type',
@@ -297,29 +299,6 @@
     ];
 
     const currentTitle = stepTitles[stepIndex] || 'Planning';
-
-    // Generate step circles (show max 7 circles for cleaner UI)
-    let circlesHTML = '';
-    const maxCircles = Math.min(7, totalSteps);
-    
-    for (let i = 0; i < maxCircles; i++) {
-      const isCompleted = i < stepIndex;
-      const isCurrent = i === stepIndex;
-      const isUpcoming = i > stepIndex;
-      
-      let circleClass = 'wizard-step-circle';
-      if (isCompleted) circleClass += ' completed';
-      if (isCurrent) circleClass += ' current';
-      if (isUpcoming) circleClass += ' upcoming';
-      
-      circlesHTML += `<div class="${circleClass}">${isCompleted ? '✓' : i + 1}</div>`;
-      
-      // Add connector between circles (except after last)
-      if (i < maxCircles - 1) {
-        const connectorClass = isCompleted ? 'wizard-step-connector completed' : 'wizard-step-connector';
-        circlesHTML += `<div class="${connectorClass}"></div>`;
-      }
-    }
 
     return `
       <div class="wizard-progress-container">
@@ -396,22 +375,26 @@
     };
 
     if (images.wedding) {
-      images.wedding.src = 'https://images.pexels.com/photos/265885/pexels-photo-265885.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.wedding.src =
+        'https://images.pexels.com/photos/265885/pexels-photo-265885.jpeg?auto=compress&cs=tinysrgb&w=600';
       images.wedding.alt = 'Wedding couple getting married';
     }
 
     if (images.corporate) {
-      images.corporate.src = 'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.corporate.src =
+        'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=600';
       images.corporate.alt = 'Corporate business event';
     }
 
     if (images.birthday) {
-      images.birthday.src = 'https://images.pexels.com/photos/1543762/pexels-photo-1543762.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.birthday.src =
+        'https://images.pexels.com/photos/1543762/pexels-photo-1543762.jpeg?auto=compress&cs=tinysrgb&w=600';
       images.birthday.alt = 'Birthday celebration';
     }
 
     if (images.other) {
-      images.other.src = 'https://images.pexels.com/photos/2306281/pexels-photo-2306281.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.other.src =
+        'https://images.pexels.com/photos/2306281/pexels-photo-2306281.jpeg?auto=compress&cs=tinysrgb&w=600';
       images.other.alt = 'Elegant gala dinner party';
     }
   }
@@ -562,7 +545,7 @@
    */
   function renderSuccessScreen() {
     const state = window.WizardState.getState();
-    
+
     return `
       <div class="wizard-card wizard-success">
         <span class="wizard-success-icon">🎉</span>
@@ -586,12 +569,14 @@
    * Format date for display
    */
   function formatDate(dateString) {
-    if (!dateString) return '';
+    if (!dateString) {
+      return '';
+    }
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
     });
   }
 
@@ -662,14 +647,16 @@
 
       const options = document.querySelectorAll('.wizard-option');
       const nextBtn = document.querySelector('.wizard-next');
-      
+
       options.forEach(opt => {
         opt.addEventListener('click', function () {
           options.forEach(o => o.classList.remove('selected'));
           this.classList.add('selected');
           const value = this.getAttribute('data-value');
           window.WizardState.saveStep(0, { eventType: value });
-          if (nextBtn) nextBtn.disabled = false;
+          if (nextBtn) {
+            nextBtn.disabled = false;
+          }
           renderPlanSummary();
         });
       });
@@ -683,10 +670,18 @@
         const dateField = document.getElementById('wizard-date');
         const guestsField = document.getElementById('wizard-guests');
 
-        if (eventNameField) window.WizardValidation.setupFieldValidation(eventNameField, 'eventName');
-        if (locationField) window.WizardValidation.setupFieldValidation(locationField, 'location');
-        if (dateField) window.WizardValidation.setupFieldValidation(dateField, 'date');
-        if (guestsField) window.WizardValidation.setupFieldValidation(guestsField, 'guests');
+        if (eventNameField) {
+          window.WizardValidation.setupFieldValidation(eventNameField, 'eventName');
+        }
+        if (locationField) {
+          window.WizardValidation.setupFieldValidation(locationField, 'location');
+        }
+        if (dateField) {
+          window.WizardValidation.setupFieldValidation(dateField, 'date');
+        }
+        if (guestsField) {
+          window.WizardValidation.setupFieldValidation(guestsField, 'guests');
+        }
       }
     }
 
@@ -704,7 +699,7 @@
     if (stepIndex === 2 + CATEGORIES.length) {
       const editLinks = document.querySelectorAll('.wizard-review-edit');
       editLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
+        link.addEventListener('click', e => {
           e.preventDefault();
           const targetStep = parseInt(link.getAttribute('data-step'), 10);
           if (!isNaN(targetStep)) {
@@ -753,17 +748,17 @@
   function triggerCelebration() {
     // Simple confetti effect (can be enhanced)
     const colors = ['#0B8073', '#13B6A2', '#10b981', '#34d399'];
-    
+
     for (let i = 0; i < 30; i++) {
       setTimeout(() => {
         const confetti = document.createElement('div');
         confetti.className = 'wizard-confetti';
-        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.left = `${Math.random() * 100}%`;
         confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.animationDelay = Math.random() * 0.3 + 's';
-        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        confetti.style.animationDelay = `${Math.random() * 0.3}s`;
+        confetti.style.animationDuration = `${Math.random() * 2 + 2}s`;
         document.body.appendChild(confetti);
-        
+
         setTimeout(() => confetti.remove(), 4000);
       }, i * 50);
     }
@@ -862,7 +857,7 @@
     // Move to next step
     const maxStep = 2 + CATEGORIES.length; // Review step
     currentStep = Math.min(currentStep + 1, maxStep);
-    
+
     renderStep(currentStep);
     renderPlanSummary();
 
@@ -986,7 +981,6 @@
           console.error('Failed to clear localStorage:', e);
         }
       }, 3000);
-      
     } catch (err) {
       console.error('Error creating plan:', err);
 

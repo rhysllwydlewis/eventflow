@@ -6,7 +6,6 @@
 (function () {
   'use strict';
 
-  const _NIGHT_THEME_HOUR = 21; // Reserved for future use
   const LAYOUT_PAINT_DELAY = 50;
   const DRAG_SCROLL_MULTIPLIER = 2; // Faster scroll for responsive feel on mobile
   const THEME_CLASSES = [
