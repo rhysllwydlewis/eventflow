@@ -8,7 +8,7 @@
 
   let allListings = [];
   let currentUser = null;
-  
+
   // Issue 2 Fix: Initialization guards to prevent multiple calls
   let isInitialized = false;
   let isLoadingListings = false;
@@ -27,7 +27,7 @@
       return;
     }
     isInitialized = true;
-    
+
     await checkAuth();
     await loadListings();
     initLocationModal();
@@ -126,11 +126,11 @@
       return;
     }
     isLoadingListings = true;
-    
+
     try {
       // Issue 2 Fix: Show loading skeleton immediately
       showLoadingSkeleton();
-      
+
       const params = new URLSearchParams();
       const categoryFilter = document.getElementById('marketplace-filter-category');
       const priceFilter = document.getElementById('marketplace-filter-price');
@@ -201,15 +201,20 @@
       isLoadingListings = false;
     }
   }
-  
+
   // Issue 2 Fix: Show loading skeleton while fetching data
   function showLoadingSkeleton() {
     const resultsContainer = document.getElementById('marketplace-results');
-    if (!resultsContainer) return;
-    
+    if (!resultsContainer) {
+      return;
+    }
+
     const skeletonHTML = `
       <div class="marketplace-skeleton">
-        ${Array(6).fill(0).map(() => `
+        ${Array(6)
+          .fill(0)
+          .map(
+            () => `
           <div class="marketplace-skeleton-card">
             <div class="skeleton-image"></div>
             <div class="skeleton-content">
@@ -218,10 +223,12 @@
               <div class="skeleton-text skeleton-short"></div>
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
-    
+
     resultsContainer.innerHTML = skeletonHTML;
   }
 

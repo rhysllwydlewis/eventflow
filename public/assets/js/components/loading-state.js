@@ -24,27 +24,31 @@ class LoadingState {
             <div class="skeleton-text"></div>
           </div>
         </div>
-      `
+      `,
     };
-    
+
     return Array(count)
       .fill(0)
       .map(() => skeletons[type] || skeletons.card)
       .join('');
   }
-  
+
   static show(containerId, type = 'card', count = 3) {
     const container = document.getElementById(containerId);
-    if (!container) return;
-    
+    if (!container) {
+      return;
+    }
+
     const skeletonHtml = this.createSkeleton(type, count);
     container.innerHTML = `<div class="skeleton-container">${skeletonHtml}</div>`;
   }
-  
+
   static hide(containerId) {
     const container = document.getElementById(containerId);
-    if (!container) return;
-    
+    if (!container) {
+      return;
+    }
+
     const skeleton = container.querySelector('.skeleton-container');
     if (skeleton) {
       skeleton.style.animation = 'fadeOut 0.2s ease';

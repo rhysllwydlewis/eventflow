@@ -85,7 +85,7 @@
         lastUpdated: new Date().toISOString(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      
+
       // Trigger autosave indicator if enabled
       if (triggerAutosave && autosaveCallback) {
         clearTimeout(autosaveTimeout);
@@ -93,7 +93,7 @@
           autosaveCallback(updated);
         }, AUTOSAVE_DELAY_MS);
       }
-      
+
       return true;
     } catch (err) {
       console.error('Error saving wizard state:', err);
@@ -273,7 +273,9 @@
    */
   function getTimeSinceLastUpdate() {
     const state = getState();
-    if (!state.lastUpdated) return Infinity;
+    if (!state.lastUpdated) {
+      return Infinity;
+    }
     return Date.now() - new Date(state.lastUpdated).getTime();
   }
 

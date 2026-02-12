@@ -75,10 +75,10 @@ class MessagingSystem {
     this.socket.on('connect', () => {
       this.isConnected = true;
       console.log('Messaging WebSocket connected');
-      
+
       // Emit connection status event
       this.emitConnectionStatus('online');
-      
+
       // Re-subscribe to active conversations
       this.activeConversations.forEach(conversationId => {
         this.socket.emit('subscribe_conversation', { conversationId });
@@ -92,15 +92,15 @@ class MessagingSystem {
       this.isConnected = false;
       this._hasDisconnected = true; // Mark that we've disconnected
       console.log('Messaging WebSocket disconnected');
-      
+
       // Emit connection status event
       this.emitConnectionStatus('offline');
-      
+
       // Start fallback polling with reduced frequency
       this.startFallbackPolling();
     });
 
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', error => {
       console.error('WebSocket connection error:', error);
       if (typeof EFToast !== 'undefined') {
         EFToast.error('Connection error - using polling mode', { duration: 3000 });
@@ -108,22 +108,22 @@ class MessagingSystem {
     });
 
     // Listen for new messages
-    this.socket.on('new_message', (data) => {
+    this.socket.on('new_message', data => {
       this.handleNewMessage(data);
     });
 
     // Listen for conversation updates
-    this.socket.on('conversation:updated', (data) => {
+    this.socket.on('conversation:updated', data => {
       this.handleConversationUpdate(data);
     });
 
     // Listen for typing status
-    this.socket.on('typing:status', (data) => {
+    this.socket.on('typing:status', data => {
       this.handleTypingStatus(data);
     });
 
     // Listen for read receipts
-    this.socket.on('message:read', (data) => {
+    this.socket.on('message:read', data => {
       this.handleMessageRead(data);
     });
 
@@ -155,7 +155,7 @@ class MessagingSystem {
    */
   emitConnectionStatus(status) {
     const event = new CustomEvent('messaging:connection', {
-      detail: { status, timestamp: new Date() }
+      detail: { status, timestamp: new Date() },
     });
     window.dispatchEvent(event);
   }
@@ -164,8 +164,8 @@ class MessagingSystem {
    * Handle new message from WebSocket
    */
   handleNewMessage(data) {
-    const { conversationId, message } = data;
-    
+    const { conversationId } = data;
+
     // Call the message callback if registered
     const callback = this.messageCallbacks.get(conversationId);
     if (callback) {
@@ -191,9 +191,7 @@ class MessagingSystem {
   /**
    * Handle conversation update from WebSocket
    */
-  handleConversationUpdate(data) {
-    const { conversationId } = data;
-    
+  handleConversationUpdate(_data) {
     // Refresh conversation list
     const callback = this.conversationCallbacks.get('all');
     if (callback) {
@@ -209,10 +207,10 @@ class MessagingSystem {
    */
   handleTypingStatus(data) {
     const { conversationId, userId, isTyping } = data;
-    
+
     // Emit custom DOM event for UI to handle
     const event = new CustomEvent('messaging:typing', {
-      detail: { conversationId, userId, isTyping }
+      detail: { conversationId, userId, isTyping },
     });
     window.dispatchEvent(event);
   }
@@ -222,10 +220,10 @@ class MessagingSystem {
    */
   handleMessageRead(data) {
     const { conversationId, messageId, userId } = data;
-    
+
     // Emit custom DOM event for UI to handle
     const event = new CustomEvent('messaging:read', {
-      detail: { conversationId, messageId, userId }
+      detail: { conversationId, messageId, userId },
     });
     window.dispatchEvent(event);
   }
@@ -235,7 +233,7 @@ class MessagingSystem {
    */
   joinConversation(conversationId) {
     this.activeConversations.add(conversationId);
-    
+
     if (this.isConnected && this.socket) {
       this.socket.emit('subscribe_conversation', { conversationId });
       console.log('Joined conversation:', conversationId);
@@ -247,7 +245,7 @@ class MessagingSystem {
    */
   leaveConversation(conversationId) {
     this.activeConversations.delete(conversationId);
-    
+
     if (this.isConnected && this.socket) {
       this.socket.emit('unsubscribe_conversation', { conversationId });
       console.log('Left conversation:', conversationId);
@@ -255,14 +253,14 @@ class MessagingSystem {
 
     // Clean up callbacks
     this.messageCallbacks.delete(conversationId);
-    
+
     // Clean up typing timeouts for this conversation
     const typingTimeout = this.typingTimeouts.get(conversationId);
     if (typingTimeout) {
       clearTimeout(typingTimeout);
       this.typingTimeouts.delete(conversationId);
     }
-    
+
     // Clean up debounce timers for this conversation
     for (const [key, timer] of this._typingDebounceTimers.entries()) {
       if (key.startsWith(conversationId)) {
@@ -279,32 +277,32 @@ class MessagingSystem {
     if (this.isConnected && this.socket) {
       // Debounce typing status sends to reduce WebSocket traffic
       const debounceKey = `${conversationId}_${isTyping}`;
-      
+
       // Clear existing debounce timer
       if (this._typingDebounceTimers.has(debounceKey)) {
         return; // Don't send if already sent recently
       }
-      
+
       this.socket.emit('typing', { conversationId, isTyping });
-      
+
       // Set debounce timer (1 second)
       const debounceTimer = setTimeout(() => {
         this._typingDebounceTimers.delete(debounceKey);
       }, 1000);
       this._typingDebounceTimers.set(debounceKey, debounceTimer);
-      
+
       // Auto-stop typing after 3 seconds
       if (isTyping) {
         const existingTimeout = this.typingTimeouts.get(conversationId);
         if (existingTimeout) {
           clearTimeout(existingTimeout);
         }
-        
+
         const timeout = setTimeout(() => {
           this.sendTypingStatus(conversationId, false);
           this.typingTimeouts.delete(conversationId);
         }, 3000);
-        
+
         this.typingTimeouts.set(conversationId, timeout);
       } else {
         // Clear typing timeout when explicitly stopped
@@ -452,7 +450,7 @@ class MessagingSystem {
   async sendMessage(conversationId, messageData) {
     try {
       const messageId = await this.sendMessageViaAPI(conversationId, messageData);
-      
+
       // Also emit via WebSocket if connected for immediate delivery
       if (this.isConnected && this.socket) {
         this.socket.emit('message:send', {
@@ -460,7 +458,7 @@ class MessagingSystem {
           messageData,
         });
       }
-      
+
       return messageId;
     } catch (error) {
       // Show error toast
@@ -479,7 +477,7 @@ class MessagingSystem {
    */
   async markMessagesAsRead(conversationId, userId) {
     await this.markMessagesAsReadViaAPI(conversationId, userId);
-    
+
     // Also emit via WebSocket if connected for immediate read receipt
     if (this.isConnected && this.socket) {
       this.socket.emit('conversation:read', { conversationId });
@@ -502,7 +500,7 @@ class MessagingSystem {
 
     // Listen for real-time unread count updates via conversation updates
     // Only fetch when connection comes back online
-    const handleUpdate = (event) => {
+    const handleUpdate = event => {
       if (event.detail.status === 'online') {
         this.fetchUnreadCountFromAPI(userId, userType, callback);
       }
@@ -698,28 +696,28 @@ class MessagingSystem {
     // Clear all polling intervals
     this.pollingIntervals.forEach(interval => clearInterval(interval));
     this.pollingIntervals = [];
-    
+
     // Clear all typing timeouts
     this.typingTimeouts.forEach(timeout => clearTimeout(timeout));
     this.typingTimeouts.clear();
-    
+
     // Clear all debounce timers
     this._typingDebounceTimers.forEach(timer => clearTimeout(timer));
     this._typingDebounceTimers.clear();
-    
+
     // Leave all active conversations
     const conversationsToLeave = Array.from(this.activeConversations);
     conversationsToLeave.forEach(conversationId => {
       this.leaveConversation(conversationId);
     });
     this.activeConversations.clear();
-    
+
     // Disconnect WebSocket
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
     }
-    
+
     this.isConnected = false;
   }
 }
@@ -742,17 +740,17 @@ class MessagingManager {
    */
   _setupEventListeners() {
     // Listen for typing status updates
-    window.addEventListener('messaging:typing', (event) => {
+    window.addEventListener('messaging:typing', event => {
       this.handleTypingStatus(event.detail);
     });
 
     // Listen for read receipts
-    window.addEventListener('messaging:read', (event) => {
+    window.addEventListener('messaging:read', event => {
       this.handleReadReceipt(event.detail);
     });
 
     // Listen for connection status changes
-    window.addEventListener('messaging:connection', (event) => {
+    window.addEventListener('messaging:connection', event => {
       this.handleConnectionStatus(event.detail);
     });
   }
@@ -766,7 +764,7 @@ class MessagingManager {
     }
 
     const typingSet = this.typingUsers.get(conversationId);
-    
+
     if (isTyping) {
       typingSet.add(userId);
     } else {
@@ -780,11 +778,11 @@ class MessagingManager {
 
     // Emit custom event for UI components
     const event = new CustomEvent('messagingManager:typingUpdate', {
-      detail: { 
-        conversationId, 
+      detail: {
+        conversationId,
         typingUserIds: Array.from(typingSet),
-        isTyping: typingSet.size > 0
-      }
+        isTyping: typingSet.size > 0,
+      },
     });
     window.dispatchEvent(event);
   }
@@ -795,7 +793,7 @@ class MessagingManager {
   handleReadReceipt({ conversationId, messageId, userId }) {
     // Emit custom event for UI components
     const event = new CustomEvent('messagingManager:readReceipt', {
-      detail: { conversationId, messageId, userId }
+      detail: { conversationId, messageId, userId },
     });
     window.dispatchEvent(event);
   }
@@ -805,11 +803,15 @@ class MessagingManager {
    */
   handleConnectionStatus({ status }) {
     this.updateConnectionIndicator(status);
-    
+
     // Only show toasts after initial connection (not on first connect)
     if (status === 'offline' && typeof EFToast !== 'undefined') {
       EFToast.warning('Connection lost - using fallback mode', { duration: 4000 });
-    } else if (status === 'online' && this.messagingSystem._hasDisconnected && typeof EFToast !== 'undefined') {
+    } else if (
+      status === 'online' &&
+      this.messagingSystem._hasDisconnected &&
+      typeof EFToast !== 'undefined'
+    ) {
       // Only show reconnect success if we've previously disconnected
       EFToast.success('Reconnected - real-time messaging active', { duration: 3000 });
     }
@@ -821,9 +823,10 @@ class MessagingManager {
   updateConnectionIndicator(status) {
     if (!this.connectionStatusElement) {
       // Try to find existing indicator
-      this.connectionStatusElement = document.getElementById('messaging-connection-status') ||
-                                      document.querySelector('[data-messaging-status]');
-      
+      this.connectionStatusElement =
+        document.getElementById('messaging-connection-status') ||
+        document.querySelector('[data-messaging-status]');
+
       // Create if doesn't exist
       if (!this.connectionStatusElement) {
         this.connectionStatusElement = document.createElement('div');
@@ -831,11 +834,12 @@ class MessagingManager {
         this.connectionStatusElement.className = 'messaging-connection-status';
         this.connectionStatusElement.setAttribute('aria-live', 'assertive');
         this.connectionStatusElement.setAttribute('aria-atomic', 'true');
-        
+
         // Find a suitable container (messaging header, navbar, etc.)
-        const container = document.querySelector('.messaging-header') ||
-                         document.querySelector('.navbar') ||
-                         document.body;
+        const container =
+          document.querySelector('.messaging-header') ||
+          document.querySelector('.navbar') ||
+          document.body;
         container.appendChild(this.connectionStatusElement);
       }
     }
@@ -1157,15 +1161,17 @@ class MessagingManager {
    * @param {string} userName - Optional user name to display
    */
   showTypingIndicator(indicator, userName = null) {
-    if (!indicator) return;
-    
+    if (!indicator) {
+      return;
+    }
+
     if (userName) {
       const textSpan = indicator.querySelector('.typing-text');
       if (textSpan) {
         textSpan.textContent = `${userName} is typing...`;
       }
     }
-    
+
     indicator.style.display = 'inline-flex';
   }
 
@@ -1174,7 +1180,9 @@ class MessagingManager {
    * @param {HTMLElement} indicator - Typing indicator element
    */
   hideTypingIndicator(indicator) {
-    if (!indicator) return;
+    if (!indicator) {
+      return;
+    }
     indicator.style.display = 'none';
   }
 }

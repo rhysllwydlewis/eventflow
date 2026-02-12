@@ -394,12 +394,21 @@ class SEOHelper {
       structuredData.address = {
         '@type': 'PostalAddress',
       };
-      if (supplier.address.street) structuredData.address.streetAddress = supplier.address.street;
-      if (supplier.address.city) structuredData.address.addressLocality = supplier.address.city;
-      if (supplier.address.region) structuredData.address.addressRegion = supplier.address.region;
-      if (supplier.address.postalCode)
+      if (supplier.address.street) {
+        structuredData.address.streetAddress = supplier.address.street;
+      }
+      if (supplier.address.city) {
+        structuredData.address.addressLocality = supplier.address.city;
+      }
+      if (supplier.address.region) {
+        structuredData.address.addressRegion = supplier.address.region;
+      }
+      if (supplier.address.postalCode) {
         structuredData.address.postalCode = supplier.address.postalCode;
-      if (supplier.address.country) structuredData.address.addressCountry = supplier.address.country;
+      }
+      if (supplier.address.country) {
+        structuredData.address.addressCountry = supplier.address.country;
+      }
     }
 
     // Add price range if available

@@ -30,9 +30,13 @@ try {
     logger.info('Redis client initialized for WebSocket clustering');
   }
 } catch (error) {
-  logger.warn('Redis adapter not available - WebSocket clustering disabled', {
-    error: error.message,
-  });
+  if (process.env.REDIS_URL) {
+    logger.warn('Redis URL configured but Redis adapter is not available', {
+      error: error.message,
+    });
+  } else {
+    logger.info('Redis adapter not available - clustering disabled (optional in current config)');
+  }
 }
 
 class WebSocketServerV2 {

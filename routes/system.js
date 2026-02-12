@@ -76,6 +76,71 @@ function applyHealthCheckLimiter(req, res, next) {
   next();
 }
 
+function getIntegrationStatus() {
+  let redisAdapterInstalled = false;
+  try {
+    // eslint-disable-next-line node/no-missing-require
+    require.resolve('@socket.io/redis-adapter');
+    redisAdapterInstalled = true;
+  } catch (_error) {
+    redisAdapterInstalled = false;
+  }
+
+  const sentryEnabled = !!process.env.SENTRY_DSN;
+  const stripeEnabled = !!process.env.STRIPE_SECRET_KEY;
+  const openAIEnabled = !!process.env.OPENAI_API_KEY;
+  const redisConfigured = !!process.env.REDIS_URL;
+  const mongoConfigured = !!process.env.MONGODB_URI;
+  const jwtConfigured = !!process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32;
+  const baseUrlConfigured = !!process.env.BASE_URL && !process.env.BASE_URL.includes('localhost');
+
+  return {
+    sentry: sentryEnabled ? 'configured' : 'disabled',
+    stripe: stripeEnabled ? 'configured' : 'disabled',
+    openai: openAIEnabled ? 'configured' : 'disabled',
+    redis: redisConfigured ? 'configured' : 'disabled',
+    redisAdapter: redisAdapterInstalled ? 'installed' : 'not_installed',
+    mongodbConfig: mongoConfigured ? 'configured' : 'missing',
+    jwtSecret: jwtConfigured ? 'configured' : 'weak_or_missing',
+    baseUrl: baseUrlConfigured ? 'configured' : 'invalid_or_missing',
+  };
+}
+
+function getProductionGuardrails() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!isProduction) {
+    return { enabled: false, missingCritical: [] };
+  }
+
+  const missingCritical = [];
+  if (!process.env.MONGODB_URI) {
+    missingCritical.push('MONGODB_URI');
+  }
+
+  const jwtSecret = process.env.JWT_SECRET || '';
+  const knownWeakSecrets = new Set([
+    '',
+    'change_me',
+    'your_super_long_random_secret',
+    'your-secret-key-min-32-chars',
+    'your-secret-key',
+    'your_secret',
+  ]);
+  if (jwtSecret.length < 32 || knownWeakSecrets.has(jwtSecret)) {
+    missingCritical.push('JWT_SECRET');
+  }
+
+  const baseUrl = process.env.BASE_URL || '';
+  if (!baseUrl || baseUrl.includes('localhost')) {
+    missingCritical.push('BASE_URL');
+  }
+
+  return {
+    enabled: true,
+    missingCritical,
+  };
+}
+
 /**
  * GET /api/csrf-token
  * Get CSRF token for form submissions
@@ -262,6 +327,14 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
     }
   } catch (error) {
     response.services.pexels = 'unavailable';
+  }
+
+  response.integrations = getIntegrationStatus();
+
+  const guardrails = getProductionGuardrails();
+  response.guardrails = guardrails;
+  if (guardrails.enabled && guardrails.missingCritical.length > 0) {
+    response.status = 'degraded';
   }
 
   // Add response time for monitoring

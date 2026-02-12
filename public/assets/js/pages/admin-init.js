@@ -1,10 +1,12 @@
 (function () {
   // Constants - Will be dynamically loaded from backend for security
-  let OWNER_EMAIL = 'admin@event-flow.co.uk'; // Default, will be updated from backend
-  
+  const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Default, will be updated from backend
+
   // Helper to check if email is owner (case-insensitive)
   function isOwnerEmail(email) {
-    if (!email || !OWNER_EMAIL) return false;
+    if (!email || !OWNER_EMAIL) {
+      return false;
+    }
     return email.toLowerCase() === OWNER_EMAIL.toLowerCase();
   }
 
@@ -120,7 +122,7 @@
       const isAdmin = u.role === 'admin';
 
       let actions = '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      
+
       // Owner accounts have special protection
       if (isOwner) {
         actions += `<button disabled style="opacity:0.5;cursor:not-allowed;" title="Owner account is protected">Edit</button>`;
@@ -145,11 +147,12 @@
       }
 
       actions += '</div>';
-      
+
       // Enhanced role display with owner badge
       let roleDisplay = u.role || '';
       if (isOwner) {
-        roleDisplay += ' <span class="badge" style="background:#9f1239;color:#fff;font-weight:600;" title="Protected account - cannot be deleted or demoted">👑 OWNER</span>';
+        roleDisplay +=
+          ' <span class="badge" style="background:#9f1239;color:#fff;font-weight:600;" title="Protected account - cannot be deleted or demoted">👑 OWNER</span>';
       }
 
       rows +=

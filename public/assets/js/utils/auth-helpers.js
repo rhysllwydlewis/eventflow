@@ -3,7 +3,7 @@
  * Provides improved UX for auth flows with rate limiting, better errors, and api-client integration
  */
 
-(function() {
+(function () {
   'use strict';
 
   // Rate limit state
@@ -14,8 +14,10 @@
    * Show auth status message with proper styling
    */
   function showAuthStatus(element, message, type = 'info') {
-    if (!element) return;
-    
+    if (!element) {
+      return;
+    }
+
     element.textContent = message;
     element.className = `auth-status is-visible is-${type}`;
     element.setAttribute('role', type === 'error' ? 'alert' : 'status');
@@ -26,8 +28,10 @@
    * Hide auth status message
    */
   function hideAuthStatus(element) {
-    if (!element) return;
-    
+    if (!element) {
+      return;
+    }
+
     element.className = 'auth-status';
     element.textContent = '';
   }
@@ -36,18 +40,21 @@
    * Show loading overlay on form
    */
   function showLoading(form) {
-    if (!form) return;
-    
+    if (!form) {
+      return;
+    }
+
     let overlay = form.querySelector('.auth-loading-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'auth-loading-overlay';
-      overlay.innerHTML = '<div class="auth-spinner" role="status"><span class="auth-sr-only">Loading...</span></div>';
+      overlay.innerHTML =
+        '<div class="auth-spinner" role="status"><span class="auth-sr-only">Loading...</span></div>';
       form.style.position = 'relative';
       form.appendChild(overlay);
     }
     overlay.classList.add('is-active');
-    
+
     // Disable form inputs
     const inputs = form.querySelectorAll('input, button');
     inputs.forEach(input => {
@@ -59,13 +66,15 @@
    * Hide loading overlay on form
    */
   function hideLoading(form) {
-    if (!form) return;
-    
+    if (!form) {
+      return;
+    }
+
     const overlay = form.querySelector('.auth-loading-overlay');
     if (overlay) {
       overlay.classList.remove('is-active');
     }
-    
+
     // Re-enable form inputs
     const inputs = form.querySelectorAll('input, button');
     inputs.forEach(input => {
@@ -77,7 +86,9 @@
    * Check if we're currently rate limited
    */
   function isRateLimited() {
-    if (!rateLimitUntil) return false;
+    if (!rateLimitUntil) {
+      return false;
+    }
     return Date.now() < rateLimitUntil;
   }
 
@@ -85,16 +96,18 @@
    * Set rate limit with timer
    */
   function setRateLimit(seconds) {
-    rateLimitUntil = Date.now() + (seconds * 1000);
+    rateLimitUntil = Date.now() + seconds * 1000;
     return seconds;
   }
 
   /**
    * Show rate limit message with countdown
    */
-  function showRateLimitMessage(container, seconds) {
-    if (!container) return;
-    
+  function showRateLimitMessage(container, _seconds) {
+    if (!container) {
+      return;
+    }
+
     // Create or get rate limit element
     let rateLimitEl = container.querySelector('.auth-rate-limit');
     if (!rateLimitEl) {
@@ -106,10 +119,10 @@
       `;
       container.insertBefore(rateLimitEl, container.firstChild);
     }
-    
+
     rateLimitEl.classList.add('is-visible');
     const timerEl = rateLimitEl.querySelector('.auth-rate-limit-timer');
-    
+
     // Update countdown
     function updateTimer() {
       if (!isRateLimited()) {
@@ -120,15 +133,17 @@
         }
         return;
       }
-      
+
       const remaining = Math.ceil((rateLimitUntil - Date.now()) / 1000);
       const minutes = Math.floor(remaining / 60);
       const secs = remaining % 60;
       timerEl.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
     }
-    
+
     updateTimer();
-    if (rateLimitTimer) clearInterval(rateLimitTimer);
+    if (rateLimitTimer) {
+      clearInterval(rateLimitTimer);
+    }
     rateLimitTimer = setInterval(updateTimer, 1000);
   }
 
@@ -136,8 +151,10 @@
    * Show connection error with retry button
    */
   function showConnectionError(container, retryCallback) {
-    if (!container) return;
-    
+    if (!container) {
+      return;
+    }
+
     let errorEl = container.querySelector('.auth-connection-error');
     if (!errorEl) {
       errorEl = document.createElement('div');
@@ -149,7 +166,7 @@
         <button type="button" class="auth-retry-btn">Retry</button>
       `;
       container.insertBefore(errorEl, container.firstChild);
-      
+
       const retryBtn = errorEl.querySelector('.auth-retry-btn');
       if (retryBtn && retryCallback) {
         retryBtn.addEventListener('click', () => {
@@ -161,7 +178,7 @@
         });
       }
     }
-    
+
     errorEl.classList.add('is-visible');
   }
 
@@ -169,8 +186,10 @@
    * Hide connection error
    */
   function hideConnectionError(container) {
-    if (!container) return;
-    
+    if (!container) {
+      return;
+    }
+
     const errorEl = container.querySelector('.auth-connection-error');
     if (errorEl) {
       errorEl.classList.remove('is-visible');
@@ -214,24 +233,24 @@
     } catch (e) {
       console.warn('Failed to parse response JSON:', e);
     }
-    
+
     if (!response.ok) {
       // Handle rate limiting
       if (response.status === 429) {
         const retryAfter = response.headers.get('Retry-After');
         const seconds = retryAfter ? parseInt(retryAfter, 10) : 60;
         setRateLimit(seconds);
-        
+
         if (statusElement) {
           const container = statusElement.closest('form') || statusElement.parentElement;
           showRateLimitMessage(container, seconds);
         }
       }
-      
+
       const errorMsg = getErrorMessage(response.status, null, data.error);
       throw new Error(errorMsg);
     }
-    
+
     return data;
   }
 
@@ -242,13 +261,13 @@
     if (!window.apiClient) {
       throw new Error('API client not loaded. Please refresh the page.');
     }
-    
+
     // Check rate limit before making request
     if (isRateLimited()) {
       const remaining = Math.ceil((rateLimitUntil - Date.now()) / 1000);
       throw new Error(`Please wait ${remaining} seconds before trying again.`);
     }
-    
+
     try {
       const response = await window.apiClient.post(endpoint, body);
       return await handleAuthResponse(response, statusElement);
@@ -293,22 +312,24 @@
    * Auto-focus first field with error or first empty field
    */
   function autoFocusForm(form) {
-    if (!form) return;
-    
+    if (!form) {
+      return;
+    }
+
     // Find first field with error
     const fieldWithError = form.querySelector('.has-error, [aria-invalid="true"]');
     if (fieldWithError) {
       fieldWithError.focus();
       return;
     }
-    
+
     // Find first empty required field
     const emptyRequired = form.querySelector('input[required]:not([value])');
     if (emptyRequired) {
       emptyRequired.focus();
       return;
     }
-    
+
     // Focus first input
     const firstInput = form.querySelector('input');
     if (firstInput) {

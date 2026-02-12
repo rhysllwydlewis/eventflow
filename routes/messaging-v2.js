@@ -122,59 +122,65 @@ function ensureServices(req, res, next) {
  * POST /api/v2/messages/threads
  * Create a new conversation thread
  */
-router.post('/threads', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { participants, subject, metadata } = req.body;
+router.post(
+  '/threads',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { participants, subject, metadata } = req.body;
 
-    if (!participants || !Array.isArray(participants) || participants.length < 1) {
-      return res.status(400).json({
-        error: 'participants must be an array with at least one user',
+      if (!participants || !Array.isArray(participants) || participants.length < 1) {
+        return res.status(400).json({
+          error: 'participants must be an array with at least one user',
+        });
+      }
+
+      // Add current user to participants if not included
+      const allParticipants = [...new Set([req.user.id, ...participants])];
+
+      // Get user's subscription tier
+      const subscriptionTier = req.user.subscriptionTier || 'free';
+
+      const thread = await messagingService.createThread(
+        allParticipants,
+        {
+          subject,
+          ...metadata,
+          createdBy: req.user.id,
+        },
+        subscriptionTier
+      );
+
+      res.status(201).json({
+        success: true,
+        thread: {
+          id: thread._id.toString(),
+          participants: thread.participants,
+          metadata: thread.metadata,
+          createdAt: thread.createdAt,
+        },
       });
-    }
+    } catch (error) {
+      logger.error('Create thread error', { error: error.message, userId: req.user.id });
 
-    // Add current user to participants if not included
-    const allParticipants = [...new Set([req.user.id, ...participants])];
+      // Handle limit-specific errors with proper status code
+      if (error.message.includes('limit reached')) {
+        return res.status(429).json({
+          error: 'Thread limit reached',
+          message: error.message,
+          upgradeUrl: '/pricing.html',
+        });
+      }
 
-    // Get user's subscription tier
-    const subscriptionTier = req.user.subscriptionTier || 'free';
-
-    const thread = await messagingService.createThread(
-      allParticipants,
-      {
-        subject,
-        ...metadata,
-        createdBy: req.user.id,
-      },
-      subscriptionTier
-    );
-
-    res.status(201).json({
-      success: true,
-      thread: {
-        id: thread._id.toString(),
-        participants: thread.participants,
-        metadata: thread.metadata,
-        createdAt: thread.createdAt,
-      },
-    });
-  } catch (error) {
-    logger.error('Create thread error', { error: error.message, userId: req.user.id });
-
-    // Handle limit-specific errors with proper status code
-    if (error.message.includes('limit reached')) {
-      return res.status(429).json({
-        error: 'Thread limit reached',
+      res.status(500).json({
+        error: 'Failed to create thread',
         message: error.message,
-        upgradeUrl: '/pricing.html',
       });
     }
-
-    res.status(500).json({
-      error: 'Failed to create thread',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /api/v2/messages/threads
@@ -262,24 +268,30 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
  * DELETE /api/v2/messages/threads/:id
  * Delete/archive thread
  */
-router.delete('/threads/:id', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { id } = req.params;
+router.delete(
+  '/threads/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    await messagingService.archiveThread(id, req.user.id);
+      await messagingService.archiveThread(id, req.user.id);
 
-    res.json({
-      success: true,
-      message: 'Thread archived successfully',
-    });
-  } catch (error) {
-    logger.error('Delete thread error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to delete thread',
-      message: error.message,
-    });
+      res.json({
+        success: true,
+        message: 'Thread archived successfully',
+      });
+    } catch (error) {
+      logger.error('Delete thread error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to delete thread',
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 // =========================
 // Specific Message Routes (must come before generic parameter routes)
@@ -443,230 +455,256 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
  * POST /api/v2/messages/:threadId
  * Send message in thread
  */
-router.post('/:threadId', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { threadId } = req.params;
-    const { content, attachments } = req.body;
+router.post(
+  '/:threadId',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { threadId } = req.params;
+      const { content, attachments } = req.body;
 
-    if (!content && (!attachments || attachments.length === 0)) {
-      return res.status(400).json({
-        error: 'content or attachments required',
+      if (!content && (!attachments || attachments.length === 0)) {
+        return res.status(400).json({
+          error: 'content or attachments required',
+        });
+      }
+
+      // Verify access
+      const thread = await messagingService.getThread(threadId);
+      if (!thread) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
+
+      if (!thread.participants.includes(req.user.id)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const recipientIds = thread.participants.filter(p => p !== req.user.id);
+
+      // Get user's subscription tier
+      const subscriptionTier = req.user.subscriptionTier || 'free';
+
+      const message = await messagingService.sendMessage(
+        {
+          threadId,
+          senderId: req.user.id,
+          recipientIds,
+          content,
+          attachments: attachments || [],
+        },
+        subscriptionTier
+      );
+
+      res.status(201).json({
+        success: true,
+        message: {
+          id: message._id.toString(),
+          threadId: message.threadId,
+          senderId: message.senderId,
+          content: message.content,
+          attachments: message.attachments,
+          status: message.status,
+          createdAt: message.createdAt,
+        },
       });
-    }
+    } catch (error) {
+      logger.error('Send message error', { error: error.message, userId: req.user.id });
 
-    // Verify access
-    const thread = await messagingService.getThread(threadId);
-    if (!thread) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
+      // Handle limit-specific errors with proper status code
+      if (error.message.includes('limit reached')) {
+        return res.status(429).json({
+          error: 'Message limit reached',
+          message: error.message,
+          upgradeUrl: '/pricing.html',
+        });
+      }
 
-    if (!thread.participants.includes(req.user.id)) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    const recipientIds = thread.participants.filter(p => p !== req.user.id);
-
-    // Get user's subscription tier
-    const subscriptionTier = req.user.subscriptionTier || 'free';
-
-    const message = await messagingService.sendMessage(
-      {
-        threadId,
-        senderId: req.user.id,
-        recipientIds,
-        content,
-        attachments: attachments || [],
-      },
-      subscriptionTier
-    );
-
-    res.status(201).json({
-      success: true,
-      message: {
-        id: message._id.toString(),
-        threadId: message.threadId,
-        senderId: message.senderId,
-        content: message.content,
-        attachments: message.attachments,
-        status: message.status,
-        createdAt: message.createdAt,
-      },
-    });
-  } catch (error) {
-    logger.error('Send message error', { error: error.message, userId: req.user.id });
-
-    // Handle limit-specific errors with proper status code
-    if (error.message.includes('limit reached')) {
-      return res.status(429).json({
-        error: 'Message limit reached',
+      res.status(500).json({
+        error: 'Failed to send message',
         message: error.message,
-        upgradeUrl: '/pricing.html',
       });
     }
-
-    res.status(500).json({
-      error: 'Failed to send message',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * PUT /api/v2/messages/:messageId
  * Update/edit a message (drafts only for now, expand later for edit feature)
  */
-router.put('/:messageId', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { messageId } = req.params;
-    const { content } = req.body;
+router.put(
+  '/:messageId',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { messageId } = req.params;
+      const { content } = req.body;
 
-    if (!content || typeof content !== 'string') {
-      return res.status(400).json({ error: 'Message content is required' });
-    }
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ error: 'Message content is required' });
+      }
 
-    const message = await messagingService.messagesCollection.findOne({
-      _id: ObjectId.isValid(messageId)
-        ? new ObjectId(messageId)
-        : messageId,
-    });
+      const message = await messagingService.messagesCollection.findOne({
+        _id: ObjectId.isValid(messageId) ? new ObjectId(messageId) : messageId,
+      });
 
-    if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
 
-    // Only the sender can edit their message
-    if (message.senderId !== userId) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
+      // Only the sender can edit their message
+      if (message.senderId !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
 
-    // For now, only allow editing drafts
-    if (!message.isDraft) {
-      return res.status(400).json({
-        error: 'Only draft messages can be edited',
-        hint: 'Full message editing feature coming soon',
+      // For now, only allow editing drafts
+      if (!message.isDraft) {
+        return res.status(400).json({
+          error: 'Only draft messages can be edited',
+          hint: 'Full message editing feature coming soon',
+        });
+      }
+
+      const updatedMessage = await messagingService.messagesCollection.findOneAndUpdate(
+        {
+          _id: message._id,
+          senderId: userId,
+        },
+        {
+          $set: {
+            content,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      res.json({ success: true, message: updatedMessage.value });
+    } catch (error) {
+      logger.error('Update message error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to update message',
+        message: error.message,
       });
     }
-
-    const updatedMessage = await messagingService.messagesCollection.findOneAndUpdate(
-      {
-        _id: message._id,
-        senderId: userId,
-      },
-      {
-        $set: {
-          content,
-          updatedAt: new Date(),
-        },
-      },
-      { returnDocument: 'after' }
-    );
-
-    res.json({ success: true, message: updatedMessage.value });
-  } catch (error) {
-    logger.error('Update message error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to update message',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * DELETE /api/v2/messages/:messageId
  * Delete a message (soft delete)
  */
-router.delete('/:messageId', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { messageId } = req.params;
+router.delete(
+  '/:messageId',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { messageId } = req.params;
 
-    const message = await messagingService.messagesCollection.findOne({
-      _id: ObjectId.isValid(messageId)
-        ? new ObjectId(messageId)
-        : messageId,
-    });
+      const message = await messagingService.messagesCollection.findOne({
+        _id: ObjectId.isValid(messageId) ? new ObjectId(messageId) : messageId,
+      });
 
-    if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    // Only the sender can delete their message
-    if (message.senderId !== userId) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Soft delete the message
-    await messagingService.messagesCollection.updateOne(
-      { _id: message._id },
-      {
-        $set: {
-          deletedAt: new Date(),
-          updatedAt: new Date(),
-        },
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
       }
-    );
 
-    res.json({ success: true });
-  } catch (error) {
-    logger.error('Delete message error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to delete message',
-      message: error.message,
-    });
+      // Only the sender can delete their message
+      if (message.senderId !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // Soft delete the message
+      await messagingService.messagesCollection.updateOne(
+        { _id: message._id },
+        {
+          $set: {
+            deletedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        }
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Delete message error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to delete message',
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 /**
  * POST /api/v2/messages/:id/reactions
  * Add reaction to message
  */
-router.post('/:id/reactions', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { emoji } = req.body;
+router.post(
+  '/:id/reactions',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { emoji } = req.body;
 
-    if (!emoji) {
-      return res.status(400).json({ error: 'emoji required' });
+      if (!emoji) {
+        return res.status(400).json({ error: 'emoji required' });
+      }
+
+      const message = await messagingService.addReaction(id, req.user.id, emoji);
+
+      res.json({
+        success: true,
+        reactions: message.reactions,
+      });
+    } catch (error) {
+      logger.error('Add reaction error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to add reaction',
+        message: error.message,
+      });
     }
-
-    const message = await messagingService.addReaction(id, req.user.id, emoji);
-
-    res.json({
-      success: true,
-      reactions: message.reactions,
-    });
-  } catch (error) {
-    logger.error('Add reaction error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to add reaction',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * POST /api/v2/messages/:id/read
  * Mark message as read
  */
-router.post('/:id/read', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { id } = req.params;
+router.post(
+  '/:id/read',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    await messagingService.markMessageAsRead(id, req.user.id);
+      await messagingService.markMessageAsRead(id, req.user.id);
 
-    res.json({
-      success: true,
-      message: 'Message marked as read',
-    });
-  } catch (error) {
-    logger.error('Mark as read error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to mark as read',
-      message: error.message,
-    });
+      res.json({
+        success: true,
+        message: 'Message marked as read',
+      });
+    } catch (error) {
+      logger.error('Mark as read error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to mark as read',
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 /**
  * POST /api/v2/messages/threads/:threadId/read
@@ -1039,9 +1077,7 @@ router.post(
       const { threadId } = req.params;
 
       const thread = await messagingService.threadsCollection.findOne({
-        _id: ObjectId.isValid(threadId)
-          ? new ObjectId(threadId)
-          : threadId,
+        _id: ObjectId.isValid(threadId) ? new ObjectId(threadId) : threadId,
       });
 
       if (!thread) {
@@ -1088,9 +1124,7 @@ router.post(
       const { threadId } = req.params;
 
       const thread = await messagingService.threadsCollection.findOne({
-        _id: ObjectId.isValid(threadId)
-          ? new ObjectId(threadId)
-          : threadId,
+        _id: ObjectId.isValid(threadId) ? new ObjectId(threadId) : threadId,
       });
 
       if (!thread) {
@@ -1152,10 +1186,10 @@ router.post('/queue', applyAuthRequired, ensureServices, async (req, res) => {
 
     await mongoDb.db.collection(MessageQueue.COLLECTION).insertOne(queueEntry);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       queueId: queueEntry._id.toString(),
-      status: queueEntry.status 
+      status: queueEntry.status,
     });
   } catch (error) {
     logger.error('Queue message error', { error: error.message, userId: req.user.id });
@@ -1276,15 +1310,15 @@ router.delete('/queue/:id', applyAuthRequired, ensureServices, async (req, res) 
 router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { 
-      q, 
-      participant, 
-      startDate, 
-      endDate, 
-      status, 
+    const {
+      q,
+      participant,
+      startDate,
+      endDate,
+      status,
       hasAttachments,
       page = 1,
-      limit = 20 
+      limit = 20,
     } = req.query;
 
     if (!q || q.trim().length === 0) {
@@ -1298,10 +1332,7 @@ router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
     // Build search query
     const searchQuery = {
       $text: { $search: q },
-      $or: [
-        { senderId: userId },
-        { recipientIds: userId },
-      ],
+      $or: [{ senderId: userId }, { recipientIds: userId }],
       deletedAt: null,
     };
 
@@ -1315,8 +1346,12 @@ router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
 
     if (startDate || endDate) {
       searchQuery.createdAt = {};
-      if (startDate) searchQuery.createdAt.$gte = new Date(startDate);
-      if (endDate) searchQuery.createdAt.$lte = new Date(endDate);
+      if (startDate) {
+        searchQuery.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        searchQuery.createdAt.$lte = new Date(endDate);
+      }
     }
 
     if (status === 'read') {
@@ -1401,8 +1436,8 @@ router.put('/:messageId/edit', applyAuthRequired, ensureServices, async (req, re
     const now = new Date();
 
     if (now > editDeadline) {
-      return res.status(403).json({ 
-        error: `Message can only be edited within ${editWindowMinutes} minutes of sending` 
+      return res.status(403).json({
+        error: `Message can only be edited within ${editWindowMinutes} minutes of sending`,
       });
     }
 
@@ -1436,10 +1471,10 @@ router.put('/:messageId/edit', applyAuthRequired, ensureServices, async (req, re
       });
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       editedAt: now,
-      content: sanitizedContent 
+      content: sanitizedContent,
     });
   } catch (error) {
     logger.error('Edit message error', { error: error.message, userId: req.user.id });
@@ -1474,7 +1509,7 @@ router.get('/:messageId/history', applyAuthRequired, ensureServices, async (req,
     }
 
     const history = message.editHistory || [];
-    res.json({ 
+    res.json({
       history,
       currentContent: message.content,
       editedAt: message.editedAt,
@@ -1647,8 +1682,8 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
     });
 
     if (pinnedCount >= maxPinned) {
-      return res.status(400).json({ 
-        error: `Maximum ${maxPinned} threads can be pinned` 
+      return res.status(400).json({
+        error: `Maximum ${maxPinned} threads can be pinned`,
       });
     }
 
@@ -1803,7 +1838,7 @@ router.post('/:id/forward', applyAuthRequired, ensureServices, async (req, res) 
 
       // Create forwarded message
       const Message = require('../models/Message');
-      const forwardContent = note 
+      const forwardContent = note
         ? `${note}\n\n---\nForwarded from ${req.user.name || 'Unknown'}:\n${originalMessage.content}`
         : `Forwarded from ${req.user.name || 'Unknown'}:\n${originalMessage.content}`;
 
@@ -1820,7 +1855,7 @@ router.post('/:id/forward', applyAuthRequired, ensureServices, async (req, res) 
       });
 
       await mongoDb.db.collection('messages').insertOne(message);
-      
+
       // Update thread
       await messagingService.threadsCollection.updateOne(
         { _id: thread._id },
@@ -1841,10 +1876,10 @@ router.post('/:id/forward', applyAuthRequired, ensureServices, async (req, res) 
       forwardedMessages.push(message);
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       forwardedCount: forwardedMessages.length,
-      messages: forwardedMessages 
+      messages: forwardedMessages,
     });
   } catch (error) {
     logger.error('Forward message error', { error: error.message, userId: req.user.id });
@@ -1878,12 +1913,10 @@ router.post('/preview-link', applyAuthRequired, ensureServices, async (req, res)
     }
 
     // Check cache first
-    const cached = await mongoDb.db
-      .collection(LinkPreview.COLLECTION)
-      .findOne({
-        normalizedUrl,
-        expiresAt: { $gt: new Date() },
-      });
+    const cached = await mongoDb.db.collection(LinkPreview.COLLECTION).findOne({
+      normalizedUrl,
+      expiresAt: { $gt: new Date() },
+    });
 
     if (cached) {
       return res.json(cached);
@@ -1913,11 +1946,7 @@ router.post('/preview-link', applyAuthRequired, ensureServices, async (req, res)
       // Save to cache
       await mongoDb.db
         .collection(LinkPreview.COLLECTION)
-        .updateOne(
-          { normalizedUrl },
-          { $set: linkPreview },
-          { upsert: true }
-        );
+        .updateOne({ normalizedUrl }, { $set: linkPreview }, { upsert: true });
 
       res.json(linkPreview);
     } catch (fetchError) {
@@ -1929,11 +1958,7 @@ router.post('/preview-link', applyAuthRequired, ensureServices, async (req, res)
 
       await mongoDb.db
         .collection(LinkPreview.COLLECTION)
-        .updateOne(
-          { normalizedUrl },
-          { $set: failedPreview },
-          { upsert: true }
-        );
+        .updateOne({ normalizedUrl }, { $set: failedPreview }, { upsert: true });
 
       res.status(400).json({ error: 'Failed to fetch link preview', details: fetchError.message });
     }
@@ -1961,7 +1986,7 @@ router.get(
   async (req, res) => {
     try {
       const { status, reason, page = 1, limit = 50 } = req.query;
-      
+
       const pageNum = parseInt(page, 10);
       const limitNum = Math.min(parseInt(limit, 10), 100);
       const skip = (pageNum - 1) * limitNum;
@@ -2039,10 +2064,7 @@ router.put(
 
       const result = await mongoDb.db
         .collection(ReportedMessage.COLLECTION)
-        .updateOne(
-          { _id: new ObjectId(reportId) },
-          { $set: update }
-        );
+        .updateOne({ _id: new ObjectId(reportId) }, { $set: update });
 
       if (result.matchedCount === 0) {
         return res.status(404).json({ error: 'Report not found' });

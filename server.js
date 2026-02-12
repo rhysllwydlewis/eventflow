@@ -49,7 +49,6 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const jwt = require('jsonwebtoken');
 
 const APP_VERSION = 'v18.1.0';
 
@@ -72,7 +71,6 @@ const {
   authRequired,
   roleRequired,
   getUserFromCookie,
-  clearAuthCookie,
   userExtractionMiddleware,
 } = require('./middleware/auth');
 const { featureRequired } = require('./middleware/features');
@@ -81,7 +79,6 @@ const { noindexMiddleware } = require('./middleware/seo');
 const { adminPageProtectionMiddleware } = require('./middleware/adminPages');
 
 // Utility modules
-const validators = require('./utils/validators');
 const helpers = require('./utils/helpers');
 
 // Data access layer - MongoDB-first with local storage fallback
@@ -207,14 +204,10 @@ const sentry = require('./utils/sentry');
 const cache = require('./cache');
 
 // Sitemap generator
-const { generateSitemap, generateRobotsTxt } = require('./sitemap');
 
 // Constants
-const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
-
 // Helper functions (re-export from utils for backward compatibility)
 const { supplierIsProActive } = helpers;
-const { passwordOk } = validators;
 
 const { seed } = require('./seed');
 
@@ -256,6 +249,71 @@ if (!JWT_SECRET || hasPlaceholder || JWT_SECRET.length < 32) {
   logger.error('🔧 To generate a secure JWT_SECRET, run:');
   logger.error('   openssl rand -base64 32');
   process.exit(1);
+}
+
+function getMissingCriticalProductionConfig(baseUrl) {
+  if (!isProduction) {
+    return [];
+  }
+
+  const missing = [];
+  if (!process.env.MONGODB_URI) {
+    missing.push('MONGODB_URI');
+  }
+  if (!JWT_SECRET || hasPlaceholder || JWT_SECRET.length < 32) {
+    missing.push('JWT_SECRET');
+  }
+  if (!baseUrl || baseUrl.includes('localhost')) {
+    missing.push('BASE_URL');
+  }
+
+  return missing;
+}
+
+function logIntegrationStartupSummary() {
+  const integrationSummary = [
+    {
+      name: 'MongoDB',
+      required: 'required',
+      status: process.env.MONGODB_URI ? 'configured' : 'missing',
+    },
+    {
+      name: 'JWT secret',
+      required: 'required',
+      status:
+        JWT_SECRET && !hasPlaceholder && JWT_SECRET.length >= 32 ? 'configured' : 'weak_or_missing',
+    },
+    {
+      name: 'Base URL',
+      required: 'required',
+      status:
+        process.env.BASE_URL && !process.env.BASE_URL.includes('localhost')
+          ? 'configured'
+          : 'invalid_or_missing',
+    },
+    {
+      name: 'Postmark',
+      required: 'optional',
+      status: EMAIL_ENABLED && postmark.isPostmarkEnabled() ? 'configured' : 'disabled',
+    },
+    { name: 'Stripe', required: 'optional', status: STRIPE_ENABLED ? 'configured' : 'disabled' },
+    { name: 'OpenAI', required: 'optional', status: AI_ENABLED ? 'configured' : 'disabled' },
+    {
+      name: 'Sentry',
+      required: 'optional',
+      status: sentry.isEnabled() ? 'configured' : 'disabled',
+    },
+    {
+      name: 'Redis URL',
+      required: 'optional',
+      status: process.env.REDIS_URL ? 'configured' : 'disabled',
+    },
+  ];
+
+  console.log('   Integration summary:');
+  for (const item of integrationSummary) {
+    console.log(`   - ${item.name}: ${item.status} (${item.required})`);
+  }
 }
 
 // Configure trust proxy for Railway and other reverse proxies
@@ -541,7 +599,7 @@ app.use('/api/v1/supplier', supplierRoutes);
 app.use('/api/supplier', supplierRoutes); // Backward compatibility
 
 // Audit logging middleware
-const { auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
+const { auditLog } = require('./middleware/audit');
 
 // Subscription and Payment V2 routes
 const subscriptionsV2Routes = require('./routes/subscriptions-v2');
@@ -853,6 +911,21 @@ async function startServer() {
       console.warn('   Set BASE_URL to your actual domain (e.g., https://event-flow.co.uk)');
     }
 
+    const missingCriticalConfig = getMissingCriticalProductionConfig(baseUrl);
+    const allowDegradedStartup = process.env.ALLOW_DEGRADED_STARTUP === 'true';
+    if (missingCriticalConfig.length > 0) {
+      console.error('');
+      console.error('❌ CRITICAL PRODUCTION CONFIGURATION MISSING');
+      console.error(`   Missing/invalid: ${missingCriticalConfig.join(', ')}`);
+      console.error(
+        '   Set required values or use ALLOW_DEGRADED_STARTUP=true to bypass temporarily.'
+      );
+      if (!allowDegradedStartup) {
+        process.exit(1);
+      }
+      console.warn('   ALLOW_DEGRADED_STARTUP enabled; continuing with degraded startup.');
+    }
+
     // 2. Pre-flight database validation (before initialization)
     console.log('');
     console.log('🔌 Validating database configuration...');
@@ -1050,12 +1123,12 @@ async function startServer() {
           autoMigrateFromLocal: true, // Auto-migrate from local storage if detected
         });
         console.log('   ✅ Database seeding complete');
-        
+
         // 4b. Validate admin authentication configuration
         console.log('');
         console.log('🔐 Validating admin authentication configuration...');
         const domainAdmin = require('./middleware/domain-admin');
-        
+
         // Validate ADMIN_DOMAINS format
         const domainsValidation = domainAdmin.validateAdminDomainsFormat();
         if (!domainsValidation.valid) {
@@ -1066,10 +1139,10 @@ async function startServer() {
           console.error('Fix the ADMIN_DOMAINS environment variable and restart.');
           process.exit(1);
         }
-        
+
         // Log admin configuration
         domainAdmin.logAdminAuthConfig();
-        
+
         // Check owner password in production
         if (process.env.NODE_ENV === 'production') {
           const ownerPassword = process.env.OWNER_PASSWORD;
@@ -1083,29 +1156,32 @@ async function startServer() {
             console.log('   ✅ Owner password configured');
           }
         }
-        
+
         console.log('   ✅ Admin authentication configuration valid');
-        
+
         // 4c. Initialize Date Management Service
         console.log('');
         console.log('📅 Initializing Date Management Service...');
         try {
           const DateManagementService = require('./services/dateManagementService');
           const dateService = new DateManagementService(dbUnified, logger);
-          
+
           // Schedule monthly automated checks
           const scheduleResult = dateService.scheduleMonthlyUpdate();
-          
+
           // Make available to routes via app.locals
           app.locals.dateService = dateService;
-          
+
           console.log('   ✅ Date Management Service initialized');
           console.log(`   ✅ Monthly checks scheduled: ${scheduleResult.scheduled ? 'Yes' : 'No'}`);
           if (scheduleResult.nextRun) {
             console.log(`   ⏰ Next scheduled check: ${scheduleResult.nextRun.toISOString()}`);
           }
         } catch (dateServiceError) {
-          console.warn('   ⚠️  Date Management Service failed to initialize:', dateServiceError.message);
+          console.warn(
+            '   ⚠️  Date Management Service failed to initialize:',
+            dateServiceError.message
+          );
           console.warn('   Date automation features will not be available');
         }
       } catch (error) {
@@ -1162,6 +1238,7 @@ async function startServer() {
       // 6. Check optional services
       console.log('');
       console.log('🔧 Checking optional services...');
+      logIntegrationStartupSummary();
       if (STRIPE_ENABLED) {
         console.log('   ✅ Stripe: Configured');
       } else {
