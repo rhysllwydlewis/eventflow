@@ -293,3 +293,10 @@ The website is considered ready for release when all are true:
 3. Smoke lane passes consistently.
 4. Critical journey suites for auth, subscriptions, lead scoring, and reviews pass.
 5. No open P0 regressions.
+
+## Immediate kickoff checklist (for the next 48 hours)
+
+1. Open tracking issues for PR1-PR4 and assign a DRI for each.
+2. Land PR1 first (Jest ESM + lint errors + smoke lane split) before touching business logic.
+3. Start daily triage updates using baseline metrics: failed tests/suites, parser errors, lint errors/warnings.
+4. Do not merge PR2/PR3 work unless PR1 quality gates are passing.
