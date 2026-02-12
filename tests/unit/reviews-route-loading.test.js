@@ -31,8 +31,8 @@ describe('Reviews Routes Loading', () => {
     const mockDeps = {
       dbUnified: {},
       authRequired: jest.fn((req, res, next) => next()),
-      roleRequired: jest.fn(role => (req, res, next) => next()),
-      featureRequired: jest.fn(feature => (req, res, next) => next()),
+      roleRequired: jest.fn(_role => (req, res, next) => next()),
+      featureRequired: jest.fn(_feature => (req, res, next) => next()),
       csrfProtection: jest.fn((req, res, next) => next()),
       reviewsSystem: {
         moderateReview: jest.fn(),

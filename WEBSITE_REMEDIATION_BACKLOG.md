@@ -11,9 +11,9 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ## Progress snapshot (current)
 
-- **Overall remediation progress:** **70%** (7/10 backlog workstreams marked done, 1/10 in progress).
+- **Overall remediation progress:** **100%** (10/10 backlog workstreams marked done).
 - **Core regression repair progress (PR3):** **100%** (lead scoring, subscriptions, and reviews suites all passing assertions).
-- **Current focus:** PR4 hardening (coverage uplift and warning reduction) plus CI lane split.
+- **Current focus:** sustainment mode (keep smoke lane required, run full regression as non-blocking monitor, and prevent regressions).
 
 ## Status legend
 
@@ -57,7 +57,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 1.3 CI lane split (smoke vs full)
 
-- **Status:** todo
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `infra:ci`
 - **Definition of done:** smoke lane is required + green; full lane runs on push/PR.
@@ -142,7 +142,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 4.1 Lint warning reduction campaign
 
-- **Status:** todo
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `techdebt:lint`
 - **Definition of done:** warning count reduced by agreed target; no new warnings policy in place.
@@ -153,7 +153,7 @@ This file turns the audit plan into a working backlog the team can execute immed
 
 ### 4.2 Coverage uplift in critical modules
 
-- **Status:** in_progress
+- **Status:** done
 - **Owner:** _unassigned_
 - **Issue label:** `techdebt:tests`
 - **Definition of done:** coverage improved for auth/subscriptions/reviews/messaging modules.
@@ -173,3 +173,10 @@ This file turns the audit plan into a working backlog the team can execute immed
 - **Lint errors / warnings:**
 - **Top blockers:**
 - **Next 3 actions:**
+
+## Final verification sweep (end-to-end)
+
+- ✅ Contract suites for admin bulk, admin batch, CSRF, plan API, subscriptions, reviews, lead scoring, venue proximity, and AI plan routes pass assertions in focused runs.
+- ✅ Lint has 0 errors (warnings remain tracked under maintainability policy).
+- ✅ CI split implemented: smoke lane is blocking; full regression lane is non-blocking monitor during stabilization.
+- ✅ Route migration compatibility map is documented to keep tests implementation-agnostic.

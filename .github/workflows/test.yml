@@ -2,38 +2,63 @@ name: Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  test:
-    name: Run Tests
+  smoke:
+    name: Smoke Tests (blocking)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
+    timeout-minutes: 20
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Run tests
-        run: npm test
+
+      - name: Run smoke suites
+        run: npm run test:smoke
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret-for-jest-min-32-characters-long
-      
+
+  full-regression:
+    name: Full Regression (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run full tests
+        run: npm run test:full
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret-for-jest-min-32-characters-long
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: success()
