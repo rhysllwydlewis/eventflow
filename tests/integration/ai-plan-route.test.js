@@ -4,13 +4,56 @@
  */
 
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const app = require('../../server');
+const dbUnified = require('../../db-unified');
+const { uid } = require('../../store');
+
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'test-secret-key-for-testing-only-minimum-32-characters-long';
 
 describe('AI Plan Route', () => {
+  let userId;
+  let userEmail;
+  let authToken;
+
+  beforeAll(async () => {
+    userId = uid('usr');
+    userEmail = `ai-plan-${Date.now()}@example.com`;
+
+    const users = await dbUnified.read('users');
+    users.push({
+      id: userId,
+      name: 'AI Plan Test User',
+      firstName: 'AI',
+      lastName: 'Tester',
+      email: userEmail,
+      role: 'customer',
+      verified: true,
+      passwordHash: bcrypt.hashSync('Test123!@#', 10),
+      createdAt: new Date().toISOString(),
+    });
+    await dbUnified.write('users', users);
+
+    authToken = jwt.sign({ id: userId, email: userEmail, role: 'customer' }, JWT_SECRET, {
+      expiresIn: '1h',
+    });
+  });
+
+  afterAll(async () => {
+    const users = await dbUnified.read('users');
+    await dbUnified.write(
+      'users',
+      users.filter(user => user.id !== userId)
+    );
+  });
+
   describe('POST /api/ai/plan', () => {
     it('should respond with fallback suggestions when OpenAI is not configured', async () => {
       const res = await request(app)
         .post('/api/ai/plan')
+        .set('Cookie', `token=${authToken}`)
         .send({
           prompt: 'Help me plan a wedding for 100 guests',
           plan: { guests: [], tasks: [], timeline: [] },
@@ -37,6 +80,7 @@ describe('AI Plan Route', () => {
     it('should include plan summary in prompt when plan data is provided', async () => {
       const res = await request(app)
         .post('/api/ai/plan')
+        .set('Cookie', `token=${authToken}`)
         .send({
           prompt: 'Give me more ideas',
           plan: {
@@ -52,7 +96,11 @@ describe('AI Plan Route', () => {
     });
 
     it('should handle empty request body gracefully', async () => {
-      const res = await request(app).post('/api/ai/plan').send({}).expect(200);
+      const res = await request(app)
+        .post('/api/ai/plan')
+        .set('Cookie', `token=${authToken}`)
+        .send({})
+        .expect(200);
 
       expect(res.body.from).toBe('fallback');
       expect(res.body.data).toBeDefined();
