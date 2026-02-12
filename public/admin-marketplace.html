@@ -32,12 +32,18 @@
   .listing-card {
     display: grid;
     grid-template-columns: 120px 1fr auto;
-    gap: 16px;
-    padding: 16px;
+    gap: 18px;
+    padding: 18px;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    margin-bottom: 12px;
+    border-radius: 12px;
+    margin-bottom: 14px;
     background: white;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .listing-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    border-color: #cbd5e1;
   }
   .listing-image {
     width: 120px;
@@ -68,11 +74,27 @@
     font-size: 12px;
     font-weight: 600;
     display: inline-block;
+    text-transform: capitalize;
   }
   .status-pending { background: #fef3c7; color: #92400e; }
   .status-active { background: #d1fae5; color: #065f46; }
   .status-sold { background: #e0e7ff; color: #3730a3; }
   .status-removed { background: #fee2e2; color: #991b1b; }
+
+  @media (max-width: 900px) {
+    .listing-card {
+      grid-template-columns: 1fr;
+    }
+    .listing-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .listing-actions .cta,
+    .listing-actions .cta.secondary,
+    .listing-actions .cta.ghost {
+      flex: 1 1 140px;
+    }
+  }
 </style>
 <script src="/assets/js/admin-shared.js"></script>
 <script src="/assets/js/components.js" defer></script>

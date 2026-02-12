@@ -280,6 +280,8 @@
     const timeAgo = getTimeAgo(listing.createdAt);
     const defaultImage = '/assets/images/collage-venue.jpg';
     const image = listing.images && listing.images[0] ? listing.images[0] : defaultImage;
+    const title = listing.title || 'Untitled listing';
+    const formattedPrice = formatPrice(listing.price);
 
     // Category icon mapping
     const categoryIcons = {
@@ -307,17 +309,29 @@
     return `
       <div class="marketplace-item-card" data-listing-id="${listing.id}">
         <div class="marketplace-item-image">
-          <img src="${image}" alt="${escapeHtml(listing.title)}" loading="lazy" onerror="this.src='${defaultImage}'">
+          <img src="${image}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.src='${defaultImage}'">
           <button class="marketplace-save-btn" aria-label="Save item">♡</button>
         </div>
         <div class="marketplace-item-details">
-          <div class="marketplace-item-price">£${listing.price.toFixed(2)}</div>
-          <h3 class="marketplace-item-title">${escapeHtml(listing.title)}</h3>
+          <div class="marketplace-item-price">${formattedPrice}</div>
+          <h3 class="marketplace-item-title">${escapeHtml(title)}</h3>
           ${tags.length > 0 ? `<div class="marketplace-item-tags">${tags.join('')}</div>` : ''}
           <div class="marketplace-item-time">Listed ${timeAgo}</div>
         </div>
       </div>
     `;
+  }
+
+  function formatPrice(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+      return 'Price on request';
+    }
+
+    return `£${number.toLocaleString('en-GB', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   }
 
   // Show listing detail modal (Facebook-style split-pane)
