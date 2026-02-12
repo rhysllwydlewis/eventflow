@@ -29,6 +29,13 @@
   };
 
   // ==========================================
+  // CONSTANTS
+  // ==========================================
+
+  // Debounce delay to prevent double-firing of touch and click events on hybrid devices
+  const TOUCH_DEBOUNCE_MS = 500;
+
+  // ==========================================
   // LOADING STATE MANAGEMENT
   // ==========================================
 
@@ -669,8 +676,10 @@
       needsEventListeners = true;
     }
 
-    // Toggle dropdown - Use single event listener (no cloning)
-    bell.addEventListener('click', e => {
+    // Toggle dropdown - Mobile-friendly event handling
+    let touchHandled = false;
+    
+    const handleBellToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
       
@@ -681,6 +690,22 @@
         positionDropdown(dropdown);
         fetchNotifications();
       }
+    };
+
+    // Add both touch and click support for mobile reliability
+    bell.addEventListener('touchend', (e) => {
+      touchHandled = true;
+      handleBellToggle(e);
+      // Reset flag after debounce delay to allow click events on non-touch devices
+      setTimeout(() => { touchHandled = false; }, TOUCH_DEBOUNCE_MS);
+    }, { passive: false });
+    
+    bell.addEventListener('click', (e) => {
+      // Skip if already handled by touch event
+      if (touchHandled) {
+        return;
+      }
+      handleBellToggle(e);
     });
 
     // Close on outside click (only attach once)
