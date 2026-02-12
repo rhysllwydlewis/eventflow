@@ -16,6 +16,24 @@ const { uid } = require('../store');
 
 const router = express.Router();
 
+const ALLOWED_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
+const ALLOWED_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
+const TICKET_ROLES = ['customer', 'supplier'];
+
+function normalizePriority(priority) {
+  return ALLOWED_PRIORITIES.includes(priority) ? priority : 'medium';
+}
+
+function canAccessTicket(user, ticket) {
+  if (!user || !ticket) {
+    return false;
+  }
+  if (user.role === 'admin') {
+    return true;
+  }
+  return ticket.senderId === user.id && ticket.senderType === user.role;
+}
+
 /**
  * POST /api/tickets
  * Create a new support ticket
@@ -30,7 +48,6 @@ router.post(
     try {
       const userId = req.user.id;
       const {
-        senderId,
         senderType,
         senderName,
         senderEmail,
@@ -44,8 +61,20 @@ router.post(
         return res.status(400).json({ error: 'Subject and message are required' });
       }
 
-      if (!senderType || !['customer', 'supplier'].includes(senderType)) {
+      if (typeof subject !== 'string' || subject.trim().length < 3) {
+        return res.status(400).json({ error: 'Subject must be at least 3 characters' });
+      }
+
+      if (typeof message !== 'string' || message.trim().length < 10) {
+        return res.status(400).json({ error: 'Message must be at least 10 characters' });
+      }
+
+      if (!senderType || !TICKET_ROLES.includes(senderType)) {
         return res.status(400).json({ error: 'Invalid sender type' });
+      }
+
+      if (req.user.role !== senderType) {
+        return res.status(403).json({ error: 'Sender type does not match your account role' });
       }
 
       // Create ticket
@@ -54,14 +83,15 @@ router.post(
 
       const newTicket = {
         id: uid(),
-        senderId: senderId || userId,
+        senderId: userId,
         senderType: senderType,
         senderName: senderName || req.user.name || req.user.email,
         senderEmail: senderEmail || req.user.email,
-        subject: subject,
-        message: message,
-        status: 'open', // 'open' | 'in_progress' | 'resolved' | 'closed'
-        priority: priority, // 'low' | 'medium' | 'high'
+        subject: subject.trim(),
+        message: message.trim(),
+        status: 'open',
+        priority: normalizePriority(priority),
+        assignedTo: null,
         responses: [],
         createdAt: now,
         updatedAt: now,
@@ -113,6 +143,9 @@ router.get('/', authRequired, async (req, res) => {
 
     // Filter by status if provided
     if (status) {
+      if (!ALLOWED_STATUSES.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status filter' });
+      }
       tickets = tickets.filter(t => t.status === status);
     }
 
@@ -144,8 +177,6 @@ router.get('/', authRequired, async (req, res) => {
  */
 router.get('/:id', authRequired, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
     const { id } = req.params;
 
     const tickets = await dbUnified.read('tickets');
@@ -156,10 +187,7 @@ router.get('/:id', authRequired, async (req, res) => {
     }
 
     // Check access permissions
-    const hasAccess =
-      userRole === 'admin' || (ticket.senderId === userId && ticket.senderType === userRole);
-
-    if (!hasAccess) {
+    if (!canAccessTicket(req.user, ticket)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -191,10 +219,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
     const ticket = tickets[ticketIndex];
 
     // Check access permissions
-    const hasAccess =
-      userRole === 'admin' || (ticket.senderId === userId && ticket.senderType === userRole);
-
-    if (!hasAccess) {
+    if (!canAccessTicket(req.user, ticket)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -202,7 +227,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
 
     // Update status if provided (admins only)
     if (status && userRole === 'admin') {
-      if (!['open', 'in_progress', 'resolved', 'closed'].includes(status)) {
+      if (!ALLOWED_STATUSES.includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
       }
       ticket.status = status;
@@ -317,7 +342,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
     const ticket = tickets[ticketIndex];
 
     // Check access: admins can reply to any ticket, users can only reply to their own
-    if (userRole !== 'admin' && ticket.senderId !== userId) {
+    if (!canAccessTicket(req.user, ticket)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -326,7 +351,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
     // Create reply object
     const reply = {
       id: uid('reply'),
-      userId,
+      userId: req.user.id,
       userName: req.user.name || req.user.email,
       userRole,
       message: message.trim(),
@@ -342,7 +367,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
     // Update ticket metadata
     ticket.updatedAt = now;
     if (ticket.status === 'open' && userRole === 'admin') {
-      ticket.status = 'replied';
+      ticket.status = 'in_progress';
     }
 
     tickets[ticketIndex] = ticket;
