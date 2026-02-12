@@ -22,7 +22,10 @@ const recentMessagesCache = new Map();
  */
 function getSpamKeywords() {
   const keywords = process.env.SPAM_KEYWORDS || '';
-  return keywords.split(',').map((k) => k.trim().toLowerCase()).filter(Boolean);
+  return keywords
+    .split(',')
+    .map(k => k.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 /**
@@ -82,10 +85,10 @@ function checkDuplicate(userId, content, windowSeconds = 5) {
 
   // Clean expired entries
   const cutoff = now - windowSeconds * 1000;
-  const filtered = recent.filter((msg) => msg.timestamp > cutoff);
+  const filtered = recent.filter(msg => msg.timestamp > cutoff);
 
   // Check for duplicate
-  const isDuplicate = filtered.some((msg) => msg.content === normalized);
+  const isDuplicate = filtered.some(msg => msg.content === normalized);
 
   // Add current message
   filtered.push({ content: normalized, timestamp: now });
@@ -216,7 +219,7 @@ function cleanupCache() {
 
   // Clean recent messages cache
   for (const [userId, recent] of recentMessagesCache.entries()) {
-    const filtered = recent.filter((msg) => now - msg.timestamp < 60000); // Keep 1 minute
+    const filtered = recent.filter(msg => now - msg.timestamp < 60000); // Keep 1 minute
     if (filtered.length === 0) {
       recentMessagesCache.delete(userId);
     } else {
@@ -226,7 +229,12 @@ function cleanupCache() {
 }
 
 // Cleanup every 5 minutes
-setInterval(cleanupCache, 5 * 60 * 1000);
+const cleanupInterval = setInterval(cleanupCache, 5 * 60 * 1000);
+
+// Prevent this housekeeping timer from keeping Node.js/Jest processes alive.
+if (typeof cleanupInterval.unref === 'function') {
+  cleanupInterval.unref();
+}
 
 module.exports = {
   checkRateLimit,
