@@ -294,6 +294,11 @@ The website is considered ready for release when all are true:
 4. Critical journey suites for auth, subscriptions, lead scoring, and reviews pass.
 5. No open P0 regressions.
 
+## Working files for execution
+
+- Strategy and sequencing: `WEBSITE_HEALTH_AUDIT.md`
+- Day-to-day owner/task tracking: `WEBSITE_REMEDIATION_BACKLOG.md`
+
 ## Immediate kickoff checklist (for the next 48 hours)
 
 1. Open tracking issues for PR1-PR4 and assign a DRI for each.
