@@ -245,17 +245,21 @@ function viewTicket(ticketId) {
     `;
 
     if (ticket.responses && ticket.responses.length > 0) {
-      html += '<h4>Responses</h4>';
+      html += '<h4>Conversation</h4>';
       html += '<div class="responses-list">';
 
       ticket.responses.forEach(response => {
-        const respTimestamp = ticketingSystem.formatTimestamp(response.timestamp);
-        const isAdmin = response.responderType === 'admin';
+        const respTimestamp = ticketingSystem.formatTimestamp(
+          response.createdAt || response.timestamp
+        );
+        const role = response.userRole || response.responderType || 'customer';
+        const isAdmin = role === 'admin';
+        const displayName = response.userName || response.responderName || 'Support';
 
         html += `
-          <div style="margin-bottom:1rem;padding:1rem;background:${isAdmin ? '#eff6ff' : '#fafafa'};border-radius:4px;border-left:3px solid ${isAdmin ? '#3b82f6' : '#9ca3af'};">
-            <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
-              <strong>${escapeHtml(response.responderName)} ${isAdmin ? '<span class="badge badge-yes">Admin</span>' : ''}</strong>
+          <div style="margin-bottom:1rem;padding:1rem;background:${isAdmin ? '#eff6ff' : '#fafafa'};border-radius:8px;border-left:3px solid ${isAdmin ? '#3b82f6' : '#9ca3af'};">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;gap:0.75rem;">
+              <strong>${escapeHtml(displayName)} ${isAdmin ? '<span class="badge badge-in_progress">Admin</span>' : ''}</strong>
               <span class="small" style="color:#9ca3af;">${respTimestamp}</span>
             </div>
             <p style="margin:0;">${escapeHtml(response.message)}</p>
@@ -266,10 +270,54 @@ function viewTicket(ticketId) {
       html += '</div>';
     } else {
       html +=
-        '<p class="small" style="color:#9ca3af;">No responses yet. An admin will respond soon.</p>';
+        '<p class="small" style="color:#9ca3af;">No responses yet. Our team will reply soon.</p>';
+    }
+
+    if (ticket.status !== 'closed') {
+      html += `
+        <form id="ticketReplyForm" style="margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem;">
+          <label for="ticketReplyMessage" class="small" style="display:block;margin-bottom:0.5rem;color:#4b5563;">Add a reply</label>
+          <textarea id="ticketReplyMessage" rows="4" required placeholder="Add more details for support..." style="width:100%;"></textarea>
+          <div style="margin-top:0.75rem;display:flex;justify-content:flex-end;">
+            <button type="submit" class="btn btn-primary">Send Reply</button>
+          </div>
+        </form>
+      `;
     }
 
     document.getElementById('ticketDetails').innerHTML = html;
+
+    const replyForm = document.getElementById('ticketReplyForm');
+    if (replyForm) {
+      replyForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        const field = document.getElementById('ticketReplyMessage');
+        const message = field.value.trim();
+        if (!message) {
+          return;
+        }
+
+        const button = replyForm.querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.textContent = 'Sending...';
+
+        try {
+          await ticketingSystem.addResponse(ticket.id, message);
+          field.value = '';
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Reply sent');
+          }
+        } catch (error) {
+          console.error('Error sending reply:', error);
+          if (typeof Toast !== 'undefined') {
+            Toast.error(error.message || 'Failed to send reply');
+          }
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Send Reply';
+        }
+      });
+    }
   };
 
   // Listen to real-time updates

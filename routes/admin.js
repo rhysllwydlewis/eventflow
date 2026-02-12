@@ -2612,71 +2612,101 @@ router.get('/public/features', async (req, res) => {
 
 // ---------- Tickets Management ----------
 
+const ADMIN_TICKET_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
+const ADMIN_TICKET_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
+
 /**
  * GET /api/admin/tickets
  * List all support tickets
  */
-router.get('/tickets', authRequired, roleRequired('admin'), (req, res) => {
-  const tickets = read('tickets');
+router.get('/tickets', authRequired, roleRequired('admin'), async (_req, res) => {
+  try {
+    const tickets = await dbUnified.read('tickets');
 
-  // Sort by date (newest first)
-  tickets.sort((a, b) => {
-    const aTime = new Date(a.createdAt || 0).getTime();
-    const bTime = new Date(b.createdAt || 0).getTime();
-    return bTime - aTime;
-  });
+    // Sort by date (newest first)
+    tickets.sort((a, b) => {
+      const aTime = new Date(a.createdAt || 0).getTime();
+      const bTime = new Date(b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
 
-  res.json({ items: tickets });
+    res.json({ items: tickets });
+  } catch (error) {
+    console.error('Error loading admin tickets:', error);
+    res.status(500).json({ error: 'Failed to load tickets' });
+  }
 });
 
 /**
  * GET /api/admin/tickets/:id
  * Get single ticket details
  */
-router.get('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
-  const tickets = read('tickets');
-  const ticket = tickets.find(t => t.id === req.params.id);
+router.get('/tickets/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const tickets = await dbUnified.read('tickets');
+    const ticket = tickets.find(t => t.id === req.params.id);
 
-  if (!ticket) {
-    return res.status(404).json({ error: 'Ticket not found' });
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    res.json({ ticket });
+  } catch (error) {
+    console.error('Error loading admin ticket:', error);
+    res.status(500).json({ error: 'Failed to load ticket' });
   }
-
-  res.json({ ticket });
 });
 
 /**
  * PUT /api/admin/tickets/:id
  * Update ticket (status, priority, assigned)
  */
-router.put('/tickets/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const tickets = read('tickets');
-  const index = tickets.findIndex(t => t.id === req.params.id);
+router.put(
+  '/tickets/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const tickets = await dbUnified.read('tickets');
+      const index = tickets.findIndex(t => t.id === req.params.id);
 
-  if (index < 0) {
-    return res.status(404).json({ error: 'Ticket not found' });
+      if (index < 0) {
+        return res.status(404).json({ error: 'Ticket not found' });
+      }
+
+      const { status, priority, assignedTo } = req.body;
+      const ticket = tickets[index];
+
+      if (status) {
+        if (!ADMIN_TICKET_STATUSES.includes(status)) {
+          return res.status(400).json({ error: 'Invalid status' });
+        }
+        ticket.status = status;
+      }
+      if (priority) {
+        if (!ADMIN_TICKET_PRIORITIES.includes(priority)) {
+          return res.status(400).json({ error: 'Invalid priority' });
+        }
+        ticket.priority = priority;
+      }
+      if (assignedTo !== undefined) {
+        ticket.assignedTo = assignedTo || null;
+      }
+
+      ticket.updatedAt = new Date().toISOString();
+      ticket.updatedBy = req.user.id;
+
+      tickets[index] = ticket;
+      await dbUnified.write('tickets', tickets);
+
+      res.json({ ticket });
+    } catch (error) {
+      console.error('Error updating admin ticket:', error);
+      res.status(500).json({ error: 'Failed to update ticket' });
+    }
   }
-
-  const { status, priority, assignedTo } = req.body;
-  const ticket = tickets[index];
-
-  if (status) {
-    ticket.status = status;
-  }
-  if (priority) {
-    ticket.priority = priority;
-  }
-  if (assignedTo !== undefined) {
-    ticket.assignedTo = assignedTo;
-  }
-
-  ticket.updatedAt = new Date().toISOString();
-  ticket.updatedBy = req.user.id;
-
-  tickets[index] = ticket;
-  write('tickets', tickets);
-
-  res.json({ ticket });
-});
+);
 
 /**
  * POST /api/admin/tickets/:id/reply
@@ -2687,38 +2717,50 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const tickets = read('tickets');
-    const index = tickets.findIndex(t => t.id === req.params.id);
+  async (req, res) => {
+    try {
+      const tickets = await dbUnified.read('tickets');
+      const index = tickets.findIndex(t => t.id === req.params.id);
 
-    if (index < 0) {
-      return res.status(404).json({ error: 'Ticket not found' });
+      if (index < 0) {
+        return res.status(404).json({ error: 'Ticket not found' });
+      }
+
+      const message = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+      if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      const ticket = tickets[index];
+      const reply = {
+        id: uid('reply'),
+        userId: req.user.id,
+        userName: req.user.name || req.user.email,
+        userRole: 'admin',
+        message,
+        createdAt: new Date().toISOString(),
+      };
+
+      ticket.responses = Array.isArray(ticket.responses)
+        ? ticket.responses
+        : Array.isArray(ticket.replies)
+          ? ticket.replies
+          : [];
+      ticket.responses.push(reply);
+      ticket.updatedAt = new Date().toISOString();
+      if (ticket.status === 'open') {
+        ticket.status = 'in_progress';
+      }
+
+      delete ticket.replies;
+      tickets[index] = ticket;
+      await dbUnified.write('tickets', tickets);
+
+      res.json({ ticket, reply });
+    } catch (error) {
+      console.error('Error replying to admin ticket:', error);
+      res.status(500).json({ error: 'Failed to reply to ticket' });
     }
-
-    const { message } = req.body;
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required' });
-    }
-
-    const ticket = tickets[index];
-    const reply = {
-      id: uid('reply'),
-      message,
-      authorId: req.user.id,
-      authorEmail: req.user.email,
-      createdAt: new Date().toISOString(),
-    };
-
-    if (!ticket.replies) {
-      ticket.replies = [];
-    }
-    ticket.replies.push(reply);
-    ticket.updatedAt = new Date().toISOString();
-
-    tickets[index] = ticket;
-    write('tickets', tickets);
-
-    res.json({ ticket });
   }
 );
 
