@@ -32,12 +32,18 @@
   .listing-card {
     display: grid;
     grid-template-columns: 120px 1fr auto;
-    gap: 16px;
-    padding: 16px;
+    gap: 18px;
+    padding: 18px;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    margin-bottom: 12px;
+    border-radius: 12px;
+    margin-bottom: 14px;
     background: white;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .listing-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    border-color: #cbd5e1;
   }
   .listing-image {
     width: 120px;
@@ -68,11 +74,27 @@
     font-size: 12px;
     font-weight: 600;
     display: inline-block;
+    text-transform: capitalize;
   }
   .status-pending { background: #fef3c7; color: #92400e; }
   .status-active { background: #d1fae5; color: #065f46; }
   .status-sold { background: #e0e7ff; color: #3730a3; }
   .status-removed { background: #fee2e2; color: #991b1b; }
+
+  @media (max-width: 900px) {
+    .listing-card {
+      grid-template-columns: 1fr;
+    }
+    .listing-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .listing-actions .cta,
+    .listing-actions .cta.secondary,
+    .listing-actions .cta.ghost {
+      flex: 1 1 140px;
+    }
+  }
 </style>
 <script src="/assets/js/admin-shared.js"></script>
 <script src="/assets/js/components.js" defer></script>
@@ -190,7 +212,11 @@
         <button class="cta secondary" id="exportListingsBtn" title="Export listings to CSV">
           📥 Export
         </button>
+        <button class="cta secondary" id="refreshListingsBtn" title="Refresh listings">
+          🔄 Refresh
+        </button>
       </div>
+      <p class="small" id="lastUpdatedText" style="margin:8px 0 0 0;color:#6b7280;">Last updated: —</p>
     </div>
 
     <!-- Bulk Actions Bar -->
@@ -217,6 +243,31 @@
   let currentFilter = 'all';
   const selectedListings = new Set();
 
+  function formatDateTime(dateLike) {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) {
+      return 'Unknown date';
+    }
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  function normalizeListing(listing = {}) {
+    return {
+      ...listing,
+      id: listing.id || `temp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      title: listing.title || 'Untitled listing',
+      description: listing.description || '',
+      category: listing.category || 'other',
+      condition: listing.condition || 'good',
+      location: listing.location || '',
+      userEmail: listing.userEmail || 'Unknown user',
+      status: listing.status || 'pending',
+      price: Number.isFinite(Number(listing.price)) ? Number(listing.price) : 0,
+      createdAt: listing.createdAt || new Date().toISOString(),
+      images: Array.isArray(listing.images) ? listing.images : []
+    };
+  }
+
   // Fetch listings
   async function loadListings() {
     try {
@@ -225,11 +276,18 @@
       });
       if (!res.ok) throw new Error('Failed to fetch listings');
       const data = await res.json();
-      allListings = data.listings || [];
+      allListings = (data.listings || [])
+        .map(normalizeListing)
+        .sort((a, b) => {
+          if (a.status === 'pending' && b.status !== 'pending') return -1;
+          if (a.status !== 'pending' && b.status === 'pending') return 1;
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
       selectedListings.clear();
       updateStats();
       renderListings();
       updateBulkActionsBar();
+      document.getElementById('lastUpdatedText').textContent = `Last updated: ${formatDateTime(new Date())}`;
     } catch (error) {
       console.error('Error loading listings:', error);
       document.getElementById('listings-container').innerHTML = 
@@ -266,7 +324,8 @@
       filtered = filtered.filter(l => 
         l.title.toLowerCase().includes(search) ||
         l.description.toLowerCase().includes(search) ||
-        l.userEmail.toLowerCase().includes(search)
+        l.userEmail.toLowerCase().includes(search) ||
+        l.location.toLowerCase().includes(search)
       );
     }
 
@@ -276,7 +335,7 @@
     }
 
     if (filtered.length === 0) {
-      container.innerHTML = '<div class="card"><p>No listings found</p></div>';
+      container.innerHTML = '<div class="card"><p>No listings found. Try widening filters or clear search.</p></div>';
       return;
     }
 
@@ -300,7 +359,7 @@
           </div>
           <div class="listing-meta" style="margin-top:8px">
             <span>Posted by: ${escapeHtml(listing.userEmail)}</span>
-            <span>${new Date(listing.createdAt).toLocaleDateString()}</span>
+            <span>${formatDateTime(listing.createdAt)}</span>
           </div>
         </div>
         <div class="listing-actions">
@@ -429,14 +488,12 @@
           <div>
             <label style="display: block; margin-bottom: 4px; font-weight: 500;">Category</label>
             <select id="editCategory" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
-              <option value="furniture" ${listing.category === 'furniture' ? 'selected' : ''}>Furniture</option>
-              <option value="electronics" ${listing.category === 'electronics' ? 'selected' : ''}>Electronics</option>
-              <option value="clothing" ${listing.category === 'clothing' ? 'selected' : ''}>Clothing</option>
-              <option value="books" ${listing.category === 'books' ? 'selected' : ''}>Books</option>
-              <option value="toys" ${listing.category === 'toys' ? 'selected' : ''}>Toys</option>
-              <option value="sports" ${listing.category === 'sports' ? 'selected' : ''}>Sports</option>
-              <option value="home" ${listing.category === 'home' ? 'selected' : ''}>Home & Garden</option>
-              <option value="other" ${listing.category === 'other' ? 'selected' : ''}>Other</option>
+              <option value="attire" ${listing.category === 'attire' ? 'selected' : ''}>Attire</option>
+              <option value="decor" ${listing.category === 'decor' ? 'selected' : ''}>Décor</option>
+              <option value="av-equipment" ${listing.category === 'av-equipment' ? 'selected' : ''}>AV Equipment</option>
+              <option value="photography" ${listing.category === 'photography' ? 'selected' : ''}>Photography</option>
+              <option value="party-supplies" ${listing.category === 'party-supplies' ? 'selected' : ''}>Party Supplies</option>
+              <option value="florals" ${listing.category === 'florals' ? 'selected' : ''}>Florals</option>
             </select>
           </div>
           <div>
@@ -446,7 +503,6 @@
               <option value="like-new" ${listing.condition === 'like-new' ? 'selected' : ''}>Like New</option>
               <option value="good" ${listing.condition === 'good' ? 'selected' : ''}>Good</option>
               <option value="fair" ${listing.condition === 'fair' ? 'selected' : ''}>Fair</option>
-              <option value="poor" ${listing.condition === 'poor' ? 'selected' : ''}>Poor</option>
             </select>
           </div>
           <div>
@@ -581,7 +637,8 @@
       filtered = filtered.filter(l => 
         l.title.toLowerCase().includes(search) ||
         l.description.toLowerCase().includes(search) ||
-        l.userEmail.toLowerCase().includes(search)
+        l.userEmail.toLowerCase().includes(search) ||
+        l.location.toLowerCase().includes(search)
       );
     }
     if (category) {
@@ -718,6 +775,7 @@
   // Search and category filters
   document.getElementById('searchInput').addEventListener('input', renderListings);
   document.getElementById('categoryFilter').addEventListener('change', renderListings);
+  document.getElementById('refreshListingsBtn').addEventListener('click', loadListings);
 
   // Sign out
   document.getElementById('signoutBtn').addEventListener('click', async () => {
