@@ -190,7 +190,11 @@
         <button class="cta secondary" id="exportListingsBtn" title="Export listings to CSV">
           📥 Export
         </button>
+        <button class="cta secondary" id="refreshListingsBtn" title="Refresh listings">
+          🔄 Refresh
+        </button>
       </div>
+      <p class="small" id="lastUpdatedText" style="margin:8px 0 0 0;color:#6b7280;">Last updated: —</p>
     </div>
 
     <!-- Bulk Actions Bar -->
@@ -217,6 +221,31 @@
   let currentFilter = 'all';
   const selectedListings = new Set();
 
+  function formatDateTime(dateLike) {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) {
+      return 'Unknown date';
+    }
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  function normalizeListing(listing = {}) {
+    return {
+      ...listing,
+      id: listing.id || `temp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      title: listing.title || 'Untitled listing',
+      description: listing.description || '',
+      category: listing.category || 'other',
+      condition: listing.condition || 'good',
+      location: listing.location || '',
+      userEmail: listing.userEmail || 'Unknown user',
+      status: listing.status || 'pending',
+      price: Number.isFinite(Number(listing.price)) ? Number(listing.price) : 0,
+      createdAt: listing.createdAt || new Date().toISOString(),
+      images: Array.isArray(listing.images) ? listing.images : []
+    };
+  }
+
   // Fetch listings
   async function loadListings() {
     try {
@@ -225,11 +254,18 @@
       });
       if (!res.ok) throw new Error('Failed to fetch listings');
       const data = await res.json();
-      allListings = data.listings || [];
+      allListings = (data.listings || [])
+        .map(normalizeListing)
+        .sort((a, b) => {
+          if (a.status === 'pending' && b.status !== 'pending') return -1;
+          if (a.status !== 'pending' && b.status === 'pending') return 1;
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
       selectedListings.clear();
       updateStats();
       renderListings();
       updateBulkActionsBar();
+      document.getElementById('lastUpdatedText').textContent = `Last updated: ${formatDateTime(new Date())}`;
     } catch (error) {
       console.error('Error loading listings:', error);
       document.getElementById('listings-container').innerHTML = 
@@ -266,7 +302,8 @@
       filtered = filtered.filter(l => 
         l.title.toLowerCase().includes(search) ||
         l.description.toLowerCase().includes(search) ||
-        l.userEmail.toLowerCase().includes(search)
+        l.userEmail.toLowerCase().includes(search) ||
+        l.location.toLowerCase().includes(search)
       );
     }
 
@@ -276,7 +313,7 @@
     }
 
     if (filtered.length === 0) {
-      container.innerHTML = '<div class="card"><p>No listings found</p></div>';
+      container.innerHTML = '<div class="card"><p>No listings found. Try widening filters or clear search.</p></div>';
       return;
     }
 
@@ -300,7 +337,7 @@
           </div>
           <div class="listing-meta" style="margin-top:8px">
             <span>Posted by: ${escapeHtml(listing.userEmail)}</span>
-            <span>${new Date(listing.createdAt).toLocaleDateString()}</span>
+            <span>${formatDateTime(listing.createdAt)}</span>
           </div>
         </div>
         <div class="listing-actions">
@@ -581,7 +618,8 @@
       filtered = filtered.filter(l => 
         l.title.toLowerCase().includes(search) ||
         l.description.toLowerCase().includes(search) ||
-        l.userEmail.toLowerCase().includes(search)
+        l.userEmail.toLowerCase().includes(search) ||
+        l.location.toLowerCase().includes(search)
       );
     }
     if (category) {
@@ -718,6 +756,7 @@
   // Search and category filters
   document.getElementById('searchInput').addEventListener('input', renderListings);
   document.getElementById('categoryFilter').addEventListener('change', renderListings);
+  document.getElementById('refreshListingsBtn').addEventListener('click', loadListings);
 
   // Sign out
   document.getElementById('signoutBtn').addEventListener('click', async () => {

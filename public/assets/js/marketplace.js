@@ -28,6 +28,7 @@
     }
     isInitialized = true;
 
+    hydrateFiltersFromUrl();
     await checkAuth();
     await loadListings();
     initLocationModal();
@@ -148,7 +149,7 @@
         params.append('search', queryInput.value);
       }
       if (sortSelect && sortSelect.value) {
-        params.append('sort', sortSelect.value);
+        params.append('sort', normalizeSortValue(sortSelect.value));
       }
 
       // Handle price filter
@@ -1017,6 +1018,7 @@
     }
 
     function applyFilters() {
+      syncFiltersToUrl();
       // Reload listings with new filters
       loadListings();
 
@@ -1037,6 +1039,103 @@
         (queryInput && queryInput.value.trim())
       );
     }
+  }
+
+  function normalizeSortValue(value) {
+    if (value === 'priceAsc') {
+      return 'price-low';
+    }
+    if (value === 'priceDesc') {
+      return 'price-high';
+    }
+    return value;
+  }
+
+  function hydrateFiltersFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+
+    const categoryFilter = document.getElementById('marketplace-filter-category');
+    const priceFilter = document.getElementById('marketplace-filter-price');
+    const conditionFilter = document.getElementById('marketplace-filter-condition');
+    const queryInput = document.getElementById('marketplace-filter-query');
+    const sortSelect = document.getElementById('marketplace-sort');
+
+    const category = params.get('category');
+    const condition = params.get('condition');
+    const search = params.get('search');
+    const sort = params.get('sort');
+
+    if (categoryFilter && category) {
+      categoryFilter.value = category;
+    }
+    if (conditionFilter && condition) {
+      conditionFilter.value = condition;
+    }
+    if (queryInput && search) {
+      queryInput.value = search;
+    }
+    if (sortSelect && sort) {
+      sortSelect.value = normalizeSortValue(sort);
+    }
+
+    const minPrice = params.get('minPrice');
+    const maxPrice = params.get('maxPrice');
+    if (priceFilter && (minPrice || maxPrice)) {
+      if (minPrice === '0' && maxPrice === '50') {
+        priceFilter.value = '0-50';
+      } else if (minPrice === '50' && maxPrice === '100') {
+        priceFilter.value = '50-100';
+      } else if (minPrice === '100' && maxPrice === '250') {
+        priceFilter.value = '100-250';
+      } else if (minPrice === '250' && maxPrice === '500') {
+        priceFilter.value = '250-500';
+      } else if (minPrice === '500' && !maxPrice) {
+        priceFilter.value = '500-plus';
+      }
+    }
+  }
+
+  function syncFiltersToUrl() {
+    const params = new URLSearchParams();
+
+    const category = document.getElementById('marketplace-filter-category')?.value || '';
+    const condition = document.getElementById('marketplace-filter-condition')?.value || '';
+    const search = document.getElementById('marketplace-filter-query')?.value?.trim() || '';
+    const sort = document.getElementById('marketplace-sort')?.value || '';
+    const priceRange = document.getElementById('marketplace-filter-price')?.value || '';
+
+    if (category) {
+      params.set('category', category);
+    }
+    if (condition) {
+      params.set('condition', condition);
+    }
+    if (search) {
+      params.set('search', search);
+    }
+    if (sort && sort !== 'newest') {
+      params.set('sort', normalizeSortValue(sort));
+    }
+
+    if (priceRange === '0-50') {
+      params.set('minPrice', '0');
+      params.set('maxPrice', '50');
+    } else if (priceRange === '50-100') {
+      params.set('minPrice', '50');
+      params.set('maxPrice', '100');
+    } else if (priceRange === '100-250') {
+      params.set('minPrice', '100');
+      params.set('maxPrice', '250');
+    } else if (priceRange === '250-500') {
+      params.set('minPrice', '250');
+      params.set('maxPrice', '500');
+    } else if (priceRange === '500-plus') {
+      params.set('minPrice', '500');
+    }
+
+    const query = params.toString();
+    const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(null, '', nextUrl);
   }
 
   // Initialize view toggle (grid/list)
