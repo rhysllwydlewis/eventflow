@@ -7,6 +7,7 @@
   'use strict';
 
   let allListings = [];
+  let savedListings = [];
   let currentStatus = 'all';
   let currentUser = null;
 
@@ -23,7 +24,7 @@
     initTabSwitching();
 
     if (currentUser) {
-      await loadListings();
+      await Promise.all([loadListings(), loadSavedListings()]);
     }
   }
 
@@ -246,6 +247,50 @@
   }
 
   /**
+   * Load user's saved marketplace items
+   */
+  async function loadSavedListings() {
+    try {
+      const res = await fetch('/api/v1/marketplace/saved', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+      });
+
+      if (res.status === 401) {
+        currentUser = null;
+        showAuthMessage('logged-out');
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch saved items: ${res.status}`);
+      }
+
+      const data = await res.json();
+      savedListings = data.savedItems || [];
+
+      if (currentStatus === 'saved') {
+        renderListings();
+      }
+    } catch (error) {
+      console.error('Error loading saved marketplace listings:', error);
+      if (currentStatus === 'saved') {
+        const container = document.getElementById('my-listings-container');
+        if (container) {
+          container.innerHTML = `
+            <div class="card" style="text-align: center; padding: 2rem;">
+              <p class="error">Unable to load saved items right now.</p>
+            </div>
+          `;
+        }
+      }
+    }
+  }
+
+  /**
    * Render listings based on current filter
    */
   function renderListings() {
@@ -254,12 +299,25 @@
       return;
     }
 
+    const isSavedTab = currentStatus === 'saved';
     let filtered = allListings;
-    if (currentStatus !== 'all') {
+
+    if (!isSavedTab && currentStatus !== 'all') {
       filtered = filtered.filter(l => l.status === currentStatus);
     }
 
-    if (filtered.length === 0) {
+    if (isSavedTab && savedListings.length === 0) {
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 3rem;">
+          <h3>No saved items yet</h3>
+          <p class="small">Tap the heart icon on marketplace listings to save items here.</p>
+          <a href="/marketplace.html" class="cta" style="margin-top: 1rem; display: inline-flex;">Browse Marketplace</a>
+        </div>
+      `;
+      return;
+    }
+
+    if (!isSavedTab && filtered.length === 0) {
       const message =
         currentStatus === 'all'
           ? 'Create your first listing to get started!'
@@ -280,6 +338,11 @@
           }
         </div>
       `;
+      return;
+    }
+
+    if (isSavedTab) {
+      container.innerHTML = savedListings.map(item => createSavedListingCard(item)).join('');
       return;
     }
 
@@ -330,6 +393,35 @@
           }
           <button class="cta ghost" onclick="window.MyListings.editListing('${listing.id}')">Edit</button>
           <button class="cta ghost" onclick="window.MyListings.deleteListing('${listing.id}')" style="color: #dc2626;">Delete</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function createSavedListingCard(savedItem) {
+    const listing = savedItem.listing || {};
+    const defaultImage = '/assets/images/collage-venue.jpg';
+    const image = listing.images && listing.images[0] ? listing.images[0] : defaultImage;
+    const savedAt = savedItem.savedAt
+      ? new Date(savedItem.savedAt).toLocaleDateString('en-GB')
+      : 'Recently';
+
+    return `
+      <div class="listing-card">
+        <img src="${image}" alt="${escapeHtml(listing.title || 'Saved listing')}" class="listing-card-image" onerror="this.src='${defaultImage}'">
+        <div class="listing-card-info">
+          <span class="status-badge status-${listing.status || 'active'}">Saved Item</span>
+          <h3>${escapeHtml(listing.title || 'Listing unavailable')}</h3>
+          <p class="small">${escapeHtml((listing.description || 'This listing may have been removed.').slice(0, 150))}</p>
+          <div class="listing-card-meta">
+            <span><strong>${Number.isFinite(Number(listing.price)) ? `£${Number(listing.price).toFixed(2)}` : 'Price on request'}</strong></span>
+            <span>Saved on ${savedAt}</span>
+            ${listing.location ? `<span>📍 ${escapeHtml(listing.location)}</span>` : ''}
+          </div>
+        </div>
+        <div class="listing-card-actions">
+          <a class="cta secondary" href="/marketplace.html">View in Marketplace</a>
+          <button class="cta ghost" onclick="window.MyListings.unsaveListing('${savedItem.id}')">Remove Saved</button>
         </div>
       </div>
     `;
@@ -419,6 +511,34 @@
     });
   }
 
+  async function unsaveListing(listingId) {
+    if (!listingId) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/marketplace/saved/${encodeURIComponent(listingId)}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || 'Failed to remove saved item');
+      }
+
+      savedListings = savedListings.filter(item => item.id !== listingId);
+      showToast('Removed from saved items');
+      renderListings();
+    } catch (error) {
+      console.error('Error unsaving listing:', error);
+      showToast(error.message || 'Unable to remove saved item', 'error');
+    }
+  }
+
   // Helper functions
   function getTimeAgo(dateString) {
     const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
@@ -505,5 +625,6 @@
     markAsSold,
     deleteListing,
     editListing,
+    unsaveListing,
   };
 })();

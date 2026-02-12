@@ -425,6 +425,116 @@ router.get('/my-listings', applyAuthRequired, async (req, res) => {
   }
 });
 
+// Get authenticated user's saved marketplace items
+router.get('/saved', applyAuthRequired, async (req, res) => {
+  try {
+    const [savedItems, listings] = await Promise.all([
+      dbUnified.read('marketplace_saved_items'),
+      dbUnified.read('marketplace_listings'),
+    ]);
+
+    const userSaved = savedItems
+      .filter(item => item.userId === req.user.id)
+      .map(item => {
+        const listing = listings.find(l => l.id === item.listingId);
+        return {
+          id: item.listingId,
+          savedAt: item.savedAt,
+          listing: listing || null,
+        };
+      })
+      .filter(item => item.listing);
+
+    res.json({ savedItems: userSaved });
+  } catch (error) {
+    logger.error('Error fetching saved marketplace items:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to fetch saved items' });
+  }
+});
+
+// Save a marketplace listing for authenticated user
+router.post(
+  '/saved/:listingId?',
+  applyWriteLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const listingId = req.params.listingId || req.body?.listingId;
+
+      if (!listingId) {
+        return res.status(400).json({ error: 'listingId is required' });
+      }
+
+      const [savedItems, listings] = await Promise.all([
+        dbUnified.read('marketplace_saved_items'),
+        dbUnified.read('marketplace_listings'),
+      ]);
+
+      const listing = listings.find(l => l.id === listingId);
+      if (!listing || !listing.approved || listing.status !== 'active') {
+        return res.status(404).json({ error: 'Listing not available' });
+      }
+
+      if (listing.userId === req.user.id) {
+        return res.status(400).json({ error: 'You cannot save your own listing' });
+      }
+
+      const alreadySaved = savedItems.some(
+        item => item.userId === req.user.id && item.listingId === listingId
+      );
+      if (alreadySaved) {
+        return res.status(200).json({ ok: true, message: 'Listing already saved' });
+      }
+
+      savedItems.push({
+        id: uid('mkt_saved'),
+        userId: req.user.id,
+        listingId,
+        savedAt: new Date().toISOString(),
+      });
+
+      await dbUnified.write('marketplace_saved_items', savedItems);
+
+      res.status(201).json({ ok: true, message: 'Listing saved' });
+    } catch (error) {
+      logger.error('Error saving marketplace listing:', error);
+      sentry.captureException(error);
+      res.status(500).json({ error: 'Failed to save listing' });
+    }
+  }
+);
+
+// Unsave a marketplace listing for authenticated user
+router.delete(
+  '/saved/:listingId',
+  applyWriteLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const { listingId } = req.params;
+      const savedItems = await dbUnified.read('marketplace_saved_items');
+
+      const filtered = savedItems.filter(
+        item => !(item.userId === req.user.id && item.listingId === listingId)
+      );
+
+      if (filtered.length === savedItems.length) {
+        return res.status(404).json({ error: 'Saved listing not found' });
+      }
+
+      await dbUnified.write('marketplace_saved_items', filtered);
+      res.json({ ok: true, message: 'Listing unsaved' });
+    } catch (error) {
+      logger.error('Error removing saved marketplace listing:', error);
+      sentry.captureException(error);
+      res.status(500).json({ error: 'Failed to unsave listing' });
+    }
+  }
+);
+
 // Update marketplace listing (owner only)
 router.put(
   '/listings/:id',
