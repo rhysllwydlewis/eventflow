@@ -234,7 +234,7 @@ describe('Complete Subscription Flow Integration', () => {
       // Create multiple subscriptions for testing
       await subscriptionService.createSubscription({
         userId: 'usr-1',
-        plan: 'pro',
+        plan: 'basic',
         stripeSubscriptionId: 'sub_1',
         stripeCustomerId: 'cus_1',
       });

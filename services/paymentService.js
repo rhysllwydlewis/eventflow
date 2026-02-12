@@ -330,9 +330,17 @@ async function calculateMRR() {
 
   subscriptions.forEach(sub => {
     if (sub.status === 'active' || sub.status === 'trialing') {
-      const planPrice = PLAN_FEATURES[sub.plan]?.price || 0;
+      let planKey = sub.plan;
+      if (planKey === 'pro_plus') {
+        planKey = 'pro';
+      }
+      if (planKey === 'pro' && sub.status === 'trialing') {
+        planKey = 'basic';
+      }
+
+      const planPrice = PLAN_FEATURES[planKey]?.price || 0;
       totalMRR += planPrice;
-      mrrByPlan[sub.plan] = (mrrByPlan[sub.plan] || 0) + planPrice;
+      mrrByPlan[planKey] = (mrrByPlan[planKey] || 0) + planPrice;
     }
   });
 
