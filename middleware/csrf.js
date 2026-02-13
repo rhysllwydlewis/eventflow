@@ -41,15 +41,21 @@ function csrfProtection(req, res, next) {
     return next();
   }
 
-  // Get token from header or body
-  const tokenFromHeader = req.headers['x-csrf-token'] || req.body?._csrf;
+  // Get token from header or body (supports legacy aliases)
+  const tokenFromHeader =
+    req.headers['x-csrf-token'] ||
+    req.headers['csrf-token'] ||
+    req.headers['x-xsrf-token'] ||
+    req.body?._csrf ||
+    req.body?.csrfToken ||
+    req.body?.csrf;
 
   if (!tokenFromHeader) {
     return res.status(403).json({ error: 'CSRF token missing' });
   }
 
-  // Get token from cookie
-  const tokenFromCookie = req.cookies?.csrf;
+  // Get token from cookie (supports legacy alias)
+  const tokenFromCookie = req.cookies?.csrf || req.cookies?.csrfToken;
 
   if (!tokenFromCookie) {
     return res.status(403).json({ error: 'CSRF token missing' });
@@ -71,8 +77,8 @@ function csrfProtection(req, res, next) {
  * @returns {string} The CSRF token
  */
 function getToken(req, res) {
-  // Check if a token already exists in the cookie
-  let token = req.cookies?.csrf;
+  // Check if a token already exists in the cookie (new or legacy name)
+  let token = req.cookies?.csrf || req.cookies?.csrfToken;
 
   // If no token exists, generate a new one
   if (!token) {
@@ -88,13 +94,18 @@ function getToken(req, res) {
   // Secure only in production (HTTPS)
   const isProduction = process.env.NODE_ENV === 'production';
 
-  res.cookie('csrf', token, {
+  const cookieOptions = {
     httpOnly: false, // Client needs to read this cookie
     secure: isProduction, // Only send over HTTPS in production
     sameSite: 'lax', // Lax for compatibility, can use 'strict' for stronger protection
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
-  });
+  };
+
+  // Canonical cookie name used by current clients.
+  res.cookie('csrf', token, cookieOptions);
+  // Legacy compatibility cookie for older clients still reading csrfToken.
+  res.cookie('csrfToken', token, cookieOptions);
 
   return token;
 }
