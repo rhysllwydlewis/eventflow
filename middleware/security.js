@@ -63,6 +63,26 @@ function configureHelmet(isProduction = false) {
           'https://js.stripe.com',
           'https://static.cloudflareinsights.com',
         ],
+        // Explicitly define script-src-elem to avoid fallback ambiguity/noise in browser consoles.
+        scriptSrcElem: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://cdn.jsdelivr.net',
+          'https://cdn.socket.io',
+          'https://cdn.tidycal.net',
+          'https://estatic.com',
+          'https://*.estatic.com',
+          'https://maps.googleapis.com',
+          'https://*.googleapis.com',
+          'https://maps.gstatic.com',
+          'https://*.gstatic.com',
+          'https://googletagmanager.com',
+          'https://*.googletagmanager.com',
+          'https://hcaptcha.com',
+          'https://*.hcaptcha.com',
+          'https://js.stripe.com',
+          'https://static.cloudflareinsights.com',
+        ],
         scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, onerror, etc.)
         styleSrc: [
           "'self'",

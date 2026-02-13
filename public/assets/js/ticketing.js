@@ -14,11 +14,21 @@ function showToastIfAvailable(type, message) {
   }
 }
 
+class TicketingError extends Error {
+  constructor(message, status = null) {
+    super(message);
+    this.name = 'TicketingError';
+    this.status = status;
+  }
+}
+
 class TicketingSystem {
   constructor() {
-    this.pollingIntervals = [];
+    this.activePollers = new Set();
     this.apiBase = '/api';
     this._pollingNotificationShown = false;
+    this.defaultPollIntervalMs = 5000;
+    this.maxPollIntervalMs = 30000;
   }
 
   async ensureCsrfToken(forceRefresh = false) {
@@ -92,7 +102,7 @@ class TicketingSystem {
     }
 
     if (!response.ok) {
-      throw new Error(data.error || 'Ticket request failed');
+      throw new TicketingError(data.error || 'Ticket request failed', response.status);
     }
 
     return data;
@@ -106,6 +116,7 @@ class TicketingSystem {
         ? ticket.description
         : '';
 
+    ticket.id = typeof ticket.id === 'string' && ticket.id ? ticket.id : ticket.ticketId || null;
     ticket.status = typeof ticket.status === 'string' && ticket.status ? ticket.status : 'open';
     ticket.priority =
       typeof ticket.priority === 'string' && ticket.priority ? ticket.priority : 'medium';
@@ -123,6 +134,51 @@ class TicketingSystem {
     return ticket;
   }
 
+  createPoller(task, callback, { silentOnAuthError = true, onAuthError = null } = {}) {
+    let cancelled = false;
+    let timer = null;
+    let intervalMs = this.defaultPollIntervalMs;
+
+    const stop = () => {
+      cancelled = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      this.activePollers.delete(stop);
+    };
+
+    const run = async () => {
+      if (cancelled) {
+        return;
+      }
+
+      try {
+        const result = await task();
+        callback(result);
+        intervalMs = this.defaultPollIntervalMs;
+      } catch (error) {
+        const isAuthError = error instanceof TicketingError && [401, 403].includes(error.status);
+
+        if (isAuthError && silentOnAuthError) {
+          if (typeof onAuthError === 'function') {
+            onAuthError();
+          }
+          stop();
+          return;
+        }
+
+        console.error('Ticket polling failed:', error);
+        intervalMs = Math.min(intervalMs * 2, this.maxPollIntervalMs);
+      }
+
+      timer = setTimeout(run, intervalMs);
+    };
+
+    this.activePollers.add(stop);
+    run();
+    return stop;
+  }
+
   async createTicket(ticketData) {
     const data = await this.request(`${this.apiBase}/tickets`, {
       method: 'POST',
@@ -131,11 +187,26 @@ class TicketingSystem {
     return this.normalizeTicket(data.ticket);
   }
 
-  async getUserTickets(_userId, _userType, limit = null) {
-    let url = `${this.apiBase}/tickets`;
+  async getUserTickets(_userId, _userType, limit = null, options = {}) {
+    const params = new URLSearchParams();
     if (limit) {
-      url += `?limit=${encodeURIComponent(limit)}`;
+      params.set('limit', String(limit));
     }
+    if (typeof options.status === 'string' && options.status) {
+      params.set('status', options.status);
+    }
+    if (typeof options.sort === 'string' && options.sort) {
+      params.set('sort', options.sort);
+    }
+    if (typeof options.query === 'string' && options.query.trim()) {
+      params.set('q', options.query.trim());
+    }
+
+    let url = `${this.apiBase}/tickets`;
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
     const data = await this.request(url);
     return (data.tickets || []).map(ticket => this.normalizeTicket(ticket));
   }
@@ -183,51 +254,26 @@ class TicketingSystem {
       showToastIfAvailable('info', 'Ticket updates refresh automatically every 5 seconds.');
     }
 
-    const pollTicket = async () => {
-      try {
-        const ticket = await this.getTicket(ticketId);
-        callback(ticket);
-      } catch (error) {
-        console.error('Error polling ticket:', error);
-      }
-    };
-
-    pollTicket();
-    const pollInterval = setInterval(pollTicket, 5000);
-
-    this.pollingIntervals.push(pollInterval);
-
-    return () => {
-      clearInterval(pollInterval);
-      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
-    };
+    return this.createPoller(() => this.getTicket(ticketId), callback, {
+      silentOnAuthError: true,
+      onAuthError: () => callback(null),
+    });
   }
 
-  listenToUserTickets(userId, userType, callback, limit = null) {
-    const pollTickets = async () => {
-      try {
-        const tickets = await this.getUserTickets(userId, userType, limit);
-        callback(tickets);
-      } catch (error) {
-        console.error('Error polling user tickets:', error);
-        callback([]);
+  listenToUserTickets(userId, userType, callback, limit = null, options = {}) {
+    return this.createPoller(
+      () => this.getUserTickets(userId, userType, limit, options),
+      callback,
+      {
+        silentOnAuthError: true,
+        onAuthError: () => callback([]),
       }
-    };
-
-    pollTickets();
-    const pollInterval = setInterval(pollTickets, 5000);
-
-    this.pollingIntervals.push(pollInterval);
-
-    return () => {
-      clearInterval(pollInterval);
-      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
-    };
+    );
   }
 
   cleanup() {
-    this.pollingIntervals.forEach(interval => clearInterval(interval));
-    this.pollingIntervals = [];
+    this.activePollers.forEach(stop => stop());
+    this.activePollers.clear();
   }
 
   getStatusClass(status) {

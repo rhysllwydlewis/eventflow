@@ -5,6 +5,8 @@
 
 import ticketingSystem from './ticketing.js';
 
+let ticketsUnsubscribe = null;
+
 // Get current user
 async function getCurrentUser() {
   try {
@@ -346,7 +348,10 @@ async function init() {
 
   // Listen to user's tickets with real-time updates
   try {
-    ticketingSystem.listenToUserTickets(user.id, 'supplier', renderTickets);
+    if (ticketsUnsubscribe) {
+      ticketsUnsubscribe();
+    }
+    ticketsUnsubscribe = ticketingSystem.listenToUserTickets(user.id, 'supplier', renderTickets);
   } catch (error) {
     console.error('Error listening to tickets:', error);
     const container = document.getElementById('tickets-sup');
@@ -363,3 +368,10 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+window.addEventListener('beforeunload', () => {
+  if (ticketsUnsubscribe) {
+    ticketsUnsubscribe();
+  }
+  ticketingSystem.cleanup();
+});

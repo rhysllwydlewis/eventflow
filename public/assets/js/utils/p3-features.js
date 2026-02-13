@@ -118,7 +118,9 @@ function displayReadingTime(content, containerId = 'reading-time') {
  */
 function triggerSuccessConfetti() {
   if (typeof confetti === 'undefined') {
-    console.warn('canvas-confetti library not loaded');
+    if (window.location.hostname === 'localhost') {
+      console.info('Confetti animation unavailable: no confetti provider loaded');
+    }
     return;
   }
 
