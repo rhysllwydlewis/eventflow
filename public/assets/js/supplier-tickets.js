@@ -162,8 +162,10 @@ function showCreateTicketModal() {
     const submitBtn = e.target.querySelector('button[type="submit"]');
 
     try {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Submitting...';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+      }
 
       await ticketingSystem.createTicket(ticketData);
 
@@ -182,8 +184,10 @@ function showCreateTicketModal() {
         alert(`Failed to create ticket: ${error.message}`);
       }
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit Ticket';
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Ticket';
+      }
     }
   });
 }

@@ -29,6 +29,24 @@ class TicketingSystem {
     this._pollingNotificationShown = false;
     this.defaultPollIntervalMs = 5000;
     this.maxPollIntervalMs = 30000;
+    this.hiddenPollIntervalMs = 300000;
+  }
+
+  getCsrfTokenFromCookie() {
+    if (typeof document === 'undefined' || typeof document.cookie !== 'string') {
+      return null;
+    }
+
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf') {
+        const token = decodeURIComponent(value || '');
+        return token || null;
+      }
+    }
+
+    return null;
   }
 
   async ensureCsrfToken(forceRefresh = false) {
@@ -39,6 +57,15 @@ class TicketingSystem {
     if (forceRefresh) {
       window.__CSRF_TOKEN__ = null;
       window.csrfToken = null;
+    }
+
+    if (!forceRefresh) {
+      const cookieToken = this.getCsrfTokenFromCookie();
+      if (cookieToken) {
+        window.__CSRF_TOKEN__ = cookieToken;
+        window.csrfToken = cookieToken;
+        return cookieToken;
+      }
     }
 
     if (window.__CSRF_TOKEN__) {
@@ -54,13 +81,14 @@ class TicketingSystem {
     }
 
     const data = await response.json();
-    if (!data?.csrfToken) {
+    const token = data?.csrfToken || data?.token || this.getCsrfTokenFromCookie();
+    if (!token) {
       throw new Error('CSRF token missing from response');
     }
 
-    window.__CSRF_TOKEN__ = data.csrfToken;
-    window.csrfToken = data.csrfToken;
-    return data.csrfToken;
+    window.__CSRF_TOKEN__ = token;
+    window.csrfToken = token;
+    return token;
   }
 
   async request(url, options = {}) {
@@ -82,9 +110,17 @@ class TicketingSystem {
     }
 
     let response = await fetch(url, opts);
-    let data = await response.json().catch(() => ({}));
+    let rawBody = await response.text();
+    let data;
 
-    const csrfError = response.status === 403 && /csrf/i.test(data?.error || '') && isWriteMethod;
+    try {
+      data = rawBody ? JSON.parse(rawBody) : {};
+    } catch (_error) {
+      data = {};
+    }
+
+    const csrfHint = `${data?.error || ''} ${data?.message || ''} ${rawBody || ''}`;
+    const csrfError = response.status === 403 && /csrf/i.test(csrfHint) && isWriteMethod;
 
     // CSRF tokens can expire/rotate; refresh once and retry automatically.
     if (csrfError) {
@@ -98,11 +134,19 @@ class TicketingSystem {
           'X-CSRF-Token': freshToken,
         },
       });
-      data = await response.json().catch(() => ({}));
+      rawBody = await response.text();
+      try {
+        data = rawBody ? JSON.parse(rawBody) : {};
+      } catch (_error) {
+        data = {};
+      }
     }
 
     if (!response.ok) {
-      throw new TicketingError(data.error || 'Ticket request failed', response.status);
+      throw new TicketingError(
+        data.error || data.message || 'Ticket request failed',
+        response.status
+      );
     }
 
     return data;
@@ -134,28 +178,58 @@ class TicketingSystem {
     return ticket;
   }
 
-  createPoller(task, callback, { silentOnAuthError = true, onAuthError = null } = {}) {
+  createPoller(
+    task,
+    callback,
+    {
+      silentOnAuthError = true,
+      onAuthError = null,
+      intervalMs: preferredIntervalMs = this.defaultPollIntervalMs,
+      hiddenIntervalMs = this.hiddenPollIntervalMs,
+      pauseWhenHidden = true,
+    } = {}
+  ) {
     let cancelled = false;
     let timer = null;
-    let intervalMs = this.defaultPollIntervalMs;
+    let intervalMs = preferredIntervalMs;
+    let inFlight = false;
+    let removeVisibilityListener = null;
+
+    const clearTimer = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
 
     const stop = () => {
       cancelled = true;
-      if (timer) {
-        clearTimeout(timer);
+      clearTimer();
+      if (typeof removeVisibilityListener === 'function') {
+        removeVisibilityListener();
+        removeVisibilityListener = null;
       }
       this.activePollers.delete(stop);
     };
 
+    const getNextIntervalMs = currentInterval => {
+      const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+      if (pauseWhenHidden && isHidden) {
+        return hiddenIntervalMs;
+      }
+      return currentInterval;
+    };
+
     const run = async () => {
-      if (cancelled) {
+      if (cancelled || inFlight) {
         return;
       }
 
+      inFlight = true;
       try {
         const result = await task();
         callback(result);
-        intervalMs = this.defaultPollIntervalMs;
+        intervalMs = preferredIntervalMs;
       } catch (error) {
         const isAuthError = error instanceof TicketingError && [401, 403].includes(error.status);
 
@@ -169,13 +243,37 @@ class TicketingSystem {
 
         console.error('Ticket polling failed:', error);
         intervalMs = Math.min(intervalMs * 2, this.maxPollIntervalMs);
+      } finally {
+        inFlight = false;
       }
 
-      timer = setTimeout(run, intervalMs);
+      timer = setTimeout(run, getNextIntervalMs(intervalMs));
     };
+
+    const handleVisibilityChange = () => {
+      if (cancelled || !pauseWhenHidden || typeof document === 'undefined') {
+        return;
+      }
+
+      if (document.visibilityState === 'visible') {
+        clearTimer();
+        intervalMs = preferredIntervalMs;
+        if (!inFlight) {
+          run();
+        }
+      }
+    };
+
+    if (typeof document !== 'undefined' && pauseWhenHidden) {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      removeVisibilityListener = () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
 
     this.activePollers.add(stop);
     run();
+
     return stop;
   }
 
@@ -267,6 +365,9 @@ class TicketingSystem {
       {
         silentOnAuthError: true,
         onAuthError: () => callback([]),
+        intervalMs: 60000,
+        hiddenIntervalMs: 600000,
+        pauseWhenHidden: true,
       }
     );
   }
