@@ -6,6 +6,8 @@
 import ticketingSystem from './ticketing.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 
+let ticketsUnsubscribe = null;
+
 // Get current user
 async function getCurrentUser() {
   try {
@@ -360,7 +362,10 @@ async function init() {
 
   // Listen to user's tickets with real-time updates (limit to 5 recent tickets on dashboard)
   try {
-    ticketingSystem.listenToUserTickets(user.id, 'customer', renderTickets, 5);
+    if (ticketsUnsubscribe) {
+      ticketsUnsubscribe();
+    }
+    ticketsUnsubscribe = ticketingSystem.listenToUserTickets(user.id, 'customer', renderTickets, 5);
   } catch (error) {
     console.error('Error loading tickets:', error);
     showErrorState(container, {
@@ -378,3 +383,10 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+window.addEventListener('beforeunload', () => {
+  if (ticketsUnsubscribe) {
+    ticketsUnsubscribe();
+  }
+  ticketingSystem.cleanup();
+});

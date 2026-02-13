@@ -400,7 +400,7 @@
                   </div>
                   <div class="dashboard-stat-card__content">
                     <div
-                      class="dashboard-stat-card__value"
+                      class="dashboard-stat-card__value stat-number"
                       id="quick-stat-enquiries"
                       data-target="12"
                     >
@@ -429,7 +429,7 @@
                   </div>
                   <div class="dashboard-stat-card__content">
                     <div
-                      class="dashboard-stat-card__value"
+                      class="dashboard-stat-card__value stat-number"
                       id="quick-stat-profiles"
                       data-target="4"
                     >
@@ -2291,29 +2291,27 @@
           function handleRealtimeNotification(data) {
             try {
               if (data.type === 'enquiry_received') {
-                // Show toast notification
+                const enquiriesDataset = analyticsChartInstance?.data?.datasets?.[1]; // datasets[1]
+
                 if (typeof EventFlowNotifications !== 'undefined') {
-                  EventFlowNotifications.info('New Enquiry Received! Dashboard updated.');
+                  EventFlowNotifications.info('New enquiry received.');
                 }
 
-                // Update the enquiry counter in the hero section
                 const enquiriesElement = document.getElementById('quick-stat-enquiries');
                 if (enquiriesElement) {
                   const currentValue = parseInt(enquiriesElement.textContent) || 0;
                   enquiriesElement.textContent = currentValue + 1;
 
-                  // Also update the data-target attribute for consistency
                   enquiriesElement.setAttribute('data-target', currentValue + 1);
                 }
 
-                // Update the chart if it exists
                 if (
                   analyticsChartInstance &&
                   analyticsChartInstance.data &&
                   analyticsChartInstance.data.datasets
                 ) {
                   // Get the enquiries dataset (index 1)
-                  const enquiriesDataset = analyticsChartInstance.data.datasets[1];
+                  // Use pre-resolved enquiries dataset reference
                   if (
                     enquiriesDataset &&
                     enquiriesDataset.data &&
@@ -2328,6 +2326,8 @@
                   }
                 }
               } else if (data.type === 'profile_view') {
+                const viewsDataset = analyticsChartInstance?.data?.datasets?.[0]; // datasets[0]
+
                 // Update the views counter in the stats grid
                 // The stats grid is dynamically generated, so we need to find the element
                 const statsNumbers = document.querySelectorAll('.stat-number');
@@ -2346,14 +2346,13 @@
                   }
                 });
 
-                // Update the chart if it exists
                 if (
                   analyticsChartInstance &&
                   analyticsChartInstance.data &&
                   analyticsChartInstance.data.datasets
                 ) {
                   // Get the views dataset (index 0)
-                  const viewsDataset = analyticsChartInstance.data.datasets[0];
+                  // Use pre-resolved views dataset reference
                   if (viewsDataset && viewsDataset.data && viewsDataset.data.length > 0) {
                     // Increment the last data point (today)
                     const lastIndex = viewsDataset.data.length - 1;
@@ -2376,7 +2375,7 @@
               try {
                 wsClientInstance = new WebSocketClient({
                   onConnect: () => console.log('🟢 Live Dashboard Connected'),
-                  onNotification: data => handleRealtimeNotification(data),
+                  onNotification: (data) => handleRealtimeNotification(data),
                 });
               } catch (error) {
                 console.error('Error initializing WebSocket client:', error);
@@ -2781,12 +2780,7 @@
     </footer>
     <script src="/assets/js/cookie-consent.js" defer></script>
 
-    <!-- JadeAssist Chat Widget -->
-    <script
-      src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js"
-      defer
-    ></script>
-    <script src="/assets/js/jadeassist-init.v2.js" defer></script>
+    <!-- Dashboard avoids third-party chat/widget scripts to reduce CSP/tracking noise -->
 
     <!-- Supplier Enquiry Notifications - Extracted to external file for CSP compliance -->
     <script src="/assets/js/dashboard-supplier-websocket.js?v=18.2.1"></script>
@@ -2797,7 +2791,7 @@
     <script src="/assets/js/notifications.js?v=18.2.0"></script>
     <script src="/assets/js/components/profile-health-widget.js?v=18.2.0"></script>
     <script src="/assets/js/keyboard-shortcuts.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script src="/assets/js/vendor/confetti-safe.js?v=18.3.0"></script>
     <script src="/assets/js/utils/p3-features.js" defer></script>
     <script src="/assets/js/supplier-dashboard-enhancements.js" defer></script>
   </body>

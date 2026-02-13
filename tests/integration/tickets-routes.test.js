@@ -93,6 +93,37 @@ describe('Tickets Routes Integration', () => {
     expect(dbUnified.write).toHaveBeenCalledTimes(1);
   });
 
+  it('rejects oversized subject/message payloads', async () => {
+    dbUnified.read.mockResolvedValue([]);
+
+    const longSubject = 'S'.repeat(220);
+    const longMessage = 'M'.repeat(5200);
+
+    const subjectResponse = await request(app)
+      .post('/api/tickets')
+      .set('x-test-user-role', 'customer')
+      .send({
+        senderType: 'customer',
+        subject: longSubject,
+        message: 'Valid message that passes minimum length',
+      });
+
+    expect(subjectResponse.status).toBe(400);
+    expect(subjectResponse.body.error).toMatch(/Subject is too long/i);
+
+    const messageResponse = await request(app)
+      .post('/api/tickets')
+      .set('x-test-user-role', 'customer')
+      .send({
+        senderType: 'customer',
+        subject: 'Valid subject',
+        message: longMessage,
+      });
+
+    expect(messageResponse.status).toBe(400);
+    expect(messageResponse.body.error).toMatch(/Message is too long/i);
+  });
+
   it('normalizes legacy ticket fields for owner access and response rendering', async () => {
     dbUnified.read.mockResolvedValue([
       {
@@ -121,6 +152,99 @@ describe('Tickets Routes Integration', () => {
     expect(response.body.tickets[0].responses).toHaveLength(1);
   });
 
+  it('supports filtering metadata and summary in ticket listing', async () => {
+    dbUnified.read.mockResolvedValue([
+      {
+        id: 'ticket-open',
+        senderId: 'user-1',
+        senderType: 'customer',
+        subject: 'Payment failed',
+        message: 'Card was charged but booking failed',
+        status: 'open',
+        createdAt: '2026-02-10T10:00:00.000Z',
+        updatedAt: '2026-02-10T10:00:00.000Z',
+      },
+      {
+        id: 'ticket-resolved',
+        senderId: 'user-1',
+        senderType: 'customer',
+        subject: 'Resolved inquiry',
+        message: 'Everything is fixed now',
+        status: 'resolved',
+        createdAt: '2026-02-11T10:00:00.000Z',
+        updatedAt: '2026-02-12T10:00:00.000Z',
+      },
+    ]);
+
+    const response = await request(app)
+      .get('/api/tickets?q=payment&sort=updated&limit=10')
+      .set('x-test-user-id', 'user-1')
+      .set('x-test-user-role', 'customer');
+
+    expect(response.status).toBe(200);
+    expect(response.body.tickets).toHaveLength(1);
+    expect(response.body.tickets[0].id).toBe('ticket-open');
+    expect(response.body.meta).toEqual(
+      expect.objectContaining({
+        sort: 'updated',
+        query: 'payment',
+        returned: 1,
+        limit: 10,
+      })
+    );
+    expect(response.body.summary).toEqual(
+      expect.objectContaining({
+        total: 1,
+        byStatus: expect.objectContaining({ open: 1 }),
+      })
+    );
+  });
+
+  it('reopens resolved tickets when owner replies and lets admin update priority', async () => {
+    const existing = [
+      {
+        id: 'ticket-reopen',
+        senderId: 'user-1',
+        senderType: 'customer',
+        senderEmail: 'customer@example.com',
+        subject: 'Issue',
+        message: 'Original issue message',
+        status: 'resolved',
+        priority: 'medium',
+        responses: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+
+    dbUnified.read.mockResolvedValue(existing);
+    dbUnified.write.mockResolvedValue(true);
+
+    const replyResponse = await request(app)
+      .post('/api/tickets/ticket-reopen/reply')
+      .set('x-test-user-id', 'user-1')
+      .set('x-test-user-role', 'customer')
+      .send({ message: 'Issue came back after yesterday update' });
+
+    expect(replyResponse.status).toBe(200);
+    expect(replyResponse.body.ticket.status).toBe('in_progress');
+
+    const adminUpdateResponse = await request(app)
+      .put('/api/tickets/ticket-reopen')
+      .set('x-test-user-id', 'admin-1')
+      .set('x-test-user-role', 'admin')
+      .send({
+        priority: 'urgent',
+        assignedTo: 'agent-42',
+        status: 'resolved',
+        resolutionNote: 'Provided workaround and confirmed by user.',
+      });
+
+    expect(adminUpdateResponse.status).toBe(200);
+    expect(adminUpdateResponse.body.ticket.priority).toBe('urgent');
+    expect(adminUpdateResponse.body.ticket.assignedTo).toBe('agent-42');
+    expect(adminUpdateResponse.body.ticket.resolutionNote).toMatch(/workaround/i);
+  });
   it('allows owner to reply and keeps status consistent', async () => {
     const existing = [
       {

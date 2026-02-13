@@ -23,6 +23,50 @@ const router = express.Router();
 
 const ALLOWED_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
 const TICKET_ROLES = ['customer', 'supplier'];
+const TICKET_SORTS = ['newest', 'oldest', 'updated'];
+const MAX_SUBJECT_LENGTH = 180;
+const MAX_MESSAGE_LENGTH = 5000;
+
+function normalizeLimit(rawLimit, defaultValue = 50, maxValue = 200) {
+  const parsed = Number.parseInt(rawLimit, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return defaultValue;
+  }
+  return Math.min(parsed, maxValue);
+}
+
+function canTransitionStatus(currentStatus, nextStatus, role) {
+  if (role === 'admin') {
+    return true;
+  }
+
+  // Non-admin users can only reopen their own resolved/closed tickets.
+  if (nextStatus === 'in_progress' && ['resolved', 'closed'].includes(currentStatus)) {
+    return true;
+  }
+
+  return false;
+}
+
+function summarizeTickets(tickets) {
+  return tickets.reduce(
+    (acc, ticket) => {
+      const status = ALLOWED_STATUSES.includes(ticket.status) ? ticket.status : 'open';
+      acc.byStatus[status] += 1;
+      acc.total += 1;
+      return acc;
+    },
+    {
+      total: 0,
+      byStatus: {
+        open: 0,
+        in_progress: 0,
+        resolved: 0,
+        closed: 0,
+      },
+    }
+  );
+}
 
 /**
  * POST /api/tickets
@@ -55,8 +99,20 @@ router.post(
         return res.status(400).json({ error: 'Subject must be at least 3 characters' });
       }
 
+      if (subject.trim().length > MAX_SUBJECT_LENGTH) {
+        return res
+          .status(400)
+          .json({ error: `Subject is too long (max ${MAX_SUBJECT_LENGTH} characters)` });
+      }
+
       if (typeof message !== 'string' || message.trim().length < 10) {
         return res.status(400).json({ error: 'Message must be at least 10 characters' });
+      }
+
+      if (message.trim().length > MAX_MESSAGE_LENGTH) {
+        return res
+          .status(400)
+          .json({ error: `Message is too long (max ${MAX_MESSAGE_LENGTH} characters)` });
       }
 
       if (!senderType || !TICKET_ROLES.includes(senderType)) {
@@ -84,6 +140,8 @@ router.post(
         status: 'open',
         priority: normalizeTicketPriority(priority),
         assignedTo: null,
+        lastReplyAt: now,
+        lastReplyBy: senderType,
         responses: [],
         createdAt: now,
         updatedAt: now,
@@ -118,7 +176,7 @@ router.get('/', authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
-    const { status, limit } = req.query;
+    const { status, limit, q, sort = 'newest' } = req.query;
 
     let tickets = (await dbUnified.read('tickets')).map(ticket =>
       normalizeTicketRecord(ticket, { generateId: uid })
@@ -143,22 +201,54 @@ router.get('/', authRequired, async (req, res) => {
       tickets = tickets.filter(t => t.status === status);
     }
 
-    // Sort by creation date (newest first)
-    tickets.sort((a, b) => {
-      const aTime = new Date(a.createdAt).getTime();
-      const bTime = new Date(b.createdAt).getTime();
-      return bTime - aTime;
-    });
-
-    // Apply limit if provided
-    if (limit) {
-      const limitNum = parseInt(limit, 10);
-      if (!isNaN(limitNum) && limitNum > 0) {
-        tickets = tickets.slice(0, limitNum);
-      }
+    // Optional free-text search (subject/message/sender)
+    const queryText = typeof q === 'string' ? q.trim().toLowerCase() : '';
+    if (queryText) {
+      tickets = tickets.filter(ticket => {
+        const searchable = [ticket.subject, ticket.message, ticket.senderName, ticket.senderEmail]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return searchable.includes(queryText);
+      });
     }
 
-    res.json({ tickets });
+    if (!TICKET_SORTS.includes(sort)) {
+      return res.status(400).json({ error: 'Invalid sort option' });
+    }
+
+    // Sort list
+    tickets.sort((a, b) => {
+      const aCreated = new Date(a.createdAt).getTime();
+      const bCreated = new Date(b.createdAt).getTime();
+      const aUpdated = new Date(a.updatedAt || a.createdAt).getTime();
+      const bUpdated = new Date(b.updatedAt || b.createdAt).getTime();
+
+      if (sort === 'oldest') {
+        return aCreated - bCreated;
+      }
+      if (sort === 'updated') {
+        return bUpdated - aUpdated;
+      }
+      return bCreated - aCreated;
+    });
+
+    const summary = summarizeTickets(tickets);
+
+    // Apply limit
+    const limitNum = normalizeLimit(limit, 50, 200);
+    tickets = tickets.slice(0, limitNum);
+
+    res.json({
+      tickets,
+      meta: {
+        limit: limitNum,
+        sort,
+        query: queryText,
+        returned: tickets.length,
+      },
+      summary,
+    });
   } catch (error) {
     console.error('Error fetching tickets:', error);
     res.status(500).json({ error: 'Failed to fetch tickets', details: error.message });
@@ -203,7 +293,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
     const userId = req.user.id;
     const userRole = req.user.role;
     const { id } = req.params;
-    const { status, response } = req.body;
+    const { status, response, priority, assignedTo, resolutionNote } = req.body;
 
     const tickets = (await dbUnified.read('tickets')).map(ticket =>
       normalizeTicketRecord(ticket, { generateId: uid })
@@ -223,12 +313,42 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
 
     const now = new Date().toISOString();
 
-    // Update status if provided (admins only)
-    if (status && userRole === 'admin') {
+    // Update status
+    if (status) {
       if (!ALLOWED_STATUSES.includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
       }
+
+      if (!canTransitionStatus(ticket.status, status, userRole)) {
+        return res.status(403).json({ error: 'You cannot update ticket status to that value' });
+      }
+
       ticket.status = status;
+
+      if (status === 'resolved' || status === 'closed') {
+        ticket.resolutionNote =
+          typeof resolutionNote === 'string' && resolutionNote.trim()
+            ? resolutionNote.trim().slice(0, MAX_MESSAGE_LENGTH)
+            : ticket.resolutionNote || null;
+      }
+    }
+
+    // Priority can only be changed by admins.
+    if (priority !== undefined) {
+      if (userRole !== 'admin') {
+        return res.status(403).json({ error: 'Only admins can update ticket priority' });
+      }
+
+      ticket.priority = normalizeTicketPriority(priority);
+    }
+
+    // Ticket assignment is admin-only.
+    if (assignedTo !== undefined) {
+      if (userRole !== 'admin') {
+        return res.status(403).json({ error: 'Only admins can assign tickets' });
+      }
+
+      ticket.assignedTo = typeof assignedTo === 'string' && assignedTo.trim() ? assignedTo : null;
     }
 
     // Add response if provided
@@ -244,6 +364,15 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
         message: response.trim(),
         createdAt: now,
       });
+
+      // Customer/supplier response re-opens closed loops for triage.
+      if (userRole !== 'admin' && ['resolved', 'closed'].includes(ticket.status)) {
+        ticket.status = 'in_progress';
+        ticket.resolutionNote = null;
+      }
+
+      ticket.lastReplyAt = now;
+      ticket.lastReplyBy = userRole;
     }
 
     ticket.updatedAt = now;
@@ -257,7 +386,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
       action: 'TICKET_UPDATED',
       targetType: 'ticket',
       targetId: ticket.id,
-      details: { status, hasResponse: !!response },
+      details: { status, hasResponse: !!response, priority, assignedTo },
     });
 
     res.json({ ticket });
@@ -328,7 +457,9 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
       return res.status(400).json({ error: 'Reply message is required' });
     }
 
-    if (message.length > 5000) {
+    const trimmedMessage = message.trim();
+
+    if (trimmedMessage.length > 5000) {
       return res.status(400).json({ error: 'Reply message is too long (max 5000 characters)' });
     }
 
@@ -356,7 +487,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
       userId: req.user.id,
       userName: req.user.name || req.user.email,
       userRole,
-      message: message.trim(),
+      message: trimmedMessage,
       createdAt: now,
     };
 
@@ -370,7 +501,12 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
     ticket.updatedAt = now;
     if (ticket.status === 'open' && userRole === 'admin') {
       ticket.status = 'in_progress';
+    } else if (userRole !== 'admin' && ['resolved', 'closed'].includes(ticket.status)) {
+      ticket.status = 'in_progress';
+      ticket.resolutionNote = null;
     }
+    ticket.lastReplyAt = now;
+    ticket.lastReplyBy = userRole;
 
     tickets[ticketIndex] = ticket;
     await dbUnified.write('tickets', tickets);
