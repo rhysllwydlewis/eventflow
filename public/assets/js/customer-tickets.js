@@ -3,7 +3,7 @@
  * Handles ticket creation and viewing for customers
  */
 
-import ticketingSystem from './ticketing.js';
+import ticketingSystem from './ticketing.js?v=18.3.0';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 
 let ticketsUnsubscribe = null;

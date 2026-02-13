@@ -151,7 +151,7 @@ router.get('/csrf-token', applyAuthLimiter, async (req, res) => {
     return res.status(503).json({ error: 'CSRF token service not initialized' });
   }
   const token = getToken(req, res);
-  res.json({ csrfToken: token });
+  res.json({ csrfToken: token, token });
 });
 
 /**

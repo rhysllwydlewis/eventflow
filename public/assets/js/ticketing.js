@@ -40,7 +40,7 @@ class TicketingSystem {
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
-      if (name === 'csrf') {
+      if (name === 'csrf' || name === 'csrfToken') {
         const token = decodeURIComponent(value || '');
         return token || null;
       }
@@ -72,16 +72,29 @@ class TicketingSystem {
       return window.__CSRF_TOKEN__;
     }
 
-    const response = await fetch('/api/v1/csrf-token', {
-      credentials: 'include',
-    });
+    const csrfEndpoints = ['/api/v1/csrf-token', '/api/csrf-token'];
+    let token = null;
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch CSRF token');
+    for (const endpoint of csrfEndpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const data = await response.json();
+        token = data?.csrfToken || data?.token || this.getCsrfTokenFromCookie();
+        if (token) {
+          break;
+        }
+      } catch (_error) {
+        // Try the next endpoint before failing
+      }
     }
 
-    const data = await response.json();
-    const token = data?.csrfToken || data?.token || this.getCsrfTokenFromCookie();
     if (!token) {
       throw new Error('CSRF token missing from response');
     }

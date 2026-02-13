@@ -3,7 +3,7 @@
  * Handles ticket creation and viewing for suppliers
  */
 
-import ticketingSystem from './ticketing.js';
+import ticketingSystem from './ticketing.js?v=18.3.0';
 
 let ticketsUnsubscribe = null;
 
