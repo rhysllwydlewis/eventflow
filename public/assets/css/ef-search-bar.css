@@ -492,6 +492,24 @@
   .ef-search-bar__segment--category { min-width: 110px; }
 }
 
+/* 640px+ quick tags: keep on one row; JS will hide trailing tags only if space is tight */
+@media (min-width: 640px) {
+  .ef-quick-tags {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .ef-quick-tags__tag {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}
+
 /* Large Desktop (1024px+) */
 @media (min-width: 1024px) {
   .ef-search-bar {

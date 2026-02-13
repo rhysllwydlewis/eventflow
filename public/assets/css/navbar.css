@@ -46,6 +46,11 @@
   --ef-text-reappear-duration: 0.8s;
   --ef-text-reappear-delay: 2.3s;
   --ef-brand-text-max-width: 150px;
+  --ef-logo-gradient-a: #3b82f6;
+  --ef-logo-gradient-b: #14b8a6;
+  --ef-logo-gradient-c: #86efac;
+  --ef-logo-glow: rgba(20, 184, 166, 0.28);
+  --ef-logo-ring: rgba(255, 255, 255, 0.42);
 }
 
 /* ========================================
@@ -108,10 +113,15 @@
 }
 
 .ef-brand:hover .ef-logo-inner {
-  animation: logo-spin 2s var(--ef-ease-back) infinite;
-  box-shadow: 0 6px 16px rgba(11, 128, 115, 0.5),
-              inset 0 1px 2px rgba(255, 255, 255, 0.4),
-              inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 14px 28px rgba(20, 184, 166, 0.42),
+              inset 0 1px 1px rgba(255, 255, 255, 0.5),
+              inset 0 -2px 3px rgba(11, 18, 32, 0.22);
+}
+
+.ef-brand:hover .ef-logo::before {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.15);
 }
 
 .ef-brand:focus-visible {
@@ -127,8 +137,8 @@
 }
 
 .ef-logo {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
   position: relative;
   display: flex;
@@ -136,54 +146,93 @@
   justify-content: center;
 }
 
+.ef-logo::before {
+  content: '';
+  position: absolute;
+  width: 110%;
+  height: 110%;
+  border-radius: 16px;
+  background: radial-gradient(circle at 30% 20%, var(--ef-logo-glow), transparent 62%);
+  filter: blur(10px);
+  transform: translate(-50%, -50%) scale(1);
+  left: 50%;
+  top: 50%;
+  opacity: 0.62;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.ef-logo::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 15px;
+  border: 1px solid var(--ef-logo-ring);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
 .ef-logo-inner {
   width: 100%;
   height: 100%;
-  border-radius: 12px;
-  background: conic-gradient(
-    from 180deg at 50% 50%,
-    #9be7d9 0deg,
-    #13B6A2 90deg,
-    #0B8073 198deg,
-    #0B1220 270deg,
-    #9be7d9 360deg
-  );
-  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.4),
-              inset 0 1px 2px rgba(255, 255, 255, 0.4),
-              inset 0 -1px 2px rgba(0, 0, 0, 0.2);
-  transition: var(--ef-transition);
+  border-radius: 14px;
+  background: linear-gradient(130deg, var(--ef-logo-gradient-a) 0%, var(--ef-logo-gradient-b) 46%, var(--ef-logo-gradient-c) 100%);
+  background-size: 180% 180%;
+  box-shadow: 0 6px 18px rgba(15, 118, 110, 0.36),
+              inset 0 1px 1px rgba(255, 255, 255, 0.45),
+              inset 0 -2px 3px rgba(11, 18, 32, 0.2);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
   position: relative;
+  overflow: hidden;
 }
 
 /* Page startup animation - one rotation (only for users who don't prefer reduced motion) */
 @media (prefers-reduced-motion: no-preference) {
   .ef-logo-inner {
-    animation: logo-startup-spin var(--ef-logo-spin-duration) var(--ef-ease-bounce) forwards;
+    animation: logo-startup-spin var(--ef-logo-spin-duration) var(--ef-ease-bounce) forwards,
+               logo-gradient-shift 8s ease-in-out infinite,
+               logo-float 4.8s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ef-logo-inner {
+    animation: none;
+  }
+
+  .ef-logo::before {
+    transition: none;
   }
 }
 
 .ef-logo-inner::before {
   content: '';
   position: absolute;
-  inset: 4px;
-  background: radial-gradient(
-    ellipse at 25% 25%,
-    rgba(255, 255, 255, 0.5),
-    transparent 60%
+  inset: -35% 40% auto -35%;
+  width: 80%;
+  height: 180%;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.68) 0%,
+    rgba(255, 255, 255, 0.15) 32%,
+    transparent 62%
   );
-  border-radius: 10px;
+  transform: rotate(15deg);
   pointer-events: none;
+  animation: logo-sheen 6.5s ease-in-out infinite;
 }
 
 .ef-logo-inner::after {
-  content: '✨';
+  content: 'EF';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 18px;
-  opacity: 0.9;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(11, 18, 32, 0.35);
 }
 
 /* Text disappear animation - right to left from 0.5s to 1.5s */
@@ -220,15 +269,39 @@
   }
 }
 
-/* Logo hover spin - continuous smooth rotation */
-@keyframes logo-spin {
-  0% {
-    transform: rotate(0deg);
-  }
+/* Smooth logo lighting and color movement */
+@keyframes logo-float {
+  0%,
   100% {
-    transform: rotate(360deg);
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
   }
 }
+
+@keyframes logo-sheen {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: translateX(0) rotate(15deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(2px) rotate(15deg);
+  }
+}
+
+@keyframes logo-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 
 .ef-brand-text {
   font-weight: 800;
@@ -241,14 +314,6 @@
   white-space: nowrap;
   overflow: hidden;
   transition: all 0.3s ease-out;
-}
-
-/* Startup animation - disappear from 0.5s to 2.3s, then reappear (only for users who don't prefer reduced motion) */
-@media (prefers-reduced-motion: no-preference) {
-  .ef-brand-text {
-    animation: text-startup-disappear var(--ef-text-disappear-duration) ease-in-out var(--ef-text-disappear-delay) forwards,
-               text-startup-reappear var(--ef-text-reappear-duration) var(--ef-ease-bounce) var(--ef-text-reappear-delay) forwards;
-  }
 }
 
 /* Hide EventFlow text on mobile to save space */
