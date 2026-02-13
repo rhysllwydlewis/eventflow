@@ -8,6 +8,7 @@ class EFSearchBar {
     this.form = document.querySelector('.ef-search-bar__form');
     this.input = document.querySelector('.ef-search-bar__input');
     this.select = document.querySelector('.ef-search-bar__select');
+    this.quickTagsContainer = document.querySelector('.ef-quick-tags');
     this.quickTags = document.querySelectorAll('.ef-quick-tags__tag');
 
     if (this.form) {
@@ -26,6 +27,52 @@ class EFSearchBar {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', e => this.handleKeydown(e));
+
+    // Keep quick tags on one line and hide only if space is actually tight
+    this.balanceQuickTags();
+    window.addEventListener('resize', () => this.scheduleQuickTagBalance());
+  }
+
+  scheduleQuickTagBalance() {
+    if (this.quickTagBalanceFrame) {
+      cancelAnimationFrame(this.quickTagBalanceFrame);
+    }
+
+    this.quickTagBalanceFrame = requestAnimationFrame(() => {
+      this.balanceQuickTags();
+    });
+  }
+
+  balanceQuickTags() {
+    if (!this.quickTagsContainer || !this.quickTags.length) {
+      return;
+    }
+
+    // Mobile already hides the quick tags in CSS
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      return;
+    }
+
+    // Reset all tags first so they can reappear when there is enough room
+    this.quickTags.forEach(tag => {
+      tag.style.display = '';
+      tag.removeAttribute('aria-hidden');
+      tag.disabled = false;
+      tag.tabIndex = 0;
+    });
+
+    // Hide trailing tags only when required to keep a single-row layout
+    for (let i = this.quickTags.length - 1; i >= 0; i -= 1) {
+      if (this.quickTagsContainer.scrollWidth <= this.quickTagsContainer.clientWidth + 1) {
+        break;
+      }
+
+      const tag = this.quickTags[i];
+      tag.style.display = 'none';
+      tag.setAttribute('aria-hidden', 'true');
+      tag.disabled = true;
+      tag.tabIndex = -1;
+    }
   }
 
   handleSubmit(e) {
