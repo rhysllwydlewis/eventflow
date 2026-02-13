@@ -8,21 +8,80 @@
  * @returns {string|null} The CSRF token or null if not found
  */
 function getCsrfToken() {
-  // Try to get from global variable first
-  if (window.__CSRF_TOKEN__) {
-    return window.__CSRF_TOKEN__;
-  }
-
-  // Otherwise, read from cookie
+  // Cookie is authoritative (server-controlled) when present.
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
     if (name === 'csrf') {
-      return value;
+      const token = decodeURIComponent(value || '');
+      if (token) {
+        // Keep globals synchronized for legacy callers
+        window.__CSRF_TOKEN__ = token;
+        window.csrfToken = token;
+        return token;
+      }
     }
   }
 
+  // Fallback to global variable
+  if (window.__CSRF_TOKEN__) {
+    return window.__CSRF_TOKEN__;
+  }
+
+  if (window.csrfToken) {
+    return window.csrfToken;
+  }
+
   return null;
+}
+
+let csrfPromise = null;
+
+/**
+ * Ensure a CSRF token is available by reading cookie/global state first,
+ * then fetching a fresh token from the server if needed.
+ * @returns {Promise<string>} CSRF token
+ */
+async function ensureCsrfToken(forceRefresh = false) {
+  if (!forceRefresh) {
+    const existing = getCsrfToken();
+    if (existing) {
+      window.__CSRF_TOKEN__ = existing;
+      window.csrfToken = existing;
+      return existing;
+    }
+  }
+
+  if (forceRefresh) {
+    window.__CSRF_TOKEN__ = null;
+    window.csrfToken = null;
+  }
+
+  if (!csrfPromise) {
+    csrfPromise = fetch('/api/v1/csrf-token', {
+      credentials: 'include',
+    })
+      .then(async response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch CSRF token');
+        }
+
+        const data = await response.json();
+        const token = data?.csrfToken;
+        if (!token) {
+          throw new Error('CSRF token missing from response');
+        }
+
+        window.__CSRF_TOKEN__ = token;
+        window.csrfToken = token;
+        return token;
+      })
+      .finally(() => {
+        csrfPromise = null;
+      });
+  }
+
+  return csrfPromise;
 }
 
 /**
@@ -57,8 +116,15 @@ async function fetchWithCsrf(url, options = {}) {
   // Only add CSRF for state-changing methods
   const method = (options.method || 'GET').toUpperCase();
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const token = await ensureCsrfToken();
     // eslint-disable-next-line no-param-reassign
-    options = addCsrfToken(options);
+    options = {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        'X-CSRF-Token': token,
+      },
+    };
   }
 
   return fetch(url, options);
@@ -66,10 +132,11 @@ async function fetchWithCsrf(url, options = {}) {
 
 // Export functions
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getCsrfToken, addCsrfToken, fetchWithCsrf };
+  module.exports = { getCsrfToken, addCsrfToken, ensureCsrfToken, fetchWithCsrf };
 }
 
 // Make available globally for non-module code
 window.getCsrfToken = getCsrfToken;
 window.addCsrfToken = addCsrfToken;
+window.ensureCsrfToken = ensureCsrfToken;
 window.fetchWithCsrf = fetchWithCsrf;

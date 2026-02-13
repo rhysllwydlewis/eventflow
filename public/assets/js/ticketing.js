@@ -21,7 +21,16 @@ class TicketingSystem {
     this._pollingNotificationShown = false;
   }
 
-  async ensureCsrfToken() {
+  async ensureCsrfToken(forceRefresh = false) {
+    if (typeof window.ensureCsrfToken === 'function') {
+      return window.ensureCsrfToken(forceRefresh);
+    }
+
+    if (forceRefresh) {
+      window.__CSRF_TOKEN__ = null;
+      window.csrfToken = null;
+    }
+
     if (window.__CSRF_TOKEN__) {
       return window.__CSRF_TOKEN__;
     }
@@ -40,10 +49,14 @@ class TicketingSystem {
     }
 
     window.__CSRF_TOKEN__ = data.csrfToken;
+    window.csrfToken = data.csrfToken;
     return data.csrfToken;
   }
 
   async request(url, options = {}) {
+    const isWriteMethod =
+      options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase());
+
     const opts = {
       credentials: 'include',
       ...options,
@@ -53,13 +66,30 @@ class TicketingSystem {
       },
     };
 
-    if (opts.method && ['POST', 'PUT', 'DELETE'].includes(opts.method.toUpperCase())) {
+    if (isWriteMethod) {
       const csrfToken = await this.ensureCsrfToken();
       opts.headers['X-CSRF-Token'] = csrfToken;
     }
 
-    const response = await fetch(url, opts);
-    const data = await response.json().catch(() => ({}));
+    let response = await fetch(url, opts);
+    let data = await response.json().catch(() => ({}));
+
+    const csrfError = response.status === 403 && /csrf/i.test(data?.error || '') && isWriteMethod;
+
+    // CSRF tokens can expire/rotate; refresh once and retry automatically.
+    if (csrfError) {
+      window.__CSRF_TOKEN__ = null;
+      window.csrfToken = null;
+      const freshToken = await this.ensureCsrfToken(true);
+      response = await fetch(url, {
+        ...opts,
+        headers: {
+          ...opts.headers,
+          'X-CSRF-Token': freshToken,
+        },
+      });
+      data = await response.json().catch(() => ({}));
+    }
 
     if (!response.ok) {
       throw new Error(data.error || 'Ticket request failed');

@@ -34,18 +34,60 @@ class APIClient {
       ...options.headers,
     };
 
-    // Add CSRF token if available
-    if (window.csrfToken) {
-      headers['X-CSRF-Token'] = window.csrfToken;
+    const method = (options.method || 'GET').toUpperCase();
+    const isWriteMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+    if (isWriteMethod) {
+      try {
+        if (typeof window.ensureCsrfToken === 'function') {
+          const token = await window.ensureCsrfToken();
+          headers['X-CSRF-Token'] = token;
+        } else if (window.csrfToken || window.__CSRF_TOKEN__) {
+          headers['X-CSRF-Token'] = window.csrfToken || window.__CSRF_TOKEN__;
+        }
+      } catch (error) {
+        console.warn('Unable to ensure CSRF token before API request:', error);
+      }
     }
 
     const config = {
       ...options,
+      method,
       headers,
       credentials: 'include', // Include cookies for auth
     };
 
-    const response = await fetch(url, config);
+    let response = await fetch(url, config);
+
+    if (isWriteMethod && response.status === 403) {
+      const data = await response
+        .clone()
+        .json()
+        .catch(() => ({}));
+      if (/csrf/i.test(data?.error || '')) {
+        try {
+          window.__CSRF_TOKEN__ = null;
+          window.csrfToken = null;
+
+          const token =
+            typeof window.ensureCsrfToken === 'function'
+              ? await window.ensureCsrfToken(true)
+              : window.csrfToken || window.__CSRF_TOKEN__;
+          if (token) {
+            response = await fetch(url, {
+              ...config,
+              headers: {
+                ...headers,
+                'X-CSRF-Token': token,
+              },
+            });
+          }
+        } catch (error) {
+          console.warn('Unable to refresh CSRF token after 403:', error);
+        }
+      }
+    }
+
     return response;
   }
 
