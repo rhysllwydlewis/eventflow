@@ -45,8 +45,8 @@ function renderTickets(tickets) {
   let html = '<div class="ticket-list">';
 
   tickets.forEach(ticket => {
-    const status = ticket?.status || 'open';
-    const priority = ticket?.priority || 'medium';
+    const status = typeof ticket?.status === 'string' ? ticket.status : 'open';
+    const priority = typeof ticket?.priority === 'string' ? ticket.priority : 'medium';
     const message = typeof ticket?.message === 'string' ? ticket.message : '';
     const statusClass = ticketingSystem.getStatusClass(status);
     const priorityClass = ticketingSystem.getPriorityClass(priority);
@@ -157,8 +157,9 @@ function showCreateTicketModal() {
       priority: document.getElementById('ticketPriority').value,
     };
 
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
     try {
-      const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
 
@@ -178,7 +179,7 @@ function showCreateTicketModal() {
       } else {
         alert(`Failed to create ticket: ${error.message}`);
       }
-
+    } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit Ticket';
     }
@@ -227,8 +228,8 @@ function viewTicket(ticketId) {
       return;
     }
 
-    const status = ticket?.status || 'open';
-    const priority = ticket?.priority || 'medium';
+    const status = typeof ticket?.status === 'string' ? ticket.status : 'open';
+    const priority = typeof ticket?.priority === 'string' ? ticket.priority : 'medium';
     const message = typeof ticket?.message === 'string' ? ticket.message : '';
     const statusClass = ticketingSystem.getStatusClass(status);
     const priorityClass = ticketingSystem.getPriorityClass(priority);

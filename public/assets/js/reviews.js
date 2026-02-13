@@ -46,22 +46,104 @@
     },
 
     /**
-     * Get CSRF token from cookie or meta tag
+     * Get CSRF token from global context, cookie, or meta tag
      */
     getCSRFToken() {
-      // Try meta tag first
+      // Try cookie first (authoritative server value)
+      const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('csrf='));
+      if (csrfCookie) {
+        const token = decodeURIComponent(csrfCookie.split('=')[1] || '');
+        if (token) {
+          window.__CSRF_TOKEN__ = token;
+          window.csrfToken = token;
+          return token;
+        }
+      }
+
+      if (window.__CSRF_TOKEN__) {
+        return window.__CSRF_TOKEN__;
+      }
+
+      if (window.csrfToken) {
+        return window.csrfToken;
+      }
+
+      // Fallback to meta tag
       const metaTag = document.querySelector('meta[name="csrf-token"]');
-      if (metaTag) {
+      if (metaTag && metaTag.content) {
         return metaTag.content;
       }
 
-      // Try cookie
-      const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf-token='));
-      if (cookie) {
-        return cookie.split('=')[1];
+      return null;
+    },
+
+    async ensureCSRFToken(forceRefresh = false) {
+      if (!forceRefresh) {
+        const existing = this.getCSRFToken();
+        if (existing) {
+          this.csrfToken = existing;
+          return existing;
+        }
       }
 
-      return null;
+      if (typeof window.ensureCsrfToken === 'function') {
+        const token = await window.ensureCsrfToken(forceRefresh);
+        this.csrfToken = token;
+        return token;
+      }
+
+      const response = await fetch('/api/v1/csrf-token', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch CSRF token');
+      }
+
+      const data = await response.json();
+      const token = data?.csrfToken;
+
+      if (!token) {
+        throw new Error('CSRF token missing from response');
+      }
+
+      window.__CSRF_TOKEN__ = token;
+      window.csrfToken = token;
+      this.csrfToken = token;
+      return token;
+    },
+
+    async fetchWithCSRF(url, options = {}) {
+      const token = await this.ensureCSRFToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+        'X-CSRF-Token': token,
+      };
+
+      let response = await fetch(url, {
+        ...options,
+        credentials: 'include',
+        headers,
+      });
+
+      let data = await response.json().catch(() => ({}));
+      const isCsrfFailure = response.status === 403 && /csrf/i.test(data?.error || '');
+
+      if (isCsrfFailure) {
+        const freshToken = await this.ensureCSRFToken(true);
+        response = await fetch(url, {
+          ...options,
+          credentials: 'include',
+          headers: {
+            ...headers,
+            'X-CSRF-Token': freshToken,
+          },
+        });
+        data = await response.json().catch(() => ({}));
+      }
+
+      return { response, data };
     },
 
     /**
@@ -430,16 +512,10 @@
      */
     async voteOnReview(reviewId, voteType) {
       try {
-        const response = await fetch(`/api/v1/reviews/${reviewId}/vote`, {
+        const { response, data } = await this.fetchWithCSRF(`/api/v1/reviews/${reviewId}/vote`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': this.csrfToken || '',
-          },
           body: JSON.stringify({ voteType }),
         });
-
-        const data = await response.json();
 
         if (response.ok) {
           this.showToast(data.message, 'success');
@@ -793,16 +869,13 @@
           eventType: formData.get('eventType'),
         };
 
-        const response = await fetch(`/api/v1/suppliers/${this.currentSupplierId}/reviews`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': this.csrfToken || '',
-          },
-          body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
+        const { response, data: result } = await this.fetchWithCSRF(
+          `/api/v1/suppliers/${this.currentSupplierId}/reviews`,
+          {
+            method: 'POST',
+            body: JSON.stringify(data),
+          }
+        );
 
         if (response.ok) {
           this.showToast(result.message, 'success');
