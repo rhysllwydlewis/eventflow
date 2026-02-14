@@ -513,6 +513,141 @@
     setTimeout(() => overlay.remove(), 300);
   }
 
+  function buildInitialMarketplaceMessage(listingTitle) {
+    return `Hi, I'm interested in your listing: ${listingTitle}`;
+  }
+
+  async function fetchCsrfToken() {
+    if (window.__CSRF_TOKEN__) {
+      return window.__CSRF_TOKEN__;
+    }
+
+    const csrfRes = await fetch('/api/v1/csrf-token', { credentials: 'include' });
+    if (!csrfRes.ok) {
+      throw new Error('Failed to fetch CSRF token');
+    }
+
+    const csrfData = await csrfRes.json();
+    window.__CSRF_TOKEN__ = csrfData.csrfToken;
+    return csrfData.csrfToken;
+  }
+
+  let activeMessageComposer = null;
+
+  function showMessageComposer(listing, listingTitle) {
+    if (activeMessageComposer) {
+      activeMessageComposer.remove();
+      activeMessageComposer = null;
+    }
+
+    const composerOverlay = document.createElement('div');
+    composerOverlay.className = 'modal-overlay active';
+    composerOverlay.innerHTML = `
+      <div class="modal-content" style="max-width: 540px; width: calc(100% - 24px);">
+        <div class="modal-header">
+          <h2>Message Seller</h2>
+          <button class="modal-close" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+          <p style="margin: 0 0 10px; color: #4b5563;">Send a message about <strong>${escapeHtml(listingTitle)}</strong>.</p>
+          <textarea id="marketplace-message-text" maxlength="2000" rows="6" style="width: 100%; padding: 12px; border: 1px solid #E7EAF0; border-radius: 8px; resize: vertical; font-family: inherit;" placeholder="Type your message...">${escapeHtml(buildInitialMarketplaceMessage(listingTitle))}</textarea>
+          <div id="marketplace-message-status" style="margin-top: 10px; min-height: 20px; font-size: 14px;"></div>
+        </div>
+        <div class="listing-detail-actions" style="padding: 16px 24px; border-top: 1px solid #E7EAF0; display: flex; gap: 10px;">
+          <button class="btn btn-secondary" id="marketplace-message-cancel" style="flex: 1;">Cancel</button>
+          <button class="cta" id="marketplace-message-send" style="flex: 1;">Send Message</button>
+        </div>
+      </div>
+    `;
+
+    const closeComposer = () => {
+      document.removeEventListener('keydown', handleComposerEscape);
+      composerOverlay.remove();
+      if (activeMessageComposer === composerOverlay) {
+        activeMessageComposer = null;
+      }
+    };
+
+    const handleComposerEscape = e => {
+      if (e.key === 'Escape') {
+        closeComposer();
+      }
+    };
+
+    composerOverlay.querySelector('.modal-close').addEventListener('click', closeComposer);
+    composerOverlay
+      .querySelector('#marketplace-message-cancel')
+      .addEventListener('click', closeComposer);
+    composerOverlay.addEventListener('click', e => {
+      if (e.target === composerOverlay) {
+        closeComposer();
+      }
+    });
+
+    composerOverlay
+      .querySelector('#marketplace-message-send')
+      .addEventListener('click', async () => {
+        const statusEl = composerOverlay.querySelector('#marketplace-message-status');
+        const textarea = composerOverlay.querySelector('#marketplace-message-text');
+        const sendBtn = composerOverlay.querySelector('#marketplace-message-send');
+        const message = textarea.value.trim();
+
+        if (sendBtn.disabled) {
+          return;
+        }
+
+        if (!message) {
+          statusEl.textContent = 'Please enter a message.';
+          statusEl.style.color = '#dc2626';
+          return;
+        }
+
+        try {
+          sendBtn.disabled = true;
+          statusEl.textContent = 'Sending...';
+          statusEl.style.color = '#6b7280';
+
+          const csrfToken = await fetchCsrfToken();
+          const threadRes = await fetch('/api/v1/threads/start', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              supplierId: listing.sellerSupplierId || null,
+              recipientId: listing.userId || null,
+              marketplaceListingId: listing.id,
+              marketplaceListingTitle: listingTitle,
+              message,
+            }),
+          });
+
+          if (!threadRes.ok) {
+            const data = await threadRes.json().catch(() => ({}));
+            throw new Error(data.error || data.message || 'Failed to start conversation');
+          }
+
+          const { thread } = await threadRes.json();
+          window.location.href = `/conversation.html?id=${thread.id}`;
+        } catch (error) {
+          console.error('Error messaging seller:', error);
+          statusEl.textContent = error?.message || 'Failed to send message. Please try again.';
+          statusEl.style.color = '#dc2626';
+          sendBtn.disabled = false;
+        }
+      });
+
+    document.body.appendChild(composerOverlay);
+    activeMessageComposer = composerOverlay;
+    document.addEventListener('keydown', handleComposerEscape);
+
+    const textarea = composerOverlay.querySelector('#marketplace-message-text');
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }
+
   // Message seller function
   window.messageSeller = async function (listingId, listingTitle) {
     if (!currentUser) {
@@ -536,32 +671,12 @@
 
       const { listing } = await res.json();
 
-      // Start a thread with the seller
-      const threadRes = await fetch('/api/v1/threads/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          recipientId: listing.userId,
-          initialMessage: `Hi, I'm interested in your listing: ${listingTitle}`,
-        }),
-      });
-
-      if (!threadRes.ok) {
-        throw new Error('Failed to start conversation');
+      if (!listing.userId) {
+        showToast('Seller account not available for this listing.', 'warning');
+        return;
       }
 
-      // Check content type before parsing JSON
-      const threadContentType = threadRes.headers.get('content-type');
-      if (!threadContentType || !threadContentType.includes('application/json')) {
-        console.warn('Response is not JSON:', threadContentType);
-        throw new Error('Invalid response format');
-      }
-
-      const { threadId } = await threadRes.json();
-
-      // Redirect to conversation
-      window.location.href = `/conversation.html?id=${threadId}`;
+      showMessageComposer(listing, listingTitle);
     } catch (error) {
       console.error('Error messaging seller:', error);
       showToast('Failed to start conversation', 'error');

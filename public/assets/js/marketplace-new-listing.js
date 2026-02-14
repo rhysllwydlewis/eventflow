@@ -43,7 +43,7 @@
    */
   async function checkAuth() {
     try {
-      const res = await fetch('/api/v1/user', {
+      const res = await fetch('/api/v1/auth/me', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
@@ -357,12 +357,15 @@
             formData.append('files', img.file);
 
             try {
-              const uploadRes = await fetch(`/api/v1/photos/upload?type=marketplace&id=${listingId}`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'X-CSRF-Token': csrfToken },
-                body: formData,
-              });
+              const uploadRes = await fetch(
+                `/api/v1/photos/upload?type=marketplace&id=${listingId}`,
+                {
+                  method: 'POST',
+                  credentials: 'include',
+                  headers: { 'X-CSRF-Token': csrfToken },
+                  body: formData,
+                }
+              );
 
               if (!uploadRes.ok) {
                 throw new Error('Upload failed');

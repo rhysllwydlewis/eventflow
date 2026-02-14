@@ -78,6 +78,18 @@ function applyWriteLimiter(req, res, next) {
   return writeLimiter(req, res, next);
 }
 
+async function attachSellerSupplierIds(listings) {
+  const suppliers = await dbUnified.read('suppliers');
+  const supplierByOwner = new Map(
+    suppliers.filter(s => s && s.ownerUserId && s.approved).map(s => [s.ownerUserId, s.id])
+  );
+
+  return listings.map(listing => ({
+    ...listing,
+    sellerSupplierId: supplierByOwner.get(listing.userId) || null,
+  }));
+}
+
 // ---------- Marketplace Listings ----------
 
 // Get all marketplace listings (public)
@@ -181,6 +193,8 @@ router.get('/listings', async (req, res) => {
       listings = allListings.slice(0, resultLimit);
     }
 
+    listings = await attachSellerSupplierIds(listings);
+
     logger.info('Marketplace listings fetched', {
       count: listings.length,
       filters: { category, condition, minPrice, maxPrice, search, sort, limit: resultLimit },
@@ -224,8 +238,10 @@ router.get('/listings/:id', async (req, res) => {
       });
     }
 
+    const [listingWithSellerInfo] = await attachSellerSupplierIds([listing]);
+
     logger.info('Marketplace listing fetched', { listingId: req.params.id });
-    res.json({ listing });
+    res.json({ listing: listingWithSellerInfo });
   } catch (error) {
     logger.error('Error fetching marketplace listing:', error);
     sentry.captureException(error);
