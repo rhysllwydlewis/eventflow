@@ -809,6 +809,13 @@ async function loadHeroCollageImages() {
     frame.style.transition = 'opacity 0.3s ease';
   });
 
+  const clearCollageLoadingState = () => {
+    collageFrames.forEach(frame => {
+      frame.classList.remove('collage-loading');
+      frame.classList.add('collage-loaded');
+    });
+  };
+
   try {
     // Add AbortController with 5 second timeout (increased from 2s for slower connections)
     const controller = new AbortController();
@@ -878,6 +885,7 @@ async function loadHeroCollageImages() {
           };
           await initPexelsCollage(legacySettings);
         }
+        clearCollageLoadingState();
         return; // Skip static image loading
       } else {
         if (isDebugEnabled()) {
@@ -912,10 +920,7 @@ async function loadHeroCollageImages() {
   }
 
   // Issue 4 Fix: Remove loading state and add loaded class on success
-  collageFrames.forEach(frame => {
-    frame.classList.remove('collage-loading');
-    frame.classList.add('collage-loaded');
-  });
+  clearCollageLoadingState();
 
   // If collage widget is not enabled or failed, default images will remain
 }
