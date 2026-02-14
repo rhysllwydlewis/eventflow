@@ -3042,6 +3042,7 @@ async function fetchMarketplacePreview() {
   }
 
   const MARKETPLACE_PREVIEW_LIMIT = 4;
+  const MARKETPLACE_CANDIDATE_LIMIT = 12;
 
   // Issue 5 & 6 Fix: Use error boundary and loading state
   const errorBoundary = new ErrorBoundary('marketplace-preview', {
@@ -3055,9 +3056,9 @@ async function fetchMarketplacePreview() {
   LoadingState.show('marketplace-preview', 'card', MARKETPLACE_PREVIEW_LIMIT);
 
   try {
-    // Issue 7 Fix: Use fetch with retry
+    // Pull a broader candidate set and rank it for a better homepage mix
     const response = await fetchWithRetry(
-      `/api/v1/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`,
+      `/api/v1/marketplace/listings?limit=${MARKETPLACE_CANDIDATE_LIMIT}`,
       {},
       3
     );
@@ -3073,7 +3074,7 @@ async function fetchMarketplacePreview() {
     }
 
     const data = await response.json();
-    const listings = data.listings || [];
+    const listings = Array.isArray(data.listings) ? data.listings : [];
 
     LoadingState.hide('marketplace-preview');
 
@@ -3089,30 +3090,126 @@ async function fetchMarketplacePreview() {
       return div.innerHTML;
     };
 
+    const formatCategoryLabel = category => {
+      const labels = {
+        attire: 'Attire',
+        decor: 'Décor',
+        'av-equipment': 'AV Equipment',
+        photography: 'Photography',
+        'party-supplies': 'Party Supplies',
+        florals: 'Florals',
+      };
+      return labels[category] || category || 'Listing';
+    };
+
+    const formatConditionLabel = condition => {
+      const labels = {
+        new: 'New / Unused',
+        'like-new': 'Like New',
+        good: 'Good',
+        fair: 'Fair',
+      };
+      return labels[condition] || condition || '';
+    };
+
+    const formatPrice = value => {
+      const number = Number(value);
+      if (!Number.isFinite(number)) {
+        return 'Price on request';
+      }
+      return `£${number.toLocaleString('en-GB', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    };
+
+    const getListingImage = listing => {
+      const imageArrays = [listing?.images, listing?.photos];
+      for (const imageArray of imageArrays) {
+        if (Array.isArray(imageArray)) {
+          const validImage = imageArray.find(item => typeof item === 'string' && item.trim());
+          if (validImage) {
+            return validImage;
+          }
+        }
+      }
+      if (typeof listing?.image === 'string' && listing.image.trim()) {
+        return listing.image;
+      }
+      return '/assets/images/collage-venue.jpg';
+    };
+
+    // Homepage selection strategy:
+    // 1) explicit featured listings first (if field exists)
+    // 2) quality signals (images + complete metadata)
+    // 3) recency
+    const scoreListing = listing => {
+      let score = 0;
+      if (listing?.featured === true || listing?.isFeatured === true) {
+        score += 1000;
+      }
+      if (getListingImage(listing) !== '/assets/images/collage-venue.jpg') {
+        score += 120;
+      }
+      if (listing?.location) {
+        score += 25;
+      }
+      if (listing?.condition) {
+        score += 20;
+      }
+      if (listing?.category) {
+        score += 20;
+      }
+      const createdAt = Date.parse(listing?.createdAt || '');
+      if (!Number.isNaN(createdAt)) {
+        const ageMs = Date.now() - createdAt;
+        const ageDays = Math.max(0, ageMs / (1000 * 60 * 60 * 24));
+        score += Math.max(0, 180 - Math.min(ageDays, 180));
+      }
+      return score;
+    };
+
+    const selectedListings = listings
+      .map(listing => ({ listing, score: scoreListing(listing) }))
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return new Date(b.listing.createdAt || 0) - new Date(a.listing.createdAt || 0);
+      })
+      .slice(0, MARKETPLACE_PREVIEW_LIMIT)
+      .map(item => item.listing);
+
     // Render marketplace items
     container.innerHTML = `
       <div class="cards">
-        ${listings
-          .map(
-            listing => `
-          <div class="card card-hover">
-            ${
-              listing.images && listing.images[0]
-                ? `<img src="${escape(listing.images[0])}" alt="${escape(listing.title)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;" />`
-                : ''
-            }
+        ${selectedListings
+          .map(listing => {
+            const listingUrl = listing.id
+              ? `/marketplace?listing=${encodeURIComponent(listing.id)}`
+              : '/marketplace';
+            const listingImage = getListingImage(listing);
+            const isFeatured = listing?.featured === true || listing?.isFeatured === true;
+            const isNew =
+              Date.now() - new Date(listing?.createdAt || 0).getTime() < 1000 * 60 * 60 * 24 * 14;
+            return `
+          <a href="${listingUrl}" class="card card-hover" style="text-decoration: none; color: inherit; display: block; overflow: hidden;">
+            <img src="${escape(listingImage)}" alt="${escape(listing.title)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;" loading="lazy" onerror="this.src='/assets/images/collage-venue.jpg'" />
             <div style="padding: 1rem;">
-              <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">${escape(listing.title)}</h3>
-              <p class="small" style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--ink, #0b8073);">£${escape(String(listing.price))}</p>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0.5rem;">
+                <h3 style="margin: 0; font-size: 1.1rem;">${escape(listing.title || 'Marketplace listing')}</h3>
+                ${isFeatured ? '<span class="badge badge-info" style="white-space: nowrap;">Featured</span>' : isNew ? '<span class="badge badge-secondary" style="white-space: nowrap;">New</span>' : ''}
+              </div>
+              <p class="small" style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--ink, #0b8073);">${escape(formatPrice(listing.price))}</p>
               <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
-                ${listing.category ? `<span class="badge badge-secondary">${escape(listing.category)}</span>` : ''}
-                ${listing.condition ? `<span class="badge badge-info">${escape(listing.condition)}</span>` : ''}
+                <span class="badge badge-secondary">${escape(formatCategoryLabel(listing.category))}</span>
+                ${listing.condition ? `<span class="badge badge-info">${escape(formatConditionLabel(listing.condition))}</span>` : ''}
                 ${listing.location ? `<span class="badge badge-secondary">${escape(listing.location)}</span>` : ''}
               </div>
             </div>
-          </div>
-        `
-          )
+          </a>
+        `;
+          })
           .join('')}
       </div>
     `;

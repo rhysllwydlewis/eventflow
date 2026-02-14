@@ -9,6 +9,7 @@
   let allListings = [];
   let currentUser = null;
   let savedListingIds = new Set();
+  let pendingListingId = null;
 
   // Issue 2 Fix: Initialization guards to prevent multiple calls
   let isInitialized = false;
@@ -30,6 +31,7 @@
     isInitialized = true;
 
     hydrateFiltersFromUrl();
+    pendingListingId = new URLSearchParams(window.location.search).get('listing');
     await checkAuth();
     await loadSavedListings();
     await loadListings();
@@ -49,23 +51,31 @@
   // Check if user is logged in
   async function checkAuth() {
     try {
-      const res = await fetch('/api/v1/user', { credentials: 'include' });
+      let res = await fetch('/api/v1/auth/me', { credentials: 'include' });
+      if (res.status === 404) {
+        // Backward compatibility for environments using /api/auth/me only
+        res = await fetch('/api/auth/me', { credentials: 'include' });
+      }
+
       if (res.ok) {
         const data = await res.json();
-        // Handle both wrapped ({user: ...}) and unwrapped response formats
-        // Check if user property exists and is not null before using it
-        if (data.user !== undefined) {
+        if (
+          data &&
+          typeof data === 'object' &&
+          Object.prototype.hasOwnProperty.call(data, 'user')
+        ) {
           currentUser = data.user;
-        } else if (data.id) {
-          // User data is unwrapped (direct user object)
+        } else if (data && data.id) {
           currentUser = data;
         } else {
-          // No valid user data
           currentUser = null;
         }
         updateAuthUI();
       } else if (res.status === 401) {
         // User not logged in - this is expected, not an error
+        currentUser = null;
+        updateAuthUI();
+      } else {
         currentUser = null;
         updateAuthUI();
       }
@@ -190,6 +200,7 @@
       allListings = data.listings || [];
       renderListings();
       updateResultCount();
+      await maybeOpenListingFromUrl();
     } catch (error) {
       console.error('Error loading listings:', error);
       const resultsContainer = document.getElementById('marketplace-results');
@@ -277,11 +288,39 @@
     });
   }
 
+  function getListingImages(listing) {
+    if (!listing || typeof listing !== 'object') {
+      return [];
+    }
+
+    const normalizeImages = value =>
+      (Array.isArray(value) ? value : [])
+        .map(item => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean);
+
+    const images = normalizeImages(listing.images);
+    if (images.length > 0) {
+      return images;
+    }
+
+    const photos = normalizeImages(listing.photos);
+    if (photos.length > 0) {
+      return photos;
+    }
+
+    if (typeof listing.image === 'string' && listing.image.trim()) {
+      return [listing.image.trim()];
+    }
+
+    return [];
+  }
+
   // Create listing card HTML
   function createListingCard(listing) {
     const timeAgo = getTimeAgo(listing.createdAt);
     const defaultImage = '/assets/images/collage-venue.jpg';
-    const image = listing.images && listing.images[0] ? listing.images[0] : defaultImage;
+    const images = getListingImages(listing);
+    const image = images[0] || defaultImage;
     const title = listing.title || 'Untitled listing';
     const formattedPrice = formatPrice(listing.price);
 
@@ -343,10 +382,8 @@
     const overlay = document.createElement('div');
     overlay.className = 'listing-detail-overlay';
 
-    const images =
-      listing.images && listing.images.length > 0
-        ? listing.images
-        : ['/assets/images/collage-venue.jpg'];
+    const listingImages = getListingImages(listing);
+    const images = listingImages.length ? listingImages : ['/assets/images/collage-venue.jpg'];
 
     const thumbnailsHTML =
       images.length > 1
@@ -374,7 +411,7 @@
         <div class="listing-detail-sidebar">
           <div class="listing-detail-header">
             <div style="flex: 1;">
-              <div class="listing-detail-price">£${listing.price.toFixed(2)}</div>
+              <div class="listing-detail-price">${formatPrice(listing.price)}</div>
               <h2 class="listing-detail-title">${escapeHtml(listing.title)}</h2>
             </div>
             <button class="listing-detail-close" aria-label="Close">&times;</button>
@@ -828,6 +865,42 @@
     return div.innerHTML;
   }
 
+  async function maybeOpenListingFromUrl() {
+    if (!pendingListingId) {
+      return;
+    }
+
+    const listingIdToOpen = pendingListingId;
+    pendingListingId = null;
+
+    let listing = allListings.find(item => item.id === listingIdToOpen);
+
+    if (!listing) {
+      try {
+        const res = await fetch(
+          `/api/v1/marketplace/listings/${encodeURIComponent(listingIdToOpen)}`
+        );
+        if (!res.ok) {
+          throw new Error('Listing not found');
+        }
+        const payload = await res.json();
+        listing = payload.listing;
+      } catch (error) {
+        console.error('Unable to open requested listing:', error);
+        showToast('That listing is no longer available', 'error');
+        return;
+      }
+    }
+
+    if (history.replaceState) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('listing');
+      history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+    }
+
+    showListingDetail(listing);
+  }
+
   async function loadSavedListings() {
     if (!currentUser) {
       savedListingIds = new Set();
@@ -844,7 +917,11 @@
       }
 
       const data = await res.json();
-      savedListingIds = new Set((data.savedItems || []).map(item => item.id));
+      savedListingIds = new Set(
+        (data.savedItems || [])
+          .map(item => item.listing?.id || item.listingId)
+          .filter(listingId => typeof listingId === 'string' && listingId.length > 0)
+      );
     } catch (error) {
       console.error('Error loading saved listings:', error);
       savedListingIds = new Set();
