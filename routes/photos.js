@@ -90,12 +90,25 @@ function applyCsrfProtection(req, res, next) {
   return csrfProtection(req, res, next);
 }
 
-function applyPhotoUploadArray(fieldName, maxCount) {
+function applyPhotoUploadFields(fields) {
   return (req, res, next) => {
     if (!photoUpload) {
       return res.status(503).json({ error: 'Photo upload service not initialized' });
     }
-    return photoUpload.upload.array(fieldName, maxCount)(req, res, next);
+    return photoUpload.upload.fields(fields)(req, res, err => {
+      if (err) {
+        return next(err);
+      }
+
+      const files = [];
+      for (const field of fields) {
+        const fieldFiles =
+          req.files && Array.isArray(req.files[field.name]) ? req.files[field.name] : [];
+        files.push(...fieldFiles);
+      }
+      req.files = files;
+      return next();
+    });
   };
 }
 
@@ -149,7 +162,10 @@ router.post(
   uploadLimiter,
   applyFeatureRequired('photoUploads'),
   applyAuthRequired,
-  applyPhotoUploadArray('files', 5), // Support up to 5 files for marketplace
+  applyPhotoUploadFields([
+    { name: 'files', maxCount: 5 },
+    { name: 'photos', maxCount: 5 },
+  ]), // Accept both multipart field names used across clients
   applyCsrfProtection,
   async (req, res) => {
     try {
@@ -320,7 +336,10 @@ router.post(
   '/photos/upload/batch',
   uploadLimiter,
   applyAuthRequired,
-  applyPhotoUploadArray('photos', 10),
+  applyPhotoUploadFields([
+    { name: 'photos', maxCount: 10 },
+    { name: 'files', maxCount: 10 },
+  ]),
   applyCsrfProtection,
   async (req, res) => {
     try {
