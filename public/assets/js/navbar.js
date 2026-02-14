@@ -329,13 +329,36 @@
   // ==========================================
 
   function setCurrentPage() {
-    const currentPath = window.location.pathname;
+    const normalizePath = path => {
+      if (!path) {
+        return '/';
+      }
+
+      const normalized = path.replace(/index\.html?$/i, '').replace(/\/$/, '');
+
+      return normalized || '/';
+    };
+
+    const currentPath = normalizePath(window.location.pathname);
+
+    const pathMatches = (linkPath, linkElement) => {
+      if (linkPath === currentPath) {
+        return true;
+      }
+
+      // Keep key nav sections highlighted on nested routes (e.g. blog post under /blog/*)
+      if (linkElement && linkPath !== '/' && currentPath.startsWith(`${linkPath}/`)) {
+        return true;
+      }
+
+      return false;
+    };
 
     // Desktop nav
     const desktopLinks = document.querySelectorAll('.ef-nav-link');
     desktopLinks.forEach(link => {
-      const linkPath = new URL(link.href).pathname;
-      if (linkPath === currentPath) {
+      const linkPath = normalizePath(new URL(link.href).pathname);
+      if (pathMatches(linkPath, link)) {
         link.setAttribute('aria-current', 'page');
       }
     });
@@ -344,8 +367,8 @@
     const mobileLinks = document.querySelectorAll('.ef-mobile-link');
     mobileLinks.forEach(link => {
       if (link.href) {
-        const linkPath = new URL(link.href).pathname;
-        if (linkPath === currentPath) {
+        const linkPath = normalizePath(new URL(link.href).pathname);
+        if (pathMatches(linkPath, link)) {
           link.setAttribute('aria-current', 'page');
         }
       }
@@ -355,8 +378,8 @@
     const bottomLinks = document.querySelectorAll('.ef-bottom-link');
     bottomLinks.forEach(link => {
       if (link.href) {
-        const linkPath = new URL(link.href).pathname;
-        if (linkPath === currentPath) {
+        const linkPath = normalizePath(new URL(link.href).pathname);
+        if (pathMatches(linkPath, link)) {
           link.setAttribute('aria-current', 'page');
         }
       }

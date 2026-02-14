@@ -88,7 +88,7 @@
       });
     </script>
   </head>
-  <body>
+  <body class="supplier-dashboard-page">
     <!-- Screen Reader Announcer -->
     <div id="sr-announcer" aria-live="polite" aria-atomic="true"></div>
     <script>
@@ -210,7 +210,7 @@
     </header>
 
     <!-- Notification Dropdown (Pre-rendered, shown/hidden by JS) -->
-    <div id="notification-dropdown" class="notification-dropdown" style="display: none;">
+    <div id="notification-dropdown" class="notification-dropdown" style="display: none">
       <div class="notification-header">
         <h3>Notifications</h3>
         <button class="notification-mark-all" id="notification-mark-all-read">
@@ -222,7 +222,6 @@
         <a href="/notifications.html" class="notification-view-all">View all</a>
       </div>
     </div>
-
 
     <!-- Load auth state manager first -->
     <script src="/assets/js/utils/auth-state.js" defer></script>
@@ -579,16 +578,10 @@
         >
           <div class="ef-card-header">
             <div class="ef-card-title-wrapper">
-              <div class="ef-icon-box-lg ef-gradient-primary">
-                💰
-              </div>
+              <div class="ef-icon-box-lg ef-gradient-primary">💰</div>
               <div>
-                <h2 id="earnings-heading" class="ef-card-title">
-                  Earnings Overview
-                </h2>
-                <p class="ef-card-subtitle">
-                  Track your revenue and payments
-                </p>
+                <h2 id="earnings-heading" class="ef-card-title">Earnings Overview</h2>
+                <p class="ef-card-subtitle">Track your revenue and payments</p>
               </div>
             </div>
             <span class="ef-badge ef-badge-warning">Coming Soon</span>
@@ -596,12 +589,8 @@
 
           <div class="ef-grid-auto ef-mb-xl">
             <div class="ef-stat-card">
-              <div class="ef-stat-label">
-                Total Revenue
-              </div>
-              <div class="ef-stat-value">
-                £0.00
-              </div>
+              <div class="ef-stat-label">Total Revenue</div>
+              <div class="ef-stat-value">£0.00</div>
               <div class="ef-stat-change">
                 <svg
                   viewBox="0 0 24 24"
@@ -618,30 +607,23 @@
               </div>
             </div>
             <div class="ef-stat-card">
-              <div class="ef-stat-label">
-                This Month
-              </div>
-              <div class="ef-stat-value">
-                £0.00
-              </div>
+              <div class="ef-stat-label">This Month</div>
+              <div class="ef-stat-value">£0.00</div>
               <div class="ef-stat-change" style="color: var(--ef-text-light, #9ca3af)">
                 Current period
               </div>
             </div>
             <div class="ef-stat-card">
-              <div class="ef-stat-label">
-                Pending
-              </div>
-              <div class="ef-stat-value">
-                £0.00
-              </div>
-              <div class="ef-stat-change ef-text-warning">
-                Processing
-              </div>
+              <div class="ef-stat-label">Pending</div>
+              <div class="ef-stat-value">£0.00</div>
+              <div class="ef-stat-change ef-text-warning">Processing</div>
             </div>
           </div>
 
-          <div class="ef-stat-card ef-flex-start ef-gap-lg" style="background: rgba(255, 255, 255, 0.5)">
+          <div
+            class="ef-stat-card ef-flex-start ef-gap-lg"
+            style="background: rgba(255, 255, 255, 0.5)"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -656,9 +638,7 @@
               <path d="M12 8h.01" />
             </svg>
             <div style="flex: 1">
-              <div class="ef-font-semibold ef-mb-sm">
-                Payment features launching soon
-              </div>
+              <div class="ef-font-semibold ef-mb-sm">Payment features launching soon</div>
               <div class="ef-text-sm ef-text-muted">
                 Accept payments, track bookings, and manage invoices all in one place. We'll notify
                 you when it's ready!
@@ -1942,7 +1922,6 @@
           document.addEventListener('DOMContentLoaded', () => {
             const breadcrumbSection = document.getElementById('breadcrumb-section');
             const breadcrumbSectionName = document.getElementById('breadcrumb-section-name');
-            const navPills = document.querySelectorAll('.mobile-nav-pill');
 
             // Section name mapping
             const sectionNames = {
@@ -1954,19 +1933,25 @@
               'tickets-sup': 'Support Tickets',
             };
 
-            // Update breadcrumb when nav pill is clicked
-            navPills.forEach(pill => {
-              pill.addEventListener('click', () => {
-                const sectionId = pill.dataset.section;
-                if (sectionId && sectionNames[sectionId]) {
-                  breadcrumbSection.style.display = 'flex';
-                  breadcrumbSection.style.alignItems = 'center';
-                  breadcrumbSection.style.gap = '0.5rem';
-                  breadcrumbSectionName.textContent = sectionNames[sectionId];
-                } else {
-                  breadcrumbSection.style.display = 'none';
-                }
-              });
+            const updateBreadcrumb = sectionId => {
+              if (sectionId && sectionNames[sectionId]) {
+                breadcrumbSection.style.display = 'flex';
+                breadcrumbSection.style.alignItems = 'center';
+                breadcrumbSection.style.gap = '0.5rem';
+                breadcrumbSectionName.textContent = sectionNames[sectionId];
+              } else {
+                breadcrumbSection.style.display = 'none';
+              }
+            };
+
+            const activePill = document.querySelector('.mobile-nav-pill.active');
+            if (activePill) {
+              updateBreadcrumb(activePill.dataset.section);
+            }
+
+            // Keep breadcrumb synced to nav click + scroll-spy updates from enhancements script
+            window.addEventListener('supplier-nav-section-change', e => {
+              updateBreadcrumb(e.detail?.sectionId);
             });
           });
 
@@ -1975,87 +1960,20 @@
             const viewConvBtn = document.getElementById('viewConversationsBtn');
             if (viewConvBtn) {
               viewConvBtn.addEventListener('click', () => {
-                const threadsSection = document.getElementById('threads-sup');
-                if (threadsSection) {
-                  threadsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const messagesPill = document.querySelector(
+                  '.mobile-nav-pill[data-section="threads-sup"]'
+                );
+                if (messagesPill) {
+                  messagesPill.click();
+                } else {
+                  const threadsSection = document.getElementById('threads-sup');
+                  if (threadsSection) {
+                    threadsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
                 }
               });
             }
           });
-        </script>
-
-        <!-- Mobile Navigation Scroll Spy -->
-        <script>
-          (function () {
-            'use strict';
-
-            const mobileNav = document.querySelector('.dashboard-mobile-nav');
-            if (!mobileNav) return;
-
-            const pills = mobileNav.querySelectorAll('.mobile-nav-pill');
-            const sections = [];
-
-            // Collect section elements
-            pills.forEach(pill => {
-              const sectionId = pill.dataset.section;
-              const section = document.getElementById(sectionId);
-              if (section) {
-                sections.push({ id: sectionId, element: section, pill: pill });
-              }
-            });
-
-            // Click handler for pills
-            pills.forEach(pill => {
-              pill.addEventListener('click', function () {
-                const sectionId = this.dataset.section;
-                const section = document.getElementById(sectionId);
-                if (section) {
-                  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-                  // Update active state
-                  pills.forEach(p => p.classList.remove('active'));
-                  this.classList.add('active');
-
-                  // Scroll pill into view
-                  this.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                }
-              });
-            });
-
-            // Scroll spy
-            const STICKY_NAV_OFFSET = 120; // Height of header + mobile nav
-            let ticking = false;
-            function updateActiveSection() {
-              const scrollPosition = window.scrollY + STICKY_NAV_OFFSET;
-
-              let activeSection = sections[0];
-
-              for (const section of sections) {
-                if (section.element.offsetTop <= scrollPosition) {
-                  activeSection = section;
-                }
-              }
-
-              if (activeSection) {
-                pills.forEach(p => p.classList.remove('active'));
-                activeSection.pill.classList.add('active');
-                // ✅ REMOVED scrollIntoView - no more feedback loop
-              }
-
-              ticking = false;
-            }
-
-            window.addEventListener(
-              'scroll',
-              function () {
-                if (!ticking) {
-                  window.requestAnimationFrame(updateActiveSection);
-                  ticking = true;
-                }
-              },
-              { passive: true }
-            );
-          })();
         </script>
 
         <script src="/assets/js/app.js?v=18.2.0"></script>
@@ -2240,7 +2158,7 @@
                     hasHighlights = supplier.highlights && supplier.highlights.length >= 3;
                     hasSocialLinks =
                       supplier.socialLinks && Object.keys(supplier.socialLinks).length >= 2;
-                    
+
                     // Initialize Profile Health Widget with supplier data
                     if (window.ProfileHealthWidget) {
                       window.ProfileHealthWidget.init('profile-completeness-widget', supplier);
@@ -2375,7 +2293,7 @@
               try {
                 wsClientInstance = new WebSocketClient({
                   onConnect: () => console.log('🟢 Live Dashboard Connected'),
-                  onNotification: (data) => handleRealtimeNotification(data),
+                  onNotification: data => handleRealtimeNotification(data),
                 });
               } catch (error) {
                 console.error('Error initializing WebSocket client:', error);
