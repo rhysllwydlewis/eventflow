@@ -278,6 +278,56 @@
     });
   }
 
+  async function uploadMarketplaceImages(newImages, listingId, csrfToken) {
+    try {
+      const formData = new FormData();
+      newImages.forEach(img => formData.append('photos', img.file));
+
+      const batchRes = await fetch(`/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrfToken },
+        body: formData,
+      });
+
+      const batchData = await batchRes.json().catch(() => ({}));
+      if (batchRes.ok) {
+        return Array.isArray(batchData.errors) ? batchData.errors.length : 0;
+      }
+
+      console.warn(
+        'Batch image upload failed, retrying individually:',
+        batchData.error || batchRes.status
+      );
+    } catch (error) {
+      console.warn('Batch image upload failed, retrying individually:', error);
+    }
+
+    let failedImageCount = 0;
+    for (const image of newImages) {
+      const singleFormData = new FormData();
+      singleFormData.append('files', image.file);
+
+      try {
+        const singleRes = await fetch(`/api/v1/photos/upload?type=marketplace&id=${listingId}`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': csrfToken },
+          body: singleFormData,
+        });
+
+        if (!singleRes.ok) {
+          failedImageCount += 1;
+        }
+      } catch (error) {
+        console.warn('Individual image upload failed:', error);
+        failedImageCount += 1;
+      }
+    }
+
+    return failedImageCount;
+  }
+
   /**
    * Initialize form submission
    */
@@ -357,30 +407,7 @@
         let failedImageCount = 0;
 
         if (newImages.length > 0) {
-          const formData = new FormData();
-          newImages.forEach(img => formData.append('photos', img.file));
-
-          try {
-            const uploadRes = await fetch(
-              `/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`,
-              {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'X-CSRF-Token': csrfToken },
-                body: formData,
-              }
-            );
-
-            const uploadData = await uploadRes.json().catch(() => ({}));
-            if (!uploadRes.ok) {
-              throw new Error(uploadData.error || 'Upload failed');
-            }
-
-            failedImageCount = Array.isArray(uploadData.errors) ? uploadData.errors.length : 0;
-          } catch (error) {
-            console.warn('Image upload failed:', error);
-            failedImageCount = newImages.length;
-          }
+          failedImageCount = await uploadMarketplaceImages(newImages, listingId, csrfToken);
         }
 
         // Show appropriate success message

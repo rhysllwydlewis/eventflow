@@ -120,6 +120,24 @@ function isMarketplaceOwner(listing, user) {
   );
 }
 
+function normalizeMarketplaceImageUrls(images) {
+  if (!Array.isArray(images)) {
+    return [];
+  }
+
+  return images
+    .map(image => {
+      if (typeof image === 'string') {
+        return image;
+      }
+      if (image && typeof image === 'object' && typeof image.url === 'string') {
+        return image.url;
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
 // ---------- Photo Upload Routes ----------
 
 /**
@@ -140,7 +158,8 @@ router.post(
       }
 
       const { type, id } = req.query;
-      if (!type || !id) {
+      const normalizedId = Array.isArray(id) ? id[0] : id;
+      if (!type || !normalizedId) {
         return res.status(400).json({ error: 'Missing type or id parameter' });
       }
 
@@ -150,7 +169,7 @@ router.post(
         if (!Array.isArray(listings)) {
           return res.status(500).json({ error: 'Marketplace listings store unavailable' });
         }
-        const listing = listings.find(l => l.id === id);
+        const listing = listings.find(l => l.id === normalizedId);
 
         if (!listing) {
           return res.status(404).json({ error: 'Listing not found' });
@@ -177,14 +196,15 @@ router.post(
           }
         }
 
-        // Cap at 5 images total
-        listing.images = (listing.images || []).concat(uploadedUrls).slice(0, 5);
+        // Cap at 5 images total and normalize legacy image formats
+        const existingImages = normalizeMarketplaceImageUrls(listing.images);
+        listing.images = existingImages.concat(uploadedUrls).slice(0, 5);
         listing.updatedAt = new Date().toISOString();
 
         await dbUnified.write('marketplace_listings', listings);
 
         logger.info('Marketplace images uploaded', {
-          listingId: id,
+          listingId: normalizedId,
           userId: req.user.id,
           count: uploadedUrls.length,
         });
@@ -309,7 +329,8 @@ router.post(
       }
 
       const { type, id } = req.query;
-      if (!type || !id) {
+      const normalizedId = Array.isArray(id) ? id[0] : id;
+      if (!type || !normalizedId) {
         return res.status(400).json({ error: 'Missing type or id parameter' });
       }
 
@@ -349,7 +370,7 @@ router.post(
         if (!Array.isArray(listings)) {
           return res.status(500).json({ error: 'Marketplace listings store unavailable' });
         }
-        const listing = listings.find(l => l.id === id);
+        const listing = listings.find(l => l.id === normalizedId);
 
         if (!listing) {
           return res.status(404).json({ error: 'Listing not found' });
@@ -362,13 +383,14 @@ router.post(
 
         // Process and append URLs (cap at 5 images total)
         const uploadedUrls = uploadedPhotos.map(p => p.url);
-        listing.images = (listing.images || []).concat(uploadedUrls).slice(0, 5);
+        const existingImages = normalizeMarketplaceImageUrls(listing.images);
+        listing.images = existingImages.concat(uploadedUrls).slice(0, 5);
         listing.updatedAt = new Date().toISOString();
 
         await dbUnified.write('marketplace_listings', listings);
 
         logger.info('Marketplace images uploaded (batch)', {
-          listingId: id,
+          listingId: normalizedId,
           userId: req.user.id,
           count: uploadedUrls.length,
         });
