@@ -304,19 +304,30 @@
     }
 
     let failedImageCount = 0;
-    for (const image of newImages) {
+
+    async function uploadSingleImageWithField(fieldName, imageFile) {
       const singleFormData = new FormData();
-      singleFormData.append('files', image.file);
+      singleFormData.append(fieldName, imageFile);
 
+      const singleRes = await fetch(`/api/v1/photos/upload?type=marketplace&id=${listingId}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrfToken },
+        body: singleFormData,
+      });
+
+      return singleRes.ok;
+    }
+
+    for (const image of newImages) {
       try {
-        const singleRes = await fetch(`/api/v1/photos/upload?type=marketplace&id=${listingId}`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'X-CSRF-Token': csrfToken },
-          body: singleFormData,
-        });
+        // Try legacy field name first, then alternate to support deployments
+        // that still expect a different multipart key.
+        const uploaded =
+          (await uploadSingleImageWithField('files', image.file)) ||
+          (await uploadSingleImageWithField('photos', image.file));
 
-        if (!singleRes.ok) {
+        if (!uploaded) {
           failedImageCount += 1;
         }
       } catch (error) {
