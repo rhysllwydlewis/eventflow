@@ -55,19 +55,10 @@ class ShortlistManager {
    */
   async checkAuth() {
     try {
-      // Try common auth endpoints
       const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
       });
-      if (response.ok) {
-        return true;
-      }
-
-      // Fallback to /api/user endpoint
-      const fallbackResponse = await fetch('/api/v1/user', {
-        credentials: 'include',
-      });
-      return fallbackResponse.ok;
+      return response.ok;
     } catch (error) {
       return false;
     }

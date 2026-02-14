@@ -35,7 +35,7 @@
    */
   async function checkAuth() {
     try {
-      const res = await fetch('/api/v1/user', {
+      const res = await fetch('/api/v1/auth/me', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
