@@ -2142,14 +2142,8 @@ async function initCollageWidget(widgetConfig) {
           }
         }
 
-        // Hide default image
-        const originalTransition = imgElement.style.transition;
-        imgElement.style.transition = 'none';
-        imgElement.style.opacity = '0';
-        void imgElement.offsetHeight;
-        setTimeout(() => {
-          imgElement.style.transition = originalTransition;
-        }, TRANSITION_RESTORE_DELAY_MS);
+        // Keep default image visible until replacement media successfully loads
+        // to avoid blank collage cards when external media is slow or unavailable.
 
         if (isDebugEnabled()) {
           console.log(`[Collage Widget] Loading first media for ${category}`, media[0]);

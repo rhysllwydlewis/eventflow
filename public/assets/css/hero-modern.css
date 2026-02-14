@@ -27,7 +27,7 @@
   overflow: hidden;
   background: linear-gradient(to bottom, #f8fafc 0%, #f8fafc 50%, #f1f5f9 100%);
   /* Issue 1 Fix: Add responsive margin-bottom for proper spacing */
-  margin-bottom: clamp(3rem, 6vw, 5rem);
+  margin-bottom: clamp(0.5rem, 1.2vw, 1rem);
 }
 
 /* Background decorative elements */
@@ -219,7 +219,7 @@
   flex-direction: row;
   flex-wrap: wrap;
   gap: var(--space-3); /* 12px */
-  margin-top: var(--space-6); /* 32px */
+  margin-top: 14px;
   justify-content: flex-start;
   align-items: center;
 }
@@ -400,9 +400,9 @@
     flex: 1;
     min-width: 0;
     width: auto;
-    height: 44px; /* Reduced from 52px */
-    padding: 0 10px;
-    font-size: 13.5px;
+    height: 42px; /* Reduced for compact row fit */
+    padding: 0 9px;
+    font-size: 13px;
     justify-content: center;
   }
 
@@ -452,7 +452,7 @@
   .hero-cta-primary,
   .hero-cta-secondary {
     width: auto;
-    min-width: 160px;
+    min-width: 124px;
   }
 }
 
@@ -620,9 +620,21 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: clamp(32px, 4vw, 56px);
-    align-items: start;
+    align-items: stretch;
   }
 }
+@media (min-width: 1024px) {
+  .hero-modern .hero-grid > div:last-child {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .hero-collage {
+    height: calc(100% - 11px) !important;
+    min-height: clamp(300px, 28vw, 430px);
+  }
+}
+
 
 /* Hero collage container - 2 row layout (video card removed):
    Row 1: Venues + Catering cards - very tall
@@ -630,11 +642,12 @@
    This creates a 2x2 grid of very tall category cards */
 .hero-collage {
   display: grid;
+  grid-auto-rows: 1fr;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 3fr 3fr;
-  gap: 12px;
-  aspect-ratio: 5/4; /* Slightly wider ratio for better balance */
-  max-height: 85vh;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 1vw, 12px);
+  min-height: clamp(348px, 31vw, 490px);
+  height: 100%;
   max-width: 100%;
   overflow: hidden;
   /* Performance optimizations */
@@ -653,6 +666,7 @@
 /* Category cards */
 .hero-collage-card {
   position: relative;
+  height: 100%;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -697,6 +711,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
   transition:
     opacity 0.4s ease-in-out,
@@ -718,6 +733,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
   transition:
     opacity 0.4s ease-in-out,
@@ -756,8 +772,8 @@
 /* Category label pill - UPDATED to prevent blocking clicks */
 .hero-collage-label {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
+  bottom: 8px;
+  left: 8px;
   top: auto;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
@@ -765,7 +781,7 @@
   color: #0f172a;
   font-size: 11px;
   font-weight: 600;
-  padding: 5px 10px;
+  padding: 3px 7px;
   border-radius: 999px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   z-index: 2;
@@ -773,7 +789,7 @@
   align-items: center;
   gap: 5px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   pointer-events: none; /* CRITICAL: Prevent label from blocking card clicks */
   user-select: none; /* Prevent text selection */
 }
@@ -835,7 +851,8 @@
 
   .hero-collage {
     margin-top: 24px; /* REDUCED from 48px for better mobile spacing */
-    aspect-ratio: unset; /* Remove fixed ratio to prevent cutoff */
+    height: auto;
+    min-height: unset;
     max-height: none; /* Allow content to determine height */
     grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards (video hidden) */
     overflow: visible; /* Changed from hidden to prevent clipping */
@@ -924,9 +941,9 @@
 
   .hero-collage-label {
     font-size: 9px; /* Much smaller text */
-    padding: 3px 6px; /* Compact padding */
-    top: 8px; /* Position at top-left */
-    left: 8px;
+    padding: 2px 6px; /* Compact padding */
+    top: 6px; /* Position at top-left */
+    left: 6px;
     bottom: auto; /* Override bottom positioning */
     pointer-events: none; /* Ensure label doesn't block clicks */
     z-index: 2; /* Above gradient overlay */
@@ -963,11 +980,11 @@
 /* Issue 1 Fix: Mobile spacing overrides for hero section */
 @media (max-width: 768px) {
   .hero-modern {
-    margin-bottom: 2.5rem;
+    margin-bottom: 0.35rem;
   }
   
   .hero-collage {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.35rem;
   }
 }
 
@@ -1171,6 +1188,12 @@
   }
 }
 
+@media (min-width: 1600px) {
+  .hero-collage {
+    height: calc(100% - 64px) !important;
+  }
+}
+
 /* ==========================================================================
    Very Small Screen Support (<320px)
    ========================================================================== */
@@ -1204,32 +1227,6 @@
   .hero-modern .container {
     padding-left: clamp(6px, 2vw, 12px);
     padding-right: clamp(6px, 2vw, 12px);
-  }
-}
-
-/* ==========================================================================
-   Collage Responsive Aspect Ratios
-   ========================================================================== */
-
-@media (max-width: 767px) {
-  .hero-collage {
-    aspect-ratio: 4/3;
-  }
-
-  .hero-collage-card {
-    aspect-ratio: 16/10;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .hero-collage {
-    aspect-ratio: 1/1;
-  }
-}
-
-@media (min-width: 1024px) {
-  .hero-collage {
-    aspect-ratio: 4/3;
   }
 }
 
