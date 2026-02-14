@@ -123,6 +123,10 @@
    * Mobile nav indicator + snap scrolling + keyboard navigation
    */
   function setupMobileNav() {
+    if (window.__supplierQuickNavInitialized) {
+      return;
+    }
+
     const nav = document.querySelector('.mobile-nav-pills');
     if (!nav) {
       return;
@@ -131,6 +135,8 @@
     if (!pills.length) {
       return;
     }
+
+    window.__supplierQuickNavInitialized = true;
 
     let indicator = nav.querySelector('.mobile-nav-indicator');
     if (!indicator) {
@@ -149,26 +155,100 @@
       indicator.style.transform = `translateX(${offset}px)`;
     };
 
-    const setActive = pill => {
-      pills.forEach(p => p.classList.toggle('active', p === pill));
+    let lastActiveSection = null;
+
+    const setActive = (pill, options = {}) => {
+      const { announce = false } = options;
+      const sectionId = pill.getAttribute('data-section') || null;
+
+      pills.forEach(p => {
+        const active = p === pill;
+        p.classList.toggle('active', active);
+        p.setAttribute('aria-current', active ? 'page' : 'false');
+        p.setAttribute('aria-selected', active ? 'true' : 'false');
+        p.setAttribute('tabindex', active ? '0' : '-1');
+      });
       moveIndicator(pill);
 
-      // Announce to screen readers
-      const sectionName = pill.textContent.trim();
-      if (window.announceToSR) {
-        window.announceToSR(`Navigated to ${sectionName}`);
+      // Announce to screen readers only for user-triggered updates
+      if (announce) {
+        const sectionName = pill.textContent.trim();
+        if (window.announceToSR) {
+          window.announceToSR(`Navigated to ${sectionName}`);
+        }
+      }
+
+      if (sectionId && sectionId !== lastActiveSection) {
+        lastActiveSection = sectionId;
+        window.dispatchEvent(
+          new CustomEvent('supplier-nav-section-change', {
+            detail: { sectionId, label: pill.textContent.trim() },
+          })
+        );
+      }
+    };
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const scrollBehavior = reduceMotion ? 'auto' : 'smooth';
+
+    const getStickyOffset = () => {
+      const header = document.querySelector('.ef-header');
+      const quickNav = document.querySelector('.dashboard-mobile-nav');
+      const headerHeight = header ? header.getBoundingClientRect().height : 64;
+      const quickNavHeight = quickNav ? quickNav.getBoundingClientRect().height : 52;
+      return Math.ceil(headerHeight + quickNavHeight + 12);
+    };
+
+    const scrollToSection = target => {
+      const y = target.getBoundingClientRect().top + window.scrollY - getStickyOffset();
+      window.scrollTo({ top: Math.max(0, y), behavior: scrollBehavior });
+    };
+
+    const sections = Array.from(pills)
+      .map(pill => ({ pill, target: document.getElementById(pill.getAttribute('data-section')) }))
+      .filter(item => item.target);
+
+    const updateActiveByScroll = () => {
+      if (!sections.length) {
+        return;
+      }
+
+      const currentY = window.scrollY + getStickyOffset();
+      let current = sections[0];
+
+      sections.forEach(section => {
+        if (section.target.offsetTop <= currentY) {
+          current = section;
+        }
+      });
+
+      if (current) {
+        setActive(current.pill);
+      }
+    };
+
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateActiveByScroll();
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
     pills.forEach((pill, index) => {
       // Click handler
       pill.addEventListener('click', () => {
-        setActive(pill);
+        setActive(pill, { announce: true });
         const targetId = pill.getAttribute('data-section');
         const target = document.getElementById(targetId);
         if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          scrollToSection(target);
         }
+
+        pill.scrollIntoView({ behavior: scrollBehavior, inline: 'center', block: 'nearest' });
       });
 
       // Keyboard navigation
@@ -199,16 +279,29 @@
       pill.setAttribute('role', 'tab');
       pill.setAttribute('tabindex', index === 0 ? '0' : '-1');
       pill.setAttribute('aria-label', pill.textContent.trim());
+      pill.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+      pill.setAttribute('aria-current', index === 0 ? 'page' : 'false');
     });
 
     // Set role for container
     nav.setAttribute('role', 'tablist');
     nav.setAttribute('aria-label', 'Dashboard sections');
 
+    // Keep indicator aligned after viewport changes
+    window.addEventListener('resize', () => {
+      const activePill = nav.querySelector('.mobile-nav-pill.active') || pills[0];
+      if (activePill) {
+        moveIndicator(activePill);
+      }
+    });
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
     // Wait for layout/paint to measure pill widths; rAF ensures post-paint
     requestAnimationFrame(() =>
       setTimeout(() => {
         setActive(pills[0]);
+        updateActiveByScroll();
         // tabindex already set to '0' in loop above
       }, LAYOUT_PAINT_DELAY)
     );

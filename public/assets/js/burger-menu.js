@@ -54,6 +54,15 @@
     let isOpen = false;
     let lastFocusedElement = null;
 
+    function updateToggleA11yState(open) {
+      const label = open ? 'Close menu' : 'Open menu';
+      mobileToggle.setAttribute('aria-label', label);
+      mobileToggle.setAttribute('title', label);
+      if (bottomMenuBtn) {
+        bottomMenuBtn.setAttribute('aria-label', label);
+      }
+    }
+
     // Create backdrop element for click-outside detection
     let backdrop = document.getElementById('ef-menu-backdrop');
     if (!backdrop) {
@@ -125,6 +134,7 @@
         mobileMenu.classList.add('open');
         mobileToggle.setAttribute('aria-expanded', 'true');
         mobileMenu.setAttribute('aria-hidden', 'false');
+        updateToggleA11yState(true);
         document.body.classList.add('ef-menu-open');
 
         // Show backdrop
@@ -161,6 +171,7 @@
         mobileMenu.classList.remove('open');
         mobileToggle.setAttribute('aria-expanded', 'false');
         mobileMenu.setAttribute('aria-hidden', 'true');
+        updateToggleA11yState(false);
         document.body.classList.remove('ef-menu-open');
 
         // Hide backdrop
@@ -192,6 +203,7 @@
     }
 
     // Attach click handlers
+    updateToggleA11yState(false);
     mobileToggle.addEventListener('click', toggleMenu);
     if (DEBUG) {
       console.log('✅ Click handler attached to mobile toggle');
@@ -230,6 +242,13 @@
             lastFocusedElement.focus();
           });
         }
+      }
+    });
+
+    // Ensure menu is closed when switching to desktop layout
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024 && isOpen) {
+        toggleMenu();
       }
     });
 
