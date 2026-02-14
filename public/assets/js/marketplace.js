@@ -410,7 +410,7 @@
         </div>
         <div class="listing-detail-sidebar">
           <div class="listing-detail-header">
-            <div style="flex: 1;">
+            <div class="listing-detail-header-content">
               <div class="listing-detail-price">${formatPrice(listing.price)}</div>
               <h2 class="listing-detail-title">${escapeHtml(listing.title)}</h2>
             </div>
@@ -441,16 +441,16 @@
             </div>
             
             <!-- Share Buttons -->
-            <div class="listing-detail-share" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #E7EAF0;">
-              <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #6b7280;">Share this listing</h4>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button onclick="shareOnFacebook('${listing.id}')" class="btn-share" style="padding: 8px 16px; border: 1px solid #E7EAF0; border-radius: 6px; background: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+            <div class="listing-detail-share">
+              <h4 class="listing-detail-share-title">Share this listing</h4>
+              <div class="listing-detail-share-actions">
+                <button onclick="shareOnFacebook('${listing.id}')" class="btn-share" type="button">
                   📘 Facebook
                 </button>
-                <button onclick="shareOnTwitter('${escapeHtml(listing.title)}', '${listing.id}')" class="btn-share" style="padding: 8px 16px; border: 1px solid #E7EAF0; border-radius: 6px; background: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <button onclick="shareOnTwitter('${escapeHtml(listing.title)}', '${listing.id}')" class="btn-share" type="button">
                   🐦 Twitter
                 </button>
-                <button onclick="copyListingLink('${listing.id}')" class="btn-share" style="padding: 8px 16px; border: 1px solid #E7EAF0; border-radius: 6px; background: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <button onclick="copyListingLink('${listing.id}')" class="btn-share" type="button">
                   🔗 Copy Link
                 </button>
               </div>
@@ -458,7 +458,7 @@
           </div>
           <div class="listing-detail-actions">
             ${
-              currentUser && currentUser.id !== listing.userId
+              currentUser && currentUser.id !== resolveListingSellerUserId(listing)
                 ? `<button class="cta listing-message-toggle" type="button">
                      Message Seller
                    </button>
@@ -471,7 +471,7 @@
                        <button class="cta listing-inline-composer-send" type="button">Send Message</button>
                      </div>
                    </div>`
-                : currentUser && currentUser.id === listing.userId
+                : currentUser && currentUser.id === resolveListingSellerUserId(listing)
                   ? `<div class="listing-own-notice">This is your listing</div>`
                   : `<a href="/auth.html" class="cta">Log in to message seller</a>`
             }
@@ -571,6 +571,23 @@
     return `Hi, I'm interested in your listing: ${listingTitle}`;
   }
 
+  function resolveListingSellerUserId(listing) {
+    if (!listing || typeof listing !== 'object') {
+      return null;
+    }
+
+    const candidate = listing.sellerUserId || listing.userId || listing.ownerUserId || null;
+    if (candidate) {
+      return String(candidate);
+    }
+
+    if (listing.createdBy && !String(listing.createdBy).includes('@')) {
+      return String(listing.createdBy);
+    }
+
+    return null;
+  }
+
   async function fetchCsrfToken() {
     if (window.__CSRF_TOKEN__) {
       return window.__CSRF_TOKEN__;
@@ -592,6 +609,14 @@
       statusEl.textContent = 'Sending...';
       statusEl.style.color = '#6b7280';
 
+      const sellerUserId = resolveListingSellerUserId(listing);
+
+      const sellerSupplierId = listing.sellerSupplierId || listing.supplierId || null;
+
+      if (!sellerUserId && !sellerSupplierId) {
+        throw new Error('This listing is missing seller details. Please contact support.');
+      }
+
       const csrfToken = await fetchCsrfToken();
       const threadRes = await fetch('/api/v1/threads/start', {
         method: 'POST',
@@ -601,8 +626,8 @@
         },
         credentials: 'include',
         body: JSON.stringify({
-          supplierId: listing.sellerSupplierId || null,
-          recipientId: listing.userId || null,
+          supplierId: sellerSupplierId,
+          recipientId: sellerUserId,
           marketplaceListingId: listing.id,
           marketplaceListingTitle: listingTitle,
           message,

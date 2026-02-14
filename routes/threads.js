@@ -81,6 +81,23 @@ function applyWriteLimiter(req, res, next) {
   return writeLimiter(req, res, next);
 }
 
+function resolveListingSellerUserId(listing) {
+  if (!listing || typeof listing !== 'object') {
+    return null;
+  }
+
+  const candidate = listing.userId || listing.ownerUserId || listing.sellerUserId || null;
+  if (candidate) {
+    return String(candidate);
+  }
+
+  if (listing.createdBy && !String(listing.createdBy).includes('@')) {
+    return String(listing.createdBy);
+  }
+
+  return null;
+}
+
 // ---------- Thread Routes ----------
 
 router.post(
@@ -111,10 +128,36 @@ router.post(
 
     const suppliers = await dbUnified.read('suppliers');
     let effectiveSupplierId = supplierId;
+    let effectiveRecipientId = recipientId ? String(recipientId) : null;
 
-    if (!effectiveSupplierId && recipientId) {
-      const supplierByOwner = suppliers.find(s => s.ownerUserId === recipientId && s.approved);
+    if (!effectiveSupplierId && effectiveRecipientId) {
+      const supplierByOwner = suppliers.find(
+        s => s.ownerUserId === effectiveRecipientId && s.approved
+      );
       effectiveSupplierId = supplierByOwner ? supplierByOwner.id : null;
+    }
+
+    if (!effectiveSupplierId && marketplaceListingId) {
+      const listings = await dbUnified.read('marketplace_listings');
+      const listing = listings.find(l => l.id === String(marketplaceListingId));
+
+      if (listing) {
+        const listingSellerUserId = resolveListingSellerUserId(listing);
+        if (!effectiveRecipientId && listingSellerUserId) {
+          effectiveRecipientId = listingSellerUserId;
+        }
+
+        if (!effectiveSupplierId && listing.sellerSupplierId) {
+          effectiveSupplierId = listing.sellerSupplierId;
+        }
+
+        if (!effectiveSupplierId && listingSellerUserId) {
+          const supplierByOwner = suppliers.find(
+            s => s.ownerUserId === listingSellerUserId && s.approved
+          );
+          effectiveSupplierId = supplierByOwner ? supplierByOwner.id : null;
+        }
+      }
     }
 
     if (!effectiveSupplierId) {
@@ -127,6 +170,13 @@ router.post(
     const supplier = suppliers.find(s => s.id === effectiveSupplierId && s.approved);
     if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    if (supplier.ownerUserId && supplier.ownerUserId === req.user.id) {
+      return res.status(400).json({
+        error: 'Cannot message your own listing',
+        message: 'You cannot start a conversation on your own listing.',
+      });
     }
 
     // Verify CAPTCHA if token provided (optional in development)
@@ -172,6 +222,7 @@ router.post(
         supplierId: effectiveSupplierId,
         supplierName: supplier.name,
         customerId: req.user.id,
+        recipientId: effectiveRecipientId || supplier.ownerUserId || null,
         packageId: packageId || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

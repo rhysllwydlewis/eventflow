@@ -115,7 +115,12 @@
 
       // Load images
       if (listing.images && listing.images.length > 0) {
-        selectedImages = listing.images.map(url => ({ url, existing: true }));
+        selectedImages = listing.images
+          .map(image => {
+            const imageUrl = typeof image === 'string' ? image : image?.url;
+            return imageUrl ? { url: imageUrl, existing: true } : null;
+          })
+          .filter(Boolean);
         renderImagePreviews();
       }
 
@@ -300,7 +305,7 @@
           location: document.getElementById('listing-location').value.trim(),
           category: document.getElementById('listing-category').value,
           condition: document.getElementById('listing-condition').value,
-          // DON'T include images as base64
+          images: selectedImages.filter(img => !img.new).map(img => img.url),
         };
 
         // Validate required fields
@@ -347,38 +352,35 @@
         const responseData = await res.json();
         const listingId = responseData.listing?.id || editingListingId;
 
-        // Upload images separately as multipart (concurrently for better performance)
+        // Upload new images in one batch request to avoid race conditions
         const newImages = selectedImages.filter(img => img.new && img.file);
         let failedImageCount = 0;
 
         if (newImages.length > 0) {
-          const uploadPromises = newImages.map(async img => {
-            const formData = new FormData();
-            formData.append('files', img.file);
+          const formData = new FormData();
+          newImages.forEach(img => formData.append('photos', img.file));
 
-            try {
-              const uploadRes = await fetch(
-                `/api/v1/photos/upload?type=marketplace&id=${listingId}`,
-                {
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: { 'X-CSRF-Token': csrfToken },
-                  body: formData,
-                }
-              );
-
-              if (!uploadRes.ok) {
-                throw new Error('Upload failed');
+          try {
+            const uploadRes = await fetch(
+              `/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`,
+              {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'X-CSRF-Token': csrfToken },
+                body: formData,
               }
-              return { success: true };
-            } catch (error) {
-              console.warn('Image upload failed:', error);
-              return { success: false };
-            }
-          });
+            );
 
-          const results = await Promise.all(uploadPromises);
-          failedImageCount = results.filter(r => !r.success).length;
+            const uploadData = await uploadRes.json().catch(() => ({}));
+            if (!uploadRes.ok) {
+              throw new Error(uploadData.error || 'Upload failed');
+            }
+
+            failedImageCount = Array.isArray(uploadData.errors) ? uploadData.errors.length : 0;
+          } catch (error) {
+            console.warn('Image upload failed:', error);
+            failedImageCount = newImages.length;
+          }
         }
 
         // Show appropriate success message
@@ -422,7 +424,7 @@
       bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
-      background: ${type === 'error' ? '#dc2626' : '#16a34a'};
+      background: ${type === 'error' ? '#dc2626' : type === 'warning' ? '#d97706' : '#16a34a'};
       color: white;
       padding: 12px 24px;
       border-radius: 8px;
