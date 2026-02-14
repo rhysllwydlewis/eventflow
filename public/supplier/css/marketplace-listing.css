@@ -110,6 +110,24 @@
   background: #f0fdf4;
 }
 
+
+.image-upload-icon {
+  font-size: 40px;
+  margin: 0;
+  opacity: 0.6;
+  filter: grayscale(1);
+}
+
+.image-upload-title {
+  margin: 8px 0 4px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.image-upload-subtitle {
+  color: #6b7280;
+}
+
 .image-preview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
