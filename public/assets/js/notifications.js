@@ -25,6 +25,8 @@
     socket: null,
     isConnected: false,
     hasDesktopPermission: false,
+    isInitialized: false,
+    isInitializing: false,
     soundEnabled: localStorage.getItem('ef_notification_sound_enabled') !== 'false',
   };
 
@@ -43,7 +45,7 @@
     const bell =
       document.getElementById('ef-notification-btn') ||
       document.getElementById('notification-bell');
-    
+
     if (bell) {
       if (loading) {
         bell.classList.add('ef-notification-loading');
@@ -72,7 +74,9 @@
       script.onerror = () => {
         console.error('Failed to load Socket.IO');
         // Show user-friendly error message
-        showWebSocketError('Failed to load real-time notifications. Some features may be unavailable.');
+        showWebSocketError(
+          'Failed to load real-time notifications. Some features may be unavailable.'
+        );
       };
       document.head.appendChild(script);
     } catch (error) {
@@ -114,7 +118,7 @@
         console.log('WebSocket disconnected');
       });
 
-      state.socket.on('connect_error', (error) => {
+      state.socket.on('connect_error', error => {
         console.error('WebSocket connection error:', error);
         showWebSocketError('Connection to notification server failed. Retrying...');
       });
@@ -167,7 +171,7 @@
       z-index: 10000;
       max-width: 300px;
     `;
-    
+
     if (!document.getElementById('ws-error-message')) {
       document.body.appendChild(errorDiv);
     }
@@ -564,6 +568,28 @@
     });
   }
 
+  function setDropdownOpen(dropdown, isOpen) {
+    if (!dropdown) {
+      return;
+    }
+
+    dropdown.classList.toggle('notification-dropdown--open', isOpen);
+
+    // Some pages render inline style="display:none" and may not include
+    // the CSS rule with !important. Keep inline display in sync while still
+    // allowing CSS to control preferred layout mode (block/flex).
+    if (isOpen) {
+      // Let stylesheet decide display first.
+      dropdown.style.removeProperty('display');
+      // If styles still resolve to hidden, force visible fallback.
+      if (window.getComputedStyle(dropdown).display === 'none') {
+        dropdown.style.display = 'block';
+      }
+    } else {
+      dropdown.style.display = 'none';
+    }
+  }
+
   // ==========================================
   // DROPDOWN TOGGLE
   // ==========================================
@@ -572,9 +598,8 @@
     // Prevent multiple initializations using guard flag
     if (window.__notificationBellInitialized) {
       console.log('Notification bell already initialized');
-      return;
+      return true;
     }
-    window.__notificationBellInitialized = true;
 
     // Support both old and new notification bell IDs
     const bell =
@@ -582,8 +607,11 @@
       document.getElementById('ef-notification-btn');
     if (!bell) {
       console.warn('Notification bell button not found');
-      return;
+      return false;
     }
+
+    // Mark initialized only after we have a bell element to bind to.
+    window.__notificationBellInitialized = true;
 
     // Position dropdown below bell with viewport boundary detection
     const positionDropdown = dropdown => {
@@ -633,7 +661,7 @@
       if (top + dropdownHeight > viewportHeight - 16) {
         // Position above the bell instead
         top = rect.top - dropdownHeight - 8;
-        
+
         // If still off screen, position at top with margin
         if (top < 16) {
           top = 16;
@@ -678,29 +706,35 @@
 
     // Toggle dropdown - Mobile-friendly event handling
     let touchHandled = false;
-    
-    const handleBellToggle = (e) => {
+
+    const handleBellToggle = e => {
       e.stopPropagation();
       e.preventDefault();
-      
-      // Toggle dropdown visibility with CSS class only
-      dropdown.classList.toggle('notification-dropdown--open');
-      
-      if (dropdown.classList.contains('notification-dropdown--open')) {
+
+      const isOpening = !dropdown.classList.contains('notification-dropdown--open');
+      setDropdownOpen(dropdown, isOpening);
+
+      if (isOpening) {
         positionDropdown(dropdown);
         fetchNotifications();
       }
     };
 
     // Add both touch and click support for mobile reliability
-    bell.addEventListener('touchend', (e) => {
-      touchHandled = true;
-      handleBellToggle(e);
-      // Reset flag after debounce delay to allow click events on non-touch devices
-      setTimeout(() => { touchHandled = false; }, TOUCH_DEBOUNCE_MS);
-    }, { passive: false });
-    
-    bell.addEventListener('click', (e) => {
+    bell.addEventListener(
+      'touchend',
+      e => {
+        touchHandled = true;
+        handleBellToggle(e);
+        // Reset flag after debounce delay to allow click events on non-touch devices
+        setTimeout(() => {
+          touchHandled = false;
+        }, TOUCH_DEBOUNCE_MS);
+      },
+      { passive: false }
+    );
+
+    bell.addEventListener('click', e => {
       // Skip if already handled by touch event
       if (touchHandled) {
         return;
@@ -716,14 +750,14 @@
           document.getElementById('ef-notification-btn') ||
           document.getElementById('notification-bell');
         if (currentBell && !currentBell.contains(e.target) && !dropdown.contains(e.target)) {
-          dropdown.classList.remove('notification-dropdown--open');
+          setDropdownOpen(dropdown, false);
         }
       });
 
       // Close on escape key
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && dropdown.classList.contains('notification-dropdown--open')) {
-          dropdown.classList.remove('notification-dropdown--open');
+          setDropdownOpen(dropdown, false);
         }
       });
 
@@ -733,6 +767,8 @@
         markAllBtn.addEventListener('click', markAllAsRead);
       }
     }
+
+    return true;
   }
 
   // ==========================================
@@ -752,6 +788,24 @@
     } catch {
       return null;
     }
+  }
+
+  async function getCurrentUser() {
+    const authState = window.__authState || window.AuthStateManager;
+
+    // Ensure auth state has completed its async initialization before reading user.
+    if (authState && typeof authState.init === 'function') {
+      try {
+        await authState.init();
+      } catch (error) {
+        console.warn(
+          'Notification system: auth state init failed, falling back to localStorage',
+          error
+        );
+      }
+    }
+
+    return getUserFromStorage();
   }
 
   function escapeHtml(text) {
@@ -784,14 +838,32 @@
   // INITIALIZATION
   // ==========================================
 
-  function init() {
+  async function init() {
     try {
-      const user = getUserFromStorage();
+      // Prevent duplicate initialization from multiple script inclusions.
+      if (state.isInitialized || state.isInitializing) {
+        return;
+      }
+
+      state.isInitializing = true;
+
+      const user = await getCurrentUser();
       if (!user) {
         // Not logged in, don't initialize notifications
         console.log('Notification system: User not logged in, skipping initialization');
+        state.isInitializing = false;
         return;
       }
+
+      // Initialize dropdown first so click handlers are guaranteed before marking init complete.
+      const dropdownInitialized = initDropdown();
+      if (!dropdownInitialized) {
+        console.warn('Notification system: bell/dropdown not ready, will retry on auth updates');
+        state.isInitializing = false;
+        return;
+      }
+
+      state.isInitialized = true;
 
       console.log('Notification system: Initializing for user', user.id);
 
@@ -801,17 +873,16 @@
       // Initialize WebSocket
       initWebSocket();
 
-      // Initialize dropdown
-      initDropdown();
-
       // Fetch initial notifications
-      fetchNotifications().then(() => {
-        // Remove loading state after initial fetch
-        setBellLoadingState(false);
-      }).catch(() => {
-        // Still remove loading state even on error
-        setBellLoadingState(false);
-      });
+      fetchNotifications()
+        .then(() => {
+          // Remove loading state after initial fetch
+          setBellLoadingState(false);
+        })
+        .catch(() => {
+          // Still remove loading state even on error
+          setBellLoadingState(false);
+        });
 
       // Request desktop notification permission after a delay
       setTimeout(() => {
@@ -841,13 +912,25 @@
       console.log('Notification system: Initialization complete');
 
       // Fire custom event to signal that notification system is ready
-      window.dispatchEvent(new CustomEvent('notification-system-ready', {
-        detail: { initialized: true, userId: user.id }
-      }));
+      window.dispatchEvent(
+        new CustomEvent('notification-system-ready', {
+          detail: { initialized: true, userId: user.id },
+        })
+      );
     } catch (error) {
       console.error('Notification system: Initialization failed', error);
       setBellLoadingState(false);
+    } finally {
+      state.isInitializing = false;
     }
+  }
+
+  async function ensureInitializedOnLogin(user) {
+    if (!user || state.isInitialized) {
+      return;
+    }
+
+    await init();
   }
 
   // Auto-initialize
@@ -856,4 +939,14 @@
   } else {
     init();
   }
+
+  // If auth state resolves after this script runs, initialize then.
+  window.addEventListener('__auth-state-updated', event => {
+    ensureInitializedOnLogin(event.detail?.user);
+  });
+
+  // Backward compatibility for any legacy auth event emitters.
+  window.addEventListener('auth-state-changed', event => {
+    ensureInitializedOnLogin(event.detail?.user);
+  });
 })();
