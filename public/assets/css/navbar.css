@@ -446,8 +446,10 @@
   height: 24px;
 }
 
-/* Badge - Enhanced with pulse animation */
-.ef-badge {
+/* Badge - Enhanced with pulse animation
+   Scoped to nav badge containers to avoid impacting generic page badges. */
+.ef-icon-btn .ef-badge,
+.ef-bottom-link .ef-badge {
   position: absolute;
   top: 4px;
   right: 4px;
