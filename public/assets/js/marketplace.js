@@ -459,9 +459,18 @@
           <div class="listing-detail-actions">
             ${
               currentUser && currentUser.id !== listing.userId
-                ? `<button class="cta" onclick="messageSeller('${listing.id}', '${escapeHtml(listing.title).replace(/'/g, "\\'")}')">
+                ? `<button class="cta listing-message-toggle" type="button">
                      Message Seller
-                   </button>`
+                   </button>
+                   <div class="listing-inline-composer" hidden>
+                     <p class="listing-inline-composer-intro">Send a message about <strong>${escapeHtml(listing.title)}</strong>.</p>
+                     <textarea class="listing-inline-composer-input" maxlength="2000" rows="5" placeholder="Type your message...">${escapeHtml(buildInitialMarketplaceMessage(listing.title))}</textarea>
+                     <div class="listing-inline-composer-status" aria-live="polite"></div>
+                     <div class="listing-inline-composer-actions">
+                       <button class="btn btn-secondary listing-inline-composer-cancel" type="button">Cancel</button>
+                       <button class="cta listing-inline-composer-send" type="button">Send Message</button>
+                     </div>
+                   </div>`
                 : currentUser && currentUser.id === listing.userId
                   ? `<div class="listing-own-notice">This is your listing</div>`
                   : `<a href="/auth.html" class="cta">Log in to message seller</a>`
@@ -495,6 +504,51 @@
       }
     };
     document.addEventListener('keydown', handleEscape);
+
+    const messageToggleBtn = overlay.querySelector('.listing-message-toggle');
+    const inlineComposer = overlay.querySelector('.listing-inline-composer');
+
+    if (messageToggleBtn && inlineComposer) {
+      const composerInput = inlineComposer.querySelector('.listing-inline-composer-input');
+      const composerStatus = inlineComposer.querySelector('.listing-inline-composer-status');
+      const composerSendBtn = inlineComposer.querySelector('.listing-inline-composer-send');
+      const composerCancelBtn = inlineComposer.querySelector('.listing-inline-composer-cancel');
+
+      const hideComposer = () => {
+        inlineComposer.classList.remove('open');
+        setTimeout(() => {
+          inlineComposer.hidden = true;
+          messageToggleBtn.hidden = false;
+        }, 220);
+      };
+
+      messageToggleBtn.addEventListener('click', () => {
+        inlineComposer.hidden = false;
+        requestAnimationFrame(() => inlineComposer.classList.add('open'));
+        messageToggleBtn.hidden = true;
+        composerInput.focus();
+        composerInput.setSelectionRange(composerInput.value.length, composerInput.value.length);
+      });
+
+      composerCancelBtn.addEventListener('click', hideComposer);
+
+      composerSendBtn.addEventListener('click', async () => {
+        const message = composerInput.value.trim();
+        if (!message) {
+          composerStatus.textContent = 'Please enter a message.';
+          composerStatus.style.color = '#dc2626';
+          return;
+        }
+
+        await submitMarketplaceMessage({
+          listing,
+          listingTitle: listing.title,
+          message,
+          statusEl: composerStatus,
+          sendBtn: composerSendBtn,
+        });
+      });
+    }
 
     // Thumbnail clicks
     const thumbnails = overlay.querySelectorAll('.listing-detail-thumbnail');
@@ -532,156 +586,43 @@
     return csrfData.csrfToken;
   }
 
-  let activeMessageComposer = null;
+  async function submitMarketplaceMessage({ listing, listingTitle, message, statusEl, sendBtn }) {
+    try {
+      sendBtn.disabled = true;
+      statusEl.textContent = 'Sending...';
+      statusEl.style.color = '#6b7280';
 
-  function showMessageComposer(listing, listingTitle) {
-    if (activeMessageComposer) {
-      activeMessageComposer.remove();
-      activeMessageComposer = null;
-    }
-
-    const composerOverlay = document.createElement('div');
-    composerOverlay.className = 'modal-overlay active';
-    composerOverlay.innerHTML = `
-      <div class="modal-content" style="max-width: 540px; width: calc(100% - 24px);">
-        <div class="modal-header">
-          <h2>Message Seller</h2>
-          <button class="modal-close" aria-label="Close">×</button>
-        </div>
-        <div class="modal-body">
-          <p style="margin: 0 0 10px; color: #4b5563;">Send a message about <strong>${escapeHtml(listingTitle)}</strong>.</p>
-          <textarea id="marketplace-message-text" maxlength="2000" rows="6" style="width: 100%; padding: 12px; border: 1px solid #E7EAF0; border-radius: 8px; resize: vertical; font-family: inherit;" placeholder="Type your message...">${escapeHtml(buildInitialMarketplaceMessage(listingTitle))}</textarea>
-          <div id="marketplace-message-status" style="margin-top: 10px; min-height: 20px; font-size: 14px;"></div>
-        </div>
-        <div class="listing-detail-actions" style="padding: 16px 24px; border-top: 1px solid #E7EAF0; display: flex; gap: 10px;">
-          <button class="btn btn-secondary" id="marketplace-message-cancel" style="flex: 1;">Cancel</button>
-          <button class="cta" id="marketplace-message-send" style="flex: 1;">Send Message</button>
-        </div>
-      </div>
-    `;
-
-    const closeComposer = () => {
-      document.removeEventListener('keydown', handleComposerEscape);
-      composerOverlay.remove();
-      if (activeMessageComposer === composerOverlay) {
-        activeMessageComposer = null;
-      }
-    };
-
-    const handleComposerEscape = e => {
-      if (e.key === 'Escape') {
-        closeComposer();
-      }
-    };
-
-    composerOverlay.querySelector('.modal-close').addEventListener('click', closeComposer);
-    composerOverlay
-      .querySelector('#marketplace-message-cancel')
-      .addEventListener('click', closeComposer);
-    composerOverlay.addEventListener('click', e => {
-      if (e.target === composerOverlay) {
-        closeComposer();
-      }
-    });
-
-    composerOverlay
-      .querySelector('#marketplace-message-send')
-      .addEventListener('click', async () => {
-        const statusEl = composerOverlay.querySelector('#marketplace-message-status');
-        const textarea = composerOverlay.querySelector('#marketplace-message-text');
-        const sendBtn = composerOverlay.querySelector('#marketplace-message-send');
-        const message = textarea.value.trim();
-
-        if (sendBtn.disabled) {
-          return;
-        }
-
-        if (!message) {
-          statusEl.textContent = 'Please enter a message.';
-          statusEl.style.color = '#dc2626';
-          return;
-        }
-
-        try {
-          sendBtn.disabled = true;
-          statusEl.textContent = 'Sending...';
-          statusEl.style.color = '#6b7280';
-
-          const csrfToken = await fetchCsrfToken();
-          const threadRes = await fetch('/api/v1/threads/start', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': csrfToken,
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              supplierId: listing.sellerSupplierId || null,
-              recipientId: listing.userId || null,
-              marketplaceListingId: listing.id,
-              marketplaceListingTitle: listingTitle,
-              message,
-            }),
-          });
-
-          if (!threadRes.ok) {
-            const data = await threadRes.json().catch(() => ({}));
-            throw new Error(data.error || data.message || 'Failed to start conversation');
-          }
-
-          const { thread } = await threadRes.json();
-          window.location.href = `/conversation.html?id=${thread.id}`;
-        } catch (error) {
-          console.error('Error messaging seller:', error);
-          statusEl.textContent = error?.message || 'Failed to send message. Please try again.';
-          statusEl.style.color = '#dc2626';
-          sendBtn.disabled = false;
-        }
+      const csrfToken = await fetchCsrfToken();
+      const threadRes = await fetch('/api/v1/threads/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          supplierId: listing.sellerSupplierId || null,
+          recipientId: listing.userId || null,
+          marketplaceListingId: listing.id,
+          marketplaceListingTitle: listingTitle,
+          message,
+        }),
       });
 
-    document.body.appendChild(composerOverlay);
-    activeMessageComposer = composerOverlay;
-    document.addEventListener('keydown', handleComposerEscape);
-
-    const textarea = composerOverlay.querySelector('#marketplace-message-text');
-    textarea.focus();
-    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-  }
-
-  // Message seller function
-  window.messageSeller = async function (listingId, listingTitle) {
-    if (!currentUser) {
-      window.location.href = '/auth.html';
-      return;
-    }
-
-    try {
-      // Get listing to find seller ID
-      const res = await fetch(`/api/v1/marketplace/listings/${listingId}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch listing');
+      if (!threadRes.ok) {
+        const data = await threadRes.json().catch(() => ({}));
+        throw new Error(data.error || data.message || 'Failed to start conversation');
       }
 
-      // Check content type before parsing JSON
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.warn('Response is not JSON:', contentType);
-        throw new Error('Invalid response format');
-      }
-
-      const { listing } = await res.json();
-
-      if (!listing.userId) {
-        showToast('Seller account not available for this listing.', 'warning');
-        return;
-      }
-
-      showMessageComposer(listing, listingTitle);
+      const { thread } = await threadRes.json();
+      window.location.href = `/conversation.html?id=${thread.id}`;
     } catch (error) {
       console.error('Error messaging seller:', error);
-      showToast('Failed to start conversation', 'error');
+      statusEl.textContent = error?.message || 'Failed to send message. Please try again.';
+      statusEl.style.color = '#dc2626';
+      sendBtn.disabled = false;
     }
-  };
+  }
 
   // Show list item modal
   async function showListItemModal() {
@@ -1088,6 +1029,23 @@
         savedListingIds.delete(listing.id);
       } else {
         savedListingIds.add(listing.id);
+      }
+
+      const shortlistManager = window.shortlistManager;
+      if (shortlistManager) {
+        if (isCurrentlySaved) {
+          await shortlistManager.removeItem('listing', listing.id);
+        } else {
+          await shortlistManager.addItem({
+            type: 'listing',
+            id: listing.id,
+            name: listing.title || 'Untitled listing',
+            category: formatCategory(listing.category),
+            location: listing.location || '',
+            priceHint: formatPrice(listing.price),
+            imageUrl: getListingImages(listing)[0] || '/assets/images/collage-venue.jpg',
+          });
+        }
       }
 
       const nextSavedState = !isCurrentlySaved;
