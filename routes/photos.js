@@ -108,6 +108,18 @@ function applyPhotoUploadSingle(fieldName) {
   };
 }
 
+function isMarketplaceOwner(listing, user) {
+  if (!listing || !user) {
+    return false;
+  }
+  return (
+    listing.userId === user.id ||
+    listing.ownerUserId === user.id ||
+    listing.createdBy === user.id ||
+    user.role === 'admin'
+  );
+}
+
 // ---------- Photo Upload Routes ----------
 
 /**
@@ -135,6 +147,9 @@ router.post(
       // Handle marketplace type with multiple files
       if (type === 'marketplace') {
         const listings = await dbUnified.read('marketplace_listings');
+        if (!Array.isArray(listings)) {
+          return res.status(500).json({ error: 'Marketplace listings store unavailable' });
+        }
         const listing = listings.find(l => l.id === id);
 
         if (!listing) {
@@ -142,7 +157,7 @@ router.post(
         }
 
         // Verify ownership
-        if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+        if (!isMarketplaceOwner(listing, req.user)) {
           return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -331,6 +346,9 @@ router.post(
       // Update supplier, package, or marketplace listing with new photos
       if (type === 'marketplace') {
         const listings = await dbUnified.read('marketplace_listings');
+        if (!Array.isArray(listings)) {
+          return res.status(500).json({ error: 'Marketplace listings store unavailable' });
+        }
         const listing = listings.find(l => l.id === id);
 
         if (!listing) {
@@ -338,7 +356,7 @@ router.post(
         }
 
         // Verify ownership
-        if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+        if (!isMarketplaceOwner(listing, req.user)) {
           return res.status(403).json({ error: 'Not authorized' });
         }
 

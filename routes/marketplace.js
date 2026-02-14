@@ -78,16 +78,39 @@ function applyWriteLimiter(req, res, next) {
   return writeLimiter(req, res, next);
 }
 
+function resolveListingSellerUserId(listing) {
+  if (!listing || typeof listing !== 'object') {
+    return null;
+  }
+
+  const candidate = listing.userId || listing.ownerUserId || listing.sellerUserId || null;
+  if (candidate) {
+    return String(candidate);
+  }
+
+  // Legacy fallback: some records used createdBy for user IDs.
+  // Ignore obvious email values as they cannot be matched to ownerUserId.
+  if (listing.createdBy && !String(listing.createdBy).includes('@')) {
+    return String(listing.createdBy);
+  }
+
+  return null;
+}
+
 async function attachSellerSupplierIds(listings) {
   const suppliers = await dbUnified.read('suppliers');
   const supplierByOwner = new Map(
     suppliers.filter(s => s && s.ownerUserId && s.approved).map(s => [s.ownerUserId, s.id])
   );
 
-  return listings.map(listing => ({
-    ...listing,
-    sellerSupplierId: supplierByOwner.get(listing.userId) || null,
-  }));
+  return listings.map(listing => {
+    const sellerUserId = resolveListingSellerUserId(listing);
+    return {
+      ...listing,
+      sellerUserId,
+      sellerSupplierId: sellerUserId ? supplierByOwner.get(sellerUserId) || null : null,
+    };
+  });
 }
 
 // ---------- Marketplace Listings ----------
