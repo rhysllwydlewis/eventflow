@@ -12,6 +12,10 @@ class ShortlistManager {
     this.init();
   }
 
+  normalizeKey(value) {
+    return String(value);
+  }
+
   /**
    * Get CSRF token from cookie
    */
@@ -47,6 +51,7 @@ class ShortlistManager {
     } else {
       // Load from localStorage
       this.loadFromLocalStorage();
+      this.notifyListeners();
     }
   }
 
@@ -85,10 +90,12 @@ class ShortlistManager {
       } else if (response.status === 401) {
         // User not authenticated - fail silently, use localStorage
         this.loadFromLocalStorage();
+        this.notifyListeners();
       }
     } catch (error) {
       console.error('Failed to load shortlist from server:', error);
       this.loadFromLocalStorage();
+      this.notifyListeners();
     }
   }
 
@@ -174,8 +181,13 @@ class ShortlistManager {
    * Add item to shortlist
    */
   async addItem(item) {
+    const normalizedType = this.normalizeKey(item.type);
+    const normalizedId = this.normalizeKey(item.id);
+
     // Check if already exists
-    const exists = this.items.some(i => i.type === item.type && i.id === item.id);
+    const exists = this.items.some(
+      i => this.normalizeKey(i.type) === normalizedType && this.normalizeKey(i.id) === normalizedId
+    );
     if (exists) {
       return { success: false, error: 'Item already in shortlist' };
     }
@@ -183,6 +195,8 @@ class ShortlistManager {
     // Add to local state
     this.items.push({
       ...item,
+      type: normalizedType,
+      id: normalizedId,
       addedAt: new Date().toISOString(),
     });
 
@@ -203,7 +217,13 @@ class ShortlistManager {
 
         if (!response.ok) {
           // Rollback on server error
-          this.items = this.items.filter(i => !(i.type === item.type && i.id === item.id));
+          this.items = this.items.filter(
+            i =>
+              !(
+                this.normalizeKey(i.type) === normalizedType &&
+                this.normalizeKey(i.id) === normalizedId
+              )
+          );
           this.saveToLocalStorage();
           return { success: false, error: 'Failed to sync to server' };
         }
@@ -220,8 +240,14 @@ class ShortlistManager {
    * Remove item from shortlist
    */
   async removeItem(type, id) {
+    const normalizedType = this.normalizeKey(type);
+    const normalizedId = this.normalizeKey(id);
+
     // Remove from local state
-    this.items = this.items.filter(i => !(i.type === type && i.id === id));
+    this.items = this.items.filter(
+      i =>
+        !(this.normalizeKey(i.type) === normalizedType && this.normalizeKey(i.id) === normalizedId)
+    );
 
     // Save to localStorage
     this.saveToLocalStorage();
@@ -270,7 +296,11 @@ class ShortlistManager {
    * Check if item is in shortlist
    */
   hasItem(type, id) {
-    return this.items.some(i => i.type === type && i.id === id);
+    const normalizedType = this.normalizeKey(type);
+    const normalizedId = this.normalizeKey(id);
+    return this.items.some(
+      i => this.normalizeKey(i.type) === normalizedType && this.normalizeKey(i.id) === normalizedId
+    );
   }
 
   /**
@@ -313,4 +343,7 @@ class ShortlistManager {
 
 // Export singleton instance
 const shortlistManager = new ShortlistManager();
+if (typeof window !== 'undefined') {
+  window.shortlistManager = shortlistManager;
+}
 export default shortlistManager;

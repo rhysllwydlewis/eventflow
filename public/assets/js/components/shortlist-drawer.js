@@ -4,7 +4,6 @@
  */
 
 import shortlistManager from '../utils/shortlist-manager.js';
-import { trackQuoteRequestStarted } from '../utils/analytics.js';
 
 class ShortlistDrawer {
   constructor() {
@@ -74,7 +73,6 @@ class ShortlistDrawer {
         </div>
         <div class="shortlist-footer">
           <button class="btn btn-secondary" id="clear-shortlist-btn">Clear all</button>
-          <button class="btn btn-primary" id="request-quotes-btn">Request quotes</button>
         </div>
       </div>
     `;
@@ -98,10 +96,6 @@ class ShortlistDrawer {
     // Clear all button
     const clearBtn = this.container.querySelector('#clear-shortlist-btn');
     clearBtn.addEventListener('click', () => this.clearAll());
-
-    // Request quotes button
-    const quotesBtn = this.container.querySelector('#request-quotes-btn');
-    quotesBtn.addEventListener('click', () => this.requestQuotes());
 
     // ESC key to close
     document.addEventListener('keydown', e => {
@@ -137,7 +131,7 @@ class ShortlistDrawer {
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
           </svg>
           <p>Your shortlist is empty</p>
-          <small>Save suppliers and packages to compare and request quotes</small>
+          <small>Save listings to your shortlist so you can compare them later</small>
         </div>
       `;
       return;
@@ -173,11 +167,12 @@ class ShortlistDrawer {
           </p>
           <p class="shortlist-item-price">${priceHint} ${rating}</p>
         </div>
-        <button 
-          class="shortlist-item-remove" 
+        <button
+          class="shortlist-item-remove"
           data-type="${item.type}" 
           data-id="${item.id}"
-          aria-label="Remove from shortlist"
+          aria-label="Remove ${item.name} from shortlist"
+          title="Remove"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -256,29 +251,6 @@ class ShortlistDrawer {
         }
       });
     });
-  }
-
-  /**
-   * Request quotes for shortlisted items
-   */
-  requestQuotes() {
-    const items = shortlistManager.getItems();
-
-    if (items.length === 0) {
-      alert('Your shortlist is empty. Add some suppliers or packages first!');
-      return;
-    }
-
-    // Track event
-    trackQuoteRequestStarted(items.length);
-
-    // Dispatch custom event to open quote request modal
-    const event = new CustomEvent('openQuoteRequestModal', {
-      detail: { items },
-    });
-    window.dispatchEvent(event);
-
-    this.close();
   }
 
   /**
