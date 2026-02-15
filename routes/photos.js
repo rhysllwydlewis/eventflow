@@ -201,6 +201,16 @@ router.post(
   ]), // Accept both multipart field names used across clients
   applyCsrfProtection,
   async (req, res) => {
+    // Add diagnostic logging
+    logger.info('Photo upload request received', {
+      type: req.query.type,
+      id: req.query.id,
+      filesCount: req.files?.length || 0,
+      fileNames: req.files?.map(f => f.originalname) || [],
+      userId: req.user?.id,
+      userRole: req.user?.role,
+    });
+
     try {
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: 'No file uploaded' });
@@ -216,20 +226,32 @@ router.post(
       if (type === 'marketplace') {
         const listings = await dbUnified.read('marketplace_listings');
         if (!Array.isArray(listings)) {
-          return res.status(500).json({ error: 'Marketplace listings store unavailable' });
+          return res.status(500).json({
+            error: 'Database unavailable',
+            errorType: 'DatabaseError',
+            details: 'Marketplace listings database is not accessible',
+          });
         }
         const listing = listings.find(l => l.id === normalizedId);
 
         if (!listing) {
-          return res.status(404).json({ error: 'Listing not found' });
+          return res.status(404).json({
+            error: 'Listing not found',
+            errorType: 'NotFoundError',
+            details: `No listing found with ID: ${normalizedId}`,
+          });
         }
 
         // Verify ownership
         if (!isMarketplaceOwner(listing, req.user)) {
-          return res.status(403).json({ error: 'Not authorized' });
+          return res.status(403).json({
+            error: 'Not authorized',
+            errorType: 'AuthorizationError',
+            details: 'You do not have permission to upload photos to this listing',
+          });
         }
 
-        // Process and append URLs with error handling
+        // Process and append URLs with enhanced error handling
         const uploadedUrls = [];
         const errors = [];
         for (const file of req.files) {
@@ -242,7 +264,7 @@ router.post(
             });
             errors.push({
               filename: file.originalname,
-              error: 'Empty file buffer',
+              error: 'Empty file - please try re-uploading this image',
             });
             continue;
           }
@@ -257,6 +279,7 @@ router.post(
           } catch (error) {
             logger.error('Marketplace photo processing failed', {
               error: error.message,
+              errorName: error.name,
               stack: error.stack,
               filename: file.originalname,
               fileSize: file.size,
@@ -264,7 +287,19 @@ router.post(
               listingId: normalizedId,
               userId: req.user.id,
             });
-            errors.push({ filename: file.originalname, error: error.message });
+
+            // Provide user-friendly error messages
+            let userMessage = error.message;
+            if (error.name === 'ValidationError') {
+              userMessage = `Invalid image: ${error.message}`;
+            } else if (error.message.includes('MongoDB')) {
+              userMessage = 'Storage error - image could not be saved';
+            }
+
+            errors.push({
+              filename: file.originalname,
+              error: userMessage,
+            });
           }
         }
 
@@ -280,6 +315,7 @@ router.post(
           return res.status(500).json({
             success: false,
             error: 'All photo uploads failed',
+            errorType: 'UploadError',
             details: errors,
             uploaded: 0,
           });
@@ -296,6 +332,7 @@ router.post(
           listingId: normalizedId,
           userId: req.user.id,
           count: uploadedUrls.length,
+          errors: errors.length,
         });
 
         return res.json({
@@ -432,6 +469,16 @@ router.post(
   ]),
   applyCsrfProtection,
   async (req, res) => {
+    // Add diagnostic logging
+    logger.info('Batch photo upload request received', {
+      type: req.query.type,
+      id: req.query.id,
+      filesCount: req.files?.length || 0,
+      fileNames: req.files?.map(f => f.originalname) || [],
+      userId: req.user?.id,
+      userRole: req.user?.role,
+    });
+
     try {
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: 'No files uploaded' });
@@ -458,7 +505,7 @@ router.post(
           });
           errors.push({
             filename: file.originalname,
-            error: 'Empty file buffer',
+            error: 'Empty file - please try re-uploading this image',
           });
           continue;
         }
@@ -486,6 +533,7 @@ router.post(
         } catch (error) {
           logger.error('Batch photo processing failed', {
             error: error.message,
+            errorName: error.name,
             stack: error.stack,
             filename: file.originalname,
             fileSize: file.size,
@@ -494,7 +542,16 @@ router.post(
             id: normalizedId,
             userId: req.user.id,
           });
-          errors.push({ filename: file.originalname, error: error.message });
+
+          // Provide user-friendly error messages
+          let userMessage = error.message;
+          if (error.name === 'ValidationError') {
+            userMessage = `Invalid image: ${error.message}`;
+          } else if (error.message.includes('MongoDB')) {
+            userMessage = 'Storage error - image could not be saved';
+          }
+
+          errors.push({ filename: file.originalname, error: userMessage });
         }
       }
 
@@ -502,7 +559,11 @@ router.post(
       if (type === 'marketplace') {
         const listings = await dbUnified.read('marketplace_listings');
         if (!Array.isArray(listings)) {
-          return res.status(500).json({ error: 'Marketplace listings store unavailable' });
+          return res.status(500).json({
+            error: 'Database unavailable',
+            errorType: 'DatabaseError',
+            details: 'Marketplace listings database is not accessible',
+          });
         }
         const listing = listings.find(l => l.id === normalizedId);
 

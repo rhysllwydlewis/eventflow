@@ -433,6 +433,16 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
         throw error;
       }
 
+      // Don't retry MongoDB unavailability errors - they won't resolve on retry
+      if (error.name === 'MongoDBUnavailableError' || error.name === 'MongoDBStorageError') {
+        logger.error('MongoDB storage error - not retrying', {
+          error: error.message,
+          filename: originalFilename,
+          attempt: attempt,
+        });
+        throw error;
+      }
+
       logger.warn(`Image upload attempt ${attempt} failed`, {
         error: error.message,
         filename: originalFilename,

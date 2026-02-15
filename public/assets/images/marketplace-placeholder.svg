@@ -1,0 +1,13 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#f3f4f6"/>
+  <g transform="translate(200, 150)">
+    <!-- Camera icon -->
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" x="-32" y="-32">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#9ca3af" stroke-width="2" fill="none"/>
+      <circle cx="12" cy="13" r="4" stroke="#9ca3af" stroke-width="2" fill="none"/>
+    </svg>
+  </g>
+  <text x="200" y="220" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#6b7280">
+    No photos yet
+  </text>
+</svg>

@@ -290,7 +290,7 @@
 
   function getListingImages(listing) {
     if (!listing || typeof listing !== 'object') {
-      return [];
+      return ['/assets/images/marketplace-placeholder.svg'];
     }
 
     const normalizeImages = value =>
@@ -312,7 +312,8 @@
       return [listing.image.trim()];
     }
 
-    return [];
+    // Return placeholder if no images
+    return ['/assets/images/marketplace-placeholder.svg'];
   }
 
   // Create listing card HTML

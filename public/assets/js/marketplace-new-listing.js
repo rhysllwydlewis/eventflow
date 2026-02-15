@@ -204,6 +204,9 @@
         continue;
       }
 
+      // Show loading state
+      showToast(`Processing ${file.name}...`, 'info');
+
       // Create preview (read as base64 for preview only)
       try {
         const reader = new FileReader();
@@ -214,6 +217,14 @@
             new: true,
           });
           renderImagePreviews();
+          showToast(`${file.name} ready to upload`, 'success');
+        };
+        reader.onerror = () => {
+          console.error('Error reading file:', file.name);
+          showToast(
+            `Could not read ${file.name}. The file may be corrupted or in an unsupported format.`,
+            'error'
+          );
         };
         reader.readAsDataURL(file);
       } catch (error) {
@@ -295,8 +306,8 @@
         return Array.isArray(batchData.errors) ? batchData.errors.length : 0;
       }
 
-      // Log specific error details for debugging
-      console.warn('Batch image upload failed:', {
+      // Enhanced error logging
+      console.error('Batch image upload failed:', {
         status: batchRes.status,
         statusText: batchRes.statusText,
         error: batchData.error,
@@ -304,18 +315,29 @@
         details: batchData.details,
       });
 
-      // Show user-friendly error message based on error type
-      if (batchData.errorType === 'MongoDBUnavailableError' || batchRes.status === 503) {
-        showToast(
-          'Photo storage temporarily unavailable. Retrying with individual uploads...',
-          'warning'
-        );
+      // Show user-friendly error message
+      let errorMessage = 'Photo upload failed. ';
+      if (batchRes.status === 500) {
+        errorMessage +=
+          'Please try uploading smaller images (max 5MB each) or fewer images at once.';
+      } else if (batchRes.status === 413) {
+        errorMessage += 'Images are too large. Please reduce file size.';
+      } else if (batchData.error) {
+        errorMessage += batchData.error;
+      } else {
+        errorMessage += 'Retrying with individual uploads...';
       }
+
+      showToast(errorMessage, 'error');
     } catch (error) {
-      console.warn('Batch image upload network error:', error);
-      showToast('Network error during batch upload. Retrying individually...', 'warning');
+      console.error('Batch image upload network error:', error);
+      showToast(
+        'Network error during upload. Please check your connection and try again.',
+        'error'
+      );
     }
 
+    // Fallback to individual uploads
     let failedImageCount = 0;
 
     async function uploadSingleImageWithField(fieldName, imageFile) {
@@ -471,7 +493,7 @@
           showToast(
             isEditMode
               ? 'Listing updated successfully!'
-              : 'Listing published successfully! It\'s now live on the marketplace.',
+              : "Listing published successfully! It's now live on the marketplace.",
             'success'
           );
         }
