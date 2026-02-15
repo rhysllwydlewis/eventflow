@@ -740,7 +740,7 @@ async function processAndSaveMarketplaceImage(
           listingId,
         });
 
-        // Retry with local storage (don't mutate global STORAGE_TYPE to avoid race conditions)
+        // Use local storage directly without modifying global STORAGE_TYPE
         const filename = generateFilename(originalFilename);
         const baseFilename = filename.replace(path.extname(filename), '');
 

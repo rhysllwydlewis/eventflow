@@ -251,6 +251,9 @@ router.post(
           });
         }
 
+        // Get existing images for order tracking
+        const existingImages = normalizeMarketplaceImageUrls(listing.images);
+
         // Process and append URLs with enhanced error handling
         const uploadedUrls = [];
         const errors = [];
@@ -272,6 +275,7 @@ router.post(
 
           try {
             // Use dedicated marketplace image processing
+            // Order is calculated as: existing image count + already uploaded images
             const images = await photoUpload.processAndSaveMarketplaceImage(
               file.buffer,
               file.originalname,
@@ -325,8 +329,7 @@ router.post(
           });
         }
 
-        // Cap at 5 images total and normalize legacy image formats
-        const existingImages = normalizeMarketplaceImageUrls(listing.images);
+        // Cap at 5 images total (existingImages already defined earlier)
         listing.images = existingImages.concat(uploadedUrls).slice(0, 5);
         listing.updatedAt = new Date().toISOString();
 
