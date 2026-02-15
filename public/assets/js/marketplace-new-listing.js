@@ -126,7 +126,7 @@
 
       // Update page title
       document.querySelector('.form-header h1').textContent = 'Edit Listing';
-      document.querySelector('button[type="submit"]').textContent = 'Save Changes';
+      document.querySelector('button[type="submit"]').textContent = 'Update Listing';
     } catch (error) {
       console.error('Error loading listing:', error);
       showToast('Failed to load listing for editing', 'error');
@@ -390,7 +390,7 @@
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
-      submitBtn.textContent = isEditMode ? 'Saving...' : 'Creating...';
+      submitBtn.textContent = isEditMode ? 'Updating...' : 'Publishing...';
 
       try {
         // Get CSRF token
@@ -471,7 +471,7 @@
           showToast(
             isEditMode
               ? 'Listing updated successfully!'
-              : 'Listing created successfully! It will appear after admin approval.',
+              : 'Listing published successfully! It\'s now live on the marketplace.',
             'success'
           );
         }
