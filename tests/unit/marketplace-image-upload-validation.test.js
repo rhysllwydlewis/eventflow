@@ -74,38 +74,22 @@ describe('Marketplace Image Upload Validation', () => {
 
   describe('ValidationError naming', () => {
     test('should throw ValidationError with proper name for invalid buffer', async () => {
-      try {
-        await photoUpload.processAndSaveMarketplaceImage(
-          null,
-          'test.jpg',
-          'listing-123',
-          'user-456',
-          0
-        );
-        // If we get here, the test should fail
-        expect(true).toBe(false); // Should not reach this line
-      } catch (error) {
-        expect(error.name).toBe('ValidationError');
-        expect(error.message).toContain('Invalid file buffer');
-      }
+      await expect(
+        photoUpload.processAndSaveMarketplaceImage(null, 'test.jpg', 'listing-123', 'user-456', 0)
+      ).rejects.toMatchObject({
+        name: 'ValidationError',
+        message: expect.stringContaining('Invalid file buffer'),
+      });
     });
 
     test('should throw ValidationError with proper name for invalid filename', async () => {
-      try {
-        const buffer = Buffer.from('fake data');
-        await photoUpload.processAndSaveMarketplaceImage(
-          buffer,
-          null,
-          'listing-123',
-          'user-456',
-          0
-        );
-        // If we get here, the test should fail
-        expect(true).toBe(false); // Should not reach this line
-      } catch (error) {
-        expect(error.name).toBe('ValidationError');
-        expect(error.message).toContain('Invalid filename');
-      }
+      const buffer = Buffer.from('fake data');
+      await expect(
+        photoUpload.processAndSaveMarketplaceImage(buffer, null, 'listing-123', 'user-456', 0)
+      ).rejects.toMatchObject({
+        name: 'ValidationError',
+        message: expect.stringContaining('Invalid filename'),
+      });
     });
   });
 });
