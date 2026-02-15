@@ -183,8 +183,8 @@ If issues occur:
 
 ### Short Term
 
-- [ ] Migration script to move existing marketplace photos from "photos" to "marketplace_images"
-- [ ] Bulk delete endpoint for marketplace images
+- [x] ~~Migration script to move existing marketplace photos~~ (Not needed - backward compatible)
+- [x] ~~Bulk delete endpoint for marketplace images~~ (Implemented via deleteMarketplaceImages)
 - [ ] Image compression optimization
 
 ### Long Term
@@ -193,16 +193,31 @@ If issues occur:
 - [ ] CDN integration for faster delivery
 - [ ] Image analytics (views, downloads)
 - [ ] Advanced image editing features
+- [ ] Orphaned image cleanup cron job
 
-## Files Changed
+## Recent Updates (Post-Review)
+
+### Image Deletion Improvements
+- **Enhanced deleteImage()** - Checks both collections
+- **Added deleteMarketplaceImages()** - Deletes all images for a listing
+- **Marketplace listing deletion** - Removes orphaned images automatically
+- **Admin DELETE endpoint** - Better audit logging with image counts
+- **Admin UI improvements** - Shows deletion counts in toast messages
+
+## Files Changed (Updated)
 
 ```
- models/MarketplaceImage.js            |  74 ++++++
- models/index.js                       |   9 +
- photo-upload.js                       | 339 +++++++++++++++++++++++
- routes/photos.js                      |  65 +++--
- tests/unit/marketplace-images.test.js |  84 ++++++
- 5 files changed, 555 insertions(+), 16 deletions(-)
+ models/MarketplaceImage.js                    |  74 ++++++
+ models/index.js                               |   9 +
+ photo-upload.js                               | 411 ++++++++++++++++++++++++
+ routes/photos.js                              |  65 +++--
+ routes/marketplace.js                         |  13 +-
+ routes/admin.js                               |  54 ++++
+ public/admin-marketplace.html                 |   8 +-
+ tests/unit/marketplace-images.test.js         |  84 ++++++
+ tests/unit/marketplace-image-deletion.test.js |  72 +++++
+ MARKETPLACE_IMAGES_IMPLEMENTATION.md          |  76 +++++
+ 10 files changed, 850 insertions(+), 16 deletions(-)
 ```
 
 ## Commits
