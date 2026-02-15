@@ -235,6 +235,14 @@ async function saveToLocal(buffer, filename, directory = 'original') {
  */
 async function saveToMongoDB(buffer, filename, type = 'optimized') {
   try {
+    // Check if MongoDB is available before attempting save
+    const isAvailable = await mongoDb.isMongoAvailable();
+    if (!isAvailable) {
+      const error = new Error('MongoDB is not available for photo storage');
+      error.name = 'MongoDBUnavailableError';
+      throw error;
+    }
+
     const db = await mongoDb.getDb();
     const collection = db.collection('photos');
 
@@ -251,10 +259,25 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
     await collection.insertOne(photoDoc);
     return photoDoc._id;
   } catch (error) {
-    // Add context to MongoDB errors
+    // Add context to MongoDB errors with connection state
     const enhancedError = new Error(`Failed to save image to MongoDB: ${error.message}`);
-    enhancedError.name = 'MongoDBStorageError';
+    enhancedError.name = error.name || 'MongoDBStorageError';
     enhancedError.originalError = error;
+    enhancedError.context = {
+      filename,
+      type,
+      bufferSize: buffer?.length || 0,
+      storageType: STORAGE_TYPE,
+    };
+    
+    logger.error('MongoDB photo save failed', {
+      error: error.message,
+      stack: error.stack,
+      filename,
+      type,
+      bufferSize: buffer?.length || 0,
+    });
+    
     throw enhancedError;
   }
 }

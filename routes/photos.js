@@ -359,8 +359,34 @@ router.post(
           .json({ error: 'Invalid type. Must be supplier, package, or marketplace.' });
       }
     } catch (error) {
-      console.error('Photo upload error:', error);
-      res.status(500).json({ error: 'Failed to upload photo', details: error.message });
+      // Enhanced error logging for single uploads
+      logger.error('Photo upload error', {
+        error: error.message,
+        stack: error.stack,
+        errorName: error.name,
+        type: req.query.type,
+        id: req.query.id,
+        userId: req.user?.id,
+        fileCount: req.files?.length || 0,
+      });
+
+      // Provide user-friendly error messages based on error type
+      let userMessage = 'Failed to upload photo';
+      let statusCode = 500;
+
+      if (error.name === 'MongoDBUnavailableError' || error.message?.includes('MongoDB')) {
+        userMessage = 'Photo storage service temporarily unavailable. Please try again later.';
+        statusCode = 503;
+      } else if (error.name === 'ValidationError') {
+        userMessage = 'Invalid file format or size. Please check your file and try again.';
+        statusCode = 400;
+      }
+
+      res.status(statusCode).json({
+        error: userMessage,
+        details: error.message,
+        errorType: error.name,
+      });
     }
   }
 );
@@ -506,7 +532,7 @@ router.post(
         });
       } else if (type === 'supplier') {
         const suppliers = await dbUnified.read('suppliers');
-        const supplier = suppliers.find(s => s.id === id);
+        const supplier = suppliers.find(s => s.id === normalizedId);
 
         if (!supplier) {
           return res.status(404).json({ error: 'Supplier not found' });
@@ -524,7 +550,7 @@ router.post(
         await dbUnified.write('suppliers', suppliers);
       } else if (type === 'package') {
         const packages = await dbUnified.read('packages');
-        const pkg = packages.find(p => p.id === id);
+        const pkg = packages.find(p => p.id === normalizedId);
 
         if (!pkg) {
           return res.status(404).json({ error: 'Package not found' });
@@ -555,8 +581,34 @@ router.post(
         message: `${uploadedPhotos.length} photo(s) uploaded successfully. Pending admin approval.`,
       });
     } catch (error) {
-      console.error('Batch upload error:', error);
-      res.status(500).json({ error: 'Failed to upload photos', details: error.message });
+      // Enhanced error logging for batch uploads
+      logger.error('Batch upload error', {
+        error: error.message,
+        stack: error.stack,
+        errorName: error.name,
+        type: req.query.type,
+        id: req.query.id,
+        userId: req.user?.id,
+        fileCount: req.files?.length || 0,
+      });
+
+      // Provide user-friendly error messages based on error type
+      let userMessage = 'Failed to upload photos';
+      let statusCode = 500;
+
+      if (error.name === 'MongoDBUnavailableError' || error.message?.includes('MongoDB')) {
+        userMessage = 'Photo storage service temporarily unavailable. Please try again later.';
+        statusCode = 503;
+      } else if (error.name === 'ValidationError') {
+        userMessage = 'Invalid file format or size. Please check your files and try again.';
+        statusCode = 400;
+      }
+
+      res.status(statusCode).json({
+        error: userMessage,
+        details: error.message,
+        errorType: error.name,
+      });
     }
   }
 );
