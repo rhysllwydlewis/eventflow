@@ -192,6 +192,13 @@
     const filesToProcess = files.slice(0, remaining);
 
     for (const file of filesToProcess) {
+      // **NEW: Validate File object integrity**
+      if (!file.name || typeof file.name !== 'string') {
+        console.error('Invalid File object - missing name property:', file);
+        showToast('Invalid file detected. Please try selecting the file again.', 'error');
+        continue;
+      }
+
       // Validate file type
       if (!file.type.startsWith('image/')) {
         showToast(`${file.name} is not an image`, 'error');
@@ -204,6 +211,13 @@
         continue;
       }
 
+      // **NEW: Additional validation**
+      if (file.size === 0) {
+        console.error('Empty file detected:', file.name);
+        showToast(`${file.name} is empty or corrupted`, 'error');
+        continue;
+      }
+
       // Show loading state
       showToast(`Processing ${file.name}...`, 'info');
 
@@ -211,6 +225,13 @@
       try {
         const reader = new FileReader();
         reader.onload = e => {
+          // **NEW: Double-check file integrity before adding**
+          if (!file || !file.name) {
+            console.error('File became invalid during processing');
+            showToast('File became invalid. Please try again.', 'error');
+            return;
+          }
+
           selectedImages.push({
             file: file, // Store actual File object
             preview: e.target.result, // Base64 preview only
@@ -292,7 +313,35 @@
   async function uploadMarketplaceImages(newImages, listingId, csrfToken) {
     try {
       const formData = new FormData();
-      newImages.forEach(img => formData.append('photos', img.file));
+
+      // **NEW: Validate and log files before appending**
+      const validFiles = [];
+      for (const img of newImages) {
+        if (!img.file) {
+          console.error('Image object missing file property:', img);
+          continue;
+        }
+        if (!img.file.name || typeof img.file.name !== 'string') {
+          console.error('File missing name property:', img.file);
+          continue;
+        }
+        validFiles.push(img);
+
+        // Log file details for debugging
+        console.log('Appending file to FormData:', {
+          name: img.file.name,
+          type: img.file.type,
+          size: img.file.size,
+          lastModified: img.file.lastModified,
+        });
+
+        formData.append('photos', img.file);
+      }
+
+      if (validFiles.length === 0) {
+        showToast('No valid files to upload', 'error');
+        return newImages.length; // All failed
+      }
 
       const batchRes = await fetch(`/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`, {
         method: 'POST',
@@ -306,7 +355,7 @@
         return Array.isArray(batchData.errors) ? batchData.errors.length : 0;
       }
 
-      // Enhanced error logging
+      // Enhanced error logging - **ALREADY EXISTS, keeping as-is**
       console.error('Batch image upload failed:', {
         status: batchRes.status,
         statusText: batchRes.statusText,
@@ -498,7 +547,7 @@
           const successCount = newImages.length - failedImageCount;
           const listingAction = isEditMode ? 'updated' : 'created';
           showToast(
-            `Listing ${listingAction}: ${successCount} of ${newImages.length} image(s) uploaded, ${failedImageCount} failed. You can retry by editing the listing.`,
+            `Listing ${listingAction}: ${successCount} of ${newImages.length} image(s) uploaded, ${failedImageCount} failed. Try selecting the files again if they failed.`,
             'warning'
           );
         } else {
