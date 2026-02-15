@@ -404,7 +404,7 @@ router.post(
         location: location ? String(location).slice(0, 100) : '',
         images: Array.isArray(images) ? images.slice(0, 5) : [],
         approved: true, // Auto-approve new listings
-        status: 'active', // active, sold, removed
+        status: 'active', // New listings start as active; status can be: active, sold, removed, or pending (for admin-moderated listings)
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

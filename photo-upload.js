@@ -139,17 +139,23 @@ async function extractExifData(buffer) {
   try {
     const image = sharp(buffer);
     const metadata = await image.metadata();
-    
+
     const exifData = {
-      camera: metadata.exif ? {
-        make: metadata.exif.Make || null,
-        model: metadata.exif.Model || null,
-      } : null,
-      dateTaken: (metadata.exif && (metadata.exif.DateTimeOriginal || metadata.exif.DateTime)) || null,
-      location: (metadata.exif && metadata.exif.GPSLatitude && metadata.exif.GPSLongitude) ? {
-        latitude: metadata.exif.GPSLatitude,
-        longitude: metadata.exif.GPSLongitude,
-      } : null,
+      camera: metadata.exif
+        ? {
+            make: metadata.exif.Make || null,
+            model: metadata.exif.Model || null,
+          }
+        : null,
+      dateTaken:
+        (metadata.exif && (metadata.exif.DateTimeOriginal || metadata.exif.DateTime)) || null,
+      location:
+        metadata.exif && metadata.exif.GPSLatitude && metadata.exif.GPSLongitude
+          ? {
+              latitude: metadata.exif.GPSLatitude,
+              longitude: metadata.exif.GPSLongitude,
+            }
+          : null,
       dimensions: {
         width: metadata.width,
         height: metadata.height,
@@ -158,7 +164,7 @@ async function extractExifData(buffer) {
       space: metadata.space,
       orientation: metadata.orientation,
     };
-    
+
     return exifData;
   } catch (error) {
     logger.warn('Failed to extract EXIF data', { error: error.message });
@@ -264,9 +270,7 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
 async function processAndSaveImage(buffer, originalFilename, context = 'supplier') {
   // Validate buffer early
   if (!buffer || !Buffer.isBuffer(buffer)) {
-    const error = new Error(
-      `Invalid file buffer - expected Buffer, received ${typeof buffer}`
-    );
+    const error = new Error(`Invalid file buffer - expected Buffer, received ${typeof buffer}`);
     error.name = 'ValidationError';
     throw error;
   }
@@ -413,8 +417,9 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       });
 
       if (attempt < 3) {
-        // Wait before retry (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        // Wait before retry with exponential backoff
+        const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s...
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
