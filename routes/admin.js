@@ -16,6 +16,7 @@ const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { normalizeTicketRecord } = require('../utils/ticketNormalization');
+const photoUpload = require('../photo-upload');
 
 const router = express.Router();
 
@@ -3055,7 +3056,6 @@ router.delete(
       }
 
       // Delete associated marketplace images from database
-      const photoUpload = require('../photo-upload');
       const deletedImageCount = await photoUpload.deleteMarketplaceImages(req.params.id);
 
       // Remove listing

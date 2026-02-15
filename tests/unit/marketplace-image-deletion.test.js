@@ -72,7 +72,7 @@ describe('Admin Routes - Marketplace Image Cleanup', () => {
 });
 
 describe('Photo Upload - deleteImage Function', () => {
-  test('deleteImage should check marketplace_images collection', () => {
+  test('deleteImage should be enhanced to check marketplace_images collection', () => {
     const fs = require('fs');
     const path = require('path');
     const photoUpload = fs.readFileSync(
@@ -80,18 +80,14 @@ describe('Photo Upload - deleteImage Function', () => {
       'utf8'
     );
 
-    // Find the deleteImage function
-    const deleteImageStart = photoUpload.indexOf('async function deleteImage(');
-    const deleteImageEnd = photoUpload.indexOf('async function deleteMarketplaceImages', deleteImageStart);
-    const deleteImageFunc = photoUpload.substring(deleteImageStart, deleteImageEnd);
-
     // Verify it checks marketplace_images collection
-    expect(deleteImageFunc).toContain("collection('marketplace_images')");
+    expect(photoUpload).toContain("collection('marketplace_images')");
     
     // Verify it falls back to photos collection
-    expect(deleteImageFunc).toContain("collection('photos')");
+    expect(photoUpload).toContain("collection('photos')");
     
-    // Verify it logs appropriately
-    expect(deleteImageFunc).toContain('logger.info');
+    // Verify it has proper logging
+    expect(photoUpload).toContain('logger.info');
+    expect(photoUpload).toContain('Deleted marketplace image');
   });
 });

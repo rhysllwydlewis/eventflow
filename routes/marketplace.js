@@ -7,6 +7,7 @@
 
 const express = require('express');
 const router = express.Router();
+const photoUpload = require('../photo-upload');
 
 // These will be injected by server.js during route mounting
 let dbUnified;
@@ -668,7 +669,6 @@ router.delete(
       }
 
       // Delete associated marketplace images from database
-      const photoUpload = require('../photo-upload');
       const deletedImageCount = await photoUpload.deleteMarketplaceImages(req.params.id);
       
       logger.info('Marketplace listing deleted with images', {
