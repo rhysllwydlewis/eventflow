@@ -313,11 +313,17 @@
         error: batchData.error,
         errorType: batchData.errorType,
         details: batchData.details,
+        errors: batchData.errors,
       });
 
-      // Show user-friendly error message
+      // Show detailed error messages from server
       let errorMessage = 'Photo upload failed. ';
-      if (batchRes.status === 500) {
+      if (batchData.errors && Array.isArray(batchData.errors) && batchData.errors.length > 0) {
+        const errorDetails = batchData.errors
+          .map(e => `${e.filename || 'unknown'}: ${e.error || 'upload failed'}`)
+          .join('; ');
+        errorMessage += errorDetails;
+      } else if (batchRes.status === 500) {
         errorMessage +=
           'Please try uploading smaller images (max 5MB each) or fewer images at once.';
       } else if (batchRes.status === 413) {
@@ -366,7 +372,13 @@
           error: singleData.error,
           errorType: singleData.errorType,
           details: singleData.details,
+          errors: singleData.errors,
         });
+
+        // Show specific error if available
+        if (singleData.error) {
+          showToast(`${imageFile.name}: ${singleData.error}`, 'error');
+        }
 
         return false;
       } catch (error) {

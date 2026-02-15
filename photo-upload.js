@@ -97,6 +97,14 @@ const MAX_FILE_SIZE_MARKETPLACE = uploadValidation.MAX_FILE_SIZE_MARKETPLACE;
  * Generate unique filename
  */
 function generateFilename(originalname) {
+  // Validate and provide fallback for originalname
+  if (!originalname || typeof originalname !== 'string') {
+    logger.warn('Invalid originalname provided to generateFilename', {
+      originalname,
+      type: typeof originalname,
+    });
+    originalname = 'image.jpg'; // Fallback name with extension
+  }
   const ext = path.extname(originalname).toLowerCase();
   const hash = crypto.randomBytes(16).toString('hex');
   const timestamp = Date.now();
@@ -608,6 +616,29 @@ async function processAndSaveMarketplaceImage(
 
   if (buffer.length === 0) {
     const error = new Error('Empty file buffer');
+    error.name = 'ValidationError';
+    throw error;
+  }
+
+  // Validate originalFilename to prevent indexOf errors
+  if (!originalFilename || typeof originalFilename !== 'string') {
+    const error = new Error(
+      `Invalid filename - expected string, received ${typeof originalFilename}`
+    );
+    error.name = 'ValidationError';
+    throw error;
+  }
+
+  // Validate listingId
+  if (!listingId || typeof listingId !== 'string') {
+    const error = new Error(`Invalid listing ID - expected string, received ${typeof listingId}`);
+    error.name = 'ValidationError';
+    throw error;
+  }
+
+  // Validate userId
+  if (!userId || typeof userId !== 'string') {
+    const error = new Error(`Invalid user ID - expected string, received ${typeof userId}`);
     error.name = 'ValidationError';
     throw error;
   }

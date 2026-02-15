@@ -267,8 +267,23 @@ router.post(
               userId: req.user.id,
             });
             errors.push({
-              filename: file.originalname,
+              filename: file.originalname || 'unknown',
               error: 'Empty file - please try re-uploading this image',
+            });
+            continue;
+          }
+
+          // Validate file.originalname to prevent indexOf errors
+          if (!file.originalname || typeof file.originalname !== 'string') {
+            logger.error('Invalid file.originalname received', {
+              originalname: file.originalname,
+              type: typeof file.originalname,
+              listingId: normalizedId,
+              userId: req.user.id,
+            });
+            errors.push({
+              filename: 'unknown',
+              error: 'Invalid file name - please try re-uploading this image',
             });
             continue;
           }
@@ -522,8 +537,24 @@ router.post(
             userId: req.user.id,
           });
           errors.push({
-            filename: file.originalname,
+            filename: file.originalname || 'unknown',
             error: 'Empty file - please try re-uploading this image',
+          });
+          continue;
+        }
+
+        // Validate file.originalname to prevent indexOf errors
+        if (!file.originalname || typeof file.originalname !== 'string') {
+          logger.error('Invalid file.originalname received in batch upload', {
+            originalname: file.originalname,
+            type: typeof file.originalname,
+            uploadType: type,
+            id: normalizedId,
+            userId: req.user.id,
+          });
+          errors.push({
+            filename: 'unknown',
+            error: 'Invalid file name - please try re-uploading this image',
           });
           continue;
         }
