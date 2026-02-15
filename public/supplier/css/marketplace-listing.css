@@ -1,7 +1,7 @@
 /**
  * Marketplace New Listing Page Styles
- * Extracted from inline styles for maintainability
- * Version: 18.1.0
+ * Liquid glass design system for modern, elegant forms
+ * Version: 18.2.0
  */
 
 .form-container {
@@ -17,13 +17,29 @@
 .form-header h1 {
   font-size: 2rem;
   margin-bottom: 8px;
+  color: #111827;
+  font-weight: 700;
 }
 
+/* Enhanced form card with liquid glass effect */
 .form-card {
-  background: white;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 10px 30px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(11, 128, 115, 0.05) inset;
+  transition: all 0.3s ease;
+}
+
+.form-card:hover {
+  box-shadow: 
+    0 15px 40px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(11, 128, 115, 0.1) inset;
+  transform: translateY(-2px);
 }
 
 .form-group {
@@ -45,11 +61,15 @@
 .form-group textarea,
 .form-group select {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(209, 213, 219, 0.6);
+  border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
+  transition: all 0.2s ease;
 }
 
 .form-group input:focus,
@@ -57,7 +77,11 @@
 .form-group select:focus {
   outline: none;
   border-color: #0B8073;
-  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 
+    0 0 0 3px rgba(11, 128, 115, 0.1),
+    0 4px 12px rgba(11, 128, 115, 0.05);
+  transform: translateY(-1px);
 }
 
 .form-group textarea {
@@ -91,40 +115,81 @@
   margin-top: 4px;
 }
 
+/* Professional Image Upload Zone with Liquid Glass */
 .image-upload-zone {
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 32px;
+  background: rgba(249, 250, 251, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px dashed rgba(209, 213, 219, 0.6);
+  border-radius: 12px;
+  padding: 48px 32px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .image-upload-zone:hover {
   border-color: #0B8073;
-  background: #f0fdf4;
+  background: rgba(240, 253, 244, 0.95);
+  border-style: solid;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 20px rgba(11, 128, 115, 0.12),
+    0 0 0 1px rgba(11, 128, 115, 0.1) inset;
 }
 
 .image-upload-zone.dragover {
   border-color: #0B8073;
-  background: #f0fdf4;
+  background: rgba(209, 250, 229, 0.95);
+  border-style: solid;
+  box-shadow: 0 0 0 4px rgba(11, 128, 115, 0.1);
+  transform: scale(1.01);
 }
 
-
+/* Camera Icon Styling - Professional Grey Placeholder */
 .image-upload-icon {
-  font-size: 40px;
-  margin: 0;
-  opacity: 0.6;
-  filter: grayscale(1);
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  opacity: 0.4;
+  color: #9ca3af;
+  transition: all 0.3s ease;
+  display: block;
 }
 
+.image-upload-zone:hover .image-upload-icon {
+  opacity: 0.6;
+  transform: scale(1.05);
+  color: #0B8073;
+}
+
+/* "Awaiting Images" Title - Professional Styling */
 .image-upload-title {
-  margin: 8px 0 4px;
+  margin: 0 0 8px 0;
   font-weight: 600;
-  color: #4b5563;
+  font-size: 16px;
+  color: #6b7280;
+  letter-spacing: 0.025em;
+  text-transform: none;
 }
 
 .image-upload-subtitle {
+  color: #9ca3af;
+  font-size: 14px;
+  margin: 0;
+}
+
+.image-upload-zone:hover .image-upload-title {
+  color: #0B8073;
+}
+
+.image-upload-zone:hover .image-upload-subtitle {
   color: #6b7280;
 }
 
@@ -135,12 +200,28 @@
   margin-top: 16px;
 }
 
+/* Enhanced image preview with liquid glass */
 .image-preview-item {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  border: 1.5px solid rgba(229, 231, 235, 0.6);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  transition: all 0.2s ease;
+}
+
+.image-preview-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(11, 128, 115, 0.1) inset;
+  border-color: rgba(11, 128, 115, 0.3);
 }
 
 .image-preview-item img {
@@ -151,24 +232,31 @@
 
 .image-preview-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.6);
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: white;
-  border: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: 700;
 }
 
 .image-preview-remove:hover {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(220, 38, 38, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
 .form-actions {
@@ -177,11 +265,92 @@
   margin-top: 32px;
 }
 
+/* Enhanced button styling with liquid glass - scoped to form */
+.form-card .form-actions .cta {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  border: none;
+  font-family: inherit;
+}
+
+.form-card .form-actions .cta:not(.secondary) {
+  background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);
+  color: white;
+  box-shadow: 
+    0 4px 12px rgba(11, 128, 115, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.form-card .form-actions .cta:not(.secondary):hover {
+  background: linear-gradient(135deg, #0a6b5f 0%, #095548 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 20px rgba(11, 128, 115, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+}
+
+.form-card .form-actions .cta:not(.secondary):active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 8px rgba(11, 128, 115, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.form-card .form-actions .cta:not(.secondary):disabled {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.form-card .form-actions .cta.secondary {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #374151;
+  border: 1.5px solid rgba(209, 213, 219, 0.6);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+.form-card .form-actions .cta.secondary:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: #0B8073;
+  color: #0B8073;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 12px rgba(11, 128, 115, 0.1),
+    0 0 0 1px rgba(11, 128, 115, 0.1) inset;
+}
+
+/* Notice with liquid glass effect */
 .notice {
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
-  padding: 16px;
-  border-radius: 8px;
+  background: rgba(254, 243, 199, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(251, 191, 36, 0.3);
+  padding: 16px 20px;
+  border-radius: 12px;
   margin-bottom: 24px;
   font-size: 14px;
+  box-shadow: 
+    0 4px 12px rgba(251, 191, 36, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+.notice p {
+  margin: 0;
+}
+
+.notice p + p {
+  margin-top: 6px;
 }

@@ -151,6 +151,39 @@ function normalizeMarketplaceImageUrls(images) {
     .filter(Boolean);
 }
 
+/**
+ * Helper function to classify errors and return appropriate HTTP status codes
+ * and user-friendly messages
+ * @param {Error} error - The error object to classify
+ * @returns {Object} Object with statusCode, userMessage, and errorType
+ */
+function classifyUploadError(error) {
+  // Check for MongoDB-related errors
+  if (error.name === 'MongoDBUnavailableError' || error.name === 'MongoDBStorageError') {
+    return {
+      statusCode: 503,
+      userMessage: 'Photo storage service temporarily unavailable. Please try again later.',
+      errorType: error.name,
+    };
+  }
+
+  // Check for validation errors
+  if (error.name === 'ValidationError') {
+    return {
+      statusCode: 400,
+      userMessage: 'Invalid file format or size. Please check your file and try again.',
+      errorType: error.name,
+    };
+  }
+
+  // Default to generic server error
+  return {
+    statusCode: 500,
+    userMessage: 'Failed to upload photo',
+    errorType: error.name || 'ServerError',
+  };
+}
+
 // ---------- Photo Upload Routes ----------
 
 /**
@@ -359,8 +392,25 @@ router.post(
           .json({ error: 'Invalid type. Must be supplier, package, or marketplace.' });
       }
     } catch (error) {
-      console.error('Photo upload error:', error);
-      res.status(500).json({ error: 'Failed to upload photo', details: error.message });
+      // Enhanced error logging for single uploads
+      logger.error('Photo upload error', {
+        error: error.message,
+        stack: error.stack,
+        errorName: error.name,
+        type: req.query.type,
+        id: req.query.id,
+        userId: req.user?.id,
+        fileCount: req.files?.length || 0,
+      });
+
+      // Use helper function to classify error and get appropriate response
+      const { statusCode, userMessage, errorType } = classifyUploadError(error);
+
+      res.status(statusCode).json({
+        error: userMessage,
+        details: error.message,
+        errorType: errorType,
+      });
     }
   }
 );
@@ -506,7 +556,7 @@ router.post(
         });
       } else if (type === 'supplier') {
         const suppliers = await dbUnified.read('suppliers');
-        const supplier = suppliers.find(s => s.id === id);
+        const supplier = suppliers.find(s => s.id === normalizedId);
 
         if (!supplier) {
           return res.status(404).json({ error: 'Supplier not found' });
@@ -524,7 +574,7 @@ router.post(
         await dbUnified.write('suppliers', suppliers);
       } else if (type === 'package') {
         const packages = await dbUnified.read('packages');
-        const pkg = packages.find(p => p.id === id);
+        const pkg = packages.find(p => p.id === normalizedId);
 
         if (!pkg) {
           return res.status(404).json({ error: 'Package not found' });
@@ -555,8 +605,25 @@ router.post(
         message: `${uploadedPhotos.length} photo(s) uploaded successfully. Pending admin approval.`,
       });
     } catch (error) {
-      console.error('Batch upload error:', error);
-      res.status(500).json({ error: 'Failed to upload photos', details: error.message });
+      // Enhanced error logging for batch uploads
+      logger.error('Batch upload error', {
+        error: error.message,
+        stack: error.stack,
+        errorName: error.name,
+        type: req.query.type,
+        id: req.query.id,
+        userId: req.user?.id,
+        fileCount: req.files?.length || 0,
+      });
+
+      // Use helper function to classify error and get appropriate response
+      const { statusCode, userMessage, errorType } = classifyUploadError(error);
+
+      res.status(statusCode).json({
+        error: userMessage,
+        details: error.message,
+        errorType: errorType,
+      });
     }
   }
 );
