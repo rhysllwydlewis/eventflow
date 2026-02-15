@@ -265,8 +265,8 @@
   margin-top: 32px;
 }
 
-/* Enhanced button styling with liquid glass */
-.form-actions .cta {
+/* Enhanced button styling with liquid glass - scoped to form */
+.form-card .form-actions .cta {
   padding: 14px 28px;
   font-size: 16px;
   font-weight: 600;
@@ -280,7 +280,7 @@
   font-family: inherit;
 }
 
-.form-actions .cta:not(.secondary) {
+.form-card .form-actions .cta:not(.secondary) {
   background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);
   color: white;
   box-shadow: 
@@ -288,7 +288,7 @@
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
-.form-actions .cta:not(.secondary):hover {
+.form-card .form-actions .cta:not(.secondary):hover {
   background: linear-gradient(135deg, #0a6b5f 0%, #095548 100%);
   transform: translateY(-2px);
   box-shadow: 
@@ -296,14 +296,14 @@
     0 0 0 1px rgba(255, 255, 255, 0.2) inset;
 }
 
-.form-actions .cta:not(.secondary):active {
+.form-card .form-actions .cta:not(.secondary):active {
   transform: translateY(0);
   box-shadow: 
     0 2px 8px rgba(11, 128, 115, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
-.form-actions .cta:not(.secondary):disabled {
+.form-card .form-actions .cta:not(.secondary):disabled {
   background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
   cursor: not-allowed;
   transform: none;
@@ -311,7 +311,7 @@
   opacity: 0.6;
 }
 
-.form-actions .cta.secondary {
+.form-card .form-actions .cta.secondary {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -322,7 +322,7 @@
     0 0 0 1px rgba(255, 255, 255, 0.5) inset;
 }
 
-.form-actions .cta.secondary:hover {
+.form-card .form-actions .cta.secondary:hover {
   background: rgba(255, 255, 255, 1);
   border-color: #0B8073;
   color: #0B8073;
