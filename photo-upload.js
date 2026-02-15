@@ -77,11 +77,12 @@ function ensureDirectoriesExist() {
 ensureDirectoriesExist();
 
 // Image processing configurations
+// Optimized for best quality-to-size ratio
 const IMAGE_CONFIGS = {
-  thumbnail: { width: 300, height: 300, fit: 'cover', quality: 80 },
-  optimized: { width: 1200, height: 1200, fit: 'inside', quality: 85 },
-  large: { width: 2000, height: 2000, fit: 'inside', quality: 90 },
-  avatar: { width: 400, height: 400, fit: 'cover', quality: 90 }, // Square avatar
+  thumbnail: { width: 300, height: 300, fit: 'cover', quality: 75 }, // Reduced from 80
+  optimized: { width: 1200, height: 1200, fit: 'inside', quality: 82 }, // Reduced from 85
+  large: { width: 2000, height: 2000, fit: 'inside', quality: 85 }, // Reduced from 90
+  avatar: { width: 400, height: 400, fit: 'cover', quality: 85 }, // Reduced from 90
 };
 
 // Allowed file types (now validated via magic bytes, not just MIME type)
@@ -464,12 +465,29 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
 
       // Process each size (with automatic metadata stripping)
       logger.debug('Processing image in multiple sizes');
+      const originalSize = buffer.length;
+      
       const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
         buffer, // Keep original as-is for backup
         processImage(buffer, IMAGE_CONFIGS.thumbnail),
         processImage(buffer, IMAGE_CONFIGS.optimized),
         processImage(buffer, IMAGE_CONFIGS.large),
       ]);
+
+      // Log compression statistics
+      const compressionStats = {
+        original: originalSize,
+        thumbnail: thumbnail.length,
+        optimized: optimized.length,
+        large: large.length,
+        totalSaved: originalSize * 4 - (thumbnail.length + optimized.length + large.length + originalSize),
+        compressionRatio: ((1 - (thumbnail.length + optimized.length + large.length + originalSize) / (originalSize * 4)) * 100).toFixed(1) + '%',
+      };
+      
+      logger.info('Image compression statistics', {
+        filename: originalFilename,
+        ...compressionStats,
+      });
 
       logger.debug('Image processing complete, saving to storage');
 
@@ -646,12 +664,30 @@ async function processAndSaveMarketplaceImage(
 
       // Process each size
       logger.debug('Processing marketplace image in multiple sizes');
+      const originalSize = buffer.length;
+      
       const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
         buffer, // Keep original as-is for backup
         processImage(buffer, IMAGE_CONFIGS.thumbnail),
         processImage(buffer, IMAGE_CONFIGS.optimized),
         processImage(buffer, IMAGE_CONFIGS.large),
       ]);
+
+      // Log compression statistics for marketplace images
+      const compressionStats = {
+        original: originalSize,
+        thumbnail: thumbnail.length,
+        optimized: optimized.length,
+        large: large.length,
+        totalSaved: originalSize * 4 - (thumbnail.length + optimized.length + large.length + originalSize),
+        compressionRatio: ((1 - (thumbnail.length + optimized.length + large.length + originalSize) / (originalSize * 4)) * 100).toFixed(1) + '%',
+      };
+      
+      logger.info('Marketplace image compression statistics', {
+        filename: originalFilename,
+        listingId,
+        ...compressionStats,
+      });
 
       logger.debug('Marketplace image processing complete, saving to storage');
 
