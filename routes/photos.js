@@ -260,6 +260,7 @@ router.post(
             logger.error('Empty file buffer received', {
               filename: file.originalname,
               listingId: normalizedId,
+              userId: req.user.id,
             });
             errors.push({
               filename: file.originalname,

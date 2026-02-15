@@ -221,7 +221,10 @@
         };
         reader.onerror = () => {
           console.error('Error reading file:', file.name);
-          showToast(`Failed to read ${file.name}`, 'error');
+          showToast(
+            `Could not read ${file.name}. The file may be corrupted or in an unsupported format.`,
+            'error'
+          );
         };
         reader.readAsDataURL(file);
       } catch (error) {
@@ -315,7 +318,8 @@
       // Show user-friendly error message
       let errorMessage = 'Photo upload failed. ';
       if (batchRes.status === 500) {
-        errorMessage += 'Please try uploading smaller images (max 5MB each) or fewer images at once.';
+        errorMessage +=
+          'Please try uploading smaller images (max 5MB each) or fewer images at once.';
       } else if (batchRes.status === 413) {
         errorMessage += 'Images are too large. Please reduce file size.';
       } else if (batchData.error) {
@@ -327,7 +331,10 @@
       showToast(errorMessage, 'error');
     } catch (error) {
       console.error('Batch image upload network error:', error);
-      showToast('Network error during upload. Please check your connection and try again.', 'error');
+      showToast(
+        'Network error during upload. Please check your connection and try again.',
+        'error'
+      );
     }
 
     // Fallback to individual uploads
@@ -486,7 +493,7 @@
           showToast(
             isEditMode
               ? 'Listing updated successfully!'
-              : 'Listing published successfully! It\'s now live on the marketplace.',
+              : "Listing published successfully! It's now live on the marketplace.",
             'success'
           );
         }
