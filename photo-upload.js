@@ -811,6 +811,7 @@ async function processAndSaveMarketplaceImage(
 
 /**
  * Delete image from storage (MongoDB or local)
+ * Checks both generic 'photos' collection and 'marketplace_images' collection
  * @param {string} url - Image URL/ID to delete
  * @returns {Promise<void>}
  */
@@ -820,8 +821,24 @@ async function deleteImage(url) {
     if (url && url.startsWith('/api/photos/')) {
       const photoId = url.split('/').pop();
       const db = await mongoDb.getDb();
-      const collection = db.collection('photos');
-      await collection.deleteOne({ _id: photoId });
+      
+      // Try to delete from marketplace_images collection first
+      const marketplaceResult = await db.collection('marketplace_images').deleteOne({ _id: photoId });
+      
+      if (marketplaceResult.deletedCount > 0) {
+        logger.info('Deleted marketplace image', { photoId });
+        return;
+      }
+      
+      // If not found in marketplace_images, try generic photos collection
+      const photosResult = await db.collection('photos').deleteOne({ _id: photoId });
+      
+      if (photosResult.deletedCount > 0) {
+        logger.info('Deleted photo from generic collection', { photoId });
+        return;
+      }
+      
+      logger.warn('Photo not found in any collection', { photoId });
       return;
     }
 
@@ -838,6 +855,42 @@ async function deleteImage(url) {
   } catch (error) {
     console.error('Error deleting image:', error);
     // Don't throw - deletion failures shouldn't break the app
+  }
+}
+
+/**
+ * Delete all marketplace images for a listing
+ * Removes all image variants (original, thumbnail, optimized, large) associated with a listing
+ * @param {string} listingId - Marketplace listing ID
+ * @returns {Promise<number>} Number of images deleted
+ */
+async function deleteMarketplaceImages(listingId) {
+  try {
+    const isAvailable = await mongoDb.isMongoAvailable();
+    if (!isAvailable) {
+      logger.warn('MongoDB not available - cannot delete marketplace images', { listingId });
+      return 0;
+    }
+
+    const db = await mongoDb.getDb();
+    const collection = db.collection('marketplace_images');
+    
+    // Delete all images for this listing
+    const result = await collection.deleteMany({ listingId });
+    
+    logger.info('Deleted marketplace images for listing', {
+      listingId,
+      deletedCount: result.deletedCount,
+    });
+    
+    return result.deletedCount;
+  } catch (error) {
+    logger.error('Error deleting marketplace images', {
+      error: error.message,
+      listingId,
+    });
+    // Don't throw - deletion failures shouldn't break the app
+    return 0;
   }
 }
 
@@ -978,6 +1031,7 @@ module.exports = {
   processAndSaveImage,
   processAndSaveMarketplaceImage,
   deleteImage,
+  deleteMarketplaceImages,
   getImageMetadata,
   cropImage,
   updatePhotoMetadata,

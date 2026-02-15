@@ -3036,6 +3036,55 @@ router.post(
   }
 );
 
+/**
+ * DELETE /api/admin/marketplace/listings/:id
+ * Admin delete marketplace listing with image cleanup
+ */
+router.delete(
+  '/marketplace/listings/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const listings = await dbUnified.read('marketplace_listings');
+      const listing = listings.find(l => l.id === req.params.id);
+
+      if (!listing) {
+        return res.status(404).json({ error: 'Listing not found' });
+      }
+
+      // Delete associated marketplace images from database
+      const photoUpload = require('../photo-upload');
+      const deletedImageCount = await photoUpload.deleteMarketplaceImages(req.params.id);
+
+      // Remove listing
+      const updatedListings = listings.filter(l => l.id !== req.params.id);
+      await dbUnified.write('marketplace_listings', updatedListings);
+
+      // Log audit
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'marketplace_listing_deleted',
+        targetType: 'marketplace_listing',
+        targetId: listing.id,
+        details: {
+          listingTitle: listing.title,
+          deletedImageCount,
+        },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({ ok: true, deletedImageCount });
+    } catch (error) {
+      console.error('Error deleting marketplace listing:', error);
+      res.status(500).json({ error: 'Failed to delete listing' });
+    }
+  }
+);
+
 // ============================================
 // COLLAGE WIDGET ENDPOINTS
 // ============================================
