@@ -7,6 +7,7 @@
 
 const express = require('express');
 const router = express.Router();
+const photoUpload = require('../photo-upload');
 
 // These will be injected by server.js during route mounting
 let dbUnified;
@@ -667,10 +668,19 @@ router.delete(
         return res.status(403).json({ error: 'Not authorized' });
       }
 
+      // Delete associated marketplace images from database
+      const deletedImageCount = await photoUpload.deleteMarketplaceImages(req.params.id);
+      
+      logger.info('Marketplace listing deleted with images', {
+        listingId: req.params.id,
+        userId: req.user.id,
+        deletedImageCount,
+      });
+
       listings = listings.filter(l => l.id !== req.params.id);
       await dbUnified.write('marketplace_listings', listings);
 
-      res.json({ ok: true });
+      res.json({ ok: true, deletedImageCount });
     } catch (error) {
       console.error('Error deleting marketplace listing:', error);
       sentry.captureException(error);

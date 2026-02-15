@@ -349,12 +349,17 @@ async function processWithMetadataStripping(buffer, options = {}) {
       });
     }
 
-    // Convert to JPEG with quality settings
+    // Convert to JPEG with optimized compression settings
     // Sharp automatically strips metadata when converting formats
     processor = processor.jpeg({
       quality,
       progressive: true,
-      mozjpeg: true,
+      mozjpeg: true, // Use MozJPEG for better compression
+      chromaSubsampling: '4:2:0', // Aggressive chroma subsampling for smaller files
+      optimizeScans: true, // Optimize progressive scan structure
+      trellisQuantisation: true, // Better quantization for quality
+      overshootDeringing: true, // Reduce compression artifacts
+      optimizeQuantizationTable: true, // Further optimize quantization
     });
 
     return processor.toBuffer();

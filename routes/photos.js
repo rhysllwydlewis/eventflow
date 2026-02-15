@@ -6,7 +6,7 @@
 'use strict';
 
 const express = require('express');
-const { uploadLimiter } = require('../middleware/rateLimits');
+const { uploadLimiter, apiLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -251,10 +251,14 @@ router.post(
           });
         }
 
+        // Get existing images for order tracking
+        const existingImages = normalizeMarketplaceImageUrls(listing.images);
+
         // Process and append URLs with enhanced error handling
         const uploadedUrls = [];
         const errors = [];
-        for (const file of req.files) {
+        for (let i = 0; i < req.files.length; i++) {
+          const file = req.files[i];
           // Validate file buffer exists
           if (!file.buffer || file.buffer.length === 0) {
             logger.error('Empty file buffer received', {
@@ -270,10 +274,14 @@ router.post(
           }
 
           try {
-            const images = await photoUpload.processAndSaveImage(
+            // Use dedicated marketplace image processing
+            // Order is calculated as: existing image count + already uploaded images
+            const images = await photoUpload.processAndSaveMarketplaceImage(
               file.buffer,
               file.originalname,
-              'marketplace'
+              normalizedId,
+              req.user.id,
+              existingImages.length + uploadedUrls.length // order
             );
             uploadedUrls.push(images.optimized);
           } catch (error) {
@@ -321,8 +329,7 @@ router.post(
           });
         }
 
-        // Cap at 5 images total and normalize legacy image formats
-        const existingImages = normalizeMarketplaceImageUrls(listing.images);
+        // Cap at 5 images total (existingImages already defined earlier)
         listing.images = existingImages.concat(uploadedUrls).slice(0, 5);
         listing.updatedAt = new Date().toISOString();
 
@@ -494,7 +501,18 @@ router.post(
       const uploadedPhotos = [];
       const errors = [];
 
-      for (const file of req.files) {
+      // Get existing images count for marketplace listings (for order calculation)
+      let existingImagesCount = 0;
+      if (type === 'marketplace') {
+        const listings = await dbUnified.read('marketplace_listings');
+        const listing = listings?.find(l => l.id === normalizedId);
+        if (listing) {
+          existingImagesCount = normalizeMarketplaceImageUrls(listing.images).length;
+        }
+      }
+
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
         // Validate file buffer exists
         if (!file.buffer || file.buffer.length === 0) {
           logger.error('Empty file buffer received in batch upload', {
@@ -511,11 +529,19 @@ router.post(
         }
 
         try {
-          const images = await photoUpload.processAndSaveImage(
-            file.buffer,
-            file.originalname,
-            type
-          );
+          let images;
+          // Use marketplace-specific processing for marketplace type
+          if (type === 'marketplace') {
+            images = await photoUpload.processAndSaveMarketplaceImage(
+              file.buffer,
+              file.originalname,
+              normalizedId,
+              req.user.id,
+              existingImagesCount + uploadedPhotos.length // order
+            );
+          } else {
+            images = await photoUpload.processAndSaveImage(file.buffer, file.originalname, type);
+          }
           const metadata = await photoUpload.getImageMetadata(file.buffer);
 
           const photoRecord = {
@@ -1203,7 +1229,7 @@ router.post(
  * Serve photo from MongoDB
  * This endpoint serves the actual photo binary data
  */
-router.get('/photos/:id', async (req, res) => {
+router.get('/photos/:id', apiLimiter, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1215,16 +1241,23 @@ router.get('/photos/:id', async (req, res) => {
 
     const mongoDb = databaseConfig.mongoDb;
     const db = await mongoDb.getDb();
-    const collection = db.collection('photos');
 
-    const photo = await collection.findOne({ _id: id });
+    // Try marketplace_images collection first, then fall back to photos collection
+    let photo = await db.collection('marketplace_images').findOne({ _id: id });
+
+    if (!photo) {
+      // Fall back to generic photos collection for backward compatibility
+      photo = await db.collection('photos').findOne({ _id: id });
+    }
 
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
 
     // Convert base64 back to buffer
-    const imageBuffer = Buffer.from(photo.data, 'base64');
+    // Note: Backward compatibility - 'photos' collection uses 'data' field,
+    // while 'marketplace_images' collection uses 'imageData' field
+    const imageBuffer = Buffer.from(photo.data || photo.imageData, 'base64');
 
     // Set appropriate headers
     res.setHeader('Content-Type', photo.mimeType || 'image/jpeg');

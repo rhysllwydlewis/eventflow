@@ -8,6 +8,7 @@
 // Import subscription and invoice schemas
 const { subscriptionSchema } = require('./Subscription');
 const { invoiceSchema } = require('./Invoice');
+const { marketplaceImageSchema } = require('./MarketplaceImage');
 
 // Schema definitions don't need direct collection access
 
@@ -789,6 +790,7 @@ async function initializeCollections(db) {
     supplierAnalytics: supplierAnalyticsSchema,
     reviewModerations: reviewModerationSchema,
     notifications: notificationSchema,
+    marketplace_images: marketplaceImageSchema,
   };
 
   for (const [name, schema] of Object.entries(collections)) {
@@ -957,6 +959,13 @@ async function createIndexes(db) {
     await db.collection('notifications').createIndex({ priority: 1 });
     await db.collection('notifications').createIndex({ createdAt: -1 });
     await db.collection('notifications').createIndex({ expiresAt: 1 }, { sparse: true });
+
+    // Marketplace image indexes
+    await db.collection('marketplace_images').createIndex({ _id: 1 }, { unique: true });
+    await db.collection('marketplace_images').createIndex({ listingId: 1 });
+    await db.collection('marketplace_images').createIndex({ userId: 1 });
+    await db.collection('marketplace_images').createIndex({ listingId: 1, order: 1 });
+    await db.collection('marketplace_images').createIndex({ uploadedAt: -1 });
 
     console.log('Database indexes created successfully');
   } catch (error) {

@@ -559,19 +559,24 @@
     }
   };
 
-  // Delete listing
+  // Delete listing (admin endpoint with audit logging)
   window.deleteListing = async function(id) {
-    if (!confirm('Are you sure you want to delete this listing?')) return;
+    if (!confirm('Are you sure you want to delete this listing? All associated images will be removed.')) return;
 
     try {
-      const res = await fetch(`/api/marketplace/listings/${id}`, {
+      const res = await fetch(`/api/admin/marketplace/listings/${id}`, {
         method: 'DELETE',
+        headers: {
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || ''
+        },
         credentials: 'include'
       });
 
       if (!res.ok) throw new Error('Failed to delete listing');
 
-      showToast('Listing deleted');
+      const data = await res.json();
+      const imageMsg = data.deletedImageCount > 0 ? ` (${data.deletedImageCount} images removed)` : '';
+      showToast(`Listing deleted${imageMsg}`);
       await loadListings();
     } catch (error) {
       console.error('Error deleting listing:', error);
