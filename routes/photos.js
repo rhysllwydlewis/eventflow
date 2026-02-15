@@ -151,6 +151,39 @@ function normalizeMarketplaceImageUrls(images) {
     .filter(Boolean);
 }
 
+/**
+ * Helper function to classify errors and return appropriate HTTP status codes
+ * and user-friendly messages
+ * @param {Error} error - The error object to classify
+ * @returns {Object} Object with statusCode, userMessage, and errorType
+ */
+function classifyUploadError(error) {
+  // Check for MongoDB-related errors
+  if (error.name === 'MongoDBUnavailableError' || error.name === 'MongoDBStorageError') {
+    return {
+      statusCode: 503,
+      userMessage: 'Photo storage service temporarily unavailable. Please try again later.',
+      errorType: error.name,
+    };
+  }
+
+  // Check for validation errors
+  if (error.name === 'ValidationError') {
+    return {
+      statusCode: 400,
+      userMessage: 'Invalid file format or size. Please check your file and try again.',
+      errorType: error.name,
+    };
+  }
+
+  // Default to generic server error
+  return {
+    statusCode: 500,
+    userMessage: 'Failed to upload photo',
+    errorType: error.name || 'ServerError',
+  };
+}
+
 // ---------- Photo Upload Routes ----------
 
 /**
@@ -370,22 +403,13 @@ router.post(
         fileCount: req.files?.length || 0,
       });
 
-      // Provide user-friendly error messages based on error type
-      let userMessage = 'Failed to upload photo';
-      let statusCode = 500;
-
-      if (error.name === 'MongoDBUnavailableError' || error.message?.includes('MongoDB')) {
-        userMessage = 'Photo storage service temporarily unavailable. Please try again later.';
-        statusCode = 503;
-      } else if (error.name === 'ValidationError') {
-        userMessage = 'Invalid file format or size. Please check your file and try again.';
-        statusCode = 400;
-      }
+      // Use helper function to classify error and get appropriate response
+      const { statusCode, userMessage, errorType } = classifyUploadError(error);
 
       res.status(statusCode).json({
         error: userMessage,
         details: error.message,
-        errorType: error.name,
+        errorType: errorType,
       });
     }
   }
@@ -592,22 +616,13 @@ router.post(
         fileCount: req.files?.length || 0,
       });
 
-      // Provide user-friendly error messages based on error type
-      let userMessage = 'Failed to upload photos';
-      let statusCode = 500;
-
-      if (error.name === 'MongoDBUnavailableError' || error.message?.includes('MongoDB')) {
-        userMessage = 'Photo storage service temporarily unavailable. Please try again later.';
-        statusCode = 503;
-      } else if (error.name === 'ValidationError') {
-        userMessage = 'Invalid file format or size. Please check your files and try again.';
-        statusCode = 400;
-      }
+      // Use helper function to classify error and get appropriate response
+      const { statusCode, userMessage, errorType } = classifyUploadError(error);
 
       res.status(statusCode).json({
         error: userMessage,
         details: error.message,
-        errorType: error.name,
+        errorType: errorType,
       });
     }
   }

@@ -306,7 +306,10 @@
 
       // Show user-friendly error message based on error type
       if (batchData.errorType === 'MongoDBUnavailableError' || batchRes.status === 503) {
-        showToast('Photo storage temporarily unavailable. Retrying with individual uploads...', 'warning');
+        showToast(
+          'Photo storage temporarily unavailable. Retrying with individual uploads...',
+          'warning'
+        );
       }
     } catch (error) {
       console.warn('Batch image upload network error:', error);
@@ -459,8 +462,9 @@
         // Show appropriate success message
         if (failedImageCount > 0) {
           const successCount = newImages.length - failedImageCount;
+          const listingAction = isEditMode ? 'updated' : 'created';
           showToast(
-            `Listing ${isEditMode ? 'updated' : 'created'}! ${successCount} of ${newImages.length} image(s) uploaded. ${failedImageCount} failed - you can retry by editing the listing.`,
+            `Listing ${listingAction} successfully. ${successCount} of ${newImages.length} image(s) uploaded. ${failedImageCount} failed. You can retry by editing the listing.`,
             'warning'
           );
         } else {
