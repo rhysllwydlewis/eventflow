@@ -283,6 +283,93 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
 }
 
 /**
+ * Save marketplace image to dedicated MongoDB collection
+ * @param {Buffer} buffer - Image buffer
+ * @param {string} filename - Filename
+ * @param {string} listingId - Marketplace listing ID
+ * @param {string} userId - User ID who uploaded the image
+ * @param {string} type - Image type (original, thumbnail, optimized, large)
+ * @param {number} order - Display order in gallery (0-4)
+ * @returns {Promise<string>} Database ID
+ */
+async function saveMarketplaceImageToMongoDB(
+  buffer,
+  filename,
+  listingId,
+  userId,
+  type = 'optimized',
+  order = 0
+) {
+  try {
+    // Check if MongoDB is available before attempting save
+    const isAvailable = await mongoDb.isMongoAvailable();
+    if (!isAvailable) {
+      const error = new Error('MongoDB is not available for photo storage');
+      error.name = 'MongoDBUnavailableError';
+      throw error;
+    }
+
+    const db = await mongoDb.getDb();
+    const collection = db.collection('marketplace_images');
+
+    const photoId = uid('photo');
+    const photoDoc = {
+      _id: photoId,
+      listingId,
+      userId,
+      filename,
+      imageData: buffer.toString('base64'),
+      size: type,
+      mimeType: 'image/jpeg',
+      fileSize: buffer.length,
+      url: `/api/photos/${photoId}`,
+      order,
+      uploadedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await collection.insertOne(photoDoc);
+
+    logger.info('Marketplace image saved to MongoDB', {
+      photoId,
+      listingId,
+      userId,
+      type,
+      size: buffer.length,
+    });
+
+    return photoDoc._id;
+  } catch (error) {
+    // Add context to MongoDB errors
+    const enhancedError = new Error(
+      `Failed to save marketplace image to MongoDB: ${error.message}`
+    );
+    enhancedError.name = error.name || 'MongoDBStorageError';
+    enhancedError.originalError = error;
+    enhancedError.context = {
+      filename,
+      listingId,
+      userId,
+      type,
+      bufferSize: buffer?.length || 0,
+      storageType: STORAGE_TYPE,
+    };
+
+    logger.error('MongoDB marketplace photo save failed', {
+      error: error.message,
+      stack: error.stack,
+      filename,
+      listingId,
+      userId,
+      type,
+      bufferSize: buffer?.length || 0,
+    });
+
+    throw enhancedError;
+  }
+}
+
+/**
  * Process and save image with multiple sizes
  * Performs comprehensive validation before processing
  * @param {Buffer} buffer - Original image buffer
@@ -472,6 +559,266 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
 }
 
 /**
+ * Process and save marketplace image to dedicated collection
+ * Uses marketplace_images collection instead of generic photos collection
+ * @param {Buffer} buffer - Original image buffer
+ * @param {string} originalFilename - Original filename
+ * @param {string} listingId - Marketplace listing ID
+ * @param {string} userId - User ID who uploaded the image
+ * @param {number} order - Display order in gallery (0-4)
+ * @returns {Promise<Object>} URLs/IDs for all image sizes
+ */
+async function processAndSaveMarketplaceImage(
+  buffer,
+  originalFilename,
+  listingId,
+  userId,
+  order = 0
+) {
+  // Validate buffer early
+  if (!buffer || !Buffer.isBuffer(buffer)) {
+    const error = new Error(`Invalid file buffer - expected Buffer, received ${typeof buffer}`);
+    error.name = 'ValidationError';
+    throw error;
+  }
+
+  if (buffer.length === 0) {
+    const error = new Error('Empty file buffer');
+    error.name = 'ValidationError';
+    throw error;
+  }
+
+  // Validate file size (max 5MB)
+  const maxSize = 5 * 1024 * 1024;
+  if (buffer.length > maxSize) {
+    const error = new Error(
+      `File too large: ${(buffer.length / 1024 / 1024).toFixed(2)}MB (max 5MB)`
+    );
+    error.name = 'ValidationError';
+    throw error;
+  }
+
+  // Log start of processing
+  logger.info('Starting marketplace image processing', {
+    filename: originalFilename,
+    listingId,
+    userId,
+    size: buffer.length,
+  });
+
+  // Implement retry logic with exponential backoff
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      // Validate upload (type, size, dimensions)
+      const validation = await uploadValidation.validateUpload(buffer, 'marketplace', originalFilename);
+
+      if (!validation.valid) {
+        logger.error('Marketplace image validation failed', {
+          errors: validation.errors,
+          details: validation.details,
+        });
+        const error = new Error(validation.errors.join('; '));
+        error.name = 'ValidationError';
+        error.details = validation.details;
+        throw error;
+      }
+
+      logger.debug('Marketplace image validation passed');
+
+      const filename = generateFilename(originalFilename);
+      const baseFilename = filename.replace(path.extname(filename), '');
+
+      // Extract EXIF data before processing
+      const exifData = await extractExifData(buffer);
+
+      const results = {
+        original: null,
+        thumbnail: null,
+        optimized: null,
+        large: null,
+        exif: exifData,
+      };
+
+      // Process each size
+      logger.debug('Processing marketplace image in multiple sizes');
+      const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
+        buffer, // Keep original as-is for backup
+        processImage(buffer, IMAGE_CONFIGS.thumbnail),
+        processImage(buffer, IMAGE_CONFIGS.optimized),
+        processImage(buffer, IMAGE_CONFIGS.large),
+      ]);
+
+      logger.debug('Marketplace image processing complete, saving to storage');
+
+      // Check storage type - use dedicated collection if MongoDB available
+      if (STORAGE_TYPE === 'mongodb') {
+        logger.debug('Saving marketplace images to dedicated MongoDB collection');
+        // Save to dedicated marketplace_images collection
+        const [originalId, thumbnailId, optimizedId, largeId] = await Promise.all([
+          saveMarketplaceImageToMongoDB(
+            originalProcessed,
+            `${baseFilename}.jpg`,
+            listingId,
+            userId,
+            'original',
+            order
+          ),
+          saveMarketplaceImageToMongoDB(
+            thumbnail,
+            `${baseFilename}-thumb.jpg`,
+            listingId,
+            userId,
+            'thumbnail',
+            order
+          ),
+          saveMarketplaceImageToMongoDB(
+            optimized,
+            `${baseFilename}-opt.jpg`,
+            listingId,
+            userId,
+            'optimized',
+            order
+          ),
+          saveMarketplaceImageToMongoDB(
+            large,
+            `${baseFilename}-large.jpg`,
+            listingId,
+            userId,
+            'large',
+            order
+          ),
+        ]);
+
+        // Return photo IDs that will be served via API endpoint
+        results.original = `/api/photos/${originalId}`;
+        results.thumbnail = `/api/photos/${thumbnailId}`;
+        results.optimized = `/api/photos/${optimizedId}`;
+        results.large = `/api/photos/${largeId}`;
+      } else {
+        logger.debug('MongoDB unavailable - saving marketplace images to local filesystem');
+        // Fallback to local filesystem
+        await Promise.all([
+          saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
+          saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
+          saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+          saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
+        ]);
+
+        results.original = `/uploads/original/${baseFilename}.jpg`;
+        results.thumbnail = `/uploads/thumbnails/${baseFilename}-thumb.jpg`;
+        results.optimized = `/uploads/optimized/${baseFilename}-opt.jpg`;
+        results.large = `/uploads/large/${baseFilename}-large.jpg`;
+
+        // Also save to public folder
+        await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
+      }
+
+      logger.info('Marketplace image saved successfully', {
+        listingId,
+        userId,
+        results,
+      });
+      return results;
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry validation errors
+      if (error.name === 'ValidationError') {
+        throw error;
+      }
+
+      // For MongoDB errors, fall back to local storage immediately
+      if (error.name === 'MongoDBUnavailableError' || error.name === 'MongoDBStorageError') {
+        logger.warn('MongoDB storage error - falling back to local storage', {
+          error: error.message,
+          filename: originalFilename,
+          listingId,
+        });
+
+        // Switch to local storage temporarily
+        const originalStorageType = STORAGE_TYPE;
+        STORAGE_TYPE = 'local';
+
+        try {
+          // Retry with local storage
+          const filename = generateFilename(originalFilename);
+          const baseFilename = filename.replace(path.extname(filename), '');
+
+          const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
+            buffer,
+            processImage(buffer, IMAGE_CONFIGS.thumbnail),
+            processImage(buffer, IMAGE_CONFIGS.optimized),
+            processImage(buffer, IMAGE_CONFIGS.large),
+          ]);
+
+          await Promise.all([
+            saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
+            saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
+            saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+            saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
+          ]);
+
+          const results = {
+            original: `/uploads/original/${baseFilename}.jpg`,
+            thumbnail: `/uploads/thumbnails/${baseFilename}-thumb.jpg`,
+            optimized: `/uploads/optimized/${baseFilename}-opt.jpg`,
+            large: `/uploads/large/${baseFilename}-large.jpg`,
+          };
+
+          await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
+
+          logger.info('Marketplace image saved to local storage (fallback)', {
+            listingId,
+            userId,
+            results,
+          });
+
+          // Restore storage type
+          STORAGE_TYPE = originalStorageType;
+
+          return results;
+        } catch (fallbackError) {
+          // Restore storage type
+          STORAGE_TYPE = originalStorageType;
+          throw fallbackError;
+        }
+      }
+
+      logger.warn(`Marketplace image upload attempt ${attempt} failed`, {
+        error: error.message,
+        filename: originalFilename,
+        listingId,
+        attempt: attempt,
+      });
+
+      // Exponential backoff
+      if (attempt < 3) {
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  // All attempts failed
+  logger.error('Marketplace image upload failed after 3 attempts', {
+    filename: originalFilename,
+    listingId,
+    userId,
+    error: lastError.message,
+    name: lastError.name,
+    ...(process.env.NODE_ENV !== 'production' && { stack: lastError.stack }),
+  });
+
+  const finalError = new Error(
+    `Marketplace image upload failed after 3 attempts: ${lastError.message}`
+  );
+  finalError.name = 'ImageProcessingError';
+  finalError.originalError = lastError;
+  throw finalError;
+}
+
+/**
  * Delete image from storage (MongoDB or local)
  * @param {string} url - Image URL/ID to delete
  * @returns {Promise<void>}
@@ -638,6 +985,7 @@ async function updatePhotoOrder(photoOrder) {
 module.exports = {
   upload,
   processAndSaveImage,
+  processAndSaveMarketplaceImage,
   deleteImage,
   getImageMetadata,
   cropImage,
