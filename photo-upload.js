@@ -321,144 +321,133 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
     size: buffer.length,
   });
 
-  // Implement retry logic with exponential backoff
-  let lastError;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      // Validate upload (type, size, dimensions) - pass filename for fallback detection
-      const validation = await uploadValidation.validateUpload(buffer, context, originalFilename);
+  try {
+    // Validate upload (type, size, dimensions) - pass filename for fallback detection
+    const validation = await uploadValidation.validateUpload(buffer, context, originalFilename);
 
-      if (!validation.valid) {
-        logger.error('Image validation failed', {
-          errors: validation.errors,
-          details: validation.details,
-        });
-        const error = new Error(validation.errors.join('; '));
-        error.name = 'ValidationError';
-        error.details = validation.details;
-        throw error;
-      }
-
-      logger.debug('Image validation passed');
-
-      const filename = generateFilename(originalFilename);
-      const baseFilename = filename.replace(path.extname(filename), '');
-
-      // Extract EXIF data before processing (which strips metadata)
-      const exifData = await extractExifData(buffer);
-
-      const results = {
-        original: null,
-        thumbnail: null,
-        optimized: null,
-        large: null,
-        exif: exifData,
-      };
-
-      // For avatars, only generate one optimized square size
-      if (context === 'avatar') {
-        logger.debug('Processing avatar image');
-        const avatarProcessed = await processImage(buffer, IMAGE_CONFIGS.avatar);
-
-        if (STORAGE_TYPE === 'mongodb') {
-          logger.debug('Saving avatar to MongoDB');
-          const avatarId = await saveToMongoDB(avatarProcessed, `${baseFilename}.jpg`, 'avatar');
-          results.optimized = `/api/photos/${avatarId}`;
-        } else {
-          logger.debug('Saving avatar to local filesystem');
-          await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'optimized');
-          results.optimized = `/uploads/optimized/${baseFilename}.jpg`;
-          await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'public');
-        }
-
-        logger.info('Avatar image processed successfully');
-        return results;
-      }
-
-      // Process each size (with automatic metadata stripping)
-      logger.debug('Processing image in multiple sizes');
-      const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
-        buffer, // Keep original as-is for backup
-        processImage(buffer, IMAGE_CONFIGS.thumbnail),
-        processImage(buffer, IMAGE_CONFIGS.optimized),
-        processImage(buffer, IMAGE_CONFIGS.large),
-      ]);
-
-      logger.debug('Image processing complete, saving to storage');
-
-      // Check storage type
-      if (STORAGE_TYPE === 'mongodb') {
-        logger.debug('Saving images to MongoDB');
-        // Save to MongoDB
-        const [originalId, thumbnailId, optimizedId, largeId] = await Promise.all([
-          saveToMongoDB(originalProcessed, `${baseFilename}.jpg`, 'original'),
-          saveToMongoDB(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnail'),
-          saveToMongoDB(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-          saveToMongoDB(large, `${baseFilename}-large.jpg`, 'large'),
-        ]);
-
-        // Return photo IDs that will be served via API endpoint
-        results.original = `/api/photos/${originalId}`;
-        results.thumbnail = `/api/photos/${thumbnailId}`;
-        results.optimized = `/api/photos/${optimizedId}`;
-        results.large = `/api/photos/${largeId}`;
-      } else {
-        logger.debug('Saving images to local filesystem');
-        // Save to local filesystem (fallback)
-        await Promise.all([
-          saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
-          saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
-          saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-          saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
-        ]);
-
-        // Return relative URLs (works in any environment without hardcoded BASE_URL)
-        // These are served by express.static('/uploads') middleware
-        results.original = `/uploads/original/${baseFilename}.jpg`;
-        results.thumbnail = `/uploads/thumbnails/${baseFilename}-thumb.jpg`;
-        results.optimized = `/uploads/optimized/${baseFilename}-opt.jpg`;
-        results.large = `/uploads/large/${baseFilename}-large.jpg`;
-
-        // Also save to public folder for serving
-        await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
-      }
-
-      logger.info('Image saved successfully', { results });
-      return results;
-    } catch (error) {
-      lastError = error;
-
-      // Don't retry validation errors
-      if (error.name === 'ValidationError') {
-        throw error;
-      }
-
-      logger.warn(`Image upload attempt ${attempt} failed`, {
-        error: error.message,
-        filename: originalFilename,
-        attempt: attempt,
+    if (!validation.valid) {
+      logger.error('Image validation failed', {
+        errors: validation.errors,
+        details: validation.details,
       });
+      const error = new Error(validation.errors.join('; '));
+      error.name = 'ValidationError';
+      error.details = validation.details;
+      throw error;
+    }
 
-      if (attempt < 3) {
-        // Wait before retry with exponential backoff
-        const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s...
-        await new Promise(resolve => setTimeout(resolve, delay));
+    logger.debug('Image validation passed');
+
+    const filename = generateFilename(originalFilename);
+    const baseFilename = filename.replace(path.extname(filename), '');
+
+    // Extract EXIF data before processing (which strips metadata)
+    const exifData = await extractExifData(buffer);
+
+    const results = {
+      original: null,
+      thumbnail: null,
+      optimized: null,
+      large: null,
+      exif: exifData,
+    };
+
+    // For avatars, only generate one optimized square size
+    if (context === 'avatar') {
+      logger.debug('Processing avatar image');
+      const avatarProcessed = await processImage(buffer, IMAGE_CONFIGS.avatar);
+
+      // ALWAYS save to local filesystem first (guaranteed to work)
+      logger.debug('Saving avatar to local filesystem');
+      await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'optimized');
+      await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'public');
+      results.optimized = `/uploads/optimized/${baseFilename}.jpg`;
+
+      // TRY to save to MongoDB for persistence (optional, don't fail if unavailable)
+      if (STORAGE_TYPE === 'mongodb') {
+        try {
+          const isAvailable = await mongoDb.isMongoAvailable();
+          if (isAvailable) {
+            logger.debug('Saving avatar to MongoDB for persistence');
+            await saveToMongoDB(avatarProcessed, `${baseFilename}.jpg`, 'avatar');
+            logger.info('Avatar saved to MongoDB for persistence');
+          }
+        } catch (mongoError) {
+          // Log but don't fail - local storage is sufficient
+          logger.warn('MongoDB save failed for avatar (using local storage)', {
+            error: mongoError.message,
+            filename: filename,
+          });
+        }
+      }
+
+      logger.info('Avatar image processed successfully');
+      return results;
+    }
+
+    // Process each size (with automatic metadata stripping)
+    logger.debug('Processing image in multiple sizes');
+    const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
+      buffer, // Keep original as-is for backup
+      processImage(buffer, IMAGE_CONFIGS.thumbnail),
+      processImage(buffer, IMAGE_CONFIGS.optimized),
+      processImage(buffer, IMAGE_CONFIGS.large),
+    ]);
+
+    logger.debug('Image processing complete, saving to local storage');
+
+    // ALWAYS save to local filesystem first (guaranteed to work)
+    await Promise.all([
+      saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
+      saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
+      saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+      saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
+    ]);
+
+    // Return relative URLs (works in any environment)
+    // These are served by express.static('/uploads') middleware
+    results.original = `/uploads/original/${baseFilename}.jpg`;
+    results.thumbnail = `/uploads/thumbnails/${baseFilename}-thumb.jpg`;
+    results.optimized = `/uploads/optimized/${baseFilename}-opt.jpg`;
+    results.large = `/uploads/large/${baseFilename}-large.jpg`;
+
+    // Also save to public folder for serving
+    await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
+
+    // TRY to save to MongoDB for persistence (optional, don't fail if unavailable)
+    if (STORAGE_TYPE === 'mongodb') {
+      try {
+        const isAvailable = await mongoDb.isMongoAvailable();
+        if (isAvailable) {
+          logger.debug('Saving images to MongoDB for persistence');
+          await Promise.all([
+            saveToMongoDB(originalProcessed, `${baseFilename}.jpg`, 'original'),
+            saveToMongoDB(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnail'),
+            saveToMongoDB(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+            saveToMongoDB(large, `${baseFilename}-large.jpg`, 'large'),
+          ]);
+          logger.info('Images saved to MongoDB for persistence');
+        }
+      } catch (mongoError) {
+        // Log but don't fail - local storage is sufficient
+        logger.warn('MongoDB save failed (using local storage)', {
+          error: mongoError.message,
+          filename: filename,
+        });
       }
     }
+
+    logger.info('Image saved successfully', { results });
+    return results;
+  } catch (error) {
+    logger.error('Image processing failed', {
+      error: error.message,
+      stack: error.stack,
+      filename: originalFilename,
+      context: context,
+    });
+    throw error;
   }
-
-  // All attempts failed
-  logger.error('Image processing failed after 3 attempts', {
-    message: lastError.message,
-    name: lastError.name,
-    ...(process.env.NODE_ENV !== 'production' && { stack: lastError.stack }),
-  });
-
-  // Throw the last error with additional context
-  const finalError = new Error(`Image upload failed after 3 attempts: ${lastError.message}`);
-  finalError.name = 'ImageProcessingError';
-  finalError.originalError = lastError;
-  throw finalError;
 }
 
 /**
