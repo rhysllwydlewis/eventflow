@@ -328,7 +328,7 @@
         validFiles.push(img);
 
         // Log file details for debugging
-        console.log('Appending file to FormData:', {
+        console.debug('Appending file to FormData:', {
           name: img.file.name,
           type: img.file.type,
           size: img.file.size,
