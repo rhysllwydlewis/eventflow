@@ -200,6 +200,20 @@ router.post(
         const uploadedUrls = [];
         const errors = [];
         for (const file of req.files) {
+          // Validate file buffer exists
+          if (!file.buffer || file.buffer.length === 0) {
+            logger.error('Empty file buffer received', {
+              filename: file.originalname,
+              listingId: normalizedId,
+              userId: req.user.id,
+            });
+            errors.push({
+              filename: file.originalname,
+              error: 'Empty file buffer',
+            });
+            continue;
+          }
+
           try {
             const images = await photoUpload.processAndSaveImage(
               file.buffer,
@@ -208,8 +222,34 @@ router.post(
             );
             uploadedUrls.push(images.optimized);
           } catch (error) {
+            logger.error('Marketplace photo processing failed', {
+              error: error.message,
+              stack: error.stack,
+              filename: file.originalname,
+              fileSize: file.size,
+              mimeType: file.mimetype,
+              listingId: normalizedId,
+              userId: req.user.id,
+            });
             errors.push({ filename: file.originalname, error: error.message });
           }
+        }
+
+        // Check if all uploads failed
+        if (uploadedUrls.length === 0 && errors.length > 0) {
+          logger.error('All marketplace photos failed to upload', {
+            listingId: normalizedId,
+            userId: req.user.id,
+            errorCount: errors.length,
+            errors: errors,
+          });
+
+          return res.status(500).json({
+            success: false,
+            error: 'All photo uploads failed',
+            details: errors,
+            uploaded: 0,
+          });
         }
 
         // Cap at 5 images total and normalize legacy image formats
@@ -358,6 +398,21 @@ router.post(
       const errors = [];
 
       for (const file of req.files) {
+        // Validate file buffer exists
+        if (!file.buffer || file.buffer.length === 0) {
+          logger.error('Empty file buffer received in batch upload', {
+            filename: file.originalname,
+            type: type,
+            id: normalizedId,
+            userId: req.user.id,
+          });
+          errors.push({
+            filename: file.originalname,
+            error: 'Empty file buffer',
+          });
+          continue;
+        }
+
         try {
           const images = await photoUpload.processAndSaveImage(
             file.buffer,
@@ -379,6 +434,16 @@ router.post(
 
           uploadedPhotos.push(photoRecord);
         } catch (error) {
+          logger.error('Batch photo processing failed', {
+            error: error.message,
+            stack: error.stack,
+            filename: file.originalname,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            type: type,
+            id: normalizedId,
+            userId: req.user.id,
+          });
           errors.push({ filename: file.originalname, error: error.message });
         }
       }
@@ -402,6 +467,24 @@ router.post(
 
         // Process and append URLs (cap at 5 images total)
         const uploadedUrls = uploadedPhotos.map(p => p.url);
+
+        // Check if all uploads failed
+        if (uploadedUrls.length === 0 && errors.length > 0) {
+          logger.error('All marketplace photos failed to upload (batch)', {
+            listingId: normalizedId,
+            userId: req.user.id,
+            errorCount: errors.length,
+            errors: errors,
+          });
+
+          return res.status(500).json({
+            success: false,
+            error: 'All photo uploads failed',
+            details: errors,
+            uploaded: 0,
+          });
+        }
+
         const existingImages = normalizeMarketplaceImageUrls(listing.images);
         listing.images = existingImages.concat(uploadedUrls).slice(0, 5);
         listing.updatedAt = new Date().toISOString();

@@ -403,8 +403,8 @@ router.post(
         condition,
         location: location ? String(location).slice(0, 100) : '',
         images: Array.isArray(images) ? images.slice(0, 5) : [],
-        approved: false, // Requires admin approval
-        status: 'pending', // pending, active, sold, removed
+        approved: true, // Auto-approve new listings
+        status: 'active', // active, sold, removed
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -422,7 +422,7 @@ router.post(
       res.json({
         ok: true,
         listing,
-        message: 'Listing submitted successfully! It will be reviewed by our team.',
+        message: 'Listing created successfully! It is now visible to all users.',
       });
     } catch (error) {
       logger.error('Error creating marketplace listing:', error);

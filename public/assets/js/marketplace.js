@@ -881,7 +881,7 @@
         }
 
         modal.remove();
-        showToast('Listing submitted! It will appear after admin approval.');
+        showToast('Listing created successfully!');
         setTimeout(() => loadListings(), 1500);
       } catch (error) {
         console.error('Error creating listing:', error);
