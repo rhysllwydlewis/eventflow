@@ -475,13 +475,19 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       ]);
 
       // Log compression statistics
+      // Calculate actual storage used vs what it would be without compression
+      const actualStorageUsed = originalSize + thumbnail.length + optimized.length + large.length;
+      const storageWithoutCompression = originalSize * 4; // If we stored 4 uncompressed copies
+      
       const compressionStats = {
-        original: originalSize,
-        thumbnail: thumbnail.length,
-        optimized: optimized.length,
-        large: large.length,
-        totalSaved: originalSize * 4 - (thumbnail.length + optimized.length + large.length + originalSize),
-        compressionRatio: ((1 - (thumbnail.length + optimized.length + large.length + originalSize) / (originalSize * 4)) * 100).toFixed(1) + '%',
+        originalSize,
+        thumbnailSize: thumbnail.length,
+        optimizedSize: optimized.length,
+        largeSize: large.length,
+        totalStorageUsed: actualStorageUsed,
+        storageWithoutCompression,
+        bytesSaved: storageWithoutCompression - actualStorageUsed,
+        compressionRatio: ((storageWithoutCompression - actualStorageUsed) / storageWithoutCompression * 100).toFixed(1) + '%',
       };
       
       logger.info('Image compression statistics', {
@@ -674,13 +680,18 @@ async function processAndSaveMarketplaceImage(
       ]);
 
       // Log compression statistics for marketplace images
+      const actualStorageUsed = originalSize + thumbnail.length + optimized.length + large.length;
+      const storageWithoutCompression = originalSize * 4;
+      
       const compressionStats = {
-        original: originalSize,
-        thumbnail: thumbnail.length,
-        optimized: optimized.length,
-        large: large.length,
-        totalSaved: originalSize * 4 - (thumbnail.length + optimized.length + large.length + originalSize),
-        compressionRatio: ((1 - (thumbnail.length + optimized.length + large.length + originalSize) / (originalSize * 4)) * 100).toFixed(1) + '%',
+        originalSize,
+        thumbnailSize: thumbnail.length,
+        optimizedSize: optimized.length,
+        largeSize: large.length,
+        totalStorageUsed: actualStorageUsed,
+        storageWithoutCompression,
+        bytesSaved: storageWithoutCompression - actualStorageUsed,
+        compressionRatio: ((storageWithoutCompression - actualStorageUsed) / storageWithoutCompression * 100).toFixed(1) + '%',
       };
       
       logger.info('Marketplace image compression statistics', {

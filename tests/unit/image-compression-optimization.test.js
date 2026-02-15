@@ -42,8 +42,10 @@ describe('Image Compression Optimization', () => {
     // Verify compression statistics logging is present
     expect(photoUpload).toContain('compression statistics');
     expect(photoUpload).toContain('compressionStats');
-    expect(photoUpload).toContain('totalSaved');
+    expect(photoUpload).toContain('bytesSaved');
     expect(photoUpload).toContain('compressionRatio');
+    expect(photoUpload).toContain('actualStorageUsed');
+    expect(photoUpload).toContain('storageWithoutCompression');
   });
 
   test('marketplace image processing should log compression stats', () => {
@@ -101,5 +103,7 @@ describe('Compression Settings Validation', () => {
     expect(photoUpload).toContain('thumbnail.length');
     expect(photoUpload).toContain('optimized.length');
     expect(photoUpload).toContain('large.length');
+    expect(photoUpload).toContain('actualStorageUsed');
+    expect(photoUpload).toContain('storageWithoutCompression');
   });
 });
