@@ -537,11 +537,7 @@ router.post(
               existingImagesCount + uploadedPhotos.length // order
             );
           } else {
-            images = await photoUpload.processAndSaveImage(
-              file.buffer,
-              file.originalname,
-              type
-            );
+            images = await photoUpload.processAndSaveImage(file.buffer, file.originalname, type);
           }
           const metadata = await photoUpload.getImageMetadata(file.buffer);
 
@@ -1242,10 +1238,10 @@ router.get('/photos/:id', async (req, res) => {
 
     const mongoDb = databaseConfig.mongoDb;
     const db = await mongoDb.getDb();
-    
+
     // Try marketplace_images collection first, then fall back to photos collection
     let photo = await db.collection('marketplace_images').findOne({ _id: id });
-    
+
     if (!photo) {
       // Fall back to generic photos collection for backward compatibility
       photo = await db.collection('photos').findOne({ _id: id });
@@ -1256,6 +1252,8 @@ router.get('/photos/:id', async (req, res) => {
     }
 
     // Convert base64 back to buffer
+    // Note: Backward compatibility - 'photos' collection uses 'data' field,
+    // while 'marketplace_images' collection uses 'imageData' field
     const imageBuffer = Buffer.from(photo.data || photo.imageData, 'base64');
 
     // Set appropriate headers

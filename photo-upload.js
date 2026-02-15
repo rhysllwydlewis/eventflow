@@ -611,7 +611,11 @@ async function processAndSaveMarketplaceImage(
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       // Validate upload (type, size, dimensions)
-      const validation = await uploadValidation.validateUpload(buffer, 'marketplace', originalFilename);
+      const validation = await uploadValidation.validateUpload(
+        buffer,
+        'marketplace',
+        originalFilename
+      );
 
       if (!validation.valid) {
         logger.error('Marketplace image validation failed', {
@@ -736,53 +740,40 @@ async function processAndSaveMarketplaceImage(
           listingId,
         });
 
-        // Switch to local storage temporarily
-        const originalStorageType = STORAGE_TYPE;
-        STORAGE_TYPE = 'local';
+        // Retry with local storage (don't mutate global STORAGE_TYPE to avoid race conditions)
+        const filename = generateFilename(originalFilename);
+        const baseFilename = filename.replace(path.extname(filename), '');
 
-        try {
-          // Retry with local storage
-          const filename = generateFilename(originalFilename);
-          const baseFilename = filename.replace(path.extname(filename), '');
+        const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
+          buffer,
+          processImage(buffer, IMAGE_CONFIGS.thumbnail),
+          processImage(buffer, IMAGE_CONFIGS.optimized),
+          processImage(buffer, IMAGE_CONFIGS.large),
+        ]);
 
-          const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
-            buffer,
-            processImage(buffer, IMAGE_CONFIGS.thumbnail),
-            processImage(buffer, IMAGE_CONFIGS.optimized),
-            processImage(buffer, IMAGE_CONFIGS.large),
-          ]);
+        await Promise.all([
+          saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
+          saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
+          saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+          saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
+        ]);
 
-          await Promise.all([
-            saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
-            saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
-            saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-            saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
-          ]);
+        const results = {
+          original: `/uploads/original/${baseFilename}.jpg`,
+          thumbnail: `/uploads/thumbnails/${baseFilename}-thumb.jpg`,
+          optimized: `/uploads/optimized/${baseFilename}-opt.jpg`,
+          large: `/uploads/large/${baseFilename}-large.jpg`,
+        };
 
-          const results = {
-            original: `/uploads/original/${baseFilename}.jpg`,
-            thumbnail: `/uploads/thumbnails/${baseFilename}-thumb.jpg`,
-            optimized: `/uploads/optimized/${baseFilename}-opt.jpg`,
-            large: `/uploads/large/${baseFilename}-large.jpg`,
-          };
+        await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
 
-          await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
+        logger.info('Marketplace image saved to local storage (fallback)', {
+          listingId,
+          userId,
+          results,
+        });
 
-          logger.info('Marketplace image saved to local storage (fallback)', {
-            listingId,
-            userId,
-            results,
-          });
-
-          // Restore storage type
-          STORAGE_TYPE = originalStorageType;
-
-          return results;
-        } catch (fallbackError) {
-          // Restore storage type
-          STORAGE_TYPE = originalStorageType;
-          throw fallbackError;
-        }
+        return results;
       }
 
       logger.warn(`Marketplace image upload attempt ${attempt} failed`, {
