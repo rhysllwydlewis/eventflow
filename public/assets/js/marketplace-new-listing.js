@@ -464,7 +464,7 @@
           const successCount = newImages.length - failedImageCount;
           const listingAction = isEditMode ? 'updated' : 'created';
           showToast(
-            `Listing ${listingAction} successfully: ${successCount} of ${newImages.length} image(s) uploaded, ${failedImageCount} failed. You can retry by editing the listing.`,
+            `Listing ${listingAction}: ${successCount} of ${newImages.length} image(s) uploaded, ${failedImageCount} failed. You can retry by editing the listing.`,
             'warning'
           );
         } else {

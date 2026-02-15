@@ -269,7 +269,7 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
       bufferSize: buffer?.length || 0,
       storageType: STORAGE_TYPE,
     };
-    
+
     logger.error('MongoDB photo save failed', {
       error: error.message,
       stack: error.stack,
@@ -277,7 +277,7 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
       type,
       bufferSize: buffer?.length || 0,
     });
-    
+
     throw enhancedError;
   }
 }
