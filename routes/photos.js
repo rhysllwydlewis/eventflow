@@ -343,12 +343,6 @@ router.post(
               ? `${uploadedUrls.length} image(s) uploaded successfully${errors.length > 0 ? `, ${errors.length} failed` : ''}.`
               : 'No images were uploaded.',
         });
-          errors: errors.length > 0 ? errors : undefined,
-          message:
-            uploadedUrls.length > 0
-              ? `${uploadedUrls.length} image(s) uploaded successfully${errors.length > 0 ? `, ${errors.length} failed` : ''}.`
-              : 'No images were uploaded.',
-        });
       }
 
       // Handle single file for supplier/package types
