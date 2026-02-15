@@ -295,12 +295,22 @@
         return Array.isArray(batchData.errors) ? batchData.errors.length : 0;
       }
 
-      console.warn(
-        'Batch image upload failed, retrying individually:',
-        batchData.error || batchRes.status
-      );
+      // Log specific error details for debugging
+      console.warn('Batch image upload failed:', {
+        status: batchRes.status,
+        statusText: batchRes.statusText,
+        error: batchData.error,
+        errorType: batchData.errorType,
+        details: batchData.details,
+      });
+
+      // Show user-friendly error message based on error type
+      if (batchData.errorType === 'MongoDBUnavailableError' || batchRes.status === 503) {
+        showToast('Photo storage temporarily unavailable. Retrying with individual uploads...', 'warning');
+      }
     } catch (error) {
-      console.warn('Batch image upload failed, retrying individually:', error);
+      console.warn('Batch image upload network error:', error);
+      showToast('Network error during batch upload. Retrying individually...', 'warning');
     }
 
     let failedImageCount = 0;
@@ -309,14 +319,39 @@
       const singleFormData = new FormData();
       singleFormData.append(fieldName, imageFile);
 
-      const singleRes = await fetch(`/api/v1/photos/upload?type=marketplace&id=${listingId}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'X-CSRF-Token': csrfToken },
-        body: singleFormData,
-      });
+      try {
+        const singleRes = await fetch(`/api/v1/photos/upload?type=marketplace&id=${listingId}`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': csrfToken },
+          body: singleFormData,
+        });
 
-      return singleRes.ok;
+        const singleData = await singleRes.json().catch(() => ({}));
+
+        if (singleRes.ok) {
+          return true;
+        }
+
+        // Log specific error for this file
+        console.warn('Single image upload failed:', {
+          fieldName,
+          fileName: imageFile.name,
+          status: singleRes.status,
+          error: singleData.error,
+          errorType: singleData.errorType,
+          details: singleData.details,
+        });
+
+        return false;
+      } catch (error) {
+        console.warn('Single image upload network error:', {
+          fieldName,
+          fileName: imageFile.name,
+          error: error.message,
+        });
+        return false;
+      }
     }
 
     for (const image of newImages) {
@@ -423,8 +458,9 @@
 
         // Show appropriate success message
         if (failedImageCount > 0) {
+          const successCount = newImages.length - failedImageCount;
           showToast(
-            `Listing ${isEditMode ? 'updated' : 'created'}, but ${failedImageCount} image(s) failed to upload. You can try uploading them again by editing the listing.`,
+            `Listing ${isEditMode ? 'updated' : 'created'}! ${successCount} of ${newImages.length} image(s) uploaded. ${failedImageCount} failed - you can retry by editing the listing.`,
             'warning'
           );
         } else {

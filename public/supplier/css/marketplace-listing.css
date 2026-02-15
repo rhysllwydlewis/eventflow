@@ -91,40 +91,72 @@
   margin-top: 4px;
 }
 
+/* Professional Image Upload Zone with Gold Standard Placeholder */
 .image-upload-zone {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
   border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 32px;
+  border-radius: 12px;
+  padding: 48px 32px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .image-upload-zone:hover {
   border-color: #0B8073;
-  background: #f0fdf4;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.1);
 }
 
 .image-upload-zone.dragover {
   border-color: #0B8073;
-  background: #f0fdf4;
+  background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+  border-style: solid;
+  box-shadow: 0 0 0 4px rgba(11, 128, 115, 0.1);
 }
 
-
+/* Camera Icon Styling - Professional Grey Placeholder */
 .image-upload-icon {
-  font-size: 40px;
-  margin: 0;
-  opacity: 0.6;
-  filter: grayscale(1);
+  font-size: 48px;
+  margin: 0 0 16px 0;
+  opacity: 0.4;
+  filter: grayscale(100%);
+  transition: all 0.3s ease;
 }
 
+.image-upload-zone:hover .image-upload-icon {
+  opacity: 0.6;
+  transform: scale(1.05);
+}
+
+/* "Awaiting Images" Title - Professional Styling */
 .image-upload-title {
-  margin: 8px 0 4px;
+  margin: 0 0 8px 0;
   font-weight: 600;
-  color: #4b5563;
+  font-size: 16px;
+  color: #6b7280;
+  letter-spacing: 0.025em;
+  text-transform: none;
 }
 
 .image-upload-subtitle {
+  color: #9ca3af;
+  font-size: 14px;
+  margin: 0;
+}
+
+.image-upload-zone:hover .image-upload-title {
+  color: #0B8073;
+}
+
+.image-upload-zone:hover .image-upload-subtitle {
   color: #6b7280;
 }
 
