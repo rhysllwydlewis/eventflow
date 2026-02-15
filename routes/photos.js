@@ -6,7 +6,7 @@
 'use strict';
 
 const express = require('express');
-const { uploadLimiter } = require('../middleware/rateLimits');
+const { uploadLimiter, apiLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -1229,7 +1229,7 @@ router.post(
  * Serve photo from MongoDB
  * This endpoint serves the actual photo binary data
  */
-router.get('/photos/:id', async (req, res) => {
+router.get('/photos/:id', apiLimiter, async (req, res) => {
   try {
     const { id } = req.params;
 
