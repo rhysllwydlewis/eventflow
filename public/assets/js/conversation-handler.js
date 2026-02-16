@@ -500,7 +500,7 @@
       });
 
       if (!response.ok) {
-        // Fall back to v1 for v1 thread IDs or 404s
+        // Fall back to v1 for 404s or any error with v1 thread IDs (thd_*)
         if (response.status === 404 || threadId.startsWith('thd_')) {
           const v1Response = await fetch(`/api/v1/threads/${threadId}/messages`, {
             credentials: 'include',
