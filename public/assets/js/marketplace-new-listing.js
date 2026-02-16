@@ -200,9 +200,19 @@
       }
 
       // Validate file type - use specific allowlist matching server
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic'];
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'image/avif',
+        'image/heic',
+      ];
       if (!allowedTypes.includes(file.type)) {
-        showToast(`${file.name} is not a supported image type (allowed: JPEG, PNG, WebP, GIF, AVIF, HEIC)`, 'error');
+        showToast(
+          `${file.name} is not a supported image type (allowed: JPEG, PNG, WebP, GIF, AVIF, HEIC)`,
+          'error'
+        );
         continue;
       }
 
@@ -330,6 +340,43 @@
     return null;
   }
 
+  /**
+   * Helper to perform batch upload with CSRF retry support
+   */
+  async function performBatchUpload(listingId, formData, csrfToken) {
+    const uploadUrl = `/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`;
+
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRF-Token': csrfToken },
+      body: formData,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    // Check for CSRF error and retry once with refreshed token
+    if (response.status === 403 && data.errorType === 'CSRFError' && data.canRetry) {
+      console.log('CSRF error detected, refreshing token and retrying...');
+      const newToken = await refreshCsrfToken();
+      if (newToken) {
+        const retryResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': newToken },
+          body: formData,
+        });
+        const retryData = await retryResponse.json().catch(() => ({}));
+        if (retryResponse.ok) {
+          showToast('Upload succeeded after refreshing security token', 'success');
+        }
+        return { response: retryResponse, data: retryData };
+      }
+    }
+
+    return { response, data };
+  }
+
   async function uploadMarketplaceImages(newImages, listingId, csrfToken) {
     try {
       const formData = new FormData();
@@ -363,41 +410,14 @@
         return newImages.length; // All failed
       }
 
-      const batchRes = await fetch(`/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'X-CSRF-Token': csrfToken },
-        body: formData,
-      });
+      const { response: batchRes, data: batchData } = await performBatchUpload(
+        listingId,
+        formData,
+        csrfToken
+      );
 
-      const batchData = await batchRes.json().catch(() => ({}));
       if (batchRes.ok) {
         return Array.isArray(batchData.errors) ? batchData.errors.length : 0;
-      }
-
-      // Check for CSRF error and retry once with refreshed token
-      if (batchRes.status === 403 && batchData.errorType === 'CSRFError' && batchData.canRetry) {
-        console.log('CSRF error detected, refreshing token and retrying...');
-        const newToken = await refreshCsrfToken();
-        if (newToken) {
-          // Retry the request with new token
-          const retryRes = await fetch(`/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'X-CSRF-Token': newToken },
-            body: formData,
-          });
-          const retryData = await retryRes.json().catch(() => ({}));
-          if (retryRes.ok) {
-            showToast('Upload succeeded after refreshing security token', 'success');
-            return Array.isArray(retryData.errors) ? retryData.errors.length : 0;
-          }
-          // If retry also failed, continue to error handling below
-          console.error('Retry after CSRF refresh also failed:', {
-            status: retryRes.status,
-            error: retryData.error,
-          });
-        }
       }
 
       // Enhanced error logging - **ALREADY EXISTS, keeping as-is**
@@ -413,10 +433,15 @@
       // Show detailed error messages from server
       let errorMessage = 'Photo upload failed. ';
       if (batchData.errorType === 'UnsupportedMediaType') {
-        errorMessage = 'Unsupported file type. Only JPEG, PNG, WebP, GIF, AVIF, and HEIC images are allowed.';
+        errorMessage =
+          'Unsupported file type. Only JPEG, PNG, WebP, GIF, AVIF, and HEIC images are allowed.';
       } else if (batchData.errorType === 'FileSizeError') {
         errorMessage = 'File too large. Maximum 10MB per image.';
-      } else if (batchData.errors && Array.isArray(batchData.errors) && batchData.errors.length > 0) {
+      } else if (
+        batchData.errors &&
+        Array.isArray(batchData.errors) &&
+        batchData.errors.length > 0
+      ) {
         const errorDetails = batchData.errors
           .map(e => `${e.filename || 'unknown'}: ${e.error || 'upload failed'}`)
           .join('; ');

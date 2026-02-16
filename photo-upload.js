@@ -123,12 +123,17 @@ function fileFilter(req, file, cb) {
   if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, WebP, GIF, AVIF, and HEIC are allowed.'), false);
+    cb(
+      new Error('Invalid file type. Only JPEG, PNG, WebP, GIF, AVIF, and HEIC are allowed.'),
+      false
+    );
   }
 }
 
 /**
  * Multer upload middleware
+ * Uses Math.max() to accommodate both marketplace (10MB) and supplier (10MB) limits.
+ * This ensures the multer limit is never lower than what any endpoint expects.
  */
 const upload = multer({
   storage,
@@ -474,7 +479,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       // Process each size (with automatic metadata stripping)
       logger.debug('Processing image in multiple sizes');
       const originalSize = buffer.length;
-      
+
       const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
         buffer, // Keep original as-is for backup
         processImage(buffer, IMAGE_CONFIGS.thumbnail),
@@ -486,7 +491,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       // Calculate actual storage used vs what it would be without compression
       const actualStorageUsed = originalSize + thumbnail.length + optimized.length + large.length;
       const storageWithoutCompression = originalSize * 4; // If we stored 4 uncompressed copies
-      
+
       const compressionStats = {
         originalSize,
         thumbnailSize: thumbnail.length,
@@ -495,9 +500,9 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
         totalStorageUsed: actualStorageUsed,
         storageWithoutCompression,
         bytesSaved: storageWithoutCompression - actualStorageUsed,
-        compressionRatio: ((storageWithoutCompression - actualStorageUsed) / storageWithoutCompression * 100).toFixed(1) + '%',
+        compressionRatio: `${(((storageWithoutCompression - actualStorageUsed) / storageWithoutCompression) * 100).toFixed(1)}%`,
       };
-      
+
       logger.info('Image compression statistics', {
         filename: originalFilename,
         ...compressionStats,
@@ -702,7 +707,7 @@ async function processAndSaveMarketplaceImage(
       // Process each size
       logger.debug('Processing marketplace image in multiple sizes');
       const originalSize = buffer.length;
-      
+
       const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
         buffer, // Keep original as-is for backup
         processImage(buffer, IMAGE_CONFIGS.thumbnail),
@@ -713,7 +718,7 @@ async function processAndSaveMarketplaceImage(
       // Log compression statistics for marketplace images
       const actualStorageUsed = originalSize + thumbnail.length + optimized.length + large.length;
       const storageWithoutCompression = originalSize * 4;
-      
+
       const compressionStats = {
         originalSize,
         thumbnailSize: thumbnail.length,
@@ -722,9 +727,9 @@ async function processAndSaveMarketplaceImage(
         totalStorageUsed: actualStorageUsed,
         storageWithoutCompression,
         bytesSaved: storageWithoutCompression - actualStorageUsed,
-        compressionRatio: ((storageWithoutCompression - actualStorageUsed) / storageWithoutCompression * 100).toFixed(1) + '%',
+        compressionRatio: `${(((storageWithoutCompression - actualStorageUsed) / storageWithoutCompression) * 100).toFixed(1)}%`,
       };
-      
+
       logger.info('Marketplace image compression statistics', {
         filename: originalFilename,
         listingId,
@@ -899,23 +904,25 @@ async function deleteImage(url) {
     if (url && url.startsWith('/api/photos/')) {
       const photoId = url.split('/').pop();
       const db = await mongoDb.getDb();
-      
+
       // Try to delete from marketplace_images collection first
-      const marketplaceResult = await db.collection('marketplace_images').deleteOne({ _id: photoId });
-      
+      const marketplaceResult = await db
+        .collection('marketplace_images')
+        .deleteOne({ _id: photoId });
+
       if (marketplaceResult.deletedCount > 0) {
         logger.info('Deleted marketplace image', { photoId });
         return;
       }
-      
+
       // If not found in marketplace_images, try generic photos collection
       const photosResult = await db.collection('photos').deleteOne({ _id: photoId });
-      
+
       if (photosResult.deletedCount > 0) {
         logger.info('Deleted photo from generic collection', { photoId });
         return;
       }
-      
+
       logger.warn('Photo not found in any collection', { photoId });
       return;
     }
@@ -952,15 +959,15 @@ async function deleteMarketplaceImages(listingId) {
 
     const db = await mongoDb.getDb();
     const collection = db.collection('marketplace_images');
-    
+
     // Delete all images for this listing
     const result = await collection.deleteMany({ listingId });
-    
+
     logger.info('Deleted marketplace images for listing', {
       listingId,
       deletedCount: result.deletedCount,
     });
-    
+
     return result.deletedCount;
   } catch (error) {
     logger.error('Error deleting marketplace images', {
