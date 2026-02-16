@@ -386,151 +386,166 @@ router.get('/threads/:threadId/messages', applyAuthRequired, async (req, res) =>
  * Send a new message in a thread
  * Body: { text, isDraft? }
  */
-router.post('/threads/:threadId/messages', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
-    const { text, isDraft, attachments } = req.body;
+router.post(
+  '/threads/:threadId/messages',
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      const { threadId } = req.params;
+      const { text, isDraft, attachments } = req.body;
 
-    if ((!text || text.trim().length === 0) && (!attachments || attachments.length === 0)) {
-      return res.status(400).json({ error: 'Message text or attachments required' });
-    }
-
-    // Verify access to thread
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
-
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Sanitize message text to prevent XSS - stripLow before escape to remove control chars first
-    const sanitizedText = text ? validator.escape(validator.stripLow(text.trim())) : '';
-
-    const now = new Date().toISOString();
-    const messages = await dbUnified.read('messages');
-
-    const newMessage = {
-      id: uid(),
-      threadId,
-      fromUserId: userId,
-      fromRole: userRole,
-      text: sanitizedText,
-      isDraft: isDraft === true,
-      sentAt: isDraft ? null : now,
-      readBy: [userId], // Sender has already "read" their own message
-      attachments: Array.isArray(attachments) ? attachments : [],
-      reactions: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    messages.push(newMessage);
-    await dbUnified.write('messages', messages);
-
-    // Update thread if not a draft
-    if (!isDraft) {
-      thread.lastMessageAt = now;
-      thread.lastMessagePreview = sanitizedText.substring(0, 100);
-      thread.updatedAt = now;
-
-      // Increment unread count for the recipient
-      if (!thread.unreadCount) {
-        thread.unreadCount = {};
-      }
-      const recipientId = userRole === 'customer' ? thread.supplierId : thread.customerId;
-      thread.unreadCount[recipientId] = (thread.unreadCount[recipientId] || 0) + 1;
-
-      threads[threadIndex] = thread;
-      await dbUnified.write('threads', threads);
-
-      // Track analytics event
-      const supplierAnalytics = require('../utils/supplierAnalytics');
-      const threadMessages = messages.filter(m => m.threadId === threadId && !m.isDraft);
-
-      if (userRole === 'customer' && threadMessages.length === 1) {
-        // First message from customer - this is an enquiry sent
-        supplierAnalytics
-          .trackEnquirySent(thread.supplierId, userId, {
-            threadId,
-            messageId: newMessage.id,
-          })
-          .catch(err => console.error('Failed to track enquiry sent:', err));
-      } else if (userRole === 'supplier') {
-        // Supplier replied to a message
-        supplierAnalytics
-          .trackMessageReply(thread.supplierId, userId, {
-            threadId,
-            messageId: newMessage.id,
-          })
-          .catch(err => console.error('Failed to track message reply:', err));
-
-        // Trigger badge evaluation for supplier (async, non-blocking)
-        const badgeManagement = require('../utils/badgeManagement');
-        badgeManagement
-          .evaluateSupplierBadges(thread.supplierId)
-          .catch(err => console.error('Failed to evaluate supplier badges:', err));
+      if ((!text || text.trim().length === 0) && (!attachments || attachments.length === 0)) {
+        return res.status(400).json({ error: 'Message text or attachments required' });
       }
 
-      // Send email notification to recipient (async, non-blocking)
-      setImmediate(async () => {
-        try {
-          const users = await dbUnified.read('users');
-          const suppliers = await dbUnified.read('suppliers');
+      // Verify access to thread
+      const threads = await dbUnified.read('threads');
+      const threadIndex = threads.findIndex(t => t.id === threadId);
 
-          const sender = users.find(u => u.id === userId);
-          const senderName = sender?.name || sender?.email || 'Someone';
+      if (threadIndex === -1) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
 
-          let recipientEmail = null;
-          let recipientName = null;
+      const thread = threads[threadIndex];
+      const hasAccess =
+        userRole === 'admin' ||
+        (userRole === 'customer' && thread.customerId === userId) ||
+        (userRole === 'supplier' && thread.supplierId === userId);
 
-          if (userRole === 'customer') {
-            // Customer sent message to supplier
-            const supplier =
-              suppliers.find(s => s.id === recipientId) || users.find(u => u.id === recipientId);
-            recipientEmail = supplier?.email;
-            recipientName = supplier?.name || 'Supplier';
-          } else {
-            // Supplier sent message to customer
-            const customer = users.find(u => u.id === recipientId);
-            recipientEmail = customer?.email;
-            recipientName = customer?.name || 'Customer';
-          }
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
 
-          if (recipientEmail && recipientName) {
-            // Import sendMail function (this should be available in the context)
-            const postmark = require('../utils/postmark');
-            await postmark.sendMail({
-              to: recipientEmail,
-              subject: `New message from ${senderName} - EventFlow`,
-              text: getMessageText(recipientName, senderName, sanitizedText, process.env.BASE_URL),
-              html: getMessageHtml(recipientName, senderName, sanitizedText, process.env.BASE_URL),
-            });
-          }
-        } catch (emailError) {
-          console.error('Error sending message notification email:', emailError);
-          // Don't fail the request if email fails
+      // Sanitize message text to prevent XSS - stripLow before escape to remove control chars first
+      const sanitizedText = text ? validator.escape(validator.stripLow(text.trim())) : '';
+
+      const now = new Date().toISOString();
+      const messages = await dbUnified.read('messages');
+
+      const newMessage = {
+        id: uid(),
+        threadId,
+        fromUserId: userId,
+        fromRole: userRole,
+        text: sanitizedText,
+        isDraft: isDraft === true,
+        sentAt: isDraft ? null : now,
+        readBy: [userId], // Sender has already "read" their own message
+        attachments: Array.isArray(attachments) ? attachments : [],
+        reactions: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      messages.push(newMessage);
+      await dbUnified.write('messages', messages);
+
+      // Update thread if not a draft
+      if (!isDraft) {
+        thread.lastMessageAt = now;
+        thread.lastMessagePreview = sanitizedText.substring(0, 100);
+        thread.updatedAt = now;
+
+        // Increment unread count for the recipient
+        if (!thread.unreadCount) {
+          thread.unreadCount = {};
         }
-      });
-    }
+        const recipientId = userRole === 'customer' ? thread.supplierId : thread.customerId;
+        thread.unreadCount[recipientId] = (thread.unreadCount[recipientId] || 0) + 1;
 
-    res.status(201).json({ message: newMessage });
-  } catch (error) {
-    console.error('Error creating message:', error);
-    res.status(500).json({ error: 'Failed to create message', details: error.message });
+        threads[threadIndex] = thread;
+        await dbUnified.write('threads', threads);
+
+        // Track analytics event
+        const supplierAnalytics = require('../utils/supplierAnalytics');
+        const threadMessages = messages.filter(m => m.threadId === threadId && !m.isDraft);
+
+        if (userRole === 'customer' && threadMessages.length === 1) {
+          // First message from customer - this is an enquiry sent
+          supplierAnalytics
+            .trackEnquirySent(thread.supplierId, userId, {
+              threadId,
+              messageId: newMessage.id,
+            })
+            .catch(err => console.error('Failed to track enquiry sent:', err));
+        } else if (userRole === 'supplier') {
+          // Supplier replied to a message
+          supplierAnalytics
+            .trackMessageReply(thread.supplierId, userId, {
+              threadId,
+              messageId: newMessage.id,
+            })
+            .catch(err => console.error('Failed to track message reply:', err));
+
+          // Trigger badge evaluation for supplier (async, non-blocking)
+          const badgeManagement = require('../utils/badgeManagement');
+          badgeManagement
+            .evaluateSupplierBadges(thread.supplierId)
+            .catch(err => console.error('Failed to evaluate supplier badges:', err));
+        }
+
+        // Send email notification to recipient (async, non-blocking)
+        setImmediate(async () => {
+          try {
+            const users = await dbUnified.read('users');
+            const suppliers = await dbUnified.read('suppliers');
+
+            const sender = users.find(u => u.id === userId);
+            const senderName = sender?.name || sender?.email || 'Someone';
+
+            let recipientEmail = null;
+            let recipientName = null;
+
+            if (userRole === 'customer') {
+              // Customer sent message to supplier
+              const supplier =
+                suppliers.find(s => s.id === recipientId) || users.find(u => u.id === recipientId);
+              recipientEmail = supplier?.email;
+              recipientName = supplier?.name || 'Supplier';
+            } else {
+              // Supplier sent message to customer
+              const customer = users.find(u => u.id === recipientId);
+              recipientEmail = customer?.email;
+              recipientName = customer?.name || 'Customer';
+            }
+
+            if (recipientEmail && recipientName) {
+              // Import sendMail function (this should be available in the context)
+              const postmark = require('../utils/postmark');
+              await postmark.sendMail({
+                to: recipientEmail,
+                subject: `New message from ${senderName} - EventFlow`,
+                text: getMessageText(
+                  recipientName,
+                  senderName,
+                  sanitizedText,
+                  process.env.BASE_URL
+                ),
+                html: getMessageHtml(
+                  recipientName,
+                  senderName,
+                  sanitizedText,
+                  process.env.BASE_URL
+                ),
+              });
+            }
+          } catch (emailError) {
+            console.error('Error sending message notification email:', emailError);
+            // Don't fail the request if email fails
+          }
+        });
+      }
+
+      res.status(201).json({ message: newMessage });
+    } catch (error) {
+      console.error('Error creating message:', error);
+      res.status(500).json({ error: 'Failed to create message', details: error.message });
+    }
   }
-});
+);
 
 /**
  * PUT /api/messages/:messageId
@@ -610,106 +625,116 @@ router.put('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, re
  * POST /api/messages/threads/:threadId/mark-read
  * Mark all messages in a thread as read for the current user
  */
-router.post('/threads/:threadId/mark-read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
+router.post(
+  '/threads/:threadId/mark-read',
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      const { threadId } = req.params;
 
-    // Verify access to thread
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
+      // Verify access to thread
+      const threads = await dbUnified.read('threads');
+      const threadIndex = threads.findIndex(t => t.id === threadId);
 
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Mark all messages as read
-    const messages = await dbUnified.read('messages');
-    let updatedCount = 0;
-
-    messages.forEach(message => {
-      if (message.threadId === threadId && !message.isDraft) {
-        if (!message.readBy) {
-          message.readBy = [];
-        }
-        if (!message.readBy.includes(userId)) {
-          message.readBy.push(userId);
-          updatedCount++;
-        }
+      if (threadIndex === -1) {
+        return res.status(404).json({ error: 'Thread not found' });
       }
-    });
 
-    if (updatedCount > 0) {
-      await dbUnified.write('messages', messages);
+      const thread = threads[threadIndex];
+      const hasAccess =
+        userRole === 'admin' ||
+        (userRole === 'customer' && thread.customerId === userId) ||
+        (userRole === 'supplier' && thread.supplierId === userId);
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // Mark all messages as read
+      const messages = await dbUnified.read('messages');
+      let updatedCount = 0;
+
+      messages.forEach(message => {
+        if (message.threadId === threadId && !message.isDraft) {
+          if (!message.readBy) {
+            message.readBy = [];
+          }
+          if (!message.readBy.includes(userId)) {
+            message.readBy.push(userId);
+            updatedCount++;
+          }
+        }
+      });
+
+      if (updatedCount > 0) {
+        await dbUnified.write('messages', messages);
+      }
+
+      // Reset unread count for this user
+      if (thread.unreadCount && thread.unreadCount[userId]) {
+        thread.unreadCount[userId] = 0;
+        threads[threadIndex] = thread;
+        await dbUnified.write('threads', threads);
+      }
+
+      res.json({ success: true, markedRead: updatedCount });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ error: 'Failed to mark messages as read', details: error.message });
     }
-
-    // Reset unread count for this user
-    if (thread.unreadCount && thread.unreadCount[userId]) {
-      thread.unreadCount[userId] = 0;
-      threads[threadIndex] = thread;
-      await dbUnified.write('threads', threads);
-    }
-
-    res.json({ success: true, markedRead: updatedCount });
-  } catch (error) {
-    console.error('Error marking messages as read:', error);
-    res.status(500).json({ error: 'Failed to mark messages as read', details: error.message });
   }
-});
+);
 
 /**
  * POST /api/messages/threads/:threadId/mark-unread
  * Mark a thread as unread for the current user
  */
-router.post('/threads/:threadId/mark-unread', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
+router.post(
+  '/threads/:threadId/mark-unread',
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      const { threadId } = req.params;
 
-    // Verify access to thread
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
+      // Verify access to thread
+      const threads = await dbUnified.read('threads');
+      const threadIndex = threads.findIndex(t => t.id === threadId);
 
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
+      if (threadIndex === -1) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
+
+      const thread = threads[threadIndex];
+      const hasAccess =
+        userRole === 'admin' ||
+        (userRole === 'customer' && thread.customerId === userId) ||
+        (userRole === 'supplier' && thread.supplierId === userId);
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // Set unread count to 1 for this user
+      if (!thread.unreadCount) {
+        thread.unreadCount = {};
+      }
+      thread.unreadCount[userId] = 1;
+      threads[threadIndex] = thread;
+      await dbUnified.write('threads', threads);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking thread as unread:', error);
+      res.status(500).json({ error: 'Failed to mark thread as unread', details: error.message });
     }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Set unread count to 1 for this user
-    if (!thread.unreadCount) {
-      thread.unreadCount = {};
-    }
-    thread.unreadCount[userId] = 1;
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error marking thread as unread:', error);
-    res.status(500).json({ error: 'Failed to mark thread as unread', details: error.message });
   }
-});
+);
 
 /**
  * GET /api/messages/drafts
@@ -858,79 +883,89 @@ router.post('/:messageId/reactions', applyAuthRequired, applyCsrfProtection, asy
  * POST /api/messages/threads/:threadId/archive
  * Archive a thread
  */
-router.post('/threads/:threadId/archive', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
+router.post(
+  '/threads/:threadId/archive',
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      const { threadId } = req.params;
 
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
+      const threads = await dbUnified.read('threads');
+      const threadIndex = threads.findIndex(t => t.id === threadId);
 
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
+      if (threadIndex === -1) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
+
+      const thread = threads[threadIndex];
+      const hasAccess =
+        userRole === 'admin' ||
+        (userRole === 'customer' && thread.customerId === userId) ||
+        (userRole === 'supplier' && thread.supplierId === userId);
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      thread.status = 'archived';
+      thread.updatedAt = new Date().toISOString();
+      threads[threadIndex] = thread;
+      await dbUnified.write('threads', threads);
+
+      res.json({ success: true, thread });
+    } catch (error) {
+      console.error('Error archiving thread:', error);
+      res.status(500).json({ error: 'Failed to archive thread', details: error.message });
     }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    thread.status = 'archived';
-    thread.updatedAt = new Date().toISOString();
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
-
-    res.json({ success: true, thread });
-  } catch (error) {
-    console.error('Error archiving thread:', error);
-    res.status(500).json({ error: 'Failed to archive thread', details: error.message });
   }
-});
+);
 
 /**
  * POST /api/messages/threads/:threadId/unarchive
  * Unarchive a thread
  */
-router.post('/threads/:threadId/unarchive', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
+router.post(
+  '/threads/:threadId/unarchive',
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const userRole = req.user.role;
+      const { threadId } = req.params;
 
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
+      const threads = await dbUnified.read('threads');
+      const threadIndex = threads.findIndex(t => t.id === threadId);
 
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
+      if (threadIndex === -1) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
+
+      const thread = threads[threadIndex];
+      const hasAccess =
+        userRole === 'admin' ||
+        (userRole === 'customer' && thread.customerId === userId) ||
+        (userRole === 'supplier' && thread.supplierId === userId);
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      thread.status = 'open';
+      thread.updatedAt = new Date().toISOString();
+      threads[threadIndex] = thread;
+      await dbUnified.write('threads', threads);
+
+      res.json({ success: true, thread });
+    } catch (error) {
+      console.error('Error unarchiving thread:', error);
+      res.status(500).json({ error: 'Failed to unarchive thread', details: error.message });
     }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    thread.status = 'open';
-    thread.updatedAt = new Date().toISOString();
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
-
-    res.json({ success: true, thread });
-  } catch (error) {
-    console.error('Error unarchiving thread:', error);
-    res.status(500).json({ error: 'Failed to unarchive thread', details: error.message });
   }
-});
+);
 
 // ========== API Aliases for Compatibility ==========
 // These endpoints provide alternative paths for the same functionality
@@ -979,16 +1014,46 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
       return bTime - aTime;
     });
 
+    // Enrich threads with user/supplier names if missing
+    const users = await dbUnified.read('users');
+    const suppliers = await dbUnified.read('suppliers');
+
     // Transform to conversation format expected by frontend
-    const conversations = threads.map(t => ({
-      id: t.id,
-      supplierName: t.supplierName,
-      customerName: t.customerName,
-      lastMessage: t.lastMessagePreview || '',
-      lastMessageTime: t.lastMessageAt || t.updatedAt || t.createdAt,
-      unreadCount: (t.unreadCount && t.unreadCount[userId]) || 0,
-      status: t.status || 'open',
-    }));
+    const conversations = threads.map(t => {
+      // Enrich supplier name if missing
+      let supplierName = t.supplierName;
+      if (!supplierName && t.supplierId) {
+        const supplier = suppliers.find(s => s.id === t.supplierId);
+        supplierName = supplier?.name || 'Supplier';
+      }
+
+      // Enrich customer name if missing
+      let customerName = t.customerName;
+      if (!customerName && t.customerId) {
+        const customer = users.find(u => u.id === t.customerId);
+        customerName = customer?.name || 'Customer';
+      }
+
+      // For marketplace peer-to-peer, also check recipientId
+      let recipientName = null;
+      if (t.recipientId && t.recipientId !== t.customerId && t.recipientId !== t.supplierId) {
+        const recipient = users.find(u => u.id === t.recipientId);
+        recipientName = recipient?.name || null;
+      }
+
+      return {
+        id: t.id,
+        supplierName,
+        customerName,
+        recipientName,
+        lastMessage: t.lastMessagePreview || '',
+        lastMessageTime: t.lastMessageAt || t.updatedAt || t.createdAt,
+        unreadCount: (t.unreadCount && t.unreadCount[userId]) || 0,
+        status: t.status || 'open',
+        // Add marketplace context if available
+        marketplace: t.marketplace || null,
+      };
+    });
 
     res.json({ conversations });
   } catch (error) {

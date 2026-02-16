@@ -42,31 +42,100 @@ function renderConversations(conversations) {
       icon: '💬',
       title: 'No messages yet',
       description: 'Conversations will appear here when you contact suppliers.',
+      actionText: 'Browse Suppliers',
+      actionHref: '/suppliers',
     });
     return;
   }
 
-  let html = '<div class="thread-list">';
+  let html = '<div class="thread-list" style="display:flex;flex-direction:column;gap:0.75rem;">';
 
   conversations.forEach(conversation => {
-    const supplierName = conversation.supplierName || 'Supplier';
+    // Determine the name to display (supplier name for customers)
+    const displayName = conversation.supplierName || conversation.recipientName || 'User';
     const lastMessage = conversation.lastMessage || 'No messages yet';
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
+    const unreadCount = conversation.unreadCount || 0;
+    const isUnread = unreadCount > 0;
+
+    // Generate initials for avatar
+    const initials = displayName
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
 
     html += `
-      <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
-        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <strong>${escapeHtml(supplierName)}</strong>
-          <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
+      <div class="thread-item ${isUnread ? 'unread' : ''}" 
+           style="border:1px solid ${isUnread ? '#0B8073' : '#e4e4e7'};
+                  padding:1rem;
+                  border-radius:8px;
+                  cursor:pointer;
+                  transition:all 0.2s;
+                  background:${isUnread ? '#f0f9f8' : 'white'};"
+           data-conversation-id="${conversation.id}">
+        <div style="display:flex;gap:1rem;align-items:start;">
+          <!-- Avatar -->
+          <div style="width:48px;
+                      height:48px;
+                      border-radius:50%;
+                      background:linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+                      display:flex;
+                      align-items:center;
+                      justify-content:center;
+                      color:white;
+                      font-weight:600;
+                      font-size:18px;
+                      flex-shrink:0;">
+            ${initials}
+          </div>
+          
+          <!-- Content -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;gap:0.5rem;">
+              <strong style="color:#1f2937;font-size:1rem;">${escapeHtml(displayName)}</strong>
+              <span class="small" style="color:#9ca3af;white-space:nowrap;flex-shrink:0;">${lastMessageTime}</span>
+            </div>
+            <p class="small" style="margin:0;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}
+            </p>
+            ${
+              unreadCount > 0
+                ? `
+              <div style="margin-top:0.5rem;">
+                <span style="display:inline-block;
+                             background:#0B8073;
+                             color:white;
+                             font-size:0.75rem;
+                             font-weight:600;
+                             padding:2px 8px;
+                             border-radius:12px;">
+                  ${unreadCount} unread
+                </span>
+              </div>
+            `
+                : ''
+            }
+          </div>
         </div>
-        <p class="small" style="margin:0;color:#6b7280;">${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}</p>
       </div>
     `;
   });
 
   html += '</div>';
+
+  // Add "View All Messages" link
+  html += `
+    <div style="margin-top:1rem;text-align:center;">
+      <a href="/messages.html" class="cta secondary" style="display:inline-block;text-decoration:none;padding:0.75rem 1.5rem;">
+        View All Messages
+      </a>
+    </div>
+  `;
+
   container.innerHTML = html;
 
   // Add click handlers
@@ -78,10 +147,14 @@ function renderConversations(conversations) {
 
     // Hover effect
     item.addEventListener('mouseenter', function () {
-      this.style.background = '#fafafa';
+      if (!this.classList.contains('unread')) {
+        this.style.background = '#fafafa';
+      }
     });
     item.addEventListener('mouseleave', function () {
-      this.style.background = '';
+      if (!this.classList.contains('unread')) {
+        this.style.background = 'white';
+      }
     });
   });
 }
