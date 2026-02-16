@@ -30,6 +30,66 @@ class MessagingService {
   }
 
   /**
+   * Check if a user is a participant in a thread (supports both v1 and v2 formats)
+   * @param {Object} thread - Thread object
+   * @param {string} userId - User ID to check
+   * @returns {boolean} True if user is a participant
+   */
+  isParticipant(thread, userId) {
+    if (!thread || !userId) {
+      return false;
+    }
+
+    // v2 threads have a participants array
+    if (thread.participants && Array.isArray(thread.participants)) {
+      return thread.participants.includes(userId);
+    }
+
+    // v1 threads use customerId/supplierId/recipientId fields
+    if (thread.customerId === userId) {
+      return true;
+    }
+    if (thread.recipientId === userId) {
+      return true;
+    }
+    if (thread.supplierId === userId) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Get all participant IDs from a thread (supports both v1 and v2 formats)
+   * @param {Object} thread - Thread object
+   * @returns {Array<string>} Array of participant user IDs
+   */
+  getParticipantIds(thread) {
+    if (!thread) {
+      return [];
+    }
+
+    // v2 threads have a participants array
+    if (thread.participants && Array.isArray(thread.participants)) {
+      return thread.participants;
+    }
+
+    // v1 threads use customerId/supplierId/recipientId fields
+    const participants = [];
+    if (thread.customerId) {
+      participants.push(thread.customerId);
+    }
+    if (thread.supplierId) {
+      participants.push(thread.supplierId);
+    }
+    if (thread.recipientId && !participants.includes(thread.recipientId)) {
+      participants.push(thread.recipientId);
+    }
+
+    return participants;
+  }
+
+  /**
    * Check if user has reached their message limit for the day
    * @param {string} userId - User ID
    * @param {string} subscriptionTier - Subscription tier (free, pro, pro_plus, enterprise)
@@ -266,7 +326,7 @@ class MessagingService {
       }
 
       // Verify sender is a participant
-      if (!thread.participants.includes(sanitizedData.senderId)) {
+      if (!this.isParticipant(thread, sanitizedData.senderId)) {
         throw new Error('Sender is not a participant in this thread');
       }
 
@@ -567,7 +627,7 @@ class MessagingService {
       }
 
       // Verify user is a participant
-      if (!thread.participants.includes(userId)) {
+      if (!this.isParticipant(thread, userId)) {
         throw new Error('Unauthorized: user is not a participant');
       }
 
@@ -626,7 +686,8 @@ class MessagingService {
 
       // Calculate unread counts for recipients
       const unreadCount = { ...thread.unreadCount };
-      for (const participantId of thread.participants) {
+      const participantIds = this.getParticipantIds(thread);
+      for (const participantId of participantIds) {
         if (participantId !== message.senderId) {
           unreadCount[participantId] = (unreadCount[participantId] || 0) + 1;
         }

@@ -472,10 +472,29 @@
     }
 
     // Resolve other party name with fallback for v1 and v2 threads
-    // v1: supplierName/customerName fields
+    // v1: supplierName/customerName fields (check user role to pick the right one)
     // v2: metadata.otherPartyName field
-    const otherPartyName =
-      thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+    let otherPartyName = 'Unknown';
+
+    if (currentUserId) {
+      // For v1 threads, determine which name to show based on current user's role
+      if (thread.customerId === currentUserId) {
+        // Current user is the customer, show supplier's name
+        otherPartyName = thread.supplierName || thread.metadata?.otherPartyName || 'Unknown';
+      } else if (thread.supplierId === currentUserId || thread.recipientId === currentUserId) {
+        // Current user is the supplier/recipient, show customer's name
+        otherPartyName = thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+      } else {
+        // Fallback: try both names, prioritizing supplier name
+        otherPartyName =
+          thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+      }
+    } else {
+      // No current user ID, fallback to original logic
+      otherPartyName =
+        thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+    }
+
     const initial = otherPartyName.charAt(0).toUpperCase();
 
     document.getElementById('conversationAvatar').textContent = initial;
