@@ -473,7 +473,13 @@
                      </div>
                    </div>`
                 : currentUser && currentUser.id === resolveListingSellerUserId(listing)
-                  ? `<div class="listing-own-notice">This is your listing</div>`
+                  ? `<div class="listing-own-notice">
+                       <p>This is your listing</p>
+                       <div class="listing-own-notice-actions">
+                         <a href="/supplier/marketplace-new-listing.html?edit=${listing.id}" class="cta">Edit Listing</a>
+                         <a href="/supplier/my-marketplace-listings.html" class="btn btn-secondary">View My Listings</a>
+                       </div>
+                     </div>`
                   : `<a href="/auth.html" class="cta">Log in to message seller</a>`
             }
           </div>

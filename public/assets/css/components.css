@@ -2307,8 +2307,8 @@ html[data-theme='dark'] .skeleton-card {
   border: 1px solid #e7eaf0;
   border-radius: 999px;
   cursor: pointer;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2319,10 +2319,13 @@ html[data-theme='dark'] .skeleton-card {
     border-color 0.2s ease;
 }
 
-.shortlist-item-remove:hover {
+.shortlist-item-remove:hover,
+.shortlist-item-remove:focus {
   color: #dc2626;
   background: #fff1f2;
   border-color: #fecdd3;
+  outline: 2px solid #fecdd3;
+  outline-offset: 2px;
 }
 
 .shortlist-footer {

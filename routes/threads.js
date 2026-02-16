@@ -160,23 +160,46 @@ router.post(
       }
     }
 
-    if (!effectiveSupplierId) {
+    // For marketplace peer-to-peer messaging: if no supplier exists but we have a valid recipient
+    const isMarketplacePeerToPeer =
+      marketplaceListingId &&
+      !effectiveSupplierId &&
+      effectiveRecipientId &&
+      effectiveRecipientId !== req.user.id;
+
+    if (!effectiveSupplierId && !isMarketplacePeerToPeer) {
       return res.status(400).json({
         error: 'Missing supplierId',
         message: 'No supplier could be resolved for this recipient.',
       });
     }
 
-    const supplier = suppliers.find(s => s.id === effectiveSupplierId && s.approved);
-    if (!supplier) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
+    let supplier = null;
+    if (effectiveSupplierId) {
+      supplier = suppliers.find(s => s.id === effectiveSupplierId && s.approved);
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
 
-    if (supplier.ownerUserId && supplier.ownerUserId === req.user.id) {
-      return res.status(400).json({
-        error: 'Cannot message your own listing',
-        message: 'You cannot start a conversation on your own listing.',
-      });
+      if (supplier.ownerUserId && supplier.ownerUserId === req.user.id) {
+        return res.status(400).json({
+          error: 'Cannot message your own listing',
+          message: 'You cannot start a conversation on your own listing.',
+        });
+      }
+    } else if (isMarketplacePeerToPeer) {
+      // Peer-to-peer marketplace conversation - verify recipient exists
+      if (effectiveRecipientId === req.user.id) {
+        return res.status(400).json({
+          error: 'Cannot message yourself',
+          message: 'You cannot start a conversation with yourself.',
+        });
+      }
+      const users = await dbUnified.read('users');
+      const recipientUser = users.find(u => u.id === effectiveRecipientId);
+      if (!recipientUser) {
+        return res.status(404).json({ error: 'Recipient not found' });
+      }
     }
 
     // Verify CAPTCHA if token provided (optional in development)
@@ -213,16 +236,30 @@ router.post(
     });
 
     const threads = await dbUnified.read('threads');
-    let thread = threads.find(
-      t => t.supplierId === effectiveSupplierId && t.customerId === req.user.id
-    );
+    let thread;
+
+    if (isMarketplacePeerToPeer) {
+      // For peer-to-peer marketplace conversations, find by recipientId + customerId
+      thread = threads.find(
+        t =>
+          t.recipientId === effectiveRecipientId &&
+          t.customerId === req.user.id &&
+          t.marketplace?.listingId === String(marketplaceListingId)
+      );
+    } else {
+      // Standard supplier conversation
+      thread = threads.find(
+        t => t.supplierId === effectiveSupplierId && t.customerId === req.user.id
+      );
+    }
+
     if (!thread) {
       thread = {
         id: uid('thd'),
-        supplierId: effectiveSupplierId,
-        supplierName: supplier.name,
+        supplierId: effectiveSupplierId || null,
+        supplierName: supplier ? supplier.name : null,
         customerId: req.user.id,
-        recipientId: effectiveRecipientId || supplier.ownerUserId || null,
+        recipientId: effectiveRecipientId || (supplier ? supplier.ownerUserId : null) || null,
         packageId: packageId || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -253,6 +290,7 @@ router.post(
               listingTitle: marketplaceListingTitle
                 ? String(marketplaceListingTitle).slice(0, 200)
                 : null,
+              isPeerToPeer: isMarketplacePeerToPeer,
             }
           : null,
       };
