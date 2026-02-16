@@ -114,6 +114,20 @@ function ensureServices(req, res, next) {
   next();
 }
 
+/**
+ * Helper function to build thread query for both v1 (thd_*) and v2 (ObjectId) thread IDs
+ * @param {string} threadId - Thread ID (either ObjectId or v1 string like 'thd_xxx')
+ * @returns {Object} MongoDB query object
+ */
+function buildThreadQuery(threadId) {
+  if (ObjectId.isValid(threadId)) {
+    return { _id: new ObjectId(threadId) };
+  } else {
+    // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
+    return { $or: [{ _id: threadId }, { id: threadId }] };
+  }
+}
+
 // =========================
 // Thread Management
 // =========================
@@ -1662,13 +1676,8 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
     const userId = req.user.id;
     const threadId = req.params.id;
 
-    if (!ObjectId.isValid(threadId)) {
-      return res.status(400).json({ error: 'Invalid thread ID' });
-    }
-
-    const thread = await messagingService.threadsCollection.findOne({
-      _id: new ObjectId(threadId),
-    });
+    const query = buildThreadQuery(threadId);
+    const thread = await messagingService.threadsCollection.findOne(query);
 
     if (!thread || !thread.participants.includes(userId)) {
       return res.status(404).json({ error: 'Thread not found' });
@@ -1687,8 +1696,9 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
       });
     }
 
+    // Use thread._id (MongoDB always creates _id field even for v1 threads)
     await messagingService.threadsCollection.updateOne(
-      { _id: new ObjectId(threadId) },
+      { _id: thread._id },
       { $set: { [`pinnedAt.${userId}`]: new Date() } }
     );
 
@@ -1734,13 +1744,8 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
     const threadId = req.params.id;
     const { duration } = req.body; // '1h', '8h', '1d', 'forever'
 
-    if (!ObjectId.isValid(threadId)) {
-      return res.status(400).json({ error: 'Invalid thread ID' });
-    }
-
-    const thread = await messagingService.threadsCollection.findOne({
-      _id: new ObjectId(threadId),
-    });
+    const query = buildThreadQuery(threadId);
+    const thread = await messagingService.threadsCollection.findOne(query);
 
     if (!thread || !thread.participants.includes(userId)) {
       return res.status(404).json({ error: 'Thread not found' });
@@ -1761,8 +1766,9 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
       mutedUntil = new Date(now + ms);
     }
 
+    // Use thread._id (MongoDB always creates _id field even for v1 threads)
     await messagingService.threadsCollection.updateOne(
-      { _id: new ObjectId(threadId) },
+      { _id: thread._id },
       { $set: { [`mutedUntil.${userId}`]: mutedUntil } }
     );
 
@@ -1782,12 +1788,16 @@ router.post('/threads/:id/unmute', applyAuthRequired, ensureServices, async (req
     const userId = req.user.id;
     const threadId = req.params.id;
 
-    if (!ObjectId.isValid(threadId)) {
-      return res.status(400).json({ error: 'Invalid thread ID' });
+    const query = buildThreadQuery(threadId);
+    const thread = await messagingService.threadsCollection.findOne(query);
+
+    if (!thread || !thread.participants || !thread.participants.includes(userId)) {
+      return res.status(404).json({ error: 'Thread not found' });
     }
 
+    // Use thread._id (MongoDB always creates _id field even for v1 threads)
     await messagingService.threadsCollection.updateOne(
-      { _id: new ObjectId(threadId), participants: userId },
+      { _id: thread._id },
       { $unset: { [`mutedUntil.${userId}`]: '' } }
     );
 

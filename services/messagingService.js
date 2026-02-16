@@ -194,10 +194,14 @@ class MessagingService {
    */
   async getThread(threadId) {
     try {
-      const thread = await this.threadsCollection.findOne({
-        _id: typeof threadId === 'string' ? new ObjectId(threadId) : threadId,
-      });
-
+      let query;
+      if (ObjectId.isValid(threadId)) {
+        query = { _id: new ObjectId(threadId) };
+      } else {
+        // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
+        query = { $or: [{ _id: threadId }, { id: threadId }] };
+      }
+      const thread = await this.threadsCollection.findOne(query);
       return thread;
     } catch (error) {
       logger.error('Error getting thread', { threadId, error: error.message });
