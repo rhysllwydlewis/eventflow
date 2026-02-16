@@ -123,15 +123,6 @@ async function writeThreadToMongoDB(thread, db) {
   try {
     const threadsCollection = db.collection('threads');
 
-    // Check if thread already exists in MongoDB
-    const existingThread = await threadsCollection.findOne({
-      $or: [{ _id: thread.id }, { id: thread.id }],
-    });
-
-    if (existingThread) {
-      return; // Thread already exists, no need to insert
-    }
-
     // Build participants array from v1 fields for v2 compatibility
     const participants = [];
     if (thread.customerId) {
@@ -152,7 +143,12 @@ async function writeThreadToMongoDB(thread, db) {
       updatedAt: thread.updatedAt || new Date().toISOString(),
     };
 
-    await threadsCollection.insertOne(mongoThread);
+    // Use updateOne with upsert to avoid duplicate key errors
+    await threadsCollection.updateOne(
+      { id: thread.id }, // Match by v1 thread ID
+      { $setOnInsert: mongoThread }, // Only set on insert, don't overwrite existing
+      { upsert: true }
+    );
   } catch (error) {
     console.error('Error writing thread to MongoDB:', error);
     // Don't throw - dual-write failure shouldn't block the v1 API
@@ -172,20 +168,13 @@ async function writeMessageToMongoDB(message, db) {
   try {
     const messagesCollection = db.collection('messages');
 
-    // Check if message already exists in MongoDB
-    const existingMessage = await messagesCollection.findOne({
-      $or: [{ _id: message.id }, { id: message.id }],
-    });
-
-    if (existingMessage) {
-      return; // Message already exists, no need to insert
-    }
-
     // Create MongoDB document with both v1 and v2 fields
+    // v1 fields: fromUserId, text, createdAt
+    // v2 fields: senderId, content, sentAt
     const mongoMessage = {
       ...message,
       id: message.id, // Preserve v1 message ID
-      // v2 field aliases
+      // v2 field aliases (primary v1, fallback v2)
       senderId: message.fromUserId || message.senderId,
       content: message.text || message.content,
       sentAt: message.createdAt || message.sentAt,
@@ -195,7 +184,12 @@ async function writeMessageToMongoDB(message, db) {
       threadId: message.threadId,
     };
 
-    await messagesCollection.insertOne(mongoMessage);
+    // Use updateOne with upsert to avoid duplicate key errors
+    await messagesCollection.updateOne(
+      { id: message.id }, // Match by v1 message ID
+      { $setOnInsert: mongoMessage }, // Only set on insert, don't overwrite existing
+      { upsert: true }
+    );
   } catch (error) {
     console.error('Error writing message to MongoDB:', error);
     // Don't throw - dual-write failure shouldn't block the v1 API
