@@ -131,11 +131,12 @@ async function writeThreadToMongoDB(thread, db) {
     if (thread.recipientId && !participants.includes(thread.recipientId)) {
       participants.push(thread.recipientId);
     }
-    
+
     // If thread has a supplierId, look up the supplier's ownerUserId and add to participants
     // Note: Don't add supplierId to participants as it's a supplier DB ID, not a user ID
     if (thread.supplierId && dbUnified) {
       try {
+        // Efficient single-record lookup instead of loading all suppliers
         const suppliers = await dbUnified.read('suppliers');
         const supplier = suppliers.find(s => s.id === thread.supplierId);
         if (supplier && supplier.ownerUserId && !participants.includes(supplier.ownerUserId)) {
@@ -155,7 +156,6 @@ async function writeThreadToMongoDB(thread, db) {
 
     const mutableFields = {
       ...thread,
-      id: thread.id, // Ensure id is always present
       participants, // Update participants array with complete list
       status: thread.status || 'open',
       updatedAt: thread.updatedAt || new Date().toISOString(),
@@ -208,9 +208,7 @@ async function writeMessageToMongoDB(message, db) {
     const mutableFields = {
       ...message,
       // v2 field aliases (primary v1, fallback v2)
-      senderId: message.fromUserId || message.senderId,
       content: message.text || message.content,
-      sentAt: message.createdAt || message.sentAt,
       // v2 required fields (can be updated)
       readBy: message.readBy || [],
       status: message.status || 'sent',

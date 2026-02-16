@@ -153,7 +153,7 @@ async function isThreadParticipant(thread, userId, db = null) {
   if (thread.recipientId === userId) {
     return true;
   }
-  
+
   // Note: supplierId is a supplier DB ID (like sup_xxxxx), NOT a user ID
   // We need to check if the userId is the owner of the supplier
   if (thread.supplierId && db) {
@@ -320,7 +320,7 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
     // Attempt to resolve null/missing names by looking up user data
     if (db) {
       const usersToLookup = [];
-      
+
       // If v1 thread with null names, look up based on thread fields
       if (!resolvedCustomerName && thread.customerId) {
         usersToLookup.push(thread.customerId);
@@ -328,12 +328,15 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
       if (!resolvedRecipientName && thread.recipientId) {
         usersToLookup.push(thread.recipientId);
       }
-      
+
       // For v2 threads or when names are missing, look up all participants
+      // Use Set for O(n) complexity instead of includes() for O(n²)
       if (thread.participants && thread.participants.length > 0) {
+        const usersSet = new Set(usersToLookup);
         thread.participants.forEach(p => {
-          if (!usersToLookup.includes(p)) {
+          if (!usersSet.has(p)) {
             usersToLookup.push(p);
+            usersSet.add(p);
           }
         });
       }
@@ -358,7 +361,7 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
           if (thread.recipientId && !resolvedRecipientName) {
             resolvedRecipientName = participantNames[thread.recipientId] || null;
           }
-          
+
           // For v2 threads without explicit roles, map other participants to names
           if (!thread.supplierId && thread.participants) {
             const otherParticipants = thread.participants.filter(p => p !== req.user.id);
@@ -369,7 +372,7 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
               resolvedRecipientName = participantNames[otherParticipants[1]] || null;
             }
           }
-          
+
           // If thread has supplierId, look up supplier name if not already set
           if (thread.supplierId && !resolvedSupplierName) {
             const suppliersCollection = db.collection('suppliers');
