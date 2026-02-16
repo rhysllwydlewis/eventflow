@@ -22,6 +22,9 @@ const {
 const { sanitizeMessage } = require('./contentSanitizer');
 const { checkSpam } = require('./spamDetection');
 
+// Constants
+const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
 class MessagingService {
   constructor(db) {
     this.db = db;
@@ -740,7 +743,7 @@ class MessagingService {
           $set: {
             lastMessageId: message._id.toString(),
             lastMessageAt: message.createdAt,
-            lastMessageText: message.content ? message.content.substring(0, 120) : '',
+            lastMessageText: message.content ? message.content.substring(0, MESSAGE_PREVIEW_MAX_LENGTH) : '',
             lastMessageSenderId: message.senderId,
             unreadCount,
             updatedAt: new Date(),

@@ -11,6 +11,9 @@ import {
   filterThreadsByQualityLevel,
 } from './utils/lead-quality-helper.js';
 
+// Constants
+const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
 // Initialize messaging manager
 const messagingManager = new MessagingManager();
 
@@ -70,7 +73,7 @@ function escapeHtml(text) {
 }
 
 // Format message preview with "You:" prefix for outbound messages
-function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = 100) {
+function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = MESSAGE_PREVIEW_MAX_LENGTH) {
   if (!messageText || messageText === 'No messages yet') {
     return 'No messages yet';
   }
@@ -161,7 +164,7 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
     const lastMessageText = conversation.lastMessage || conversation.lastMessageText || '';
     const lastMessageSenderId = conversation.lastMessageSenderId || '';
     const currentUserId = currentUser?.id || '';
-    const lastMessage = formatMessagePreview(lastMessageText, lastMessageSenderId, currentUserId, 100);
+    const lastMessage = formatMessagePreview(lastMessageText, lastMessageSenderId, currentUserId, MESSAGE_PREVIEW_MAX_LENGTH);
     
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)

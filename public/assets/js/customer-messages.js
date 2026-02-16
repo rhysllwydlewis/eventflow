@@ -6,6 +6,9 @@
 import messagingSystem from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 
+// Constants
+const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
 // Get current user
 async function getCurrentUser() {
   try {
@@ -31,7 +34,7 @@ function escapeHtml(text) {
 }
 
 // Format message preview with "You:" prefix for outbound messages
-function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = 100) {
+function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = MESSAGE_PREVIEW_MAX_LENGTH) {
   if (!messageText || messageText === 'No messages yet') {
     return 'No messages yet';
   }
@@ -79,7 +82,7 @@ function renderConversations(conversations, currentUser) {
     const lastMessageText = conversation.lastMessage || conversation.lastMessageText || '';
     const lastMessageSenderId = conversation.lastMessageSenderId || '';
     const currentUserId = currentUser?.id || '';
-    const lastMessage = formatMessagePreview(lastMessageText, lastMessageSenderId, currentUserId, 100);
+    const lastMessage = formatMessagePreview(lastMessageText, lastMessageSenderId, currentUserId, MESSAGE_PREVIEW_MAX_LENGTH);
     
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)

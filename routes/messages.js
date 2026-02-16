@@ -20,6 +20,9 @@ let auditLog;
 let uid;
 let postmark;
 
+// Constants
+const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
 /**
  * Initialize dependencies from server.js
  * @param {Object} deps - Dependencies object
@@ -446,8 +449,8 @@ router.post(
       // Update thread if not a draft
       if (!isDraft) {
         thread.lastMessageAt = now;
-        thread.lastMessagePreview = sanitizedText.substring(0, 100);
-        thread.lastMessageText = sanitizedText.substring(0, 120);
+        thread.lastMessagePreview = sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+        thread.lastMessageText = sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
         thread.lastMessageSenderId = req.user.id;
         thread.updatedAt = now;
 
@@ -596,8 +599,8 @@ router.put('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, re
       if (threadIndex !== -1) {
         const thread = threads[threadIndex];
         thread.lastMessageAt = now;
-        thread.lastMessagePreview = message.text.substring(0, 100);
-        thread.lastMessageText = message.text.substring(0, 120);
+        thread.lastMessagePreview = message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+        thread.lastMessageText = message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
         thread.lastMessageSenderId = req.user.id;
         thread.updatedAt = now;
 
@@ -1190,8 +1193,8 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
 
     // Update thread
     thread.lastMessageAt = now;
-    thread.lastMessagePreview = message.trim().substring(0, 100);
-    thread.lastMessageText = message.trim().substring(0, 120);
+    thread.lastMessagePreview = message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+    thread.lastMessageText = message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
     thread.lastMessageSenderId = userId;
     thread.updatedAt = now;
 
