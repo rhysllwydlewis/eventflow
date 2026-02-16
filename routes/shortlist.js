@@ -21,14 +21,27 @@ function isValidImageUrl(url) {
   if (!url || typeof url !== 'string') {
     return false;
   }
-  // Reject path traversal attempts
-  if (url.includes('..')) {
+
+  // Decode URL to catch encoded path traversal attempts
+  let decodedUrl = url;
+  try {
+    decodedUrl = decodeURIComponent(url);
+  } catch (e) {
+    // If decoding fails, use original URL
+    decodedUrl = url;
+  }
+
+  // Reject path traversal attempts (including encoded)
+  if (decodedUrl.includes('..')) {
     return false;
   }
-  // Accept relative paths starting with /
+
+  // Only accept relative paths from whitelisted prefixes
   if (url.startsWith('/')) {
-    return true;
+    const allowedPrefixes = ['/api/photos/', '/uploads/', '/images/'];
+    return allowedPrefixes.some(prefix => url.startsWith(prefix));
   }
+
   // Accept full URLs
   return validator.isURL(url);
 }

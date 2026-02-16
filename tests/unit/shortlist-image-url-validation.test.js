@@ -15,14 +15,27 @@ describe('Shortlist Image URL Validation', () => {
     if (!url || typeof url !== 'string') {
       return false;
     }
-    // Reject path traversal attempts
-    if (url.includes('..')) {
+
+    // Decode URL to catch encoded path traversal attempts
+    let decodedUrl = url;
+    try {
+      decodedUrl = decodeURIComponent(url);
+    } catch (e) {
+      // If decoding fails, use original URL
+      decodedUrl = url;
+    }
+
+    // Reject path traversal attempts (including encoded)
+    if (decodedUrl.includes('..')) {
       return false;
     }
-    // Accept relative paths starting with /
+
+    // Only accept relative paths from whitelisted prefixes
     if (url.startsWith('/')) {
-      return true;
+      const allowedPrefixes = ['/api/photos/', '/uploads/', '/images/'];
+      return allowedPrefixes.some(prefix => url.startsWith(prefix));
     }
+
     // Accept full URLs
     return validator.isURL(url);
   }
@@ -36,16 +49,26 @@ describe('Shortlist Image URL Validation', () => {
       expect(isValidImageUrl('/uploads/marketplace/image.jpg')).toBe(true);
     });
 
-    it('should accept root path', () => {
-      expect(isValidImageUrl('/')).toBe(true);
+    it('should accept images from /images/ prefix', () => {
+      expect(isValidImageUrl('/images/photo.jpg')).toBe(true);
     });
 
-    it('should accept paths with query parameters', () => {
+    it('should reject root path', () => {
+      expect(isValidImageUrl('/')).toBe(false);
+    });
+
+    it('should accept paths with query parameters from allowed prefixes', () => {
       expect(isValidImageUrl('/api/photos/photo_abc123?size=medium')).toBe(true);
     });
 
-    it('should accept paths with hashes', () => {
+    it('should accept paths with hashes from allowed prefixes', () => {
       expect(isValidImageUrl('/images/photo.jpg#preview')).toBe(true);
+    });
+
+    it('should reject relative paths not in whitelist', () => {
+      expect(isValidImageUrl('/etc/passwd')).toBe(false);
+      expect(isValidImageUrl('/admin/secret')).toBe(false);
+      expect(isValidImageUrl('/config/database.yml')).toBe(false);
     });
   });
 
@@ -81,11 +104,15 @@ describe('Shortlist Image URL Validation', () => {
     });
 
     it('should reject URL encoded path traversal', () => {
-      expect(isValidImageUrl('/api/photos/..%2F..%2Fetc%2Fpasswd')).toBe(false);
+      expect(isValidImageUrl('/api/photos/%2e%2e%2F%2e%2e%2Fetc%2Fpasswd')).toBe(false);
     });
 
     it('should reject backslash path traversal', () => {
       expect(isValidImageUrl('/api/photos/..\\..\\secret')).toBe(false);
+    });
+
+    it('should reject mixed case encoded traversal', () => {
+      expect(isValidImageUrl('/uploads/%2E%2E/secret')).toBe(false);
     });
   });
 
@@ -138,21 +165,26 @@ describe('Shortlist Image URL Validation', () => {
   });
 
   describe('edge cases', () => {
-    it('should accept very long relative paths', () => {
+    it('should accept very long relative paths from allowed prefixes', () => {
       const longPath = `/api/photos/${'a'.repeat(100)}/image.jpg`;
       expect(isValidImageUrl(longPath)).toBe(true);
     });
 
-    it('should accept paths with special characters (encoded)', () => {
+    it('should accept paths with special characters (encoded) from allowed prefixes', () => {
       expect(isValidImageUrl('/api/photos/photo_%20with%20spaces.jpg')).toBe(true);
     });
 
-    it('should accept paths with Unicode characters', () => {
+    it('should accept paths with Unicode characters from allowed prefixes', () => {
       expect(isValidImageUrl('/uploads/фото.jpg')).toBe(true);
     });
 
-    it('should handle paths with multiple slashes', () => {
-      expect(isValidImageUrl('/api//photos///photo_123')).toBe(true);
+    it('should handle paths with multiple slashes in allowed prefixes', () => {
+      expect(isValidImageUrl('/api/photos///photo_123')).toBe(true);
+    });
+
+    it('should handle malformed URL encoding gracefully', () => {
+      // Invalid encoding should not crash, just reject
+      expect(isValidImageUrl('/api/photos/%')).toBe(true); // Still valid path
     });
   });
 
@@ -177,6 +209,12 @@ describe('Shortlist Image URL Validation', () => {
 
     it('should reject path traversal disguised as photo ID', () => {
       expect(isValidImageUrl('/api/photos/../../../etc/passwd')).toBe(false);
+    });
+
+    it('should reject sensitive paths not in whitelist', () => {
+      expect(isValidImageUrl('/etc/shadow')).toBe(false);
+      expect(isValidImageUrl('/.env')).toBe(false);
+      expect(isValidImageUrl('/config/secrets.yml')).toBe(false);
     });
   });
 });

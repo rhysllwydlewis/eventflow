@@ -466,6 +466,7 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
       limit: parseInt(limit, 10),
       skip: parseInt(skip, 10),
       before,
+      thread, // Pass thread to avoid extra lookup
     });
 
     // Transform for response
