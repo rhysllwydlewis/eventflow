@@ -1,13 +1,14 @@
 /**
- * Test for supplier inbox fix
- * Verifies that suppliers can see messages from customers
+ * Test for all-to-all user messaging
+ * Verifies that any user type can message any other user type
  */
 
-describe('Supplier Inbox Fix', () => {
+describe('All-to-all User Messaging', () => {
   // Mock data
   const mockUserId = 'user123';
   const mockSupplierBusinessId = 'supplier456';
   const mockCustomerId = 'customer789';
+  const mockRecipientId = 'recipient999';
 
   const mockSuppliers = [
     {
@@ -21,119 +22,182 @@ describe('Supplier Inbox Fix', () => {
     {
       id: 'thread1',
       customerId: mockCustomerId,
-      supplierId: mockSupplierBusinessId, // Thread points to supplier business ID
+      supplierId: mockSupplierBusinessId,
+      recipientId: null,
       customerName: 'Test Customer',
       supplierName: 'Test Supplier',
       lastMessageAt: '2024-01-01T00:00:00.000Z',
       status: 'open',
     },
+    {
+      id: 'thread2',
+      customerId: mockUserId,
+      supplierId: null,
+      recipientId: mockRecipientId,
+      customerName: 'User',
+      lastMessageAt: '2024-01-02T00:00:00.000Z',
+      status: 'open',
+    },
   ];
 
-  describe('Supplier conversation filtering', () => {
-    it('should filter threads by supplier business IDs owned by user', () => {
-      // Simulate what the fixed API endpoint does:
-      // 1. Get all supplier business IDs owned by this user
-      const supplierIds = mockSuppliers.filter(s => s.ownerUserId === mockUserId).map(s => s.id);
+  describe('Thread filtering for all user types', () => {
+    it('should include threads where user is customerId', () => {
+      const userId = mockUserId;
+      const supplierIds = mockSuppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
 
-      expect(supplierIds).toContain(mockSupplierBusinessId);
+      const filteredThreads = mockThreads.filter(
+        t =>
+          t.customerId === userId || t.recipientId === userId || supplierIds.includes(t.supplierId)
+      );
 
-      // 2. Filter threads where supplierId matches one of those business IDs
-      const filteredThreads = mockThreads.filter(t => supplierIds.includes(t.supplierId));
-
-      // Should return the thread since the user owns the supplier business
-      expect(filteredThreads).toHaveLength(1);
-      expect(filteredThreads[0].id).toBe('thread1');
+      // mockUserId appears in 2 threads: as customer in thread2 and as supplier owner in thread1
+      expect(filteredThreads).toHaveLength(2);
+      expect(filteredThreads.find(t => t.id === 'thread1')).toBeTruthy();
+      expect(filteredThreads.find(t => t.id === 'thread2')).toBeTruthy();
     });
 
-    it('should not return threads for suppliers the user does not own', () => {
-      const differentUserId = 'differentUser';
+    it('should include threads where user is recipientId', () => {
+      const userId = mockRecipientId;
+      const supplierIds = mockSuppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
 
-      // Get supplier IDs for a different user
-      const supplierIds = mockSuppliers
-        .filter(s => s.ownerUserId === differentUserId)
-        .map(s => s.id);
+      const filteredThreads = mockThreads.filter(
+        t =>
+          t.customerId === userId || t.recipientId === userId || supplierIds.includes(t.supplierId)
+      );
 
-      expect(supplierIds).toHaveLength(0);
+      expect(filteredThreads).toHaveLength(1);
+      expect(filteredThreads[0].id).toBe('thread2');
+    });
 
-      // Filter threads
-      const filteredThreads = mockThreads.filter(t => supplierIds.includes(t.supplierId));
+    it('should include threads where user owns the supplier', () => {
+      const userId = mockUserId;
+      const supplierIds = mockSuppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
 
-      // Should return no threads
-      expect(filteredThreads).toHaveLength(0);
+      const filteredThreads = mockThreads.filter(
+        t =>
+          t.customerId === userId || t.recipientId === userId || supplierIds.includes(t.supplierId)
+      );
+
+      // Should return both threads: thread1 (supplier owner) and thread2 (customer)
+      expect(filteredThreads).toHaveLength(2);
     });
   });
 
-  describe('userOwnsSupplier helper function', () => {
-    // Simulate the helper function
-    const userOwnsSupplier = async (userId, supplierId) => {
-      if (!userId || !supplierId) {
+  describe('isThreadParticipant helper function', () => {
+    // Simulate the isThreadParticipant function
+    const isThreadParticipant = async (thread, userId) => {
+      if (!thread || !userId) {
         return false;
       }
-      return mockSuppliers.some(s => s.id === supplierId && s.ownerUserId === userId);
+
+      // Check if user is the customer
+      if (thread.customerId === userId) {
+        return true;
+      }
+
+      // Check if user is the recipient (peer-to-peer)
+      if (thread.recipientId === userId) {
+        return true;
+      }
+
+      // Check if user owns the supplier business
+      if (thread.supplierId) {
+        return mockSuppliers.some(s => s.id === thread.supplierId && s.ownerUserId === userId);
+      }
+
+      return false;
     };
 
-    it('should return true when user owns the supplier', async () => {
-      const result = await userOwnsSupplier(mockUserId, mockSupplierBusinessId);
+    it('should return true when user is customerId', async () => {
+      const thread = mockThreads[0];
+      const result = await isThreadParticipant(thread, mockCustomerId);
       expect(result).toBe(true);
     });
 
-    it('should return false when user does not own the supplier', async () => {
-      const result = await userOwnsSupplier('differentUser', mockSupplierBusinessId);
+    it('should return true when user is recipientId', async () => {
+      const thread = mockThreads[1];
+      const result = await isThreadParticipant(thread, mockRecipientId);
+      expect(result).toBe(true);
+    });
+
+    it('should return true when user owns the supplier', async () => {
+      const thread = mockThreads[0];
+      const result = await isThreadParticipant(thread, mockUserId);
+      expect(result).toBe(true);
+    });
+
+    it('should return false when user is not a participant', async () => {
+      const thread = mockThreads[0];
+      const result = await isThreadParticipant(thread, 'differentUser');
       expect(result).toBe(false);
     });
 
     it('should return false for invalid inputs', async () => {
-      expect(await userOwnsSupplier(null, mockSupplierBusinessId)).toBe(false);
-      expect(await userOwnsSupplier(mockUserId, null)).toBe(false);
-      expect(await userOwnsSupplier(null, null)).toBe(false);
+      expect(await isThreadParticipant(null, mockUserId)).toBe(false);
+      expect(await isThreadParticipant(mockThreads[0], null)).toBe(false);
+      expect(await isThreadParticipant(null, null)).toBe(false);
     });
   });
 
   describe('Access control checks', () => {
-    const userOwnsSupplier = async (userId, supplierId) => {
-      if (!userId || !supplierId) {
+    const isThreadParticipant = async (thread, userId) => {
+      if (!thread || !userId) {
         return false;
       }
-      return mockSuppliers.some(s => s.id === supplierId && s.ownerUserId === userId);
+
+      if (thread.customerId === userId) {
+        return true;
+      }
+
+      if (thread.recipientId === userId) {
+        return true;
+      }
+
+      if (thread.supplierId) {
+        return mockSuppliers.some(s => s.id === thread.supplierId && s.ownerUserId === userId);
+      }
+
+      return false;
     };
-
-    it('should grant access to supplier who owns the thread', async () => {
-      const thread = mockThreads[0];
-      const userRole = 'supplier';
-      const userId = mockUserId;
-
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
-
-      expect(hasAccess).toBe(true);
-    });
-
-    it('should deny access to supplier who does not own the thread', async () => {
-      const thread = mockThreads[0];
-      const userRole = 'supplier';
-      const userId = 'differentUser';
-
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
-
-      expect(hasAccess).toBe(false);
-    });
 
     it('should grant access to customer who created the thread', async () => {
       const thread = mockThreads[0];
       const userRole = 'customer';
       const userId = mockCustomerId;
 
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
       expect(hasAccess).toBe(true);
+    });
+
+    it('should grant access to supplier who owns the thread', async () => {
+      const thread = mockThreads[0];
+      const userRole = 'supplier';
+      const userId = mockUserId;
+
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
+
+      expect(hasAccess).toBe(true);
+    });
+
+    it('should grant access to recipient in peer-to-peer thread', async () => {
+      const thread = mockThreads[1];
+      const userRole = 'customer';
+      const userId = mockRecipientId;
+
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
+
+      expect(hasAccess).toBe(true);
+    });
+
+    it('should deny access to non-participants', async () => {
+      const thread = mockThreads[0];
+      const userRole = 'customer';
+      const userId = 'differentUser';
+
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
+
+      expect(hasAccess).toBe(false);
     });
   });
 });

@@ -98,18 +98,35 @@ function getMessageHtml(recipientName, senderName, text, baseUrl) {
 }
 
 /**
- * Check if a user has access to a supplier's threads
+ * Check if a user is a participant in a thread
+ * Supports v1 threads with customerId/supplierId/recipientId fields
+ * @param {Object} thread - Thread object
  * @param {string} userId - User ID to check
- * @param {string} supplierId - Supplier business ID from thread
  * @param {Array} suppliers - Optional suppliers array to avoid redundant DB reads
- * @returns {Promise<boolean>} True if user owns this supplier
+ * @returns {Promise<boolean>} True if user is a participant in the thread
  */
-async function userOwnsSupplier(userId, supplierId, suppliers = null) {
-  if (!userId || !supplierId) {
+async function isThreadParticipant(thread, userId, suppliers = null) {
+  if (!thread || !userId) {
     return false;
   }
-  const suppliersList = suppliers || (await dbUnified.read('suppliers'));
-  return suppliersList.some(s => s.id === supplierId && s.ownerUserId === userId);
+
+  // Check if user is the customer (thread creator)
+  if (thread.customerId === userId) {
+    return true;
+  }
+
+  // Check if user is the recipient (peer-to-peer messaging)
+  if (thread.recipientId === userId) {
+    return true;
+  }
+
+  // Check if user owns the supplier business
+  if (thread.supplierId) {
+    const suppliersList = suppliers || (await dbUnified.read('suppliers'));
+    return suppliersList.some(s => s.id === thread.supplierId && s.ownerUserId === userId);
+  }
+
+  return false;
 }
 
 const router = express.Router();
@@ -127,18 +144,17 @@ router.get('/threads', applyAuthRequired, async (req, res) => {
 
     let threads = await dbUnified.read('threads');
 
-    // Filter threads based on user role
-    if (userRole === 'customer') {
-      threads = threads.filter(t => t.customerId === userId);
-    } else if (userRole === 'supplier') {
-      // For suppliers, first get all supplier business IDs owned by this user
+    // Filter threads where user is a participant (regardless of role)
+    if (userRole !== 'admin') {
       const suppliers = await dbUnified.read('suppliers');
       const supplierIds = suppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
-      threads = threads.filter(t => supplierIds.includes(t.supplierId));
-    } else if (userRole === 'admin') {
-      // Admins can see all threads
-    } else {
-      return res.status(403).json({ error: 'Access denied' });
+
+      threads = threads.filter(
+        t =>
+          t.customerId === userId || // User is the customer
+          t.recipientId === userId || // User is the recipient (peer-to-peer)
+          supplierIds.includes(t.supplierId) // User owns the supplier
+      );
     }
 
     // Filter by status if provided
@@ -186,13 +202,7 @@ router.get('/threads/:threadId', applyAuthRequired, async (req, res) => {
     }
 
     // Check access permissions
-    let hasAccess =
-      userRole === 'admin' || (userRole === 'customer' && thread.customerId === userId);
-
-    // For suppliers, check if user owns the supplier business
-    if (!hasAccess && userRole === 'supplier') {
-      hasAccess = await userOwnsSupplier(userId, thread.supplierId);
-    }
+    const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -378,10 +388,7 @@ router.get('/threads/:threadId/messages', applyAuthRequired, async (req, res) =>
       return res.status(404).json({ error: 'Thread not found' });
     }
 
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+    const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -434,10 +441,7 @@ router.post(
       }
 
       const thread = threads[threadIndex];
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -672,10 +676,7 @@ router.post(
       }
 
       const thread = threads[threadIndex];
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -739,10 +740,7 @@ router.post(
       }
 
       const thread = threads[threadIndex];
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -929,10 +927,7 @@ router.post(
       }
 
       const thread = threads[threadIndex];
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -973,10 +968,7 @@ router.post(
       }
 
       const thread = threads[threadIndex];
-      const hasAccess =
-        userRole === 'admin' ||
-        (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+      const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -1014,17 +1006,16 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
     // Read suppliers once for both filtering and enrichment
     const suppliers = await dbUnified.read('suppliers');
 
-    // Filter threads based on user role
-    if (userRole === 'customer') {
-      threads = threads.filter(t => t.customerId === userId);
-    } else if (userRole === 'supplier') {
-      // For suppliers, first get all supplier business IDs owned by this user
+    // Filter threads where user is a participant (regardless of role)
+    if (userRole !== 'admin') {
       const supplierIds = suppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
-      threads = threads.filter(t => supplierIds.includes(t.supplierId));
-    } else if (userRole === 'admin') {
-      // Admins can see all threads
-    } else {
-      return res.status(403).json({ error: 'Access denied' });
+
+      threads = threads.filter(
+        t =>
+          t.customerId === userId || // User is the customer
+          t.recipientId === userId || // User is the recipient (peer-to-peer)
+          supplierIds.includes(t.supplierId) // User owns the supplier
+      );
     }
 
     // Filter by status if provided
@@ -1137,10 +1128,7 @@ router.get('/:conversationId', applyAuthRequired, async (req, res) => {
       return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+    const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -1188,10 +1176,7 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
     }
 
     const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
+    const hasAccess = userRole === 'admin' || (await isThreadParticipant(thread, userId));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
