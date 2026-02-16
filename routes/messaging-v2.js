@@ -133,9 +133,10 @@ function buildThreadQuery(threadId) {
  * Handles both v1 threads (customerId/supplierId/recipientId) and v2 threads (participants array)
  * @param {Object} thread - Thread object
  * @param {string} userId - User ID to check
- * @returns {boolean} True if user is a participant
+ * @param {Object} db - MongoDB database instance (optional, for supplier owner lookup)
+ * @returns {Promise<boolean>} True if user is a participant
  */
-function isThreadParticipant(thread, userId) {
+async function isThreadParticipant(thread, userId, db = null) {
   if (!thread || !userId) {
     return false;
   }
@@ -152,8 +153,20 @@ function isThreadParticipant(thread, userId) {
   if (thread.recipientId === userId) {
     return true;
   }
-  if (thread.supplierId === userId) {
-    return true;
+
+  // Note: supplierId is a supplier DB ID (like sup_xxxxx), NOT a user ID
+  // We need to check if the userId is the owner of the supplier
+  if (thread.supplierId && db) {
+    try {
+      const suppliersCollection = db.collection('suppliers');
+      const supplier = await suppliersCollection.findOne({ id: thread.supplierId });
+      if (supplier && supplier.ownerUserId === userId) {
+        return true;
+      }
+    } catch (error) {
+      console.error('Error checking supplier ownership:', error);
+      // Fall through to return false
+    }
   }
 
   return false;
@@ -241,16 +254,24 @@ router.get('/threads', applyAuthRequired, ensureServices, async (req, res) => {
       skip: parseInt(skip, 10),
     });
 
-    // Transform for response
+    // Transform for response, including v1 thread fields for compatibility
     const threadsData = threads.map(thread => ({
-      id: thread._id.toString(),
-      participants: thread.participants,
+      id: thread._id ? thread._id.toString() : thread.id,
+      participants: thread.participants || [],
       lastMessageAt: thread.lastMessageAt,
       unreadCount: thread.unreadCount?.[req.user.id] || 0,
       status: thread.status,
       metadata: thread.metadata,
       createdAt: thread.createdAt,
       updatedAt: thread.updatedAt,
+      // Include v1 thread fields for frontend compatibility
+      ...(thread.supplierName !== undefined && { supplierName: thread.supplierName }),
+      ...(thread.customerName !== undefined && { customerName: thread.customerName }),
+      ...(thread.recipientName !== undefined && { recipientName: thread.recipientName }),
+      ...(thread.subject !== undefined && { subject: thread.subject }),
+      ...(thread.supplierId && { supplierId: thread.supplierId }),
+      ...(thread.customerId && { customerId: thread.customerId }),
+      ...(thread.recipientId && { recipientId: thread.recipientId }),
     }));
 
     res.json({
@@ -281,47 +302,88 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
       return res.status(404).json({ error: 'Thread not found' });
     }
 
-    // Check if user is a participant
-    if (!isThreadParticipant(thread, req.user.id)) {
+    // Get database instance for participant check and name resolution
+    const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+
+    // Check if user is a participant (now async)
+    const isParticipant = await isThreadParticipant(thread, req.user.id, db);
+    if (!isParticipant) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Resolve participant names for v2 threads (those without supplierName/customerName)
-    const resolvedSupplierName = thread.supplierName;
-    let resolvedCustomerName = thread.customerName;
-    let resolvedRecipientName = thread.recipientName;
+    // Always resolve and include name fields, even for v1 threads
+    // This ensures the frontend always receives name fields (even if null) for proper fallback handling
+    let resolvedSupplierName = thread.supplierName || null;
+    let resolvedCustomerName = thread.customerName || null;
+    let resolvedRecipientName = thread.recipientName || null;
 
-    // If this is a v2-only thread (has participants but no v1 fields), look up names
-    // Note: This query only runs for v2-only threads, which should be a minority of cases.
-    // Most threads created via marketplace/supplier flows will have v1 fields already populated.
-    if (
-      thread.participants &&
-      thread.participants.length > 0 &&
-      !thread.supplierName &&
-      !thread.customerName
-    ) {
-      const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
-      if (db) {
-        const usersCollection = db.collection('users');
-        const participantUsers = await usersCollection
-          .find({ id: { $in: thread.participants } })
-          .toArray();
+    // Attempt to resolve null/missing names by looking up user data
+    if (db) {
+      const usersToLookup = [];
 
-        // Map participant IDs to names
-        const participantNames = {};
-        participantUsers.forEach(user => {
-          participantNames[user.id] = user.name;
-        });
+      // If v1 thread with null names, look up based on thread fields
+      if (!resolvedCustomerName && thread.customerId) {
+        usersToLookup.push(thread.customerId);
+      }
+      if (!resolvedRecipientName && thread.recipientId) {
+        usersToLookup.push(thread.recipientId);
+      }
 
-        // Set names for the other participants (not current user)
-        // For v2 threads, participants are typically [user1, user2] without explicit roles
-        // We map first other participant to customerName and second (if any) to recipientName
-        const otherParticipants = thread.participants.filter(p => p !== req.user.id);
-        if (otherParticipants.length > 0) {
-          resolvedCustomerName = participantNames[otherParticipants[0]] || null;
-          if (otherParticipants.length > 1) {
-            resolvedRecipientName = participantNames[otherParticipants[1]] || null;
+      // For v2 threads or when names are missing, look up all participants
+      // Use Set for O(n) complexity instead of includes() for O(n²)
+      if (thread.participants && thread.participants.length > 0) {
+        const usersSet = new Set(usersToLookup);
+        thread.participants.forEach(p => {
+          if (!usersSet.has(p)) {
+            usersToLookup.push(p);
+            usersSet.add(p);
           }
+        });
+      }
+
+      if (usersToLookup.length > 0) {
+        try {
+          const usersCollection = db.collection('users');
+          const participantUsers = await usersCollection
+            .find({ id: { $in: usersToLookup } })
+            .toArray();
+
+          // Map participant IDs to names
+          const participantNames = {};
+          participantUsers.forEach(user => {
+            participantNames[user.id] = user.name;
+          });
+
+          // Resolve names based on thread type
+          if (thread.customerId && !resolvedCustomerName) {
+            resolvedCustomerName = participantNames[thread.customerId] || null;
+          }
+          if (thread.recipientId && !resolvedRecipientName) {
+            resolvedRecipientName = participantNames[thread.recipientId] || null;
+          }
+
+          // For v2 threads without explicit roles, map other participants to names
+          if (!thread.supplierId && thread.participants) {
+            const otherParticipants = thread.participants.filter(p => p !== req.user.id);
+            if (otherParticipants.length > 0 && !resolvedCustomerName) {
+              resolvedCustomerName = participantNames[otherParticipants[0]] || null;
+            }
+            if (otherParticipants.length > 1 && !resolvedRecipientName) {
+              resolvedRecipientName = participantNames[otherParticipants[1]] || null;
+            }
+          }
+
+          // If thread has supplierId, look up supplier name if not already set
+          if (thread.supplierId && !resolvedSupplierName) {
+            const suppliersCollection = db.collection('suppliers');
+            const supplier = await suppliersCollection.findOne({ id: thread.supplierId });
+            if (supplier) {
+              resolvedSupplierName = supplier.name || null;
+            }
+          }
+        } catch (error) {
+          console.error('Error looking up participant names:', error);
+          // Continue with existing names - don't block the response
         }
       }
     }
@@ -329,8 +391,8 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
     res.json({
       success: true,
       thread: {
-        id: thread._id.toString(),
-        participants: thread.participants,
+        id: thread._id ? thread._id.toString() : thread.id,
+        participants: thread.participants || [],
         lastMessageId: thread.lastMessageId,
         lastMessageAt: thread.lastMessageAt,
         unreadCount: thread.unreadCount?.[req.user.id] || 0,
@@ -338,13 +400,13 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
         metadata: thread.metadata,
         createdAt: thread.createdAt,
         updatedAt: thread.updatedAt,
-        // v1 thread fields (conditionally included)
-        ...(resolvedSupplierName && { supplierName: resolvedSupplierName }),
-        ...(resolvedCustomerName && { customerName: resolvedCustomerName }),
+        // Always include v1 thread fields (even if null) for proper frontend fallback
+        supplierName: resolvedSupplierName,
+        customerName: resolvedCustomerName,
+        recipientName: resolvedRecipientName,
         ...(thread.supplierId && { supplierId: thread.supplierId }),
         ...(thread.customerId && { customerId: thread.customerId }),
         ...(thread.recipientId && { recipientId: thread.recipientId }),
-        ...(resolvedRecipientName && { recipientName: resolvedRecipientName }),
         ...(thread.subject && { subject: thread.subject }),
       },
     });
@@ -506,7 +568,10 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
       return res.status(404).json({ error: 'Thread not found' });
     }
 
-    if (!isThreadParticipant(thread, req.user.id)) {
+    // Get database instance for participant check
+    const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+    const isParticipant = await isThreadParticipant(thread, req.user.id, db);
+    if (!isParticipant) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -574,7 +639,8 @@ router.post(
         return res.status(404).json({ error: 'Thread not found' });
       }
 
-      if (!isThreadParticipant(thread, req.user.id)) {
+      const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+      if (!(await isThreadParticipant(thread, req.user.id, db))) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -831,7 +897,8 @@ router.post(
         return res.status(404).json({ error: 'Thread not found' });
       }
 
-      if (!isThreadParticipant(thread, req.user.id)) {
+      const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+      if (!(await isThreadParticipant(thread, req.user.id, db))) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -1201,7 +1268,8 @@ router.post(
       }
 
       // Verify user is a participant
-      if (!isThreadParticipant(thread, userId)) {
+      const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+      if (!(await isThreadParticipant(thread, userId, db))) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -1248,7 +1316,8 @@ router.post(
       }
 
       // Verify user is a participant
-      if (!isThreadParticipant(thread, userId)) {
+      const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+      if (!(await isThreadParticipant(thread, userId, db))) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -1781,7 +1850,8 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
     const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
-    if (!thread || !isThreadParticipant(thread, userId)) {
+    const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+    if (!thread || !(await isThreadParticipant(thread, userId, db))) {
       return res.status(404).json({ error: 'Thread not found' });
     }
 
@@ -1849,7 +1919,8 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
     const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
-    if (!thread || !isThreadParticipant(thread, userId)) {
+    const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+    if (!thread || !(await isThreadParticipant(thread, userId, db))) {
       return res.status(404).json({ error: 'Thread not found' });
     }
 
@@ -1893,7 +1964,8 @@ router.post('/threads/:id/unmute', applyAuthRequired, ensureServices, async (req
     const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
-    if (!thread || !isThreadParticipant(thread, userId)) {
+    const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+    if (!thread || !(await isThreadParticipant(thread, userId, db))) {
       return res.status(404).json({ error: 'Thread not found' });
     }
 

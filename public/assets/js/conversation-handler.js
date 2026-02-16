@@ -345,7 +345,9 @@
         // If v2 API returns ANY error for a v1 thread ID (thd_*), fallback to v1 API
         // This handles 404 (not found), 500 (server error), 403 (forbidden), etc.
         if (threadId.startsWith('thd_')) {
-          console.log(`v2 API returned ${response.status} for thread ${threadId}, falling back to v1 API`);
+          console.log(
+            `v2 API returned ${response.status} for thread ${threadId}, falling back to v1 API`
+          );
           const v1Response = await fetch(`/api/v1/threads/${threadId}`, {
             credentials: 'include',
             headers: {
@@ -354,7 +356,9 @@
           });
 
           if (!v1Response.ok) {
-            throw new Error(`Failed to load conversation: v2 returned ${response.status}, v1 returned ${v1Response.status}`);
+            throw new Error(
+              `Failed to load conversation: v2 returned ${response.status}, v1 returned ${v1Response.status}`
+            );
           }
 
           const v1Data = await v1Response.json();
@@ -377,8 +381,89 @@
         if (thread.recipientId && !participants.includes(thread.recipientId)) {
           participants.push(thread.recipientId);
         }
+
+        // For v1 threads with supplierId, try to look up supplier's ownerUserId
+        if (thread.supplierId) {
+          try {
+            const supplierResponse = await fetch(`/api/suppliers/${thread.supplierId}`, {
+              credentials: 'include',
+            });
+            if (supplierResponse.ok) {
+              const supplierData = await supplierResponse.json();
+              if (
+                supplierData.supplier &&
+                supplierData.supplier.ownerUserId &&
+                !participants.includes(supplierData.supplier.ownerUserId)
+              ) {
+                participants.push(supplierData.supplier.ownerUserId);
+              }
+            }
+          } catch (error) {
+            console.warn('Could not look up supplier owner for participants:', error);
+            // Continue without adding supplier owner - not critical
+          }
+        }
+
         // Filter out any null/undefined values
         thread.participants = participants.filter(Boolean);
+      }
+
+      // Attempt to resolve null/missing names by fetching from users API
+      // This handles v1 threads that were created with missing name data
+      // Use Promise.all to batch API calls for better performance
+      if (
+        (!thread.customerName || !thread.recipientName || !thread.supplierName) &&
+        (thread.customerId || thread.recipientId || thread.supplierId)
+      ) {
+        try {
+          const lookupPromises = [];
+
+          // Batch all API calls together for parallel execution
+          if (!thread.customerName && thread.customerId) {
+            lookupPromises.push(
+              fetch(`/api/users/${thread.customerId}`, { credentials: 'include' })
+                .then(res => (res.ok ? res.json() : null))
+                .then(data => {
+                  if (data?.user?.name) {
+                    thread.customerName = data.user.name;
+                  }
+                })
+                .catch(err => console.warn('Could not look up customer name:', err))
+            );
+          }
+
+          if (!thread.recipientName && thread.recipientId) {
+            lookupPromises.push(
+              fetch(`/api/users/${thread.recipientId}`, { credentials: 'include' })
+                .then(res => (res.ok ? res.json() : null))
+                .then(data => {
+                  if (data?.user?.name) {
+                    thread.recipientName = data.user.name;
+                  }
+                })
+                .catch(err => console.warn('Could not look up recipient name:', err))
+            );
+          }
+
+          if (!thread.supplierName && thread.supplierId) {
+            lookupPromises.push(
+              fetch(`/api/suppliers/${thread.supplierId}`, { credentials: 'include' })
+                .then(res => (res.ok ? res.json() : null))
+                .then(data => {
+                  if (data?.supplier?.name) {
+                    thread.supplierName = data.supplier.name;
+                  }
+                })
+                .catch(err => console.warn('Could not look up supplier name:', err))
+            );
+          }
+
+          // Wait for all lookups to complete in parallel
+          await Promise.all(lookupPromises);
+        } catch (error) {
+          console.warn('Could not resolve missing thread names:', error);
+          // Continue with existing names - not critical
+        }
       }
 
       // Resolve recipient ID with fallback for v1 and v2 threads
@@ -560,6 +645,12 @@
       } else if (thread.recipientId === currentUserId) {
         // Current user is the recipient (supplier owner or peer-to-peer seller), show customer's name
         otherPartyName = thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+      } else if (thread.participants && thread.participants.includes(currentUserId)) {
+        // Current user is in participants but not explicitly customerId or recipientId
+        // This handles the supplier owner scenario where they're added to participants via ownerUserId
+        // Show the customer's name (the other party in the conversation)
+        otherPartyName =
+          thread.customerName || thread.supplierName || thread.recipientName || 'Unknown';
       } else {
         // Fallback: try all names, prioritizing supplier name
         otherPartyName =
