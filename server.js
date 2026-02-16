@@ -1131,6 +1131,16 @@ async function startServer() {
           console.warn('   Server will continue running, but queries may be slower');
         }
 
+        // Ensure messaging indexes exist (using Message model)
+        try {
+          const db = await mongoDb.getDb();
+          const Message = require('./models/Message');
+          await Message.createIndexes(db);
+          console.log('   ✅ Messaging indexes verified');
+        } catch (err) {
+          console.warn('   ⚠️  Could not verify messaging indexes:', err.message);
+        }
+
         // Auto-migrate v1 threads and messages to MongoDB (if needed)
         // This ensures any threads created between deployments are caught
         // Runs once on startup in a non-blocking manner
