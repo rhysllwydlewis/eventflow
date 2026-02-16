@@ -647,11 +647,11 @@ router.post(
     try {
       const { threadId } = req.params;
       // Support both 'content' (v2) and 'message' (legacy v1) for backward compatibility
-      let { content, attachments, message } = req.body;
-      
+      let { content, attachments, message: legacyMessage } = req.body;
+
       // If 'message' is provided but not 'content', use 'message' as 'content'
-      if (!content && message) {
-        content = message;
+      if (!content && legacyMessage) {
+        content = legacyMessage;
       }
 
       if (!content && (!attachments || attachments.length === 0)) {
