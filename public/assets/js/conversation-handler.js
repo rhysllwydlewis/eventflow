@@ -377,8 +377,71 @@
         if (thread.recipientId && !participants.includes(thread.recipientId)) {
           participants.push(thread.recipientId);
         }
+        
+        // For v1 threads with supplierId, try to look up supplier's ownerUserId
+        if (thread.supplierId) {
+          try {
+            const supplierResponse = await fetch(`/api/suppliers/${thread.supplierId}`, {
+              credentials: 'include',
+            });
+            if (supplierResponse.ok) {
+              const supplierData = await supplierResponse.json();
+              if (supplierData.supplier && supplierData.supplier.ownerUserId && 
+                  !participants.includes(supplierData.supplier.ownerUserId)) {
+                participants.push(supplierData.supplier.ownerUserId);
+              }
+            }
+          } catch (error) {
+            console.warn('Could not look up supplier owner for participants:', error);
+            // Continue without adding supplier owner - not critical
+          }
+        }
+        
         // Filter out any null/undefined values
         thread.participants = participants.filter(Boolean);
+      }
+
+      // Attempt to resolve null/missing names by fetching from users API
+      // This handles v1 threads that were created with missing name data
+      if ((!thread.customerName || !thread.recipientName || !thread.supplierName) && 
+          (thread.customerId || thread.recipientId || thread.supplierId)) {
+        try {
+          // Look up customer name if missing
+          if (!thread.customerName && thread.customerId) {
+            const userResponse = await fetch(`/api/users/${thread.customerId}`, {
+              credentials: 'include',
+            });
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              thread.customerName = userData.user?.name || null;
+            }
+          }
+          
+          // Look up recipient name if missing
+          if (!thread.recipientName && thread.recipientId) {
+            const userResponse = await fetch(`/api/users/${thread.recipientId}`, {
+              credentials: 'include',
+            });
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              thread.recipientName = userData.user?.name || null;
+            }
+          }
+          
+          // Look up supplier name if missing
+          if (!thread.supplierName && thread.supplierId) {
+            const supplierResponse = await fetch(`/api/suppliers/${thread.supplierId}`, {
+              credentials: 'include',
+            });
+            if (supplierResponse.ok) {
+              const supplierData = await supplierResponse.json();
+              thread.supplierName = supplierData.supplier?.name || null;
+            }
+          }
+        } catch (error) {
+          console.warn('Could not resolve missing thread names:', error);
+          // Continue with existing names - not critical
+        }
       }
 
       // Resolve recipient ID with fallback for v1 and v2 threads
@@ -560,6 +623,11 @@
       } else if (thread.recipientId === currentUserId) {
         // Current user is the recipient (supplier owner or peer-to-peer seller), show customer's name
         otherPartyName = thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+      } else if (thread.participants && thread.participants.includes(currentUserId)) {
+        // Current user is in participants but not explicitly customerId or recipientId
+        // This handles the supplier owner scenario where they're added to participants via ownerUserId
+        // Show the customer's name (the other party in the conversation)
+        otherPartyName = thread.customerName || thread.supplierName || thread.recipientName || 'Unknown';
       } else {
         // Fallback: try all names, prioritizing supplier name
         otherPartyName =
