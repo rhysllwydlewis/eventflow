@@ -224,7 +224,12 @@
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
       <h3 style="margin:0;font-size:1.25rem;color:#0B1220;">Conversations</h3>
-      <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:0.85rem;background:#DBEAFE;color:#1E40AF;padding:6px 12px;border-radius:12px;">0 unread</span>
+      <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+        <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:0.85rem;background:#DBEAFE;color:#1E40AF;padding:6px 12px;border-radius:12px;">0 unread</span>
+        <a href="/messages.html" class="cta" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;text-decoration:none;display:inline-block;">
+          📧 View Inbox
+        </a>
+      </div>
     </div>
     <div id="threads-cust" class="section">
       <div class="skeleton skeleton-text skeleton-text-long"></div>
