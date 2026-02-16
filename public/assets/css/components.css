@@ -2343,6 +2343,50 @@ html[data-theme='dark'] .skeleton-card {
   flex: 1 1 100%;
 }
 
+/* Shortlist Responsive Styles */
+@media (max-width: 640px) {
+  .shortlist-panel {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .shortlist-header {
+    padding: 16px 20px;
+  }
+
+  .shortlist-body {
+    padding: 16px 20px;
+  }
+
+  .shortlist-item {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .shortlist-item-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .shortlist-footer {
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shortlist-item-name {
+    font-size: 15px;
+  }
+
+  .shortlist-item-meta {
+    font-size: 12px;
+  }
+
+  .shortlist-item-price {
+    font-size: 13px;
+  }
+}
+
 /* Quote Request Modal */
 .quote-modal {
   position: fixed;
