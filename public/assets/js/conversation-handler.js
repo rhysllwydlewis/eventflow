@@ -14,6 +14,7 @@
   let wsClient = null;
   let recipientId = null;
   let currentAttachments = [];
+  let isSending = false;
 
   // Initialize
   document.addEventListener('DOMContentLoaded', init);
@@ -499,8 +500,8 @@
       });
 
       if (!response.ok) {
-        // If v2 API returns 404 for a v1 thread ID (thd_*), fallback to v1 API
-        if (response.status === 404 && threadId.startsWith('thd_')) {
+        // Fall back to v1 for v1 thread IDs or 404s
+        if (response.status === 404 || threadId.startsWith('thd_')) {
           const v1Response = await fetch(`/api/v1/threads/${threadId}/messages`, {
             credentials: 'include',
             headers: {
@@ -545,6 +546,10 @@
   }
 
   async function sendMessage(isDraft) {
+    if (isSending) {
+      return;
+    }
+
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
 
@@ -552,6 +557,7 @@
       return;
     }
 
+    isSending = true;
     const sendBtn = document.getElementById('sendBtn');
     const draftBtn = document.getElementById('saveDraftBtn');
     const originalSendText = sendBtn.innerHTML;
@@ -601,6 +607,7 @@
       console.error('Error sending message:', error);
       showError('Failed to send message');
     } finally {
+      isSending = false;
       sendBtn.disabled = false;
       draftBtn.disabled = false;
       sendBtn.innerHTML = originalSendText;
@@ -987,7 +994,7 @@
     }
 
     try {
-      const response = await fetch(`/api/v2/messages/threads/${threadId}/${action}`, {
+      let response = await fetch(`/api/v2/messages/threads/${threadId}/${action}`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -995,6 +1002,18 @@
           'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
       });
+
+      // Fallback to v1 API for v1 thread IDs or if v2 returns 404
+      if (!response.ok && (response.status === 404 || threadId.startsWith('thd_'))) {
+        response = await fetch(`/api/messages/threads/${threadId}/${action}`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+          },
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to ${action} conversation`);

@@ -448,6 +448,48 @@ router.delete(
   }
 );
 
+/**
+ * POST /api/v2/messages/threads/:threadId/archive
+ * Archive a thread
+ */
+router.post(
+  '/threads/:threadId/archive',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { threadId } = req.params;
+      await messagingService.archiveThread(threadId, req.user.id);
+      res.json({ success: true, message: 'Thread archived successfully' });
+    } catch (error) {
+      logger.error('Archive thread error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to archive thread', message: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/v2/messages/threads/:threadId/unarchive
+ * Unarchive a thread
+ */
+router.post(
+  '/threads/:threadId/unarchive',
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { threadId } = req.params;
+      await messagingService.unarchiveThread(threadId, req.user.id);
+      res.json({ success: true, message: 'Thread unarchived successfully' });
+    } catch (error) {
+      logger.error('Unarchive thread error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to unarchive thread', message: error.message });
+    }
+  }
+);
+
 // =========================
 // Specific Message Routes (must come before generic parameter routes)
 // =========================
