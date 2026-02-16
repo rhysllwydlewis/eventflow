@@ -153,13 +153,18 @@ class ShortlistDrawer {
    * Render single item
    */
   renderItem(item) {
-    const imageUrl = item.imageUrl || '/assets/images/placeholder-supplier.jpg';
+    const imageUrl = item.imageUrl || '/assets/images/marketplace-placeholder.svg';
     const priceHint = item.priceHint || 'Contact for quote';
     const rating = item.rating ? `⭐ ${item.rating}` : '';
 
     return `
       <div class="shortlist-item">
-        <img src="${imageUrl}" alt="${item.name}" class="shortlist-item-image" />
+        <img 
+          src="${imageUrl}" 
+          alt="${item.name}" 
+          class="shortlist-item-image" 
+          onerror="this.onerror=null; this.src='/assets/images/marketplace-placeholder.svg';"
+        />
         <div class="shortlist-item-info">
           <h3 class="shortlist-item-name">${item.name}</h3>
           <p class="shortlist-item-meta">
@@ -174,7 +179,7 @@ class ShortlistDrawer {
           aria-label="Remove ${item.name} from shortlist"
           title="Remove"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>

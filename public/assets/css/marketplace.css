@@ -1030,11 +1030,33 @@
 
 .listing-own-notice {
   color: var(--muted, #667085);
-  font-style: italic;
   text-align: center;
-  padding: 12px;
+  padding: 16px;
   background: #f6faf9;
   border-radius: 8px;
+  border: 1px solid #d1f2eb;
+}
+
+.listing-own-notice p {
+  margin: 0 0 12px 0;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.listing-own-notice-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.listing-own-notice-actions .btn,
+.listing-own-notice-actions .cta {
+  min-width: 140px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Responsive Detail Modal */
@@ -1062,6 +1084,27 @@
 
   .listing-detail-title {
     font-size: 18px;
+  }
+
+  .listing-inline-composer {
+    padding: 16px;
+  }
+
+  .listing-inline-composer-input {
+    font-size: 16px; /* Prevent iOS zoom on input focus */
+  }
+}
+
+@media (max-width: 640px) {
+  .listing-own-notice-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .listing-own-notice-actions .btn,
+  .listing-own-notice-actions .cta {
+    width: 100%;
+    min-width: 0;
   }
 }
 
