@@ -348,6 +348,9 @@
       const data = await response.json();
       thread = data.thread;
 
+      // Resolve recipient ID with fallback for v1 and v2 threads
+      // v2: participants array (find the other participant)
+      // v1: customerId/supplierId fields
       if (currentUserId && thread.participants) {
         recipientId = thread.participants.find(p => p !== currentUserId) || null;
       } else if (currentUserId) {

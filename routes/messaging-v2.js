@@ -1696,6 +1696,7 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
       });
     }
 
+    // Use thread._id (MongoDB always creates _id field even for v1 threads)
     await messagingService.threadsCollection.updateOne(
       { _id: thread._id },
       { $set: { [`pinnedAt.${userId}`]: new Date() } }
@@ -1765,6 +1766,7 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
       mutedUntil = new Date(now + ms);
     }
 
+    // Use thread._id (MongoDB always creates _id field even for v1 threads)
     await messagingService.threadsCollection.updateOne(
       { _id: thread._id },
       { $set: { [`mutedUntil.${userId}`]: mutedUntil } }
@@ -1787,12 +1789,17 @@ router.post('/threads/:id/unmute', applyAuthRequired, ensureServices, async (req
     const threadId = req.params.id;
 
     const query = buildThreadQuery(threadId);
-    // Add participants filter for security
-    query.participants = userId;
+    const thread = await messagingService.threadsCollection.findOne(query);
 
-    await messagingService.threadsCollection.updateOne(query, {
-      $unset: { [`mutedUntil.${userId}`]: '' },
-    });
+    if (!thread || !thread.participants || !thread.participants.includes(userId)) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+
+    // Use thread._id (MongoDB always creates _id field even for v1 threads)
+    await messagingService.threadsCollection.updateOne(
+      { _id: thread._id },
+      { $unset: { [`mutedUntil.${userId}`]: '' } }
+    );
 
     res.json({ success: true });
   } catch (error) {
