@@ -414,6 +414,17 @@
           const v1Data = await v1Response.json();
           // v1 API returns { items: [...] }, normalize to messages array
           messages = v1Data.messages || v1Data.items || [];
+
+          // Normalize v1 field names to v2 format for consistent rendering
+          messages = messages.map(msg => ({
+            ...msg,
+            // Map fromUserId or userId to senderId for v2 compatibility
+            senderId: msg.senderId || msg.fromUserId || msg.userId,
+            // Ensure both text and content are available
+            content: msg.content || msg.text,
+            // Ensure sentAt falls back to createdAt
+            sentAt: msg.sentAt || msg.createdAt,
+          }));
         } else {
           throw new Error('Failed to load messages');
         }
@@ -527,7 +538,8 @@
           thread.supplierName ||
           thread.recipientName ||
           thread.metadata?.otherPartyName ||
-          'Unknown';
+          thread.marketplace?.listingTitle ||
+          (thread.marketplace?.isPeerToPeer ? 'Seller' : 'Unknown');
       } else if (thread.supplierId === currentUserId || thread.recipientId === currentUserId) {
         // Current user is the supplier/recipient, show customer's name
         otherPartyName = thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
@@ -538,7 +550,8 @@
           thread.customerName ||
           thread.recipientName ||
           thread.metadata?.otherPartyName ||
-          'Unknown';
+          thread.marketplace?.listingTitle ||
+          (thread.marketplace?.isPeerToPeer ? 'Seller' : 'Unknown');
       }
     } else {
       // No current user ID, fallback to original logic
@@ -547,7 +560,8 @@
         thread.customerName ||
         thread.recipientName ||
         thread.metadata?.otherPartyName ||
-        'Unknown';
+        thread.marketplace?.listingTitle ||
+        (thread.marketplace?.isPeerToPeer ? 'Seller' : 'Unknown');
     }
 
     const initial = otherPartyName.charAt(0).toUpperCase();
