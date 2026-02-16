@@ -342,19 +342,43 @@
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load conversation');
-      }
+        // If v2 API returns 404 for a v1 thread ID (thd_*), fallback to v1 API
+        if (response.status === 404 && threadId.startsWith('thd_')) {
+          const v1Response = await fetch(`/api/v1/threads/${threadId}`, {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
 
-      const data = await response.json();
-      thread = data.thread;
+          if (!v1Response.ok) {
+            throw new Error('Failed to load conversation');
+          }
+
+          const v1Data = await v1Response.json();
+          thread = v1Data.thread;
+        } else {
+          throw new Error('Failed to load conversation');
+        }
+      } else {
+        const data = await response.json();
+        thread = data.thread;
+      }
 
       // Resolve recipient ID with fallback for v1 and v2 threads
       // v2: participants array (find the other participant)
-      // v1: customerId/supplierId fields
+      // v1: customerId/supplierId/recipientId fields
       if (currentUserId && thread.participants) {
         recipientId = thread.participants.find(p => p !== currentUserId) || null;
       } else if (currentUserId) {
-        recipientId = thread.customerId === currentUserId ? thread.supplierId : thread.customerId;
+        // For v1 threads, prefer recipientId if available (peer-to-peer)
+        if (thread.recipientId && thread.recipientId !== currentUserId) {
+          recipientId = thread.recipientId;
+        } else if (thread.customerId === currentUserId) {
+          recipientId = thread.supplierId || thread.recipientId;
+        } else {
+          recipientId = thread.customerId;
+        }
       }
 
       renderThreadHeader();
@@ -374,11 +398,29 @@
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load messages');
+        // If v2 API returns 404 for a v1 thread ID (thd_*), fallback to v1 API
+        if (response.status === 404 && threadId.startsWith('thd_')) {
+          const v1Response = await fetch(`/api/v1/threads/${threadId}/messages`, {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!v1Response.ok) {
+            throw new Error('Failed to load messages');
+          }
+
+          const v1Data = await v1Response.json();
+          messages = v1Data.messages || [];
+        } else {
+          throw new Error('Failed to load messages');
+        }
+      } else {
+        const data = await response.json();
+        messages = data.messages || [];
       }
 
-      const data = await response.json();
-      messages = data.messages || [];
       renderMessages();
 
       await markAsRead();
@@ -472,27 +514,39 @@
     }
 
     // Resolve other party name with fallback for v1 and v2 threads
-    // v1: supplierName/customerName fields (check user role to pick the right one)
+    // v1: supplierName/customerName/recipientName fields (check user role to pick the right one)
     // v2: metadata.otherPartyName field
     let otherPartyName = 'Unknown';
 
     if (currentUserId) {
       // For v1 threads, determine which name to show based on current user's role
       if (thread.customerId === currentUserId) {
-        // Current user is the customer, show supplier's name
-        otherPartyName = thread.supplierName || thread.metadata?.otherPartyName || 'Unknown';
+        // Current user is the customer, show supplier's name or recipient's name (for peer-to-peer)
+        otherPartyName =
+          thread.supplierName ||
+          thread.recipientName ||
+          thread.metadata?.otherPartyName ||
+          'Unknown';
       } else if (thread.supplierId === currentUserId || thread.recipientId === currentUserId) {
         // Current user is the supplier/recipient, show customer's name
         otherPartyName = thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
       } else {
-        // Fallback: try both names, prioritizing supplier name
+        // Fallback: try all names, prioritizing supplier name
         otherPartyName =
-          thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+          thread.supplierName ||
+          thread.customerName ||
+          thread.recipientName ||
+          thread.metadata?.otherPartyName ||
+          'Unknown';
       }
     } else {
       // No current user ID, fallback to original logic
       otherPartyName =
-        thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+        thread.supplierName ||
+        thread.customerName ||
+        thread.recipientName ||
+        thread.metadata?.otherPartyName ||
+        'Unknown';
     }
 
     const initial = otherPartyName.charAt(0).toUpperCase();

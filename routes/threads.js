@@ -254,12 +254,21 @@ router.post(
     }
 
     if (!thread) {
+      // Look up customer and recipient names for thread header display
+      const users = await dbUnified.read('users');
+      const customerUser = users.find(u => u.id === req.user.id);
+      const recipientUser = effectiveRecipientId
+        ? users.find(u => u.id === effectiveRecipientId)
+        : null;
+
       thread = {
         id: uid('thd'),
         supplierId: effectiveSupplierId || null,
         supplierName: supplier ? supplier.name : null,
         customerId: req.user.id,
+        customerName: customerUser ? customerUser.name : null,
         recipientId: effectiveRecipientId || supplier?.ownerUserId || null,
+        recipientName: recipientUser ? recipientUser.name : null,
         packageId: packageId || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

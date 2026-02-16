@@ -647,7 +647,17 @@
       }
 
       const { thread } = await threadRes.json();
-      window.location.href = `/conversation.html?id=${thread.id}`;
+
+      // Show success message instead of redirecting
+      statusEl.textContent = '✓ Message sent!';
+      statusEl.style.color = '#10b981';
+
+      // Change button to "Go to Conversation"
+      sendBtn.textContent = 'Go to Conversation';
+      sendBtn.disabled = false;
+      sendBtn.onclick = () => {
+        window.location.href = `/conversation.html?id=${thread.id}`;
+      };
     } catch (error) {
       console.error('Error messaging seller:', error);
       statusEl.textContent = error?.message || 'Failed to send message. Please try again.';
