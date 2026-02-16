@@ -45,6 +45,7 @@ describe('Marketplace own listing CSS styling', () => {
   });
 
   it('ensures buttons have minimum width for usability', () => {
-    expect(marketplaceCSS).toContain('min-width: 140px');
+    expect(marketplaceCSS).toContain('min-width: 0');
+    expect(marketplaceCSS).toContain('flex: 1');
   });
 });

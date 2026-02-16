@@ -476,11 +476,11 @@
                   ? `<div class="listing-own-notice">
                        <p>This is your listing</p>
                        <div class="listing-own-notice-actions">
-                         <a href="/supplier/marketplace-new-listing.html?edit=${listing.id}" class="cta">Edit Listing</a>
+                         <a href="/supplier/marketplace-new-listing.html?edit=${listing.id}" class="btn btn-secondary">Edit Listing</a>
                          <a href="/my-marketplace-listings.html" class="btn btn-secondary">View My Listings</a>
                        </div>
                      </div>`
-                  : `<a href="/auth.html" class="cta">Log in to message seller</a>`
+                  : `<a href="/auth.html?redirect=${encodeURIComponent(`/marketplace?listing=${listing.id}`)}" class="cta">Log in to message seller</a>`
             }
           </div>
         </div>
@@ -1541,26 +1541,31 @@
 
 // Share functions
 window.shareOnFacebook = function (listingId) {
-  const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+  const url = `${window.location.origin}/marketplace?listing=${listingId}`;
   const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
   window.open(shareUrl, '_blank', 'width=600,height=400');
 };
 
 window.shareOnTwitter = function (title, listingId) {
-  const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+  const url = `${window.location.origin}/marketplace?listing=${listingId}`;
   const text = `Check out this item on EventFlow Marketplace: ${title}`;
   const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(shareUrl, '_blank', 'width=600,height=400');
 };
 
 window.copyListingLink = function (listingId) {
-  const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+  const url = `${window.location.origin}/marketplace?listing=${listingId}`;
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard
       .writeText(url)
       .then(() => {
-        showToast('Link copied to clipboard!');
+        // Use global toast if available, otherwise show alert
+        if (window.EFToast && window.EFToast.success) {
+          window.EFToast.success('Link copied to clipboard!');
+        } else {
+          alert('Link copied to clipboard!');
+        }
       })
       .catch(err => {
         console.error('Failed to copy link:', err);
@@ -1581,10 +1586,19 @@ function fallbackCopyLink(url) {
 
   try {
     document.execCommand('copy');
-    showToast('Link copied to clipboard!');
+    // Use global toast if available, otherwise show alert
+    if (window.EFToast && window.EFToast.success) {
+      window.EFToast.success('Link copied to clipboard!');
+    } else {
+      alert('Link copied to clipboard!');
+    }
   } catch (err) {
     console.error('Failed to copy link:', err);
-    showToast('Failed to copy link', 'error');
+    if (window.EFToast && window.EFToast.error) {
+      window.EFToast.error('Failed to copy link');
+    } else {
+      alert('Failed to copy link');
+    }
   }
 
   document.body.removeChild(textArea);

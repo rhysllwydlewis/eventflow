@@ -51,6 +51,10 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/plan.html',
       '/my-marketplace-listings.html',
       '/supplier/marketplace-new-listing.html',
+      '/marketplace',
+      '/marketplace.html',
+      '/conversation.html',
+      '/messages.html',
     ],
     customer: [
       '/dashboard-customer.html',
@@ -59,6 +63,10 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/plan.html',
       '/checkout.html',
       '/my-marketplace-listings.html',
+      '/marketplace',
+      '/marketplace.html',
+      '/conversation.html',
+      '/messages.html',
     ],
   };
 
@@ -107,6 +115,13 @@ describe('Login Redirect Validation', () => {
       it('should reject customer dashboard for supplier users', () => {
         expect(validateRedirectForRole('/dashboard-customer.html', 'supplier')).toBe(false);
       });
+
+      it('should allow marketplace pages for supplier users', () => {
+        expect(validateRedirectForRole('/marketplace', 'supplier')).toBe(true);
+        expect(validateRedirectForRole('/marketplace.html', 'supplier')).toBe(true);
+        expect(validateRedirectForRole('/conversation.html', 'supplier')).toBe(true);
+        expect(validateRedirectForRole('/messages.html', 'supplier')).toBe(true);
+      });
     });
 
     describe('Customer role', () => {
@@ -127,6 +142,14 @@ describe('Login Redirect Validation', () => {
 
       it('should reject supplier dashboard for customer users', () => {
         expect(validateRedirectForRole('/dashboard-supplier.html', 'customer')).toBe(false);
+      });
+
+      it('should allow marketplace pages for customer users', () => {
+        expect(validateRedirectForRole('/marketplace', 'customer')).toBe(true);
+        expect(validateRedirectForRole('/marketplace.html', 'customer')).toBe(true);
+        expect(validateRedirectForRole('/marketplace?listing=abc123', 'customer')).toBe(true);
+        expect(validateRedirectForRole('/conversation.html', 'customer')).toBe(true);
+        expect(validateRedirectForRole('/messages.html', 'customer')).toBe(true);
       });
     });
 

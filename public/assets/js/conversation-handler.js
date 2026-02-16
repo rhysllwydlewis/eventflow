@@ -361,7 +361,7 @@
 
   async function loadMessages() {
     try {
-      const response = await fetch(`/api/v2/messages/threads/${threadId}/messages`, {
+      const response = await fetch(`/api/v2/messages/${threadId}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -400,15 +400,14 @@
     sendBtn.innerHTML = `<span class="loading-spinner"></span> ${isDraft ? 'Saving...' : 'Sending...'}`;
 
     try {
-      const response = await fetch(`/api/v2/messages/threads/${threadId}/messages`, {
+      const response = await fetch(`/api/v2/messages/${threadId}`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text,
-          isDraft,
+          content: text,
           attachments: currentAttachments,
         }),
       });
@@ -448,7 +447,7 @@
 
   async function markAsRead() {
     try {
-      await fetch(`/api/v2/messages/threads/${threadId}/mark-read`, {
+      await fetch(`/api/v2/messages/threads/${threadId}/read`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -494,7 +493,7 @@
 
     container.innerHTML = messages
       .map(message => {
-        const isSent = message.fromUserId === currentUserId;
+        const isSent = message.senderId === currentUserId;
         const senderName = isSent
           ? 'You'
           : thread?.supplierName || thread?.customerName || 'Unknown';

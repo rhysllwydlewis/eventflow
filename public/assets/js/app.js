@@ -152,6 +152,10 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/plan.html',
       '/my-marketplace-listings.html',
       '/supplier/marketplace-new-listing.html',
+      '/marketplace',
+      '/marketplace.html',
+      '/conversation.html',
+      '/messages.html',
     ],
     customer: [
       '/dashboard-customer.html',
@@ -160,6 +164,10 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/plan.html',
       '/checkout.html',
       '/my-marketplace-listings.html',
+      '/marketplace',
+      '/marketplace.html',
+      '/conversation.html',
+      '/messages.html',
     ],
   };
 
