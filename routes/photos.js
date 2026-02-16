@@ -97,7 +97,45 @@ function applyPhotoUploadFields(fields) {
     }
     return photoUpload.upload.fields(fields)(req, res, err => {
       if (err) {
-        return next(err);
+        // **NEW: Enhanced multer error handling**
+        logger.error('Multer upload error', {
+          error: err.message,
+          code: err.code,
+          field: err.field,
+          storageErrors: err.storageErrors,
+          userId: req.user?.id,
+        });
+
+        // Provide user-friendly error messages
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({
+            error: 'File too large',
+            details: 'Maximum file size is 5MB per image',
+            errorType: 'FileSizeError',
+          });
+        }
+
+        if (err.code === 'LIMIT_FILE_COUNT') {
+          return res.status(400).json({
+            error: 'Too many files',
+            details: 'Maximum 10 files per upload',
+            errorType: 'FileCountError',
+          });
+        }
+
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+          return res.status(400).json({
+            error: 'Unexpected file field',
+            details: 'Please use the correct upload form',
+            errorType: 'UnexpectedFieldError',
+          });
+        }
+
+        return res.status(400).json({
+          error: 'File upload error',
+          details: err.message,
+          errorType: 'MulterError',
+        });
       }
 
       const files = [];
@@ -106,6 +144,14 @@ function applyPhotoUploadFields(fields) {
           req.files && Array.isArray(req.files[field.name]) ? req.files[field.name] : [];
         files.push(...fieldFiles);
       }
+
+      // **NEW: Log parsed files**
+      logger.info('Multer parsed files', {
+        totalFiles: files.length,
+        fileNames: files.map(f => f.originalname),
+        userId: req.user?.id,
+      });
+
       req.files = files;
       return next();
     });
@@ -528,12 +574,41 @@ router.post(
 
       for (let i = 0; i < req.files.length; i++) {
         const file = req.files[i];
-        // Validate file buffer exists
-        if (!file.buffer || file.buffer.length === 0) {
-          logger.error('Empty file buffer received in batch upload', {
+
+        // **NEW: Enhanced diagnostic logging BEFORE validation**
+        logger.info('Processing file in batch upload', {
+          hasFile: !!file,
+          hasOriginalname: !!file?.originalname,
+          originalnameType: typeof file?.originalname,
+          originalnameValue: file?.originalname,
+          hasBuffer: !!file?.buffer,
+          bufferLength: file?.buffer?.length,
+          mimetype: file?.mimetype,
+          size: file?.size,
+          listingId: normalizedId,
+          userId: req.user?.id,
+        });
+
+        // Validate buffer
+        if (!file.buffer || !Buffer.isBuffer(file.buffer)) {
+          logger.error('Invalid file buffer received', {
+            filename: file.originalname || 'unknown',
+            hasBuffer: !!file.buffer,
+            isBuffer: file.buffer ? Buffer.isBuffer(file.buffer) : false,
+            listingId: normalizedId,
+            userId: req.user.id,
+          });
+          errors.push({
+            filename: file.originalname || 'unknown',
+            error: 'Invalid file data - please try re-uploading this image',
+          });
+          continue;
+        }
+
+        if (file.buffer.length === 0) {
+          logger.error('Empty file buffer received', {
             filename: file.originalname,
-            type: type,
-            id: normalizedId,
+            listingId: normalizedId,
             userId: req.user.id,
           });
           errors.push({
@@ -545,16 +620,19 @@ router.post(
 
         // Validate file.originalname to prevent indexOf errors
         if (!file.originalname || typeof file.originalname !== 'string') {
-          logger.error('Invalid file.originalname received in batch upload', {
+          logger.error('Invalid file.originalname received', {
             originalname: file.originalname,
             type: typeof file.originalname,
-            uploadType: type,
-            id: normalizedId,
+            listingId: normalizedId,
             userId: req.user.id,
+            // **NEW: Log the entire file object structure for debugging**
+            fileKeys: file ? Object.keys(file) : [],
+            mimetype: file?.mimetype,
+            size: file?.size,
           });
           errors.push({
             filename: 'unknown',
-            error: 'Invalid file name - please try re-uploading this image',
+            error: 'Invalid file name - the file may be corrupted. Please try selecting it again.',
           });
           continue;
         }
