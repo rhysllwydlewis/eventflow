@@ -42,32 +42,150 @@ function renderConversations(conversations) {
       icon: '💬',
       title: 'No messages yet',
       description: 'Conversations will appear here when you contact suppliers.',
+      actionText: 'Browse Suppliers',
+      actionHref: '/suppliers',
     });
     return;
   }
 
-  let html = '<div class="thread-list">';
+  let html = '<div class="thread-list" style="display:flex;flex-direction:column;gap:0.75rem;">';
 
   conversations.forEach(conversation => {
-    const supplierName = conversation.supplierName || 'Supplier';
+    // Determine the name to display (supplier name for customers)
+    const displayName = conversation.supplierName || conversation.recipientName || 'User';
     const lastMessage = conversation.lastMessage || 'No messages yet';
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
+    const unreadCount = conversation.unreadCount || 0;
+    const isUnread = unreadCount > 0;
+
+    // Generate initials for avatar
+    const initials = displayName
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
 
     html += `
-      <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
-        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <strong>${escapeHtml(supplierName)}</strong>
-          <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
+      <div class="thread-item ${isUnread ? 'unread' : ''}" 
+           style="border:1px solid ${isUnread ? '#0B8073' : 'rgba(229, 231, 235, 0.8)'};
+                  padding:1rem;
+                  border-radius:12px;
+                  cursor:pointer;
+                  transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                  background:${isUnread ? 'rgba(240, 249, 248, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
+                  backdrop-filter:blur(8px);
+                  -webkit-backdrop-filter:blur(8px);
+                  box-shadow:${isUnread ? '0 4px 12px rgba(11, 128, 115, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.05)'};"
+           data-conversation-id="${conversation.id}">
+        <div style="display:flex;gap:1rem;align-items:start;">
+          <!-- Avatar with liquid glass effect -->
+          <div style="width:48px;
+                      height:48px;
+                      border-radius:50%;
+                      background:linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+                      display:flex;
+                      align-items:center;
+                      justify-content:center;
+                      color:white;
+                      font-weight:600;
+                      font-size:18px;
+                      flex-shrink:0;
+                      box-shadow:0 4px 12px rgba(11, 128, 115, 0.25);
+                      position:relative;
+                      overflow:hidden;">
+            <span style="position:relative;z-index:1;">${initials}</span>
+            <div style="position:absolute;
+                        top:-50%;
+                        left:-50%;
+                        width:200%;
+                        height:200%;
+                        background:linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+                        transform:rotate(45deg);
+                        animation:shimmer 3s infinite;"></div>
+          </div>
+          
+          <!-- Content -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;gap:0.5rem;">
+              <strong style="color:#1f2937;font-size:1rem;">${escapeHtml(displayName)}</strong>
+              <span class="small" style="color:#9ca3af;white-space:nowrap;flex-shrink:0;">${lastMessageTime}</span>
+            </div>
+            <p class="small" style="margin:0;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}
+            </p>
+            ${
+              unreadCount > 0
+                ? `
+              <div style="margin-top:0.5rem;">
+                <span class="glass-badge" style="display:inline-flex;
+                             align-items:center;
+                             gap:0.25rem;
+                             background:rgba(11, 128, 115, 0.15);
+                             backdrop-filter:blur(4px);
+                             -webkit-backdrop-filter:blur(4px);
+                             border:1px solid rgba(11, 128, 115, 0.25);
+                             border-radius:9999px;
+                             padding:0.25rem 0.75rem;
+                             font-size:0.75rem;
+                             font-weight:600;
+                             color:#0B8073;">
+                  ${unreadCount} unread
+                </span>
+              </div>
+            `
+                : ''
+            }
+          </div>
         </div>
-        <p class="small" style="margin:0;color:#6b7280;">${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}</p>
       </div>
     `;
   });
 
   html += '</div>';
+
+  // Add "View All Messages" link with glass styling
+  html += `
+    <div style="margin-top:1rem;text-align:center;">
+      <a href="/messages.html" 
+         class="glass-btn glass-btn--primary" 
+         style="display:inline-flex;
+                align-items:center;
+                gap:0.5rem;
+                text-decoration:none;
+                padding:0.75rem 1.5rem;
+                background:rgba(11, 128, 115, 0.15);
+                backdrop-filter:blur(8px);
+                -webkit-backdrop-filter:blur(8px);
+                border:1px solid rgba(11, 128, 115, 0.25);
+                border-radius:8px;
+                color:#0B8073;
+                font-weight:500;
+                transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+        <span>View All Messages</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  `;
+
   container.innerHTML = html;
+
+  // Add shimmer animation for avatars
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
+    }
+  `;
+  if (!document.getElementById('customer-messages-animations')) {
+    style.id = 'customer-messages-animations';
+    document.head.appendChild(style);
+  }
 
   // Add click handlers
   container.querySelectorAll('.thread-item').forEach(item => {
@@ -76,14 +194,34 @@ function renderConversations(conversations) {
       openConversation(conversationId);
     });
 
-    // Hover effect
+    // Enhanced hover effect with liquid glass
     item.addEventListener('mouseenter', function () {
-      this.style.background = '#fafafa';
+      this.style.transform = 'translateY(-4px) scale(1.01)';
+      this.style.boxShadow = '0 12px 24px rgba(11, 128, 115, 0.2)';
     });
     item.addEventListener('mouseleave', function () {
-      this.style.background = '';
+      this.style.transform = 'translateY(0) scale(1)';
+      const isUnread = this.classList.contains('unread');
+      this.style.boxShadow = isUnread
+        ? '0 4px 12px rgba(11, 128, 115, 0.15)'
+        : '0 2px 8px rgba(0, 0, 0, 0.05)';
     });
   });
+
+  // Add hover effect to "View All" button
+  const viewAllBtn = container.querySelector('.glass-btn');
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('mouseenter', function () {
+      this.style.background = 'rgba(11, 128, 115, 0.25)';
+      this.style.transform = 'translateY(-2px)';
+      this.style.boxShadow = '0 8px 16px rgba(11, 128, 115, 0.2)';
+    });
+    viewAllBtn.addEventListener('mouseleave', function () {
+      this.style.background = 'rgba(11, 128, 115, 0.15)';
+      this.style.transform = 'translateY(0)';
+      this.style.boxShadow = 'none';
+    });
+  }
 }
 
 // Open conversation modal

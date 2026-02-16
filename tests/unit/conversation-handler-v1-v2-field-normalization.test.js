@@ -43,6 +43,62 @@ describe('Conversation handler v1/v2 field normalization', () => {
     });
   });
 
+  describe('v2 to v1 fallback for empty messages with legacy thread IDs', () => {
+    const loadMessagesFn = conversationHandlerJs
+      .split('async function loadMessages()')[1]
+      .split('async function')[0];
+
+    it('checks for empty messages array when v2 response is OK', () => {
+      // After successful v2 response, should check if messages are empty
+      expect(loadMessagesFn).toContain('messages.length === 0');
+    });
+
+    it('checks if threadId starts with thd_ for legacy thread format', () => {
+      // Should check for legacy thread ID format (thd_*)
+      expect(loadMessagesFn).toContain("threadId.startsWith('thd_')");
+    });
+
+    it('falls back to v1 API when v2 returns empty array for legacy threads', () => {
+      // Should fetch from v1 API when conditions are met
+      // Extract the section after checking for empty messages and legacy thread
+      const emptyMessagesSection = loadMessagesFn.split('messages.length === 0')[1];
+      expect(emptyMessagesSection).toContain('/api/v1/threads/${threadId}/messages');
+    });
+
+    it('normalizes v1 messages in the fallback path', () => {
+      // Should normalize v1 messages after fallback
+      const emptyMessagesSection = loadMessagesFn.split('messages.length === 0')[1];
+
+      // Should contain the normalization logic after the empty check
+      expect(emptyMessagesSection).toContain('messages = messages.map');
+      expect(emptyMessagesSection).toContain(
+        'senderId: msg.senderId || msg.fromUserId || msg.userId'
+      );
+      expect(emptyMessagesSection).toContain('content: msg.content || msg.text');
+      expect(emptyMessagesSection).toContain('sentAt: msg.sentAt || msg.createdAt');
+    });
+
+    it('handles v1 fallback failure gracefully', () => {
+      // Should not throw error if v1 fallback also fails
+      const emptyMessagesSection = loadMessagesFn.split('messages.length === 0')[1];
+
+      // Should check if v1Response.ok before processing
+      expect(emptyMessagesSection).toContain('v1Response.ok');
+      // Comment indicates graceful handling
+      expect(emptyMessagesSection).toContain('If v1 also fails or returns empty');
+    });
+
+    it('only falls back when both conditions are met (empty array AND legacy thread)', () => {
+      // The fallback should be conditional on both empty messages AND thd_ prefix
+      const emptyMessagesSection = loadMessagesFn.split('messages.length === 0')[1];
+      const fallbackCondition = emptyMessagesSection.split('/api/v1/threads')[0];
+
+      // Both conditions should be in the same if statement
+      expect(fallbackCondition).toContain('&&');
+      expect(fallbackCondition).toContain("threadId.startsWith('thd_')");
+    });
+  });
+
   describe('renderThreadHeader improved name resolution', () => {
     // The name resolution logic is now in resolveOtherPartyName function
     const resolveOtherPartyNameFn = conversationHandlerJs

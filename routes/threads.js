@@ -469,12 +469,17 @@ router.post(
       const db = getMongoDb(req);
       await writeMessageToMongoDB(entry, db);
 
-      // Update thread timestamp
+      // Update thread timestamp and message preview
       const allThreads = await dbUnified.read('threads');
       const idx = allThreads.findIndex(t => t.id === thread.id);
       if (idx >= 0) {
         allThreads[idx].updatedAt = entry.createdAt;
+        allThreads[idx].lastMessageAt = entry.createdAt;
+        allThreads[idx].lastMessagePreview = entry.text?.substring(0, 100) || '';
         await dbUnified.write('threads', allThreads);
+
+        // Also update MongoDB for v2 API compatibility
+        await writeThreadToMongoDB(allThreads[idx], db);
       }
     }
 
@@ -644,12 +649,17 @@ router.post(
     const db = getMongoDb(req);
     await writeMessageToMongoDB(entry, db);
 
-    // Update thread timestamp
+    // Update thread timestamp and message preview
     const th = await dbUnified.read('threads');
     const i = th.findIndex(x => x.id === t.id);
     if (i >= 0) {
       th[i].updatedAt = entry.createdAt;
+      th[i].lastMessageAt = entry.createdAt;
+      th[i].lastMessagePreview = entry.text?.substring(0, 100) || '';
       await dbUnified.write('threads', th);
+
+      // Also update MongoDB for v2 API compatibility
+      await writeThreadToMongoDB(th[i], db);
     }
 
     // Email notify other party (safe IIFE)

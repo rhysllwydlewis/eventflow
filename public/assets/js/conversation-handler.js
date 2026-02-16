@@ -59,7 +59,6 @@
       wsClient = new WebSocketClient({
         autoConnect: true,
         onConnect: () => {
-          console.log('✓ Real-time messaging connected');
           showToast('✓ Connected', 'success');
         },
         onMessage: data => {
@@ -346,9 +345,7 @@
         // If v2 API returns ANY error for a v1 thread ID (thd_*), fallback to v1 API
         // This handles 404 (not found), 500 (server error), 403 (forbidden), etc.
         if (threadId.startsWith('thd_')) {
-          console.log(
-            `v2 API returned ${response.status} for thread ${threadId}, falling back to v1 API`
-          );
+          // Fall back to v1 API for legacy threads
           const v1Response = await fetch(`/api/v1/threads/${threadId}`, {
             credentials: 'include',
             headers: {
@@ -534,6 +531,36 @@
       } else {
         const data = await response.json();
         messages = data.messages || [];
+
+        // Handle v2 returning 200 with empty messages array for legacy thd_* threads
+        // Fall back to v1 API if messages are empty and thread uses legacy ID format
+        if (messages.length === 0 && threadId.startsWith('thd_')) {
+          const v1Response = await fetch(`/api/v1/threads/${threadId}/messages`, {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (v1Response.ok) {
+            const v1Data = await v1Response.json();
+            // v1 API returns { items: [...] }, normalize to messages array
+            messages = v1Data.messages || v1Data.items || [];
+
+            // Normalize v1 field names to v2 format for consistent rendering
+            messages = messages.map(msg => ({
+              ...msg,
+              // Map fromUserId or userId to senderId for v2 compatibility
+              // Use 'unknown' as fallback - will render as other party's message
+              senderId: msg.senderId || msg.fromUserId || msg.userId || 'unknown',
+              // Ensure both text and content are available
+              content: msg.content || msg.text,
+              // Ensure sentAt falls back to createdAt
+              sentAt: msg.sentAt || msg.createdAt,
+            }));
+          }
+          // If v1 also fails or returns empty, we'll just keep the empty messages array
+        }
       }
 
       renderMessages();
