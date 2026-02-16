@@ -131,22 +131,47 @@ async function writeThreadToMongoDB(thread, db) {
     if (thread.recipientId && !participants.includes(thread.recipientId)) {
       participants.push(thread.recipientId);
     }
+    
+    // If thread has a supplierId, look up the supplier's ownerUserId and add to participants
     // Note: Don't add supplierId to participants as it's a supplier DB ID, not a user ID
+    if (thread.supplierId && dbUnified) {
+      try {
+        const suppliers = await dbUnified.read('suppliers');
+        const supplier = suppliers.find(s => s.id === thread.supplierId);
+        if (supplier && supplier.ownerUserId && !participants.includes(supplier.ownerUserId)) {
+          participants.push(supplier.ownerUserId);
+        }
+      } catch (error) {
+        console.error('Error looking up supplier owner for participants:', error);
+        // Continue without adding supplier owner - don't block the dual-write
+      }
+    }
 
-    // Create MongoDB document with both v1 and v2 fields
-    const mongoThread = {
-      ...thread,
+    // Separate immutable fields (only set on insert) from mutable fields (update on every write)
+    const immutableFields = {
       id: thread.id, // Preserve v1 thread ID (thd_xxxxx)
-      participants, // Add v2 participants array
-      status: thread.status || 'open',
       createdAt: thread.createdAt || new Date().toISOString(),
-      updatedAt: thread.updatedAt || new Date().toISOString(),
     };
 
-    // Use updateOne with upsert to avoid duplicate key errors
+    const mutableFields = {
+      ...thread,
+      id: thread.id, // Ensure id is always present
+      participants, // Update participants array with complete list
+      status: thread.status || 'open',
+      updatedAt: thread.updatedAt || new Date().toISOString(),
+      // Ensure name fields are updated when they change
+      supplierName: thread.supplierName || null,
+      customerName: thread.customerName || null,
+      recipientName: thread.recipientName || null,
+    };
+
+    // Use updateOne with upsert: $setOnInsert for immutable, $set for mutable
     await threadsCollection.updateOne(
       { id: thread.id }, // Match by v1 thread ID
-      { $setOnInsert: mongoThread }, // Only set on insert, don't overwrite existing
+      {
+        $setOnInsert: immutableFields, // Only set on insert
+        $set: mutableFields, // Always update mutable fields
+      },
       { upsert: true }
     );
   } catch (error) {
@@ -168,26 +193,36 @@ async function writeMessageToMongoDB(message, db) {
   try {
     const messagesCollection = db.collection('messages');
 
+    // Separate immutable fields from mutable fields
+    const immutableFields = {
+      id: message.id, // Preserve v1 message ID
+      threadId: message.threadId,
+      senderId: message.fromUserId || message.senderId,
+      createdAt: message.createdAt,
+      sentAt: message.createdAt || message.sentAt,
+    };
+
     // Create MongoDB document with both v1 and v2 fields
     // v1 fields: fromUserId, text, createdAt
     // v2 fields: senderId, content, sentAt
-    const mongoMessage = {
+    const mutableFields = {
       ...message,
-      id: message.id, // Preserve v1 message ID
       // v2 field aliases (primary v1, fallback v2)
       senderId: message.fromUserId || message.senderId,
       content: message.text || message.content,
       sentAt: message.createdAt || message.sentAt,
-      // v2 required fields
+      // v2 required fields (can be updated)
       readBy: message.readBy || [],
       status: message.status || 'sent',
-      threadId: message.threadId,
     };
 
-    // Use updateOne with upsert to avoid duplicate key errors
+    // Use updateOne with upsert: $setOnInsert for immutable, $set for mutable
     await messagesCollection.updateOne(
       { id: message.id }, // Match by v1 message ID
-      { $setOnInsert: mongoMessage }, // Only set on insert, don't overwrite existing
+      {
+        $setOnInsert: immutableFields, // Only set on insert
+        $set: mutableFields, // Always update mutable fields
+      },
       { upsert: true }
     );
   } catch (error) {

@@ -222,13 +222,20 @@ class MessagingService {
 
   /**
    * Get threads for a user
+   * Supports both v2 threads (participants array) and v1 threads (customerId/recipientId fields)
    */
   async getUserThreads(userId, options = {}) {
     try {
       const { status = THREAD_STATUS.ACTIVE, limit = 50, skip = 0 } = options;
 
+      // Query for threads where user is a participant in any format
+      // This handles both v2 threads (participants array) and v1 threads (customerId/recipientId)
       const query = {
-        participants: userId,
+        $or: [
+          { participants: userId }, // v2 threads
+          { customerId: userId }, // v1 thread: user is customer
+          { recipientId: userId }, // v1 thread: user is recipient (supplier owner or peer seller)
+        ],
       };
 
       if (status) {
