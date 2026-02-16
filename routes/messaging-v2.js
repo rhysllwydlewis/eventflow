@@ -469,27 +469,6 @@ router.post(
   }
 );
 
-/**
- * POST /api/v2/messages/threads/:threadId/unarchive
- * Unarchive a thread
- */
-router.post(
-  '/threads/:threadId/unarchive',
-  applyAuthRequired,
-  applyCsrfProtection,
-  ensureServices,
-  async (req, res) => {
-    try {
-      const { threadId } = req.params;
-      await messagingService.unarchiveThread(threadId, req.user.id);
-      res.json({ success: true, message: 'Thread unarchived successfully' });
-    } catch (error) {
-      logger.error('Unarchive thread error', { error: error.message, userId: req.user.id });
-      res.status(500).json({ error: 'Failed to unarchive thread', message: error.message });
-    }
-  }
-);
-
 // =========================
 // Specific Message Routes (must come before generic parameter routes)
 // =========================
@@ -1346,35 +1325,9 @@ router.post(
   ensureServices,
   async (req, res) => {
     try {
-      const userId = req.user.id;
       const { threadId } = req.params;
-
-      const thread = await messagingService.threadsCollection.findOne({
-        _id: ObjectId.isValid(threadId) ? new ObjectId(threadId) : threadId,
-      });
-
-      if (!thread) {
-        return res.status(404).json({ error: 'Thread not found' });
-      }
-
-      // Verify user is a participant
-      const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
-      if (!(await isThreadParticipant(thread, userId, db))) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
-      // Update thread status to active
-      await messagingService.threadsCollection.updateOne(
-        { _id: thread._id },
-        {
-          $set: {
-            status: 'active',
-            updatedAt: new Date(),
-          },
-        }
-      );
-
-      res.json({ success: true });
+      await messagingService.unarchiveThread(threadId, req.user.id);
+      res.json({ success: true, message: 'Thread unarchived successfully' });
     } catch (error) {
       logger.error('Unarchive thread error', { error: error.message, userId: req.user.id });
       res.status(500).json({
