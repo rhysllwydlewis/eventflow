@@ -101,14 +101,15 @@ function getMessageHtml(recipientName, senderName, text, baseUrl) {
  * Check if a user has access to a supplier's threads
  * @param {string} userId - User ID to check
  * @param {string} supplierId - Supplier business ID from thread
+ * @param {Array} suppliers - Optional suppliers array to avoid redundant DB reads
  * @returns {Promise<boolean>} True if user owns this supplier
  */
-async function userOwnsSupplier(userId, supplierId) {
+async function userOwnsSupplier(userId, supplierId, suppliers = null) {
   if (!userId || !supplierId) {
     return false;
   }
-  const suppliers = await dbUnified.read('suppliers');
-  return suppliers.some(s => s.id === supplierId && s.ownerUserId === userId);
+  const suppliersList = suppliers || (await dbUnified.read('suppliers'));
+  return suppliersList.some(s => s.id === supplierId && s.ownerUserId === userId);
 }
 
 const router = express.Router();
@@ -1010,12 +1011,14 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
 
     let threads = await dbUnified.read('threads');
 
+    // Read suppliers once for both filtering and enrichment
+    const suppliers = await dbUnified.read('suppliers');
+
     // Filter threads based on user role
     if (userRole === 'customer') {
       threads = threads.filter(t => t.customerId === userId);
     } else if (userRole === 'supplier') {
       // For suppliers, first get all supplier business IDs owned by this user
-      const suppliers = await dbUnified.read('suppliers');
       const supplierIds = suppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
       threads = threads.filter(t => supplierIds.includes(t.supplierId));
     } else if (userRole === 'admin') {
@@ -1046,7 +1049,6 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
 
     // Enrich threads with user/supplier names if missing
     const users = await dbUnified.read('users');
-    const suppliers = await dbUnified.read('suppliers');
 
     // Transform to conversation format expected by frontend
     const conversations = threads.map(t => {
