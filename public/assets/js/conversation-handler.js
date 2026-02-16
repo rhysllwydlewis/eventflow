@@ -365,6 +365,20 @@
         thread = data.thread;
       }
 
+      // Normalize participants array for v1 threads that don't have it
+      // This prevents crashes in WebSocket and other code that expects thread.participants
+      if (!thread.participants || !Array.isArray(thread.participants)) {
+        const participants = [];
+        if (thread.customerId) {
+          participants.push(thread.customerId);
+        }
+        if (thread.recipientId && !participants.includes(thread.recipientId)) {
+          participants.push(thread.recipientId);
+        }
+        // Filter out any null/undefined values
+        thread.participants = participants.filter(Boolean);
+      }
+
       // Resolve recipient ID with fallback for v1 and v2 threads
       // v2: participants array (find the other participant)
       // v1: customerId/supplierId/recipientId fields
@@ -541,8 +555,8 @@
           thread.metadata?.otherPartyName ||
           thread.marketplace?.listingTitle ||
           (thread.marketplace?.isPeerToPeer ? 'Seller' : 'Unknown');
-      } else if (thread.supplierId === currentUserId || thread.recipientId === currentUserId) {
-        // Current user is the supplier/recipient, show customer's name
+      } else if (thread.recipientId === currentUserId) {
+        // Current user is the recipient (supplier owner or peer-to-peer seller), show customer's name
         otherPartyName = thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
       } else {
         // Fallback: try all names, prioritizing supplier name
