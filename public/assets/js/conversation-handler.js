@@ -412,7 +412,8 @@
           }
 
           const v1Data = await v1Response.json();
-          messages = v1Data.messages || [];
+          // v1 API returns { items: [...] }, normalize to messages array
+          messages = v1Data.messages || v1Data.items || [];
         } else {
           throw new Error('Failed to load messages');
         }
