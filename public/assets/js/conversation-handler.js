@@ -623,8 +623,8 @@
             statusIndicator = `
               <span class="message-status read" title="Read">
                 <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0.5 6L5 10.5L15.5 0.5" stroke="#0B8073" stroke-width="1.5"/>
-                  <path d="M5.5 6L10 10.5L20.5 0.5" stroke="#0B8073" stroke-width="1.5"/>
+                  <path d="M0.5 6L5 10.5L15.5 0.5" stroke-width="1.5"/>
+                  <path d="M5.5 6L10 10.5L20.5 0.5" stroke-width="1.5"/>
                 </svg>
               </span>
             `;
@@ -633,8 +633,8 @@
             statusIndicator = `
               <span class="message-status delivered" title="Delivered">
                 <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0.5 6L5 10.5L15.5 0.5" stroke="#9ca3af" stroke-width="1.5"/>
-                  <path d="M5.5 6L10 10.5L20.5 0.5" stroke="#9ca3af" stroke-width="1.5"/>
+                  <path d="M0.5 6L5 10.5L15.5 0.5" stroke-width="1.5"/>
+                  <path d="M5.5 6L10 10.5L20.5 0.5" stroke-width="1.5"/>
                 </svg>
               </span>
             `;
@@ -643,7 +643,7 @@
             statusIndicator = `
               <span class="message-status sent" title="Sent">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 6L4.5 9.5L11 1" stroke="#9ca3af" stroke-width="1.5"/>
+                  <path d="M1 6L4.5 9.5L11 1" stroke-width="1.5"/>
                 </svg>
               </span>
             `;

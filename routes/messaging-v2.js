@@ -287,12 +287,19 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
     }
 
     // Resolve participant names for v2 threads (those without supplierName/customerName)
-    let resolvedSupplierName = thread.supplierName;
+    const resolvedSupplierName = thread.supplierName;
     let resolvedCustomerName = thread.customerName;
     let resolvedRecipientName = thread.recipientName;
 
     // If this is a v2-only thread (has participants but no v1 fields), look up names
-    if (thread.participants && thread.participants.length > 0 && !thread.supplierName && !thread.customerName) {
+    // Note: This query only runs for v2-only threads, which should be a minority of cases.
+    // Most threads created via marketplace/supplier flows will have v1 fields already populated.
+    if (
+      thread.participants &&
+      thread.participants.length > 0 &&
+      !thread.supplierName &&
+      !thread.customerName
+    ) {
       const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
       if (db) {
         const usersCollection = db.collection('users');
@@ -307,6 +314,8 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
         });
 
         // Set names for the other participants (not current user)
+        // For v2 threads, participants are typically [user1, user2] without explicit roles
+        // We map first other participant to customerName and second (if any) to recipientName
         const otherParticipants = thread.participants.filter(p => p !== req.user.id);
         if (otherParticipants.length > 0) {
           resolvedCustomerName = participantNames[otherParticipants[0]] || null;
