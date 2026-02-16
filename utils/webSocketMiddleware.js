@@ -218,6 +218,7 @@ function sanitizeContent(content) {
 
 /**
  * Check if user is participant in thread
+ * Handles both v1 threads (customerId/supplierId/recipientId) and v2 threads (participants array)
  */
 async function isThreadParticipant(userId, threadId, messagingService) {
   try {
@@ -226,7 +227,23 @@ async function isThreadParticipant(userId, threadId, messagingService) {
       return false;
     }
 
-    return thread.participants.includes(userId);
+    // v2 threads have a participants array
+    if (thread.participants && Array.isArray(thread.participants)) {
+      return thread.participants.includes(userId);
+    }
+
+    // v1 threads use customerId/supplierId/recipientId fields
+    if (thread.customerId === userId) {
+      return true;
+    }
+    if (thread.recipientId === userId) {
+      return true;
+    }
+    if (thread.supplierId === userId) {
+      return true;
+    }
+
+    return false;
   } catch (error) {
     logger.error('Error checking thread participant', {
       userId,

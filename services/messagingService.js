@@ -319,8 +319,13 @@ class MessagingService {
         before = null, // Get messages before this timestamp
       } = options;
 
+      // For v1 threads, we need to use the thread's id field (thd_xxx) for message lookup
+      // This ensures we query messages using the correct threadId format
+      const thread = await this.getThread(threadId);
+      const effectiveThreadId = thread?.id || threadId;
+
       const query = {
-        threadId: threadId,
+        threadId: effectiveThreadId,
         isDraft: false,
         deletedAt: null,
       };
