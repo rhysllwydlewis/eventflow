@@ -80,3 +80,19 @@ export function trackQuoteRequestStarted(supplierCount) {
   }
   console.log('Quote request started:', { supplierCount });
 }
+
+/**
+ * Track quote request submitted
+ * @param {number} supplierCount - Number of suppliers in the quote request
+ * @param {string} eventType - Type of event
+ */
+export function trackQuoteRequestSubmitted(supplierCount, eventType) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'purchase', {
+      value: supplierCount,
+      currency: 'GBP',
+      items: [{ item_name: eventType }],
+    });
+  }
+  console.log('Quote request submitted:', { supplierCount, eventType });
+}

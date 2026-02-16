@@ -1662,13 +1662,15 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
     const userId = req.user.id;
     const threadId = req.params.id;
 
-    if (!ObjectId.isValid(threadId)) {
-      return res.status(400).json({ error: 'Invalid thread ID' });
+    let query;
+    if (ObjectId.isValid(threadId)) {
+      query = { _id: new ObjectId(threadId) };
+    } else {
+      // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
+      query = { $or: [{ _id: threadId }, { id: threadId }] };
     }
 
-    const thread = await messagingService.threadsCollection.findOne({
-      _id: new ObjectId(threadId),
-    });
+    const thread = await messagingService.threadsCollection.findOne(query);
 
     if (!thread || !thread.participants.includes(userId)) {
       return res.status(404).json({ error: 'Thread not found' });
@@ -1688,7 +1690,7 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
     }
 
     await messagingService.threadsCollection.updateOne(
-      { _id: new ObjectId(threadId) },
+      { _id: thread._id },
       { $set: { [`pinnedAt.${userId}`]: new Date() } }
     );
 
@@ -1734,13 +1736,15 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
     const threadId = req.params.id;
     const { duration } = req.body; // '1h', '8h', '1d', 'forever'
 
-    if (!ObjectId.isValid(threadId)) {
-      return res.status(400).json({ error: 'Invalid thread ID' });
+    let query;
+    if (ObjectId.isValid(threadId)) {
+      query = { _id: new ObjectId(threadId) };
+    } else {
+      // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
+      query = { $or: [{ _id: threadId }, { id: threadId }] };
     }
 
-    const thread = await messagingService.threadsCollection.findOne({
-      _id: new ObjectId(threadId),
-    });
+    const thread = await messagingService.threadsCollection.findOne(query);
 
     if (!thread || !thread.participants.includes(userId)) {
       return res.status(404).json({ error: 'Thread not found' });
@@ -1762,7 +1766,7 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
     }
 
     await messagingService.threadsCollection.updateOne(
-      { _id: new ObjectId(threadId) },
+      { _id: thread._id },
       { $set: { [`mutedUntil.${userId}`]: mutedUntil } }
     );
 
@@ -1782,12 +1786,16 @@ router.post('/threads/:id/unmute', applyAuthRequired, ensureServices, async (req
     const userId = req.user.id;
     const threadId = req.params.id;
 
-    if (!ObjectId.isValid(threadId)) {
-      return res.status(400).json({ error: 'Invalid thread ID' });
+    let query;
+    if (ObjectId.isValid(threadId)) {
+      query = { _id: new ObjectId(threadId), participants: userId };
+    } else {
+      // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
+      query = { $or: [{ _id: threadId }, { id: threadId }], participants: userId };
     }
 
     await messagingService.threadsCollection.updateOne(
-      { _id: new ObjectId(threadId), participants: userId },
+      query,
       { $unset: { [`mutedUntil.${userId}`]: '' } }
     );
 

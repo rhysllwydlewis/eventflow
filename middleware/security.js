@@ -87,6 +87,7 @@ function configureHelmet(isProduction = false) {
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
+          'blob:',
           'https://cdn.jsdelivr.net',
           'https://fonts.googleapis.com',
         ],

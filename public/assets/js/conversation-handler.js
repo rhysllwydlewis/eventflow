@@ -348,7 +348,9 @@
       const data = await response.json();
       thread = data.thread;
 
-      if (currentUserId) {
+      if (currentUserId && thread.participants) {
+        recipientId = thread.participants.find(p => p !== currentUserId) || null;
+      } else if (currentUserId) {
         recipientId = thread.customerId === currentUserId ? thread.supplierId : thread.customerId;
       }
 
@@ -464,7 +466,7 @@
       return;
     }
 
-    const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
+    const otherPartyName = thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
     const initial = otherPartyName.charAt(0).toUpperCase();
 
     document.getElementById('conversationAvatar').textContent = initial;
@@ -570,7 +572,7 @@
             <div class="message-avatar">${initial}</div>
             <div class="message-content">
               <div class="message-bubble">
-                ${message.text ? `<div class="message-text">${escapeHtml(message.text)}</div>` : ''}
+                ${message.text || message.content ? `<div class="message-text">${escapeHtml(message.text || message.content)}</div>` : ''}
                 ${attachmentsHtml}
               </div>
               ${reactionsHtml}
@@ -654,8 +656,8 @@
       },
       messages: messages.map(msg => ({
         id: msg.id,
-        from: msg.fromUserId === currentUserId ? 'You' : otherPartyName,
-        text: msg.text,
+        from: msg.senderId === currentUserId ? 'You' : otherPartyName,
+        text: msg.text || msg.content,
         timestamp: msg.sentAt || msg.createdAt,
         formattedTimestamp: formatFullTimestamp(msg.sentAt || msg.createdAt),
       })),
@@ -677,9 +679,9 @@
     const csvLines = [
       'Timestamp,From,Message',
       ...messages.map(msg => {
-        const from = msg.fromUserId === currentUserId ? 'You' : otherPartyName;
+        const from = msg.senderId === currentUserId ? 'You' : otherPartyName;
         const timestamp = formatFullTimestamp(msg.sentAt || msg.createdAt);
-        const text = msg.text || '';
+        const text = msg.text || msg.content || '';
         return [escapeCSV(timestamp), escapeCSV(from), escapeCSV(text)].join(',');
       }),
     ];
