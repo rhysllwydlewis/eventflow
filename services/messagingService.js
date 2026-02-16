@@ -442,15 +442,16 @@ class MessagingService {
       );
 
       // Update thread unread count
-      await this.threadsCollection.updateOne(
-        { _id: typeof threadId === 'string' ? new ObjectId(threadId) : threadId },
-        {
-          $set: {
-            [`unreadCount.${userId}`]: 0,
-            updatedAt: new Date(),
-          },
-        }
-      );
+      const threadQuery = ObjectId.isValid(threadId)
+        ? { _id: new ObjectId(threadId) }
+        : { $or: [{ _id: threadId }, { id: threadId }] };
+
+      await this.threadsCollection.updateOne(threadQuery, {
+        $set: {
+          [`unreadCount.${userId}`]: 0,
+          updatedAt: new Date(),
+        },
+      });
 
       logger.debug('Thread marked as read', {
         threadId,
@@ -660,15 +661,16 @@ class MessagingService {
         deletedAt: null,
       });
 
-      await this.threadsCollection.updateOne(
-        { _id: typeof threadId === 'string' ? new ObjectId(threadId) : threadId },
-        {
-          $set: {
-            [`unreadCount.${userId}`]: unreadMessages,
-            updatedAt: new Date(),
-          },
-        }
-      );
+      const threadQuery = ObjectId.isValid(threadId)
+        ? { _id: new ObjectId(threadId) }
+        : { $or: [{ _id: threadId }, { id: threadId }] };
+
+      await this.threadsCollection.updateOne(threadQuery, {
+        $set: {
+          [`unreadCount.${userId}`]: unreadMessages,
+          updatedAt: new Date(),
+        },
+      });
     } catch (error) {
       logger.error('Error updating thread unread count', {
         threadId,
