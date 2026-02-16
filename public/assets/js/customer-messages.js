@@ -70,15 +70,18 @@ function renderConversations(conversations) {
 
     html += `
       <div class="thread-item ${isUnread ? 'unread' : ''}" 
-           style="border:1px solid ${isUnread ? '#0B8073' : '#e4e4e7'};
+           style="border:1px solid ${isUnread ? '#0B8073' : 'rgba(229, 231, 235, 0.8)'};
                   padding:1rem;
-                  border-radius:8px;
+                  border-radius:12px;
                   cursor:pointer;
-                  transition:all 0.2s;
-                  background:${isUnread ? '#f0f9f8' : 'white'};"
+                  transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                  background:${isUnread ? 'rgba(240, 249, 248, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
+                  backdrop-filter:blur(8px);
+                  -webkit-backdrop-filter:blur(8px);
+                  box-shadow:${isUnread ? '0 4px 12px rgba(11, 128, 115, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.05)'};"
            data-conversation-id="${conversation.id}">
         <div style="display:flex;gap:1rem;align-items:start;">
-          <!-- Avatar -->
+          <!-- Avatar with liquid glass effect -->
           <div style="width:48px;
                       height:48px;
                       border-radius:50%;
@@ -89,8 +92,19 @@ function renderConversations(conversations) {
                       color:white;
                       font-weight:600;
                       font-size:18px;
-                      flex-shrink:0;">
-            ${initials}
+                      flex-shrink:0;
+                      box-shadow:0 4px 12px rgba(11, 128, 115, 0.25);
+                      position:relative;
+                      overflow:hidden;">
+            <span style="position:relative;z-index:1;">${initials}</span>
+            <div style="position:absolute;
+                        top:-50%;
+                        left:-50%;
+                        width:200%;
+                        height:200%;
+                        background:linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+                        transform:rotate(45deg);
+                        animation:shimmer 3s infinite;"></div>
           </div>
           
           <!-- Content -->
@@ -106,13 +120,18 @@ function renderConversations(conversations) {
               unreadCount > 0
                 ? `
               <div style="margin-top:0.5rem;">
-                <span style="display:inline-block;
-                             background:#0B8073;
-                             color:white;
+                <span class="glass-badge" style="display:inline-flex;
+                             align-items:center;
+                             gap:0.25rem;
+                             background:rgba(11, 128, 115, 0.15);
+                             backdrop-filter:blur(4px);
+                             -webkit-backdrop-filter:blur(4px);
+                             border:1px solid rgba(11, 128, 115, 0.25);
+                             border-radius:9999px;
+                             padding:0.25rem 0.75rem;
                              font-size:0.75rem;
                              font-weight:600;
-                             padding:2px 8px;
-                             border-radius:12px;">
+                             color:#0B8073;">
                   ${unreadCount} unread
                 </span>
               </div>
@@ -127,16 +146,46 @@ function renderConversations(conversations) {
 
   html += '</div>';
 
-  // Add "View All Messages" link
+  // Add "View All Messages" link with glass styling
   html += `
     <div style="margin-top:1rem;text-align:center;">
-      <a href="/messages.html" class="cta secondary" style="display:inline-block;text-decoration:none;padding:0.75rem 1.5rem;">
-        View All Messages
+      <a href="/messages.html" 
+         class="glass-btn glass-btn--primary" 
+         style="display:inline-flex;
+                align-items:center;
+                gap:0.5rem;
+                text-decoration:none;
+                padding:0.75rem 1.5rem;
+                background:rgba(11, 128, 115, 0.15);
+                backdrop-filter:blur(8px);
+                -webkit-backdrop-filter:blur(8px);
+                border:1px solid rgba(11, 128, 115, 0.25);
+                border-radius:8px;
+                color:#0B8073;
+                font-weight:500;
+                transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+        <span>View All Messages</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
       </a>
     </div>
   `;
 
   container.innerHTML = html;
+
+  // Add shimmer animation for avatars
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
+    }
+  `;
+  if (!document.getElementById('customer-messages-animations')) {
+    style.id = 'customer-messages-animations';
+    document.head.appendChild(style);
+  }
 
   // Add click handlers
   container.querySelectorAll('.thread-item').forEach(item => {
@@ -145,18 +194,34 @@ function renderConversations(conversations) {
       openConversation(conversationId);
     });
 
-    // Hover effect
+    // Enhanced hover effect with liquid glass
     item.addEventListener('mouseenter', function () {
-      if (!this.classList.contains('unread')) {
-        this.style.background = '#fafafa';
-      }
+      this.style.transform = 'translateY(-4px) scale(1.01)';
+      this.style.boxShadow = '0 12px 24px rgba(11, 128, 115, 0.2)';
     });
     item.addEventListener('mouseleave', function () {
-      if (!this.classList.contains('unread')) {
-        this.style.background = 'white';
-      }
+      this.style.transform = 'translateY(0) scale(1)';
+      const isUnread = this.classList.contains('unread');
+      this.style.boxShadow = isUnread
+        ? '0 4px 12px rgba(11, 128, 115, 0.15)'
+        : '0 2px 8px rgba(0, 0, 0, 0.05)';
     });
   });
+
+  // Add hover effect to "View All" button
+  const viewAllBtn = container.querySelector('.glass-btn');
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('mouseenter', function () {
+      this.style.background = 'rgba(11, 128, 115, 0.25)';
+      this.style.transform = 'translateY(-2px)';
+      this.style.boxShadow = '0 8px 16px rgba(11, 128, 115, 0.2)';
+    });
+    viewAllBtn.addEventListener('mouseleave', function () {
+      this.style.background = 'rgba(11, 128, 115, 0.15)';
+      this.style.transform = 'translateY(0)';
+      this.style.boxShadow = 'none';
+    });
+  }
 }
 
 // Open conversation modal
