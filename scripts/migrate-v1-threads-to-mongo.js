@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * Migration Script: Migrate v1 Threads and Messages to MongoDB
- * 
+ *
  * This script migrates existing threads and messages from the JSON/dbUnified store to MongoDB.
  * - Reads all threads from dbUnified.read('threads')
  * - Synthesizes participants array for v2 compatibility
  * - Writes threads to MongoDB using upsert for idempotency
  * - Migrates all messages with v2 field aliases
- * 
+ *
  * Safe to run multiple times (idempotent).
  * Usage: node scripts/migrate-v1-threads-to-mongo.js
  */
@@ -39,14 +39,13 @@ async function migrateThreadsAndMessages() {
 
     // Read all threads from dbUnified (JSON store)
     console.log('📖 Reading threads from local storage...');
-    const threads = store.read('threads');
+    const threads = store.read('threads') || [];
     console.log(`   Found ${threads.length} threads in local storage\n`);
 
     // Migrate threads
     const threadsCollection = mongodb.collection('threads');
     let threadsInserted = 0;
     let threadsSkipped = 0;
-    let threadsUpdated = 0;
 
     console.log('🔄 Migrating threads to MongoDB...');
     for (const thread of threads) {
@@ -99,7 +98,7 @@ async function migrateThreadsAndMessages() {
 
     // Read all messages from dbUnified (JSON store)
     console.log('📖 Reading messages from local storage...');
-    const messages = store.read('messages');
+    const messages = store.read('messages') || [];
     console.log(`   Found ${messages.length} messages in local storage\n`);
 
     // Migrate messages
@@ -154,7 +153,6 @@ async function migrateThreadsAndMessages() {
     console.log(`   Threads: ${threadsInserted} inserted, ${threadsSkipped} already existed`);
     console.log(`   Messages: ${messagesInserted} inserted, ${messagesSkipped} already existed`);
     console.log();
-
   } catch (error) {
     console.error('❌ Migration failed:', error);
     process.exit(1);

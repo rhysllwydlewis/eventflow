@@ -1138,7 +1138,7 @@ async function startServer() {
           try {
             console.log('');
             console.log('🔄 Checking for v1 threads to migrate to MongoDB...');
-            
+
             const dbStatus = await dbUnified.getStatus();
             if (dbStatus.backend !== 'mongodb') {
               console.log('   ⏭️  Skipping migration (not using MongoDB)');
@@ -1150,15 +1150,19 @@ async function startServer() {
             const messagesCollection = db.collection('messages');
 
             // Read all threads from local storage
-            const localThreads = store.read('threads');
+            const localThreads = store.read('threads') || [];
             let migratedThreads = 0;
 
             for (const thread of localThreads) {
-              if (!thread.id) continue;
+              if (!thread.id) {
+                continue;
+              }
 
               // Check if thread already exists in MongoDB
               const exists = await threadsCollection.findOne({ id: thread.id });
-              if (exists) continue;
+              if (exists) {
+                continue;
+              }
 
               // Synthesize participants array for v2 compatibility
               const participants = [];
@@ -1182,15 +1186,19 @@ async function startServer() {
             }
 
             // Read all messages from local storage
-            const localMessages = store.read('messages');
+            const localMessages = store.read('messages') || [];
             let migratedMessages = 0;
 
             for (const message of localMessages) {
-              if (!message.id) continue;
+              if (!message.id) {
+                continue;
+              }
 
               // Check if message already exists in MongoDB
               const exists = await messagesCollection.findOne({ id: message.id });
-              if (exists) continue;
+              if (exists) {
+                continue;
+              }
 
               // Transform message with v2 field aliases
               const messageDoc = {
@@ -1207,7 +1215,9 @@ async function startServer() {
             }
 
             if (migratedThreads > 0 || migratedMessages > 0) {
-              console.log(`   ✅ Migrated ${migratedThreads} threads and ${migratedMessages} messages to MongoDB`);
+              console.log(
+                `   ✅ Migrated ${migratedThreads} threads and ${migratedMessages} messages to MongoDB`
+              );
             } else {
               console.log('   ✅ No v1 threads to migrate (all up to date)');
             }
