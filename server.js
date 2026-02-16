@@ -84,7 +84,8 @@ const helpers = require('./utils/helpers');
 // Data access layer - MongoDB-first with local storage fallback
 const dbUnified = databaseConfig.dbUnified;
 const mongoDb = databaseConfig.mongoDb;
-const { uid, DATA_DIR } = require('./store');
+const store = require('./store');
+const { uid, DATA_DIR } = store;
 
 // Postmark email utility (for backward compatibility)
 const postmark = require('./utils/postmark');
@@ -1129,6 +1130,102 @@ async function startServer() {
           console.warn('   ⚠️  Could not create all database indexes:', indexError.message);
           console.warn('   Server will continue running, but queries may be slower');
         }
+
+        // Auto-migrate v1 threads and messages to MongoDB (if needed)
+        // This ensures any threads created between deployments are caught
+        // Runs once on startup in a non-blocking manner
+        setImmediate(async () => {
+          try {
+            console.log('');
+            console.log('🔄 Checking for v1 threads to migrate to MongoDB...');
+
+            const dbStatus = await dbUnified.getStatus();
+            if (dbStatus.backend !== 'mongodb') {
+              console.log('   ⏭️  Skipping migration (not using MongoDB)');
+              return;
+            }
+
+            const db = await mongoDb.getDb();
+            const threadsCollection = db.collection('threads');
+            const messagesCollection = db.collection('messages');
+
+            // Read all threads from local storage
+            const localThreads = store.read('threads') || [];
+            let migratedThreads = 0;
+
+            for (const thread of localThreads) {
+              if (!thread.id) {
+                continue;
+              }
+
+              // Check if thread already exists in MongoDB
+              const exists = await threadsCollection.findOne({ id: thread.id });
+              if (exists) {
+                continue;
+              }
+
+              // Synthesize participants array for v2 compatibility
+              const participants = [];
+              if (thread.customerId) {
+                participants.push(thread.customerId);
+              }
+              if (thread.recipientId && !participants.includes(thread.recipientId)) {
+                participants.push(thread.recipientId);
+              }
+              const cleanParticipants = participants.filter(Boolean);
+
+              // Insert thread with participants array
+              const threadDoc = {
+                ...thread,
+                participants: cleanParticipants,
+                status: thread.status || 'open',
+              };
+
+              await threadsCollection.insertOne(threadDoc);
+              migratedThreads++;
+            }
+
+            // Read all messages from local storage
+            const localMessages = store.read('messages') || [];
+            let migratedMessages = 0;
+
+            for (const message of localMessages) {
+              if (!message.id) {
+                continue;
+              }
+
+              // Check if message already exists in MongoDB
+              const exists = await messagesCollection.findOne({ id: message.id });
+              if (exists) {
+                continue;
+              }
+
+              // Transform message with v2 field aliases
+              const messageDoc = {
+                ...message,
+                senderId: message.senderId || message.fromUserId,
+                content: message.content || message.text,
+                sentAt: message.sentAt || message.createdAt,
+                readBy: message.readBy || [],
+                status: message.status || 'sent',
+              };
+
+              await messagesCollection.insertOne(messageDoc);
+              migratedMessages++;
+            }
+
+            if (migratedThreads > 0 || migratedMessages > 0) {
+              console.log(
+                `   ✅ Migrated ${migratedThreads} threads and ${migratedMessages} messages to MongoDB`
+              );
+            } else {
+              console.log('   ✅ No v1 threads to migrate (all up to date)');
+            }
+          } catch (error) {
+            // Log error but don't block server startup
+            console.error('   ⚠️  Auto-migration failed (non-fatal):', error.message);
+          }
+        });
 
         // 4a. Seed database with initial data
         console.log('');

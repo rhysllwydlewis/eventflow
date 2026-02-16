@@ -497,10 +497,11 @@ describe('Admin v2 API Integration Tests', () => {
       );
 
       expect(routeContent).toContain('pagination:');
-      expect(routeContent).toContain('page:');
-      expect(routeContent).toContain('limit:');
-      expect(routeContent).toContain('total:');
-      expect(routeContent).toContain('totalPages:');
+      // Check for either ES6 shorthand (page,) or explicit (page:) syntax
+      expect(routeContent).toMatch(/page[,:]/);
+      expect(routeContent).toMatch(/limit[,:]/);
+      expect(routeContent).toMatch(/total[,:]/);
+      expect(routeContent).toMatch(/totalPages[,:]/);
     });
   });
 

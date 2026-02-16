@@ -342,8 +342,10 @@
       });
 
       if (!response.ok) {
-        // If v2 API returns 404 for a v1 thread ID (thd_*), fallback to v1 API
-        if (response.status === 404 && threadId.startsWith('thd_')) {
+        // If v2 API returns ANY error for a v1 thread ID (thd_*), fallback to v1 API
+        // This handles 404 (not found), 500 (server error), 403 (forbidden), etc.
+        if (threadId.startsWith('thd_')) {
+          console.log(`v2 API returned ${response.status} for thread ${threadId}, falling back to v1 API`);
           const v1Response = await fetch(`/api/v1/threads/${threadId}`, {
             credentials: 'include',
             headers: {
@@ -352,13 +354,13 @@
           });
 
           if (!v1Response.ok) {
-            throw new Error('Failed to load conversation');
+            throw new Error(`Failed to load conversation: v2 returned ${response.status}, v1 returned ${v1Response.status}`);
           }
 
           const v1Data = await v1Response.json();
           thread = v1Data.thread;
         } else {
-          throw new Error('Failed to load conversation');
+          throw new Error(`Failed to load conversation: ${response.status}`);
         }
       } else {
         const data = await response.json();

@@ -91,21 +91,21 @@ describe('Marketplace messaging flow fixes', () => {
       expect(loadThreadFn).toContain('recipientId = thread.recipientId');
     });
 
-    it('renderThreadHeader includes recipientName for displaying other party', () => {
+    it('renderThreadHeader uses resolveOtherPartyName for displaying other party', () => {
       const renderThreadHeaderFn = conversationHandlerJs
         .split('function renderThreadHeader()')[1]
         .split('function ')[0];
-      expect(renderThreadHeaderFn).toContain('thread.recipientName');
+      expect(renderThreadHeaderFn).toContain('resolveOtherPartyName()');
     });
 
-    it('renderThreadHeader has proper fallback chain for peer-to-peer threads', () => {
-      const renderThreadHeaderFn = conversationHandlerJs
-        .split('function renderThreadHeader()')[1]
+    it('resolveOtherPartyName has proper fallback chain for peer-to-peer threads', () => {
+      const resolveOtherPartyNameFn = conversationHandlerJs
+        .split('function resolveOtherPartyName()')[1]
         .split('function ')[0];
       // Should check for supplierName, recipientName, and metadata.otherPartyName
-      expect(renderThreadHeaderFn).toContain('thread.supplierName');
-      expect(renderThreadHeaderFn).toContain('thread.recipientName');
-      expect(renderThreadHeaderFn).toContain('thread.metadata?.otherPartyName');
+      expect(resolveOtherPartyNameFn).toContain('thread.supplierName');
+      expect(resolveOtherPartyNameFn).toContain('thread.recipientName');
+      expect(resolveOtherPartyNameFn).toContain('thread.metadata?.otherPartyName');
     });
   });
 });
