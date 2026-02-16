@@ -17,6 +17,7 @@ let uid;
 let sendMail;
 let verifyHCaptcha;
 let calculateLeadScore;
+let mongoDb;
 
 /**
  * Initialize dependencies from server.js
@@ -37,6 +38,7 @@ function initializeDependencies(deps) {
     'sendMail',
     'verifyHCaptcha',
     'calculateLeadScore',
+    'mongoDb',
   ];
 
   const missing = required.filter(key => deps[key] === undefined);
@@ -52,6 +54,7 @@ function initializeDependencies(deps) {
   sendMail = deps.sendMail;
   verifyHCaptcha = deps.verifyHCaptcha;
   calculateLeadScore = deps.calculateLeadScore;
+  mongoDb = deps.mongoDb;
 }
 
 /**
@@ -96,6 +99,107 @@ function resolveListingSellerUserId(listing) {
   }
 
   return null;
+}
+
+/**
+ * Get MongoDB database instance
+ * @param {Object} req - Express request object
+ * @returns {Object|null} MongoDB database instance or null
+ */
+function getMongoDb(req) {
+  return req.app.locals.db || mongoDb?.db || global.mongoDb?.db || null;
+}
+
+/**
+ * Dual-write thread to MongoDB for v2 API compatibility
+ * @param {Object} thread - Thread object from v1 API
+ * @param {Object} db - MongoDB database instance
+ */
+async function writeThreadToMongoDB(thread, db) {
+  if (!db) {
+    return; // MongoDB not available, skip dual-write
+  }
+
+  try {
+    const threadsCollection = db.collection('threads');
+
+    // Check if thread already exists in MongoDB
+    const existingThread = await threadsCollection.findOne({
+      $or: [{ _id: thread.id }, { id: thread.id }],
+    });
+
+    if (existingThread) {
+      return; // Thread already exists, no need to insert
+    }
+
+    // Build participants array from v1 fields for v2 compatibility
+    const participants = [];
+    if (thread.customerId) {
+      participants.push(thread.customerId);
+    }
+    if (thread.recipientId && !participants.includes(thread.recipientId)) {
+      participants.push(thread.recipientId);
+    }
+    // Note: Don't add supplierId to participants as it's a supplier DB ID, not a user ID
+
+    // Create MongoDB document with both v1 and v2 fields
+    const mongoThread = {
+      ...thread,
+      id: thread.id, // Preserve v1 thread ID (thd_xxxxx)
+      participants, // Add v2 participants array
+      status: thread.status || 'open',
+      createdAt: thread.createdAt || new Date().toISOString(),
+      updatedAt: thread.updatedAt || new Date().toISOString(),
+    };
+
+    await threadsCollection.insertOne(mongoThread);
+  } catch (error) {
+    console.error('Error writing thread to MongoDB:', error);
+    // Don't throw - dual-write failure shouldn't block the v1 API
+  }
+}
+
+/**
+ * Dual-write message to MongoDB for v2 API compatibility
+ * @param {Object} message - Message object from v1 API
+ * @param {Object} db - MongoDB database instance
+ */
+async function writeMessageToMongoDB(message, db) {
+  if (!db) {
+    return; // MongoDB not available, skip dual-write
+  }
+
+  try {
+    const messagesCollection = db.collection('messages');
+
+    // Check if message already exists in MongoDB
+    const existingMessage = await messagesCollection.findOne({
+      $or: [{ _id: message.id }, { id: message.id }],
+    });
+
+    if (existingMessage) {
+      return; // Message already exists, no need to insert
+    }
+
+    // Create MongoDB document with both v1 and v2 fields
+    const mongoMessage = {
+      ...message,
+      id: message.id, // Preserve v1 message ID
+      // v2 field aliases
+      senderId: message.fromUserId || message.senderId,
+      content: message.text || message.content,
+      sentAt: message.createdAt || message.sentAt,
+      // v2 required fields
+      readBy: message.readBy || [],
+      status: message.status || 'sent',
+      threadId: message.threadId,
+    };
+
+    await messagesCollection.insertOne(mongoMessage);
+  } catch (error) {
+    console.error('Error writing message to MongoDB:', error);
+    // Don't throw - dual-write failure shouldn't block the v1 API
+  }
 }
 
 // ---------- Thread Routes ----------
@@ -305,6 +409,10 @@ router.post(
       };
       threads.push(thread);
       await dbUnified.write('threads', threads);
+
+      // Dual-write to MongoDB for v2 API compatibility
+      const db = getMongoDb(req);
+      await writeThreadToMongoDB(thread, db);
     }
 
     // If an initial message was included, create it immediately
@@ -329,6 +437,10 @@ router.post(
 
       msgs.push(entry);
       await dbUnified.write('messages', msgs);
+
+      // Dual-write message to MongoDB for v2 API compatibility
+      const db = getMongoDb(req);
+      await writeMessageToMongoDB(entry, db);
 
       // Update thread timestamp
       const allThreads = await dbUnified.read('threads');
@@ -500,6 +612,10 @@ router.post(
     };
     msgs.push(entry);
     await dbUnified.write('messages', msgs);
+
+    // Dual-write message to MongoDB for v2 API compatibility
+    const db = getMongoDb(req);
+    await writeMessageToMongoDB(entry, db);
 
     // Update thread timestamp
     const th = await dbUnified.read('threads');
