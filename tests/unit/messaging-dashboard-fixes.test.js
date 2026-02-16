@@ -36,7 +36,7 @@ describe('Messaging Dashboard Fixes', () => {
 
     it('uses correct v2 endpoint for markMessagesAsReadViaAPI', () => {
       const markAsReadFn = messagingJs
-        .split('async markMessagesAsReadViaAPI(conversationId, userId)')[1]
+        .split('async markMessagesAsReadViaAPI(conversationId)')[1]
         .split('async ')[0];
 
       // Should use /api/v2/messages/threads/:threadId/read endpoint
@@ -46,7 +46,7 @@ describe('Messaging Dashboard Fixes', () => {
 
     it('extracts error messages in markMessagesAsReadViaAPI', () => {
       const markAsReadFn = messagingJs
-        .split('async markMessagesAsReadViaAPI(conversationId, userId)')[1]
+        .split('async markMessagesAsReadViaAPI(conversationId)')[1]
         .split('async ')[0];
 
       // Should extract error message from response

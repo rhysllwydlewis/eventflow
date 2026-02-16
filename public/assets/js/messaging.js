@@ -472,11 +472,11 @@ class MessagingSystem {
   /**
    * Mark messages as read via MongoDB API
    * @param {string} conversationId - Conversation ID
-   * @param {string} userId - User ID
+   * @param {string} userId - User ID (not used by v2 API, kept for backward compatibility)
    * @returns {Promise<void>}
    */
   async markMessagesAsRead(conversationId, userId) {
-    await this.markMessagesAsReadViaAPI(conversationId, userId);
+    await this.markMessagesAsReadViaAPI(conversationId);
 
     // Also emit via WebSocket if connected for immediate read receipt
     if (this.isConnected && this.socket) {
@@ -582,7 +582,7 @@ class MessagingSystem {
         credentials: 'include',
         body: JSON.stringify(payload),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         return data.messageId || (data.message && data.message.id);
@@ -598,9 +598,10 @@ class MessagingSystem {
     }
   }
 
-  async markMessagesAsReadViaAPI(conversationId, userId) {
+  async markMessagesAsReadViaAPI(conversationId) {
     try {
       // Use correct v2 endpoint: /api/v2/messages/threads/:threadId/read
+      // Note: v2 API uses req.user.id from session, no need to send userId in body
       const response = await fetch(`/api/v2/messages/threads/${conversationId}/read`, {
         method: 'POST',
         headers: {
@@ -609,7 +610,7 @@ class MessagingSystem {
         },
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
