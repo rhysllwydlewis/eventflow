@@ -410,6 +410,7 @@
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
         body: JSON.stringify({
           content: text,
@@ -457,6 +458,7 @@
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
       });
     } catch (error) {
@@ -744,6 +746,7 @@
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
       });
 
@@ -839,6 +842,7 @@
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
         body: JSON.stringify({ emoji }),
       });
