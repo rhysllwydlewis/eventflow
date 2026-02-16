@@ -128,6 +128,37 @@ function buildThreadQuery(threadId) {
   }
 }
 
+/**
+ * Helper function to check if a user is a participant in a thread
+ * Handles both v1 threads (customerId/supplierId/recipientId) and v2 threads (participants array)
+ * @param {Object} thread - Thread object
+ * @param {string} userId - User ID to check
+ * @returns {boolean} True if user is a participant
+ */
+function isThreadParticipant(thread, userId) {
+  if (!thread || !userId) {
+    return false;
+  }
+
+  // v2 threads have a participants array
+  if (thread.participants && Array.isArray(thread.participants)) {
+    return thread.participants.includes(userId);
+  }
+
+  // v1 threads use customerId/supplierId/recipientId fields
+  if (thread.customerId === userId) {
+    return true;
+  }
+  if (thread.recipientId === userId) {
+    return true;
+  }
+  if (thread.supplierId === userId) {
+    return true;
+  }
+
+  return false;
+}
+
 // =========================
 // Thread Management
 // =========================
@@ -251,7 +282,7 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
     }
 
     // Check if user is a participant
-    if (!thread.participants.includes(req.user.id)) {
+    if (!isThreadParticipant(thread, req.user.id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -427,7 +458,7 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
       return res.status(404).json({ error: 'Thread not found' });
     }
 
-    if (!thread.participants.includes(req.user.id)) {
+    if (!isThreadParticipant(thread, req.user.id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -435,6 +466,7 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
       limit: parseInt(limit, 10),
       skip: parseInt(skip, 10),
       before,
+      thread, // Pass thread to avoid extra lookup
     });
 
     // Transform for response
@@ -491,11 +523,20 @@ router.post(
         return res.status(404).json({ error: 'Thread not found' });
       }
 
-      if (!thread.participants.includes(req.user.id)) {
+      if (!isThreadParticipant(thread, req.user.id)) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
-      const recipientIds = thread.participants.filter(p => p !== req.user.id);
+      // Compute recipientIds with v1 fallback
+      let recipientIds;
+      if (thread.participants && Array.isArray(thread.participants)) {
+        recipientIds = thread.participants.filter(p => p !== req.user.id);
+      } else {
+        // v1 thread: determine the other party
+        recipientIds = [thread.customerId, thread.recipientId, thread.supplierId].filter(
+          id => id && id !== req.user.id
+        );
+      }
 
       // Get user's subscription tier
       const subscriptionTier = req.user.subscriptionTier || 'free';
@@ -732,6 +773,16 @@ router.post(
   async (req, res) => {
     try {
       const { threadId } = req.params;
+
+      // Verify access
+      const thread = await messagingService.getThread(threadId);
+      if (!thread) {
+        return res.status(404).json({ error: 'Thread not found' });
+      }
+
+      if (!isThreadParticipant(thread, req.user.id)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
 
       const count = await messagingService.markThreadAsRead(threadId, req.user.id);
 
@@ -1099,7 +1150,7 @@ router.post(
       }
 
       // Verify user is a participant
-      if (!thread.participants || !thread.participants.includes(userId)) {
+      if (!isThreadParticipant(thread, userId)) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -1146,7 +1197,7 @@ router.post(
       }
 
       // Verify user is a participant
-      if (!thread.participants || !thread.participants.includes(userId)) {
+      if (!isThreadParticipant(thread, userId)) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -1679,7 +1730,7 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
     const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
-    if (!thread || !thread.participants.includes(userId)) {
+    if (!thread || !isThreadParticipant(thread, userId)) {
       return res.status(404).json({ error: 'Thread not found' });
     }
 
@@ -1747,7 +1798,7 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
     const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
-    if (!thread || !thread.participants.includes(userId)) {
+    if (!thread || !isThreadParticipant(thread, userId)) {
       return res.status(404).json({ error: 'Thread not found' });
     }
 
@@ -1791,7 +1842,7 @@ router.post('/threads/:id/unmute', applyAuthRequired, ensureServices, async (req
     const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
-    if (!thread || !thread.participants || !thread.participants.includes(userId)) {
+    if (!thread || !isThreadParticipant(thread, userId)) {
       return res.status(404).json({ error: 'Thread not found' });
     }
 

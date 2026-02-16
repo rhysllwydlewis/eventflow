@@ -13,6 +13,40 @@ const { csrfProtection } = require('../middleware/csrf');
 const validator = require('validator');
 
 /**
+ * Validate image URL - accepts both full URLs and relative paths
+ * @param {string} url - URL to validate
+ * @returns {boolean} True if valid image URL
+ */
+function isValidImageUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+
+  // Decode URL to catch encoded path traversal attempts
+  let decodedUrl = url;
+  try {
+    decodedUrl = decodeURIComponent(url);
+  } catch (e) {
+    // If decoding fails, use original URL
+    decodedUrl = url;
+  }
+
+  // Reject path traversal attempts (including encoded)
+  if (decodedUrl.includes('..')) {
+    return false;
+  }
+
+  // Only accept relative paths from whitelisted prefixes
+  if (url.startsWith('/')) {
+    const allowedPrefixes = ['/api/photos/', '/uploads/', '/images/'];
+    return allowedPrefixes.some(prefix => url.startsWith(prefix));
+  }
+
+  // Accept full URLs
+  return validator.isURL(url);
+}
+
+/**
  * GET /api/shortlist
  * Get user's shortlist
  * Returns empty array for unauthenticated users (no 401)
@@ -82,7 +116,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
       type: validator.escape(type),
       id: validator.escape(id),
       name: validator.escape(name),
-      imageUrl: imageUrl && validator.isURL(imageUrl) ? imageUrl : null,
+      imageUrl: isValidImageUrl(imageUrl) ? imageUrl : null,
       category: category ? validator.escape(category) : null,
       location: location ? validator.escape(location) : null,
       priceHint: priceHint ? validator.escape(priceHint) : null,

@@ -308,7 +308,7 @@ class MessagingService {
   /**
    * Get messages in a thread
    * @param {string} threadId - Thread ID
-   * @param {Object} options - Query options (limit, skip, before)
+   * @param {Object} options - Query options (limit, skip, before, thread)
    * @returns {Promise<Array>} Array of messages
    */
   async getThreadMessages(threadId, options = {}) {
@@ -317,10 +317,23 @@ class MessagingService {
         limit = 100,
         skip = 0,
         before = null, // Get messages before this timestamp
+        thread = null, // Optional: pass thread object to avoid extra lookup
       } = options;
 
+      // For v1 threads, we need to use the thread's id field (thd_xxx) for message lookup
+      // This ensures we query messages using the correct threadId format
+      let effectiveThreadId = threadId;
+      if (thread) {
+        // Thread object provided, use its id field if available
+        effectiveThreadId = thread.id || threadId;
+      } else {
+        // Fetch thread to get the correct id
+        const fetchedThread = await this.getThread(threadId);
+        effectiveThreadId = fetchedThread?.id || threadId;
+      }
+
       const query = {
-        threadId: threadId,
+        threadId: effectiveThreadId,
         isDraft: false,
         deletedAt: null,
       };
