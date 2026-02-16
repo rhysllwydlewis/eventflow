@@ -506,16 +506,22 @@ router.post(
 router.get('/my', applyAuthRequired, async (req, res) => {
   const ts = await dbUnified.read('threads');
   let items = [];
-  if (req.user.role === 'customer') {
-    items = ts.filter(t => t.customerId === req.user.id);
-  } else if (req.user.role === 'supplier') {
-    const mine = (await dbUnified.read('suppliers'))
-      .filter(s => s.ownerUserId === req.user.id)
-      .map(s => s.id);
-    items = ts.filter(t => mine.includes(t.supplierId));
-  } else if (req.user.role === 'admin') {
+
+  if (req.user.role === 'admin') {
     items = ts;
+  } else {
+    // Filter threads where user is a participant (regardless of role)
+    const suppliers = await dbUnified.read('suppliers');
+    const supplierIds = suppliers.filter(s => s.ownerUserId === req.user.id).map(s => s.id);
+
+    items = ts.filter(
+      t =>
+        t.customerId === req.user.id || // User is the customer
+        t.recipientId === req.user.id || // User is the recipient (peer-to-peer)
+        supplierIds.includes(t.supplierId) // User owns the supplier
+    );
   }
+
   const msgs = await dbUnified.read('messages');
   items = items.map(t => ({
     ...t,
