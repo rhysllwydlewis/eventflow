@@ -93,6 +93,7 @@
     const sellBtn = document.getElementById('sell-item-btn');
     const myListingsLink = document.getElementById('my-listings-link');
     const ctaSection = document.getElementById('marketplace-cta-section');
+    const listBtn = document.getElementById('marketplace-list-btn');
 
     if (currentUser) {
       // Hide entire CTA section for logged-in users
@@ -111,6 +112,9 @@
       if (myListingsLink) {
         myListingsLink.style.display = 'flex';
       }
+      if (listBtn) {
+        listBtn.style.display = 'inline-flex';
+      }
     } else {
       // Show CTA section for logged-out users
       if (ctaSection) {
@@ -127,6 +131,9 @@
       }
       if (myListingsLink) {
         myListingsLink.style.display = 'none';
+      }
+      if (listBtn) {
+        listBtn.style.display = 'none';
       }
     }
   }

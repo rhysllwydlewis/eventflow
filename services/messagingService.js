@@ -658,6 +658,40 @@ class MessagingService {
   }
 
   /**
+   * Unarchive a thread
+   */
+  async unarchiveThread(threadId, userId) {
+    try {
+      const thread = await this.getThread(threadId);
+      if (!thread) {
+        throw new Error('Thread not found');
+      }
+
+      // Verify user is a participant
+      if (!this.isParticipant(thread, userId)) {
+        throw new Error('Unauthorized: user is not a participant');
+      }
+
+      await this.threadsCollection.updateOne(
+        { _id: thread._id },
+        {
+          $set: {
+            status: THREAD_STATUS.ACTIVE,
+            updatedAt: new Date(),
+          },
+        }
+      );
+
+      logger.info('Thread unarchived', { threadId, userId });
+
+      return true;
+    } catch (error) {
+      logger.error('Error unarchiving thread', { threadId, userId, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
    * Get unread message count for user
    */
   async getUnreadCount(userId) {
