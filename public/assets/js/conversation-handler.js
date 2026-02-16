@@ -520,14 +520,15 @@
     }
   }
 
-  function renderThreadHeader() {
+  /**
+   * Resolve the other party's name for the current thread
+   * Supports both v1 and v2 thread formats
+   */
+  function resolveOtherPartyName() {
     if (!thread) {
-      return;
+      return 'Unknown';
     }
 
-    // Resolve other party name with fallback for v1 and v2 threads
-    // v1: supplierName/customerName/recipientName fields (check user role to pick the right one)
-    // v2: metadata.otherPartyName field
     let otherPartyName = 'Unknown';
 
     if (currentUserId) {
@@ -564,6 +565,16 @@
         (thread.marketplace?.isPeerToPeer ? 'Seller' : 'Unknown');
     }
 
+    return otherPartyName;
+  }
+
+  function renderThreadHeader() {
+    if (!thread) {
+      return;
+    }
+
+    // Use the comprehensive name resolution
+    const otherPartyName = resolveOtherPartyName();
     const initial = otherPartyName.charAt(0).toUpperCase();
 
     document.getElementById('conversationAvatar').textContent = initial;
@@ -593,15 +604,51 @@
     container.innerHTML = messages
       .map(message => {
         const isSent = message.senderId === currentUserId;
-        const senderName = isSent
-          ? 'You'
-          : thread?.supplierName || thread?.customerName || 'Unknown';
+        // Use the comprehensive name resolution instead of simple fallback
+        const senderName = isSent ? 'You' : resolveOtherPartyName();
         const initial = senderName.charAt(0).toUpperCase();
         const time = formatTime(message.sentAt || message.createdAt);
         const fullDate = formatFullTimestamp(message.sentAt || message.createdAt);
 
-        const isRead = message.readBy && message.readBy.length > 1;
-        const readStatus = isSent ? (isRead ? ' ✓✓' : ' ✓') : '';
+        // Determine message delivery status with proper indicators
+        let statusIndicator = '';
+        if (isSent) {
+          const isRead = message.readBy && message.readBy.length > 1;
+          const isDelivered =
+            message.status === 'delivered' ||
+            (message.deliveredTo && message.deliveredTo.length > 0);
+
+          if (isRead) {
+            // 2 blue ticks - Message read
+            statusIndicator = `
+              <span class="message-status read" title="Read">
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0.5 6L5 10.5L15.5 0.5" stroke-width="1.5"/>
+                  <path d="M5.5 6L10 10.5L20.5 0.5" stroke-width="1.5"/>
+                </svg>
+              </span>
+            `;
+          } else if (isDelivered) {
+            // 2 grey ticks - Message delivered
+            statusIndicator = `
+              <span class="message-status delivered" title="Delivered">
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0.5 6L5 10.5L15.5 0.5" stroke-width="1.5"/>
+                  <path d="M5.5 6L10 10.5L20.5 0.5" stroke-width="1.5"/>
+                </svg>
+              </span>
+            `;
+          } else {
+            // 1 grey tick - Message sent
+            statusIndicator = `
+              <span class="message-status sent" title="Sent">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 6L4.5 9.5L11 1" stroke-width="1.5"/>
+                </svg>
+              </span>
+            `;
+          }
+        }
 
         let attachmentsHtml = '';
         if (message.attachments && message.attachments.length > 0) {
@@ -673,7 +720,10 @@
                 ${attachmentsHtml}
               </div>
               ${reactionsHtml}
-              <div class="message-time" title="${fullDate}">${time}${readStatus}</div>
+              <div class="message-time" title="${fullDate}">
+                ${time}
+                ${statusIndicator}
+              </div>
             </div>
           </div>
         `;

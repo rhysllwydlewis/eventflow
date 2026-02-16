@@ -44,22 +44,23 @@ describe('Conversation handler v1/v2 field normalization', () => {
   });
 
   describe('renderThreadHeader improved name resolution', () => {
-    const renderThreadHeaderFn = conversationHandlerJs
-      .split('function renderThreadHeader()')[1]
+    // The name resolution logic is now in resolveOtherPartyName function
+    const resolveOtherPartyNameFn = conversationHandlerJs
+      .split('function resolveOtherPartyName()')[1]
       .split('function ')[0];
 
     it('includes marketplace listing title as fallback for other party name', () => {
-      expect(renderThreadHeaderFn).toContain('thread.marketplace?.listingTitle');
+      expect(resolveOtherPartyNameFn).toContain('thread.marketplace?.listingTitle');
     });
 
     it('uses generic "Seller" label for peer-to-peer marketplace threads when names unavailable', () => {
-      expect(renderThreadHeaderFn).toContain(
+      expect(resolveOtherPartyNameFn).toContain(
         "thread.marketplace?.isPeerToPeer ? 'Seller' : 'Unknown'"
       );
     });
 
     it('applies marketplace fallbacks in customer view (when customerId === currentUserId)', () => {
-      const customerBranch = renderThreadHeaderFn
+      const customerBranch = resolveOtherPartyNameFn
         .split('if (thread.customerId === currentUserId)')[1]
         .split('} else if')[0];
 
@@ -68,7 +69,7 @@ describe('Conversation handler v1/v2 field normalization', () => {
     });
 
     it('applies marketplace fallbacks in general fallback branch', () => {
-      const generalFallback = renderThreadHeaderFn
+      const generalFallback = resolveOtherPartyNameFn
         .split('} else {')[1]
         .split('// Fallback: try all names')[1]
         .split('}')[0];
@@ -78,12 +79,20 @@ describe('Conversation handler v1/v2 field normalization', () => {
     });
 
     it('applies marketplace fallbacks when no currentUserId available', () => {
-      const noUserIdBranch = renderThreadHeaderFn
+      const noUserIdBranch = resolveOtherPartyNameFn
         .split('// No current user ID, fallback to original logic')[1]
         .split('}')[0];
 
       expect(noUserIdBranch).toContain('thread.marketplace?.listingTitle');
       expect(noUserIdBranch).toContain("thread.marketplace?.isPeerToPeer ? 'Seller'");
+    });
+
+    it('renderThreadHeader uses resolveOtherPartyName function', () => {
+      const renderThreadHeaderFn = conversationHandlerJs
+        .split('function renderThreadHeader()')[1]
+        .split('function ')[0];
+
+      expect(renderThreadHeaderFn).toContain('resolveOtherPartyName()');
     });
   });
 
@@ -105,6 +114,19 @@ describe('Conversation handler v1/v2 field normalization', () => {
       // The normalization ensures both are available
       const messageBodySection = renderMessagesFn.split('const time =')[1];
       expect(messageBodySection).toBeTruthy();
+    });
+
+    it('uses resolveOtherPartyName function for consistent name resolution', () => {
+      expect(renderMessagesFn).toContain('resolveOtherPartyName()');
+    });
+
+    it('checks deliveredTo field for delivery status', () => {
+      expect(renderMessagesFn).toContain('message.deliveredTo');
+    });
+
+    it('includes proper status indicators with SVG elements', () => {
+      expect(renderMessagesFn).toContain('message-status');
+      expect(renderMessagesFn).toContain('<svg');
     });
   });
 });

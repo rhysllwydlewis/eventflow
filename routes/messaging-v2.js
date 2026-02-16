@@ -286,6 +286,46 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Resolve participant names for v2 threads (those without supplierName/customerName)
+    const resolvedSupplierName = thread.supplierName;
+    let resolvedCustomerName = thread.customerName;
+    let resolvedRecipientName = thread.recipientName;
+
+    // If this is a v2-only thread (has participants but no v1 fields), look up names
+    // Note: This query only runs for v2-only threads, which should be a minority of cases.
+    // Most threads created via marketplace/supplier flows will have v1 fields already populated.
+    if (
+      thread.participants &&
+      thread.participants.length > 0 &&
+      !thread.supplierName &&
+      !thread.customerName
+    ) {
+      const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+      if (db) {
+        const usersCollection = db.collection('users');
+        const participantUsers = await usersCollection
+          .find({ id: { $in: thread.participants } })
+          .toArray();
+
+        // Map participant IDs to names
+        const participantNames = {};
+        participantUsers.forEach(user => {
+          participantNames[user.id] = user.name;
+        });
+
+        // Set names for the other participants (not current user)
+        // For v2 threads, participants are typically [user1, user2] without explicit roles
+        // We map first other participant to customerName and second (if any) to recipientName
+        const otherParticipants = thread.participants.filter(p => p !== req.user.id);
+        if (otherParticipants.length > 0) {
+          resolvedCustomerName = participantNames[otherParticipants[0]] || null;
+          if (otherParticipants.length > 1) {
+            resolvedRecipientName = participantNames[otherParticipants[1]] || null;
+          }
+        }
+      }
+    }
+
     res.json({
       success: true,
       thread: {
@@ -299,11 +339,12 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
         createdAt: thread.createdAt,
         updatedAt: thread.updatedAt,
         // v1 thread fields (conditionally included)
-        ...(thread.supplierName && { supplierName: thread.supplierName }),
-        ...(thread.customerName && { customerName: thread.customerName }),
+        ...(resolvedSupplierName && { supplierName: resolvedSupplierName }),
+        ...(resolvedCustomerName && { customerName: resolvedCustomerName }),
         ...(thread.supplierId && { supplierId: thread.supplierId }),
         ...(thread.customerId && { customerId: thread.customerId }),
         ...(thread.recipientId && { recipientId: thread.recipientId }),
+        ...(resolvedRecipientName && { recipientName: resolvedRecipientName }),
         ...(thread.subject && { subject: thread.subject }),
       },
     });
@@ -482,10 +523,13 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
       threadId: msg.threadId,
       senderId: msg.senderId,
       content: msg.content,
+      text: msg.content, // Alias for backward compatibility
       attachments: msg.attachments,
       reactions: msg.reactions,
       status: msg.status,
       readBy: msg.readBy,
+      deliveredTo: msg.deliveredTo || [],
+      sentAt: msg.sentAt || msg.createdAt,
       createdAt: msg.createdAt,
       updatedAt: msg.updatedAt,
     }));
