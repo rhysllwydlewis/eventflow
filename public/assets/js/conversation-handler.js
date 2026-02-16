@@ -59,7 +59,6 @@
       wsClient = new WebSocketClient({
         autoConnect: true,
         onConnect: () => {
-          console.log('✓ Real-time messaging connected');
           showToast('✓ Connected', 'success');
         },
         onMessage: data => {
@@ -346,9 +345,7 @@
         // If v2 API returns ANY error for a v1 thread ID (thd_*), fallback to v1 API
         // This handles 404 (not found), 500 (server error), 403 (forbidden), etc.
         if (threadId.startsWith('thd_')) {
-          console.log(
-            `v2 API returned ${response.status} for thread ${threadId}, falling back to v1 API`
-          );
+          // Fall back to v1 API for legacy threads
           const v1Response = await fetch(`/api/v1/threads/${threadId}`, {
             credentials: 'include',
             headers: {
