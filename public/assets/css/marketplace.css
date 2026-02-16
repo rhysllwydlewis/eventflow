@@ -1104,7 +1104,7 @@
   .listing-own-notice-actions .btn,
   .listing-own-notice-actions .cta {
     width: 100%;
-    min-width: unset;
+    min-width: 0;
   }
 }
 

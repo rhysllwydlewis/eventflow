@@ -259,7 +259,7 @@ router.post(
         supplierId: effectiveSupplierId || null,
         supplierName: supplier ? supplier.name : null,
         customerId: req.user.id,
-        recipientId: effectiveRecipientId || (supplier ? supplier.ownerUserId : null) || null,
+        recipientId: effectiveRecipientId || supplier?.ownerUserId || null,
         packageId: packageId || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
