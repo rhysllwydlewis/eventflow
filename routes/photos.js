@@ -97,6 +97,9 @@ function applyPhotoUploadFields(fields) {
     }
     return photoUpload.upload.fields(fields)(req, res, err => {
       if (err) {
+        // Determine endpoint for logging
+        const endpoint = req.path.includes('/batch') ? '/upload/batch' : '/upload';
+        
         // **NEW: Enhanced multer error handling**
         logger.error('Multer upload error', {
           error: err.message,
@@ -104,13 +107,24 @@ function applyPhotoUploadFields(fields) {
           field: err.field,
           storageErrors: err.storageErrors,
           userId: req.user?.id,
+          endpoint: endpoint,
         });
+
+        // Check for file type rejection (not a MulterError)
+        if (err.message && err.message.includes('Invalid file type')) {
+          return res.status(415).json({
+            error: 'Unsupported file type',
+            details: err.message,
+            errorType: 'UnsupportedMediaType',
+            allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic'],
+          });
+        }
 
         // Provide user-friendly error messages
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(413).json({
             error: 'File too large',
-            details: 'Maximum file size is 5MB per image',
+            details: 'Maximum file size is 10MB per image',
             errorType: 'FileSizeError',
           });
         }
@@ -150,6 +164,7 @@ function applyPhotoUploadFields(fields) {
         totalFiles: files.length,
         fileNames: files.map(f => f.originalname),
         userId: req.user?.id,
+        endpoint: req.path.includes('/batch') ? '/upload/batch' : '/upload',
       });
 
       req.files = files;
@@ -239,8 +254,8 @@ function classifyUploadError(error) {
 router.post(
   '/photos/upload',
   uploadLimiter,
-  applyFeatureRequired('photoUploads'),
   applyAuthRequired,
+  applyFeatureRequired('photoUploads'),
   applyPhotoUploadFields([
     { name: 'files', maxCount: 5 },
     { name: 'photos', maxCount: 5 },
@@ -531,6 +546,7 @@ router.post(
   '/photos/upload/batch',
   uploadLimiter,
   applyAuthRequired,
+  applyFeatureRequired('photoUploads'),
   applyPhotoUploadFields([
     { name: 'photos', maxCount: 10 },
     { name: 'files', maxCount: 10 },

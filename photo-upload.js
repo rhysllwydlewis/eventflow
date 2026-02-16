@@ -123,7 +123,7 @@ function fileFilter(req, file, cb) {
   if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.'), false);
+    cb(new Error('Invalid file type. Only JPEG, PNG, WebP, GIF, AVIF, and HEIC are allowed.'), false);
   }
 }
 
@@ -134,7 +134,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: MAX_FILE_SIZE,
+    fileSize: Math.max(MAX_FILE_SIZE, MAX_FILE_SIZE_MARKETPLACE), // Use the larger of the two limits
     files: 10, // Max 10 files per upload
   },
 });

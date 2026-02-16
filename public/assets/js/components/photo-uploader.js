@@ -23,6 +23,8 @@ class PhotoUploader {
       'image/png',
       'image/webp',
       'image/gif',
+      'image/avif',
+      'image/heic',
     ];
     this.onSuccess = options.onSuccess || (() => {});
     this.onError = options.onError || (error => console.error(error));
@@ -43,12 +45,14 @@ class PhotoUploader {
     // Create uploader container
     this.container = document.createElement('div');
     this.container.className = 'photo-uploader';
+    // Build accept attribute with both MIME types and extensions
+    const acceptAttr = [...this.acceptedTypes, '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.heic', '.heif'].join(',');
     this.container.innerHTML = `
       <div class="photo-uploader__dropzone" id="photoDropzone">
         <div class="photo-uploader__icon">📸</div>
         <div class="photo-uploader__text">Drag & drop photos here</div>
         <div class="photo-uploader__hint">or click to browse (max ${this.maxFiles} files, ${this.formatFileSize(this.maxFileSize)} each)</div>
-        <input type="file" class="photo-uploader__input" id="photoInput" accept="${this.acceptedTypes.join(',')}" multiple>
+        <input type="file" class="photo-uploader__input" id="photoInput" accept="${acceptAttr}" multiple>
       </div>
       <div class="photo-uploader__previews" id="photoPreviews"></div>
       <div class="photo-uploader__controls" id="photoControls" style="display: none;">

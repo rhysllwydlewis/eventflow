@@ -199,15 +199,16 @@
         continue;
       }
 
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        showToast(`${file.name} is not an image`, 'error');
+      // Validate file type - use specific allowlist matching server
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic'];
+      if (!allowedTypes.includes(file.type)) {
+        showToast(`${file.name} is not a supported image type (allowed: JPEG, PNG, WebP, GIF, AVIF, HEIC)`, 'error');
         continue;
       }
 
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        showToast(`${file.name} is too large (max 5MB)`, 'error');
+      // Validate file size (10MB max to match server)
+      if (file.size > 10 * 1024 * 1024) {
+        showToast(`${file.name} is too large (max 10MB)`, 'error');
         continue;
       }
 
@@ -310,6 +311,25 @@
     });
   }
 
+  /**
+   * Refresh CSRF token from server
+   */
+  async function refreshCsrfToken() {
+    try {
+      const res = await fetch('/api/v1/csrf-token', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        window.__CSRF_TOKEN__ = data.token || data.csrfToken;
+        return window.__CSRF_TOKEN__;
+      }
+    } catch (error) {
+      console.error('Failed to refresh CSRF token:', error);
+    }
+    return null;
+  }
+
   async function uploadMarketplaceImages(newImages, listingId, csrfToken) {
     try {
       const formData = new FormData();
@@ -355,6 +375,31 @@
         return Array.isArray(batchData.errors) ? batchData.errors.length : 0;
       }
 
+      // Check for CSRF error and retry once with refreshed token
+      if (batchRes.status === 403 && batchData.errorType === 'CSRFError' && batchData.canRetry) {
+        console.log('CSRF error detected, refreshing token and retrying...');
+        const newToken = await refreshCsrfToken();
+        if (newToken) {
+          // Retry the request with new token
+          const retryRes = await fetch(`/api/v1/photos/upload/batch?type=marketplace&id=${listingId}`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'X-CSRF-Token': newToken },
+            body: formData,
+          });
+          const retryData = await retryRes.json().catch(() => ({}));
+          if (retryRes.ok) {
+            showToast('Upload succeeded after refreshing security token', 'success');
+            return Array.isArray(retryData.errors) ? retryData.errors.length : 0;
+          }
+          // If retry also failed, continue to error handling below
+          console.error('Retry after CSRF refresh also failed:', {
+            status: retryRes.status,
+            error: retryData.error,
+          });
+        }
+      }
+
       // Enhanced error logging - **ALREADY EXISTS, keeping as-is**
       console.error('Batch image upload failed:', {
         status: batchRes.status,
@@ -367,14 +412,18 @@
 
       // Show detailed error messages from server
       let errorMessage = 'Photo upload failed. ';
-      if (batchData.errors && Array.isArray(batchData.errors) && batchData.errors.length > 0) {
+      if (batchData.errorType === 'UnsupportedMediaType') {
+        errorMessage = 'Unsupported file type. Only JPEG, PNG, WebP, GIF, AVIF, and HEIC images are allowed.';
+      } else if (batchData.errorType === 'FileSizeError') {
+        errorMessage = 'File too large. Maximum 10MB per image.';
+      } else if (batchData.errors && Array.isArray(batchData.errors) && batchData.errors.length > 0) {
         const errorDetails = batchData.errors
           .map(e => `${e.filename || 'unknown'}: ${e.error || 'upload failed'}`)
           .join('; ');
         errorMessage += errorDetails;
       } else if (batchRes.status === 500) {
         errorMessage +=
-          'Please try uploading smaller images (max 5MB each) or fewer images at once.';
+          'Please try uploading smaller images (max 10MB each) or fewer images at once.';
       } else if (batchRes.status === 413) {
         errorMessage += 'Images are too large. Please reduce file size.';
       } else if (batchData.error) {
@@ -442,11 +491,8 @@
 
     for (const image of newImages) {
       try {
-        // Try legacy field name first, then alternate to support deployments
-        // that still expect a different multipart key.
-        const uploaded =
-          (await uploadSingleImageWithField('files', image.file)) ||
-          (await uploadSingleImageWithField('photos', image.file));
+        // Use 'photos' field name consistently (server accepts both 'files' and 'photos')
+        const uploaded = await uploadSingleImageWithField('photos', image.file);
 
         if (!uploaded) {
           failedImageCount += 1;

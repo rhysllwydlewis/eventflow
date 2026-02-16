@@ -24,7 +24,7 @@ const MAX_FILE_SIZE_AVATAR = parseInt(process.env.MAX_FILE_SIZE_AVATAR_MB || '5'
 const MAX_PIXEL_COUNT = parseInt(process.env.MAX_PIXEL_COUNT || '25000000', 10);
 
 // Allowed image types (magic bytes)
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic'];
 
 // Format name mapping for user-friendly display
 const FORMAT_NAMES = {
@@ -32,6 +32,8 @@ const FORMAT_NAMES = {
   'image/png': 'PNG',
   'image/webp': 'WebP',
   'image/gif': 'GIF',
+  'image/avif': 'AVIF',
+  'image/heic': 'HEIC',
 };
 
 // Get user-friendly format names from MIME types
@@ -60,6 +62,9 @@ function detectTypeFromExtension(filename) {
     png: 'image/png',
     webp: 'image/webp',
     gif: 'image/gif',
+    avif: 'image/avif',
+    heic: 'image/heic',
+    heif: 'image/heic', // HEIF is the container format, HEIC is the codec
   };
 
   return extensionMap[ext] || null;
@@ -167,7 +172,7 @@ async function validateFileType(buffer, filename = null) {
       return {
         valid: false,
         detectedType: fileType.mime,
-        error: `File type ${fileType.mime} is not allowed. Only JPEG, PNG, WebP, and GIF images are supported.`,
+        error: `File type ${fileType.mime} is not allowed. Only JPEG, PNG, WebP, GIF, AVIF, and HEIC images are supported.`,
         allowedTypes: ALLOWED_IMAGE_TYPES,
       };
     }
