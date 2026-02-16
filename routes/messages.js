@@ -97,6 +97,20 @@ function getMessageHtml(recipientName, senderName, text, baseUrl) {
   ].join('');
 }
 
+/**
+ * Check if a user has access to a supplier's threads
+ * @param {string} userId - User ID to check
+ * @param {string} supplierId - Supplier business ID from thread
+ * @returns {Promise<boolean>} True if user owns this supplier
+ */
+async function userOwnsSupplier(userId, supplierId) {
+  if (!userId || !supplierId) {
+    return false;
+  }
+  const suppliers = await dbUnified.read('suppliers');
+  return suppliers.some(s => s.id === supplierId && s.ownerUserId === userId);
+}
+
 const router = express.Router();
 
 /**
@@ -116,7 +130,10 @@ router.get('/threads', applyAuthRequired, async (req, res) => {
     if (userRole === 'customer') {
       threads = threads.filter(t => t.customerId === userId);
     } else if (userRole === 'supplier') {
-      threads = threads.filter(t => t.supplierId === userId);
+      // For suppliers, first get all supplier business IDs owned by this user
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIds = suppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
+      threads = threads.filter(t => supplierIds.includes(t.supplierId));
     } else if (userRole === 'admin') {
       // Admins can see all threads
     } else {
@@ -168,10 +185,13 @@ router.get('/threads/:threadId', applyAuthRequired, async (req, res) => {
     }
 
     // Check access permissions
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
+    let hasAccess =
+      userRole === 'admin' || (userRole === 'customer' && thread.customerId === userId);
+
+    // For suppliers, check if user owns the supplier business
+    if (!hasAccess && userRole === 'supplier') {
+      hasAccess = await userOwnsSupplier(userId, thread.supplierId);
+    }
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -360,7 +380,7 @@ router.get('/threads/:threadId/messages', applyAuthRequired, async (req, res) =>
     const hasAccess =
       userRole === 'admin' ||
       (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
+      (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -416,7 +436,7 @@ router.post(
       const hasAccess =
         userRole === 'admin' ||
         (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && thread.supplierId === userId);
+        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -654,7 +674,7 @@ router.post(
       const hasAccess =
         userRole === 'admin' ||
         (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && thread.supplierId === userId);
+        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -721,7 +741,7 @@ router.post(
       const hasAccess =
         userRole === 'admin' ||
         (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && thread.supplierId === userId);
+        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -911,7 +931,7 @@ router.post(
       const hasAccess =
         userRole === 'admin' ||
         (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && thread.supplierId === userId);
+        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -955,7 +975,7 @@ router.post(
       const hasAccess =
         userRole === 'admin' ||
         (userRole === 'customer' && thread.customerId === userId) ||
-        (userRole === 'supplier' && thread.supplierId === userId);
+        (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied' });
@@ -994,7 +1014,10 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
     if (userRole === 'customer') {
       threads = threads.filter(t => t.customerId === userId);
     } else if (userRole === 'supplier') {
-      threads = threads.filter(t => t.supplierId === userId);
+      // For suppliers, first get all supplier business IDs owned by this user
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIds = suppliers.filter(s => s.ownerUserId === userId).map(s => s.id);
+      threads = threads.filter(t => supplierIds.includes(t.supplierId));
     } else if (userRole === 'admin') {
       // Admins can see all threads
     } else {
@@ -1115,7 +1138,7 @@ router.get('/:conversationId', applyAuthRequired, async (req, res) => {
     const hasAccess =
       userRole === 'admin' ||
       (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
+      (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -1166,7 +1189,7 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
     const hasAccess =
       userRole === 'admin' ||
       (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
+      (userRole === 'supplier' && (await userOwnsSupplier(userId, thread.supplierId)));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
