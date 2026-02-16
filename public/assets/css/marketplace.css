@@ -1467,14 +1467,14 @@
 }
 
 /* Placeholder image styling */
-.marketplace-item-image img[src*="placeholder"] {
+.marketplace-item-image img[src*='placeholder'] {
   opacity: 0.6;
   background: #f3f4f6;
   border: 2px dashed #d1d5db;
   border-radius: 4px;
 }
 
-.listing-image img[src*="placeholder"] {
+.listing-image img[src*='placeholder'] {
   opacity: 0.6;
   background: #f3f4f6;
   border: 2px dashed #d1d5db;
