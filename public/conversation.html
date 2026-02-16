@@ -146,11 +146,45 @@
       font-size: 11px;
       color: #9ca3af;
       margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .message.sent .message-time {
       color: rgba(255, 255, 255, 0.8);
       text-align: right;
+      justify-content: flex-end;
+    }
+
+    .message-status {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 4px;
+    }
+
+    .message-status svg {
+      display: block;
+    }
+
+    .message-status.sent svg path {
+      stroke: #9ca3af;
+    }
+
+    .message-status.delivered svg path {
+      stroke: #9ca3af;
+    }
+
+    .message-status.read svg path {
+      stroke: #0B8073;
+    }
+
+    .message.sent .message-status svg path {
+      stroke: rgba(255, 255, 255, 0.8);
+    }
+
+    .message.sent .message-status.read svg path {
+      stroke: rgba(255, 255, 255, 0.9);
     }
 
     .composer-area {
