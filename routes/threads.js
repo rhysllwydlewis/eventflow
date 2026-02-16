@@ -475,7 +475,7 @@ router.post(
       if (idx >= 0) {
         allThreads[idx].updatedAt = entry.createdAt;
         allThreads[idx].lastMessageAt = entry.createdAt;
-        allThreads[idx].lastMessagePreview = entry.text.substring(0, 100);
+        allThreads[idx].lastMessagePreview = entry.text?.substring(0, 100) || '';
         await dbUnified.write('threads', allThreads);
 
         // Also update MongoDB for v2 API compatibility
@@ -655,7 +655,7 @@ router.post(
     if (i >= 0) {
       th[i].updatedAt = entry.createdAt;
       th[i].lastMessageAt = entry.createdAt;
-      th[i].lastMessagePreview = entry.text.substring(0, 100);
+      th[i].lastMessagePreview = entry.text?.substring(0, 100) || '';
       await dbUnified.write('threads', th);
 
       // Also update MongoDB for v2 API compatibility

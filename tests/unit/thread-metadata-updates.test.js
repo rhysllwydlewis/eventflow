@@ -25,7 +25,7 @@ describe('Thread metadata updates on message send', () => {
 
     it('updates thread lastMessagePreview with first 100 chars of message text', () => {
       expect(postMessagesHandler).toContain(
-        'th[i].lastMessagePreview = entry.text.substring(0, 100)'
+        "th[i].lastMessagePreview = entry.text?.substring(0, 100) || ''"
       );
     });
 
@@ -56,7 +56,7 @@ describe('Thread metadata updates on message send', () => {
 
     it('updates thread lastMessagePreview when initial message is sent', () => {
       expect(initialMessageSection).toContain(
-        'allThreads[idx].lastMessagePreview = entry.text.substring(0, 100)'
+        "allThreads[idx].lastMessagePreview = entry.text?.substring(0, 100) || ''"
       );
     });
 
