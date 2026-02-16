@@ -653,6 +653,7 @@
       let sentMessages = [];
       let searchQuery = '';
       let dateFilter = 'all';
+      let cachedUserId = null; // Cache user ID to avoid redundant API calls
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
@@ -667,62 +668,75 @@
       }
 
       function setupRealtimeUpdates() {
-        if (!window.messagingSystem) {
-          console.warn('Messaging system not available, using polling only');
-          // Set up polling fallback
-          setInterval(() => {
-            if (currentTab === 'inbox') {
-              loadThreads();
-            }
-          }, 30000); // Poll every 30 seconds
-          return;
-        }
+        // Wait for messaging system to be available with retry mechanism
+        let retries = 0;
+        const maxRetries = 10;
+        const retryDelay = 100; // 100ms between retries
+        
+        const trySetup = () => {
+          if (window.messagingSystem) {
+            // Initialize WebSocket
+            window.messagingSystem.initWebSocket();
 
-        // Initialize WebSocket
-        window.messagingSystem.initWebSocket();
+            // Listen for new messages - reload threads when received
+            window.addEventListener('messaging:connection', (event) => {
+              const { status } = event.detail;
+              if (status === 'online' && currentTab === 'inbox') {
+                // Refresh threads when connection is established
+                loadThreads();
+              }
+            });
 
-        // Listen for new messages - reload threads when received
-        window.addEventListener('messaging:connection', (event) => {
-          const { status } = event.detail;
-          if (status === 'online' && currentTab === 'inbox') {
-            // Refresh threads when connection is established
-            loadThreads();
+            // Get current user and listen for conversation updates
+            fetch('/api/auth/me', { credentials: 'include' })
+              .then(response => response.json())
+              .then(data => {
+                const user = data.user;
+                if (user && user.id) {
+                  // Listen to user's conversations for real-time updates
+                  window.messagingSystem.listenToUserConversations(
+                    user.id,
+                    user.type || 'customer',
+                    (conversations) => {
+                      // Update threads array with new data
+                      if (currentTab === 'inbox') {
+                        threads = conversations || [];
+                        renderThreads();
+                        updateCounts();
+                      }
+                    }
+                  );
+
+                  // Listen for unread count updates
+                  window.messagingSystem.listenToUnreadCount(
+                    user.id,
+                    user.type || 'customer',
+                    (count) => {
+                      updateInboxBadge(count);
+                    }
+                  );
+                }
+              })
+              .catch(error => {
+                console.error('Error getting user for real-time updates:', error);
+              });
+          } else if (retries < maxRetries) {
+            // Retry if messaging system not available yet
+            retries++;
+            setTimeout(trySetup, retryDelay);
+          } else {
+            // Fall back to polling after max retries
+            console.warn('Messaging system not available after retries, using polling only');
+            setInterval(() => {
+              if (currentTab === 'inbox') {
+                loadThreads();
+              }
+            }, 30000); // Poll every 30 seconds
           }
-        });
-
-        // Get current user and listen for conversation updates
-        fetch('/api/auth/me', { credentials: 'include' })
-          .then(response => response.json())
-          .then(data => {
-            const user = data.user;
-            if (user && user.id) {
-              // Listen to user's conversations for real-time updates
-              window.messagingSystem.listenToUserConversations(
-                user.id,
-                user.type || 'customer',
-                (conversations) => {
-                  // Update threads array with new data
-                  if (currentTab === 'inbox') {
-                    threads = conversations || [];
-                    renderThreads();
-                    updateCounts();
-                  }
-                }
-              );
-
-              // Listen for unread count updates
-              window.messagingSystem.listenToUnreadCount(
-                user.id,
-                user.type || 'customer',
-                (count) => {
-                  updateInboxBadge(count);
-                }
-              );
-            }
-          })
-          .catch(error => {
-            console.error('Error getting user for real-time updates:', error);
-          });
+        };
+        
+        // Start setup attempt
+        trySetup();
       }
 
       function updateInboxBadge(count) {
@@ -1286,7 +1300,6 @@
           `;
           return;
         }
-        }
 
         getUserId().then(userId => {
           container.innerHTML = filteredThreads.map(thread => {
@@ -1509,6 +1522,11 @@
       }
 
       async function getUserId() {
+        // Return cached user ID if available
+        if (cachedUserId !== null) {
+          return cachedUserId;
+        }
+        
         // Get actual user ID from auth API
         try {
           const response = await fetch('/api/auth/me', {
@@ -1516,7 +1534,8 @@
           });
           if (response.ok) {
             const data = await response.json();
-            return data.user?.id || null;
+            cachedUserId = data.user?.id || null;
+            return cachedUserId;
           }
         } catch (error) {
           console.error('Error getting user ID:', error);
@@ -1670,8 +1689,11 @@
   </script>
 
 <!-- JadeAssist Chat Widget -->
-<script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
-<script src="/assets/js/jadeassist-init.v2.js" defer></script>
+<script 
+  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" 
+  defer
+  onerror="console.log('JadeAssist widget could not be loaded (may be blocked by tracking prevention)')"></script>
+<script src="/assets/js/jadeassist-init.v2.js" defer onerror="console.log('JadeAssist initialization script could not be loaded')"></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
 </body>
 </html>

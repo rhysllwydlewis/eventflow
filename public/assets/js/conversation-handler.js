@@ -520,7 +520,7 @@
           messages = messages.map(msg => ({
             ...msg,
             // Map fromUserId or userId to senderId for v2 compatibility
-            senderId: msg.senderId || msg.fromUserId || msg.userId,
+            senderId: msg.senderId || msg.fromUserId || msg.userId || 'unknown',
             // Ensure both text and content are available
             content: msg.content || msg.text,
             // Ensure sentAt falls back to createdAt
