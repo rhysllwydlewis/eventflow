@@ -298,6 +298,13 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
         metadata: thread.metadata,
         createdAt: thread.createdAt,
         updatedAt: thread.updatedAt,
+        // v1 thread fields (conditionally included)
+        ...(thread.supplierName && { supplierName: thread.supplierName }),
+        ...(thread.customerName && { customerName: thread.customerName }),
+        ...(thread.supplierId && { supplierId: thread.supplierId }),
+        ...(thread.customerId && { customerId: thread.customerId }),
+        ...(thread.recipientId && { recipientId: thread.recipientId }),
+        ...(thread.subject && { subject: thread.subject }),
       },
     });
   } catch (error) {
