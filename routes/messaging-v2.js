@@ -114,6 +114,20 @@ function ensureServices(req, res, next) {
   next();
 }
 
+/**
+ * Helper function to build thread query for both v1 (thd_*) and v2 (ObjectId) thread IDs
+ * @param {string} threadId - Thread ID (either ObjectId or v1 string like 'thd_xxx')
+ * @returns {Object} MongoDB query object
+ */
+function buildThreadQuery(threadId) {
+  if (ObjectId.isValid(threadId)) {
+    return { _id: new ObjectId(threadId) };
+  } else {
+    // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
+    return { $or: [{ _id: threadId }, { id: threadId }] };
+  }
+}
+
 // =========================
 // Thread Management
 // =========================
@@ -1662,14 +1676,7 @@ router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, r
     const userId = req.user.id;
     const threadId = req.params.id;
 
-    let query;
-    if (ObjectId.isValid(threadId)) {
-      query = { _id: new ObjectId(threadId) };
-    } else {
-      // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
-      query = { $or: [{ _id: threadId }, { id: threadId }] };
-    }
-
+    const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
     if (!thread || !thread.participants.includes(userId)) {
@@ -1736,14 +1743,7 @@ router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, 
     const threadId = req.params.id;
     const { duration } = req.body; // '1h', '8h', '1d', 'forever'
 
-    let query;
-    if (ObjectId.isValid(threadId)) {
-      query = { _id: new ObjectId(threadId) };
-    } else {
-      // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
-      query = { $or: [{ _id: threadId }, { id: threadId }] };
-    }
-
+    const query = buildThreadQuery(threadId);
     const thread = await messagingService.threadsCollection.findOne(query);
 
     if (!thread || !thread.participants.includes(userId)) {
@@ -1786,18 +1786,13 @@ router.post('/threads/:id/unmute', applyAuthRequired, ensureServices, async (req
     const userId = req.user.id;
     const threadId = req.params.id;
 
-    let query;
-    if (ObjectId.isValid(threadId)) {
-      query = { _id: new ObjectId(threadId), participants: userId };
-    } else {
-      // v1 threads use string IDs like 'thd_xxxxx' stored in an 'id' field
-      query = { $or: [{ _id: threadId }, { id: threadId }], participants: userId };
-    }
+    const query = buildThreadQuery(threadId);
+    // Add participants filter for security
+    query.participants = userId;
 
-    await messagingService.threadsCollection.updateOne(
-      query,
-      { $unset: { [`mutedUntil.${userId}`]: '' } }
-    );
+    await messagingService.threadsCollection.updateOne(query, {
+      $unset: { [`mutedUntil.${userId}`]: '' },
+    });
 
     res.json({ success: true });
   } catch (error) {

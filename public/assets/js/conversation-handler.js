@@ -466,7 +466,11 @@
       return;
     }
 
-    const otherPartyName = thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
+    // Resolve other party name with fallback for v1 and v2 threads
+    // v1: supplierName/customerName fields
+    // v2: metadata.otherPartyName field
+    const otherPartyName =
+      thread.supplierName || thread.customerName || thread.metadata?.otherPartyName || 'Unknown';
     const initial = otherPartyName.charAt(0).toUpperCase();
 
     document.getElementById('conversationAvatar').textContent = initial;
