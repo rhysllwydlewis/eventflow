@@ -520,6 +520,7 @@
           messages = messages.map(msg => ({
             ...msg,
             // Map fromUserId or userId to senderId for v2 compatibility
+            // Use 'unknown' as fallback - will render as other party's message
             senderId: msg.senderId || msg.fromUserId || msg.userId || 'unknown',
             // Ensure both text and content are available
             content: msg.content || msg.text,
