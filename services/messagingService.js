@@ -740,6 +740,8 @@ class MessagingService {
           $set: {
             lastMessageId: message._id.toString(),
             lastMessageAt: message.createdAt,
+            lastMessageText: message.content ? message.content.substring(0, 120) : '',
+            lastMessageSenderId: message.senderId,
             unreadCount,
             updatedAt: new Date(),
           },
