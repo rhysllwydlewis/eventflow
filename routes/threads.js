@@ -254,12 +254,21 @@ router.post(
     }
 
     if (!thread) {
+      // Look up customer and recipient names for thread header display
+      const users = await dbUnified.read('users');
+      const customerUser = users.find(u => u.id === req.user.id);
+      const recipientUser = effectiveRecipientId
+        ? users.find(u => u.id === effectiveRecipientId)
+        : null;
+
       thread = {
         id: uid('thd'),
         supplierId: effectiveSupplierId || null,
         supplierName: supplier ? supplier.name : null,
         customerId: req.user.id,
+        customerName: customerUser ? customerUser.name : null,
         recipientId: effectiveRecipientId || supplier?.ownerUserId || null,
+        recipientName: recipientUser ? recipientUser.name : null,
         packageId: packageId || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -374,19 +383,66 @@ router.get('/my', applyAuthRequired, async (req, res) => {
   res.json({ items });
 });
 
+// Get single thread by ID
+router.get('/:id', applyAuthRequired, async (req, res) => {
+  const t = (await dbUnified.read('threads')).find(x => x.id === req.params.id);
+  if (!t) {
+    return res.status(404).json({ error: 'Thread not found' });
+  }
+
+  // Authorization check
+  let authorized = false;
+  if (req.user.role === 'admin') {
+    authorized = true;
+  } else if (t.customerId === req.user.id) {
+    authorized = true;
+  } else if (t.recipientId === req.user.id) {
+    // Peer-to-peer marketplace threads
+    authorized = true;
+  } else if (t.supplierId) {
+    const own = (await dbUnified.read('suppliers')).find(
+      s => s.id === t.supplierId && s.ownerUserId === req.user.id
+    );
+    if (own) {
+      authorized = true;
+    }
+  }
+
+  if (!authorized) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  res.json({ thread: t });
+});
+
 router.get('/:id/messages', applyAuthRequired, async (req, res) => {
   const t = (await dbUnified.read('threads')).find(x => x.id === req.params.id);
   if (!t) {
     return res.status(404).json({ error: 'Thread not found' });
   }
-  if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
+
+  // Authorization check
+  let authorized = false;
+  if (req.user.role === 'admin') {
+    authorized = true;
+  } else if (t.customerId === req.user.id) {
+    authorized = true;
+  } else if (t.recipientId === req.user.id) {
+    // Peer-to-peer marketplace threads
+    authorized = true;
+  } else if (t.supplierId) {
     const own = (await dbUnified.read('suppliers')).find(
       s => s.id === t.supplierId && s.ownerUserId === req.user.id
     );
-    if (!own) {
-      return res.status(403).json({ error: 'Forbidden' });
+    if (own) {
+      authorized = true;
     }
   }
+
+  if (!authorized) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const msgs = (await dbUnified.read('messages'))
     .filter(m => m.threadId === t.id)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -407,14 +463,29 @@ router.post(
     if (!t) {
       return res.status(404).json({ error: 'Thread not found' });
     }
-    if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
+
+    // Authorization check
+    let authorized = false;
+    if (req.user.role === 'admin') {
+      authorized = true;
+    } else if (t.customerId === req.user.id) {
+      authorized = true;
+    } else if (t.recipientId === req.user.id) {
+      // Peer-to-peer marketplace threads
+      authorized = true;
+    } else if (t.supplierId) {
       const own = (await dbUnified.read('suppliers')).find(
         s => s.id === t.supplierId && s.ownerUserId === req.user.id
       );
-      if (!own) {
-        return res.status(403).json({ error: 'Forbidden' });
+      if (own) {
+        authorized = true;
       }
     }
+
+    if (!authorized) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
     const msgs = await dbUnified.read('messages');
     const entry = {
       id: uid('msg'),
