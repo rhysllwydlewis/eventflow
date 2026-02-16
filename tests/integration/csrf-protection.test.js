@@ -82,6 +82,8 @@ describe('CSRF Protection (Double-Submit Cookie contract)', () => {
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/csrf token missing/i);
+    expect(res.body.errorType).toBe('CSRFError');
+    expect(res.body.canRetry).toBe(true);
   });
 
   it('rejects state-changing requests when header and cookie tokens do not match', async () => {
@@ -97,6 +99,8 @@ describe('CSRF Protection (Double-Submit Cookie contract)', () => {
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/invalid csrf token/i);
+    expect(res.body.errorType).toBe('CSRFError');
+    expect(res.body.canRetry).toBe(true);
   });
 
   it('allows state-changing requests with legacy csrfToken cookie and body token', async () => {

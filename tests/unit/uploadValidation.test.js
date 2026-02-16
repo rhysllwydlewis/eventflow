@@ -29,6 +29,39 @@ describe('Upload Validation', () => {
       expect(typeof result.valid).toBe('boolean');
     });
 
+    test('should accept AVIF extension via fallback', async () => {
+      const buffer = Buffer.from('fake avif data', 'utf-8');
+      const result = await uploadValidation.validateFileType(buffer, 'photo.avif');
+
+      // Should use fallback and accept AVIF
+      if (result.usedFallback) {
+        expect(result.detectedType).toBe('image/avif');
+        expect(result.valid).toBe(true);
+      }
+    });
+
+    test('should accept HEIC extension via fallback', async () => {
+      const buffer = Buffer.from('fake heic data', 'utf-8');
+      const result = await uploadValidation.validateFileType(buffer, 'photo.heic');
+
+      // Should use fallback and accept HEIC
+      if (result.usedFallback) {
+        expect(result.detectedType).toBe('image/heic');
+        expect(result.valid).toBe(true);
+      }
+    });
+
+    test('should accept HEIF extension via fallback (mapped to HEIC)', async () => {
+      const buffer = Buffer.from('fake heif data', 'utf-8');
+      const result = await uploadValidation.validateFileType(buffer, 'photo.heif');
+
+      // HEIF extension should map to image/heic MIME type
+      if (result.usedFallback) {
+        expect(result.detectedType).toBe('image/heic');
+        expect(result.valid).toBe(true);
+      }
+    });
+
     test('should use extension fallback when magic byte detection fails', async () => {
       // Create a JPEG buffer
       const buffer = await sharp({
@@ -290,6 +323,8 @@ describe('Upload Validation', () => {
       expect(Array.isArray(limits.allowedTypes)).toBe(true);
       expect(limits.allowedTypes).toContain('image/jpeg');
       expect(limits.allowedTypes).toContain('image/png');
+      expect(limits.allowedTypes).toContain('image/avif');
+      expect(limits.allowedTypes).toContain('image/heic');
     });
   });
 });

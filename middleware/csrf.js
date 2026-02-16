@@ -51,19 +51,31 @@ function csrfProtection(req, res, next) {
     req.body?.csrf;
 
   if (!tokenFromHeader) {
-    return res.status(403).json({ error: 'CSRF token missing' });
+    return res.status(403).json({ 
+      error: 'CSRF token missing',
+      errorType: 'CSRFError',
+      canRetry: true,
+    });
   }
 
   // Get token from cookie (supports legacy alias)
   const tokenFromCookie = req.cookies?.csrf || req.cookies?.csrfToken;
 
   if (!tokenFromCookie) {
-    return res.status(403).json({ error: 'CSRF token missing' });
+    return res.status(403).json({ 
+      error: 'CSRF token missing',
+      errorType: 'CSRFError',
+      canRetry: true,
+    });
   }
 
   // Validate that header token matches cookie token
   if (tokenFromHeader !== tokenFromCookie) {
-    return res.status(403).json({ error: 'Invalid CSRF token' });
+    return res.status(403).json({ 
+      error: 'Invalid CSRF token',
+      errorType: 'CSRFError',
+      canRetry: true,
+    });
   }
 
   // Token is valid, proceed
