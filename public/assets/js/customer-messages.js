@@ -6,6 +6,9 @@
 import messagingSystem from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 
+// Constants
+const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
 // Get current user
 async function getCurrentUser() {
   try {
@@ -30,8 +33,29 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Format message preview with "You:" prefix for outbound messages
+function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = MESSAGE_PREVIEW_MAX_LENGTH) {
+  if (!messageText || messageText === 'No messages yet') {
+    return 'No messages yet';
+  }
+  
+  // Trim and clean the text
+  const cleanText = messageText.trim();
+  
+  // Add "You:" prefix if the current user sent the last message
+  const prefix = lastMessageSenderId === currentUserId ? 'You: ' : '';
+  const fullText = prefix + cleanText;
+  
+  // Clamp to maxLength with ellipsis
+  if (fullText.length > maxLength) {
+    return fullText.substring(0, maxLength) + '...';
+  }
+  
+  return fullText;
+}
+
 // Render conversations
-function renderConversations(conversations) {
+function renderConversations(conversations, currentUser) {
   const container = document.getElementById('threads-cust');
   if (!container) {
     return;
@@ -53,7 +77,13 @@ function renderConversations(conversations) {
   conversations.forEach(conversation => {
     // Determine the name to display (supplier name for customers)
     const displayName = conversation.supplierName || conversation.recipientName || 'User';
-    const lastMessage = conversation.lastMessage || 'No messages yet';
+    
+    // Format preview with "You:" prefix if current user sent last message
+    const lastMessageText = conversation.lastMessage || conversation.lastMessageText || '';
+    const lastMessageSenderId = conversation.lastMessageSenderId || '';
+    const currentUserId = currentUser?.id || '';
+    const lastMessage = formatMessagePreview(lastMessageText, lastMessageSenderId, currentUserId, MESSAGE_PREVIEW_MAX_LENGTH);
+    
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
@@ -113,8 +143,8 @@ function renderConversations(conversations) {
               <strong style="color:#1f2937;font-size:1rem;">${escapeHtml(displayName)}</strong>
               <span class="small" style="color:#9ca3af;white-space:nowrap;flex-shrink:0;">${lastMessageTime}</span>
             </div>
-            <p class="small" style="margin:0;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-              ${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}
+            <p class="small" style="margin:0;color:${isUnread ? '#1f2937' : '#6b7280'};font-weight:${isUnread ? '500' : '400'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${escapeHtml(lastMessage)}
             </p>
             ${
               unreadCount > 0
@@ -227,21 +257,21 @@ function renderConversations(conversations) {
 // Open conversation modal
 function openConversation(conversationId) {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay active';
+  modal.className = 'modal-overlay modal-overlay--glass active';
   modal.innerHTML = `
-    <div class="modal" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
+    <div class="modal modal--glass" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
       <div class="modal-header">
-        <h3>Conversation</h3>
+        <h3 class="modal-title">Conversation</h3>
         <button class="modal-close" type="button" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body" style="flex:1;overflow-y:auto;padding:1rem;">
+      <div class="modal-body" style="flex:1;overflow-y:auto;padding:1.5rem;">
         <div id="conversationMessages"><p class="small">Loading...</p></div>
         <div id="typingIndicatorContainer" style="min-height:24px;padding:0.5rem 0;"></div>
       </div>
-      <div class="modal-footer" style="padding:1rem;border-top:1px solid #e4e4e7;">
-        <form id="sendMessageForm" style="display:flex;gap:0.5rem;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;padding:0.5rem;border:1px solid #d4d4d8;border-radius:4px;resize:none;" required></textarea>
-          <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Send</button>
+      <div class="modal-footer" style="padding:1.5rem;">
+        <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;">
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;" required></textarea>
+          <button type="submit" class="btn btn-primary" style="align-self:flex-end;padding:0.75rem 1.5rem;">Send</button>
         </form>
       </div>
     </div>
@@ -275,25 +305,23 @@ function openConversation(conversationId) {
     }
 
     if (!messages || messages.length === 0) {
-      container.innerHTML = '<p class="small">No messages yet. Start the conversation!</p>';
+      container.innerHTML = '<p class="small" style="text-align:center;color:#6b7280;">No messages yet. Start the conversation!</p>';
       return;
     }
 
-    let html = '<div class="messages-list">';
+    let html = '<div class="messages-list" style="display:flex;flex-direction:column;gap:1rem;">';
 
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
       const isFromCustomer = message.senderType === 'customer';
-      const bgColor = isFromCustomer ? '#3b82f6' : '#e4e4e7';
-      const textColor = isFromCustomer ? '#fff' : '#1a1a1a';
+      const bubbleClass = isFromCustomer ? 'message-bubble--sent' : 'message-bubble--received';
+      const alignStyle = isFromCustomer ? 'margin-left:auto;' : 'margin-right:auto;';
 
       html += `
-        <div style="display:flex;justify-content:${isFromCustomer ? 'flex-end' : 'flex-start'};margin-bottom:1rem;">
-          <div style="max-width:70%;padding:0.75rem;background:${bgColor};color:${textColor};border-radius:8px;">
-            <div style="font-weight:600;margin-bottom:0.25rem;font-size:12px;opacity:0.9;">${escapeHtml(message.senderName || 'Unknown')}</div>
-            <p style="margin:0;word-wrap:break-word;">${escapeHtml(message.message)}</p>
-            <div style="margin-top:0.25rem;font-size:11px;opacity:0.8;">${timestamp}</div>
-          </div>
+        <div class="message-bubble ${bubbleClass}" style="${alignStyle}">
+          <div class="message-sender">${escapeHtml(message.senderName || 'Unknown')}</div>
+          <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(message.message)}</p>
+          <div class="message-time">${timestamp}</div>
         </div>
       `;
     });
@@ -451,7 +479,7 @@ async function init() {
         return timeB - timeA;
       });
 
-      renderConversations(conversations);
+      renderConversations(conversations, user);
     });
 
     // Listen to unread count for this customer

@@ -452,3 +452,174 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
+/* ===========================================
+   15. GLASSMORPHISM MODAL ENHANCEMENTS
+   =========================================== */
+/* Enhanced modal overlay with glassmorphism */
+.modal-overlay--glass {
+  background: rgba(11, 18, 32, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Premium glassmorphism modal container */
+.modal--glass {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  box-shadow: 
+    0 25px 60px rgba(11, 128, 115, 0.2),
+    0 10px 30px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient border effect */
+.modal--glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(11, 128, 115, 0.6),
+    rgba(19, 182, 162, 0.6),
+    transparent
+  );
+  opacity: 0.8;
+}
+
+/* Modal header with glass effect */
+.modal--glass .modal-header {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(11, 128, 115, 0.15);
+  padding: 1.5rem;
+}
+
+.modal--glass .modal-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1.25rem;
+}
+
+/* Modal body styling */
+.modal--glass .modal-body {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal footer with glass effect */
+.modal--glass .modal-footer {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(11, 128, 115, 0.15);
+  padding: 1.5rem;
+}
+
+/* Enhanced message bubbles for glass modal */
+.modal--glass .message-bubble {
+  padding: 0.875rem 1.125rem;
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  max-width: 75%;
+  word-wrap: break-word;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal--glass .message-bubble:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Outbound message (from current user) */
+.modal--glass .message-bubble--sent {
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.95) 0%, rgba(19, 182, 162, 0.95) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Inbound message (from other party) */
+.modal--glass .message-bubble--received {
+  background: rgba(243, 244, 246, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(229, 231, 235, 0.6);
+  color: #1f2937;
+  margin-right: auto;
+}
+
+/* Message sender name */
+.modal--glass .message-sender {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  opacity: 0.9;
+}
+
+/* Message timestamp */
+.modal--glass .message-time {
+  font-size: 0.6875rem;
+  margin-top: 0.25rem;
+  opacity: 0.75;
+}
+
+/* Message input area */
+.modal--glass textarea,
+.modal--glass input[type="text"] {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(11, 128, 115, 0.2);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  transition: all 0.3s ease;
+}
+
+.modal--glass textarea:focus,
+.modal--glass input[type="text"]:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(11, 128, 115, 0.4);
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+  outline: none;
+}
+
+/* Send button with glass effect */
+.modal--glass .btn-primary {
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3);
+  transition: all 0.3s ease;
+}
+
+.modal--glass .btn-primary:hover {
+  box-shadow: 0 6px 16px rgba(11, 128, 115, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal--glass {
+    border-radius: 16px;
+    max-width: calc(100% - 2rem);
+  }
+  
+  .modal--glass .message-bubble {
+    max-width: 85%;
+  }
+}

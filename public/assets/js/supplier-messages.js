@@ -11,6 +11,9 @@ import {
   filterThreadsByQualityLevel,
 } from './utils/lead-quality-helper.js';
 
+// Constants
+const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
 // Initialize messaging manager
 const messagingManager = new MessagingManager();
 
@@ -69,8 +72,29 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Format message preview with "You:" prefix for outbound messages
+function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = MESSAGE_PREVIEW_MAX_LENGTH) {
+  if (!messageText || messageText === 'No messages yet') {
+    return 'No messages yet';
+  }
+  
+  // Trim and clean the text
+  const cleanText = messageText.trim();
+  
+  // Add "You:" prefix if the current user sent the last message
+  const prefix = lastMessageSenderId === currentUserId ? 'You: ' : '';
+  const fullText = prefix + cleanText;
+  
+  // Clamp to maxLength with ellipsis
+  if (fullText.length > maxLength) {
+    return fullText.substring(0, maxLength) + '...';
+  }
+  
+  return fullText;
+}
+
 // Render conversations with quality badges, sorting, and filtering
-function renderConversations(conversations, supplierProfile = null) {
+function renderConversations(conversations, supplierProfile = null, currentUser = null) {
   const container = document.getElementById('threads-sup');
   if (!container) {
     return;
@@ -135,24 +159,32 @@ function renderConversations(conversations, supplierProfile = null) {
 
   filteredConversations.forEach(conversation => {
     const customerName = conversation.customerName || 'Customer';
-    const lastMessage = conversation.lastMessage || 'No messages yet';
+    
+    // Format preview with "You:" prefix if current user sent last message  
+    const lastMessageText = conversation.lastMessage || conversation.lastMessageText || '';
+    const lastMessageSenderId = conversation.lastMessageSenderId || '';
+    const currentUserId = currentUser?.id || '';
+    const lastMessage = formatMessagePreview(lastMessageText, lastMessageSenderId, currentUserId, MESSAGE_PREVIEW_MAX_LENGTH);
+    
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
-
+    const unreadCount = conversation.unreadCount || 0;
+    const isUnread = unreadCount > 0;
     // Use new quality badge
     const leadQualityBadge = getLeadQualityBadge(conversation.qualityScore);
 
     html += `
-      <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
+      <div class="thread-item ${isUnread ? 'unread' : ''}" style="border:1px solid ${isUnread ? '#0B8073' : '#e4e4e7'};padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;background:${isUnread ? 'rgba(240, 249, 248, 0.95)' : 'white'};" data-conversation-id="${conversation.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
             <strong>${escapeHtml(customerName)}</strong>
             ${leadQualityBadge}
+            ${isUnread && unreadCount > 0 ? `<span class="glass-badge" style="display:inline-flex;align-items:center;background:rgba(11, 128, 115, 0.15);backdrop-filter:blur(4px);border:1px solid rgba(11, 128, 115, 0.25);border-radius:9999px;padding:0.25rem 0.5rem;font-size:0.75rem;font-weight:600;color:#0B8073;">${unreadCount}</span>` : ''}
           </div>
           <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
         </div>
-        <p class="small" style="margin:0;color:#6b7280;">${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}</p>
+        <p class="small" style="margin:0;color:${isUnread ? '#1f2937' : '#6b7280'};font-weight:${isUnread ? '500' : '400'};">${escapeHtml(lastMessage)}</p>
       </div>
     `;
   });
@@ -165,7 +197,7 @@ function renderConversations(conversations, supplierProfile = null) {
   if (filterSelect) {
     filterSelect.addEventListener('change', e => {
       container.dataset.qualityFilter = e.target.value;
-      renderConversations(conversations, supplierProfile);
+      renderConversations(conversations, supplierProfile, currentUser);
     });
   }
 
@@ -176,7 +208,7 @@ function renderConversations(conversations, supplierProfile = null) {
       const newSort = sortBtn.dataset.sort === 'desc' ? 'asc' : 'desc';
       container.dataset.qualitySort = newSort;
       sortBtn.dataset.sort = newSort;
-      renderConversations(conversations, supplierProfile);
+      renderConversations(conversations, supplierProfile, currentUser);
     });
   }
 
@@ -200,21 +232,21 @@ function renderConversations(conversations, supplierProfile = null) {
 // Open conversation modal
 function openConversation(conversationId) {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay active';
+  modal.className = 'modal-overlay modal-overlay--glass active';
   modal.innerHTML = `
-    <div class="modal" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
+    <div class="modal modal--glass" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
       <div class="modal-header">
-        <h3>Conversation</h3>
+        <h3 class="modal-title">Conversation</h3>
         <button class="modal-close" type="button" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body" style="flex:1;overflow-y:auto;padding:1rem;">
+      <div class="modal-body" style="flex:1;overflow-y:auto;padding:1.5rem;">
         <div id="conversationMessages"><p class="small">Loading...</p></div>
         <div id="typingIndicatorContainer" style="min-height:24px;padding:0.5rem 0;"></div>
       </div>
-      <div class="modal-footer" style="padding:1rem;border-top:1px solid #e4e4e7;">
-        <form id="sendMessageForm" style="display:flex;gap:0.5rem;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;padding:0.5rem;border:1px solid #d4d4d8;border-radius:4px;resize:none;" required></textarea>
-          <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Send</button>
+      <div class="modal-footer" style="padding:1.5rem;">
+        <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;">
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;" required></textarea>
+          <button type="submit" class="btn btn-primary" style="align-self:flex-end;padding:0.75rem 1.5rem;">Send</button>
         </form>
       </div>
     </div>
@@ -248,25 +280,23 @@ function openConversation(conversationId) {
     }
 
     if (!messages || messages.length === 0) {
-      container.innerHTML = '<p class="small">No messages yet. Start the conversation!</p>';
+      container.innerHTML = '<p class="small" style="text-align:center;color:#6b7280;">No messages yet. Start the conversation!</p>';
       return;
     }
 
-    let html = '<div class="messages-list">';
+    let html = '<div class="messages-list" style="display:flex;flex-direction:column;gap:1rem;">';
 
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
       const isFromSupplier = message.senderType === 'supplier';
-      const bgColor = isFromSupplier ? '#3b82f6' : '#e4e4e7';
-      const textColor = isFromSupplier ? '#fff' : '#1a1a1a';
+      const bubbleClass = isFromSupplier ? 'message-bubble--sent' : 'message-bubble--received';
+      const alignStyle = isFromSupplier ? 'margin-left:auto;' : 'margin-right:auto;';
 
       html += `
-        <div style="display:flex;justify-content:${isFromSupplier ? 'flex-end' : 'flex-start'};margin-bottom:1rem;">
-          <div style="max-width:70%;padding:0.75rem;background:${bgColor};color:${textColor};border-radius:8px;">
-            <div style="font-weight:600;margin-bottom:0.25rem;font-size:12px;opacity:0.9;">${escapeHtml(message.senderName || 'Unknown')}</div>
-            <p style="margin:0;word-wrap:break-word;">${escapeHtml(message.message)}</p>
-            <div style="margin-top:0.25rem;font-size:11px;opacity:0.8;">${timestamp}</div>
-          </div>
+        <div class="message-bubble ${bubbleClass}" style="${alignStyle}">
+          <div class="message-sender">${escapeHtml(message.senderName || 'Unknown')}</div>
+          <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(message.message)}</p>
+          <div class="message-time">${timestamp}</div>
         </div>
       `;
     });
@@ -455,7 +485,7 @@ async function init() {
             return timeB - timeA;
           });
 
-          renderConversations(allConversations, supplierProfile);
+          renderConversations(allConversations, supplierProfile, user);
         }
       });
 

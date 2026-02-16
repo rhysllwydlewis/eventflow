@@ -20,6 +20,9 @@ let auditLog;
 let uid;
 let postmark;
 
+// Constants
+const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
 /**
  * Initialize dependencies from server.js
  * @param {Object} deps - Dependencies object
@@ -446,7 +449,9 @@ router.post(
       // Update thread if not a draft
       if (!isDraft) {
         thread.lastMessageAt = now;
-        thread.lastMessagePreview = sanitizedText.substring(0, 100);
+        thread.lastMessagePreview = sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+        thread.lastMessageText = sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+        thread.lastMessageSenderId = req.user.id;
         thread.updatedAt = now;
 
         // Increment unread count for the recipient
@@ -594,7 +599,9 @@ router.put('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, re
       if (threadIndex !== -1) {
         const thread = threads[threadIndex];
         thread.lastMessageAt = now;
-        thread.lastMessagePreview = message.text.substring(0, 100);
+        thread.lastMessagePreview = message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+        thread.lastMessageText = message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+        thread.lastMessageSenderId = req.user.id;
         thread.updatedAt = now;
 
         // Increment unread count for the recipient
@@ -1046,7 +1053,9 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
         supplierName,
         customerName,
         recipientName,
-        lastMessage: t.lastMessagePreview || '',
+        lastMessage: t.lastMessagePreview || t.lastMessageText || '',
+        lastMessageText: t.lastMessageText || t.lastMessagePreview || '',
+        lastMessageSenderId: t.lastMessageSenderId || '',
         lastMessageTime: t.lastMessageAt || t.updatedAt || t.createdAt,
         unreadCount: (t.unreadCount && t.unreadCount[userId]) || 0,
         status: t.status || 'open',
@@ -1184,7 +1193,9 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
 
     // Update thread
     thread.lastMessageAt = now;
-    thread.lastMessagePreview = message.trim().substring(0, 100);
+    thread.lastMessagePreview = message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+    thread.lastMessageText = message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
+    thread.lastMessageSenderId = userId;
     thread.updatedAt = now;
 
     // Update unread count for recipient

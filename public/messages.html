@@ -1140,6 +1140,15 @@
             const initial = otherPartyName.charAt(0).toUpperCase();
             const timeAgo = formatTimeAgo(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
             const fullDate = formatFullDate(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
+            
+            // Format preview with "You:" prefix if current user sent last message
+            const lastMessageText = thread.lastMessagePreview || thread.lastMessage || '';
+            const lastMessageSenderId = thread.lastMessageSenderId || '';
+            const preview = formatMessagePreview(lastMessageText, lastMessageSenderId, userId, 100);
+            
+            // Determine hover text based on read status
+            const hoverText = isUnread ? 'Mark as read' : 'Mark as unread';
+            const actionType = isUnread ? 'mark-read' : 'mark-unread';
 
             return `
               <div class="thread-item-wrapper" style="position: relative;">
@@ -1151,18 +1160,18 @@
                       <span class="thread-time" title="${fullDate}">${timeAgo}</span>
                     </div>
                     ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
-                    <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
+                    <div class="thread-preview">${escapeHtml(preview)}</div>
                     <div class="thread-meta">
                       ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
                       <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
                     </div>
                   </div>
                 </a>
-                ${!isUnread ? `<button class="thread-action-btn" data-thread-id="${thread.id}" data-action="mark-unread" title="Mark as unread" style="position: absolute; right: 16px; top: 16px; background: #f3f4f6; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: none; align-items: center; justify-content: center;">
+                <button class="thread-action-btn" data-thread-id="${thread.id}" data-action="${actionType}" title="${hoverText}" aria-label="${hoverText}" style="position: absolute; right: 16px; top: 16px; background: #f3f4f6; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: none; align-items: center; justify-content: center;">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
+                    ${isUnread ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>' : '<circle cx="12" cy="12" r="10"></circle>'}
                   </svg>
-                </button>` : ''}
+                </button>
               </div>
             `;
           }).join('');
@@ -1182,7 +1191,14 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const threadId = actionBtn.getAttribute('data-thread-id');
-                await markThreadAsUnread(threadId);
+                const action = actionBtn.getAttribute('data-action');
+                
+                if (action === 'mark-read') {
+                  // Mark as read (conversation.html does this automatically on open)
+                  window.location.href = `/conversation.html?id=${threadId}`;
+                } else {
+                  await markThreadAsUnread(threadId);
+                }
               });
             }
           });
@@ -1415,6 +1431,27 @@
         const div = document.createElement('div');
         div.textContent = str || '';
         return div.innerHTML;
+      }
+
+      // Format message preview with "You:" prefix for outbound messages
+      function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = 100) {
+        if (!messageText || messageText === 'No messages yet') {
+          return 'No messages yet';
+        }
+        
+        // Trim and clean the text
+        const cleanText = messageText.trim();
+        
+        // Add "You:" prefix if the current user sent the last message
+        const prefix = lastMessageSenderId === currentUserId ? 'You: ' : '';
+        const fullText = prefix + cleanText;
+        
+        // Clamp to maxLength with ellipsis
+        if (fullText.length > maxLength) {
+          return fullText.substring(0, maxLength) + '...';
+        }
+        
+        return fullText;
       }
 
       async function exportAllConversations() {
