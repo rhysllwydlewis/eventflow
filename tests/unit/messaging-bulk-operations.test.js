@@ -51,7 +51,11 @@ describe('MessagingService - Bulk Operations', () => {
 
   describe('bulkDeleteMessages', () => {
     it('should soft delete multiple messages and create operation record', async () => {
-      const messageIds = ['msg1', 'msg2', 'msg3'];
+      const messageIds = [
+        new ObjectId().toString(),
+        new ObjectId().toString(),
+        new ObjectId().toString(),
+      ];
       const userId = 'user123';
       const threadId = 'thread456';
       const reason = 'Test deletion';
@@ -93,12 +97,13 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should store previous state for undo functionality', async () => {
-      const messageIds = ['msg1'];
+      const messageId = new ObjectId();
+      const messageIds = [messageId.toString()];
       const userId = 'user123';
       const threadId = 'thread456';
 
       const mockMessage = {
-        _id: new ObjectId(),
+        _id: messageId,
         isStarred: true,
         isArchived: false,
         messageStatus: 'waiting_response',
@@ -127,7 +132,7 @@ describe('MessagingService - Bulk Operations', () => {
 
   describe('bulkMarkRead', () => {
     it('should mark multiple messages as read', async () => {
-      const messageIds = ['msg1', 'msg2'];
+      const messageIds = [new ObjectId().toString(), new ObjectId().toString()];
       const userId = 'user123';
 
       mockMessagesCollection.updateMany.mockResolvedValue({
@@ -151,7 +156,7 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should mark multiple messages as unread', async () => {
-      const messageIds = ['msg1', 'msg2'];
+      const messageIds = [new ObjectId().toString(), new ObjectId().toString()];
       const userId = 'user123';
 
       mockMessagesCollection.updateMany.mockResolvedValue({
@@ -177,11 +182,11 @@ describe('MessagingService - Bulk Operations', () => {
 
   describe('flagMessage', () => {
     it('should flag a message', async () => {
-      const messageId = 'msg123';
+      const messageId = new ObjectId().toString();
       const userId = 'user123';
 
       const mockMessage = {
-        _id: new ObjectId(messageId),
+        _id: new ObjectId(),
         isStarred: true,
       };
 
@@ -206,11 +211,11 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should unflag a message', async () => {
-      const messageId = 'msg123';
+      const messageId = new ObjectId().toString();
       const userId = 'user123';
 
       mockMessagesCollection.findOneAndUpdate.mockResolvedValue({
-        value: { _id: new ObjectId(messageId), isStarred: false },
+        value: { _id: new ObjectId(), isStarred: false },
       });
 
       const result = await messagingService.flagMessage(messageId, userId, false);
@@ -230,12 +235,12 @@ describe('MessagingService - Bulk Operations', () => {
 
   describe('archiveMessage', () => {
     it('should archive a message', async () => {
-      const messageId = 'msg123';
+      const messageId = new ObjectId().toString();
       const userId = 'user123';
 
       mockMessagesCollection.findOneAndUpdate.mockResolvedValue({
         value: {
-          _id: new ObjectId(messageId),
+          _id: new ObjectId(),
           isArchived: true,
           archivedAt: new Date(),
         },
@@ -257,12 +262,12 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should restore an archived message', async () => {
-      const messageId = 'msg123';
+      const messageId = new ObjectId().toString();
       const userId = 'user123';
 
       mockMessagesCollection.findOneAndUpdate.mockResolvedValue({
         value: {
-          _id: new ObjectId(messageId),
+          _id: new ObjectId(),
           isArchived: false,
           archivedAt: null,
         },

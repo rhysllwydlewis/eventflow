@@ -15,7 +15,6 @@ describe('Messaging API v2 - Bulk Operations Integration', () => {
   let mongoClient;
   let db;
   let app;
-  let testUser;
   let testThread;
   let testMessages;
 
@@ -55,13 +54,6 @@ describe('Messaging API v2 - Bulk Operations Integration', () => {
   });
 
   beforeEach(async () => {
-    // Create test user
-    testUser = {
-      _id: new ObjectId(),
-      userId: 'test-user-123',
-      email: 'test@example.com',
-    };
-
     // Create test thread
     testThread = {
       _id: new ObjectId(),
