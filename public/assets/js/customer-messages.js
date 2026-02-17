@@ -387,13 +387,13 @@ function openConversation(conversationId) {
       </div>
       <div class="modal-footer" style="padding:1.5rem;">
         <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;flex-wrap:wrap;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:250px;" required></textarea>
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:250px;"></textarea>
           
           <!-- File input (hidden) -->
           <input type="file" id="attachmentInput" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"/>
           
           <!-- Attachment button -->
-          <button type="button" id="attachmentBtn" class="btn btn-secondary" style="align-self:flex-end;padding:0.75rem;border:none;background:#f3f4f6;color:#6b7280;cursor:pointer;" title="Attach files">
+          <button type="button" id="attachmentBtn" class="btn btn-secondary" style="align-self:flex-end;padding:0.75rem;border:none;background:#f3f4f6;color:#6b7280;cursor:pointer;transition:background-color 0.2s,color 0.2s;" title="Attach files" aria-label="Attach files">
             📎
           </button>
           
@@ -695,6 +695,16 @@ function openConversation(conversationId) {
 
   // Click button to open file picker
   if (attachmentBtn && attachmentInput) {
+    // Add hover effect
+    attachmentBtn.addEventListener('mouseenter', () => {
+      attachmentBtn.style.background = '#e5e7eb';
+      attachmentBtn.style.color = '#374151';
+    });
+    attachmentBtn.addEventListener('mouseleave', () => {
+      attachmentBtn.style.background = '#f3f4f6';
+      attachmentBtn.style.color = '#6b7280';
+    });
+
     attachmentBtn.addEventListener('click', () => attachmentInput.click());
 
     // Handle file selection
@@ -751,9 +761,12 @@ function openConversation(conversationId) {
     previewContainer.innerHTML = selectedFiles
       .map(
         (file, idx) => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;background:white;border-radius:4px;margin-bottom:0.5rem;border:1px solid #e5e7eb;">
-        <span style="font-size:0.875rem;color:#374151;">${escapeHtml(file.name)} (${(file.size / 1024 / 1024).toFixed(1)}MB)</span>
-        <button type="button" class="remove-attachment-btn" data-index="${idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;">✕</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:white;border-radius:6px;margin-bottom:0.5rem;border:1px solid #e5e7eb;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);">
+        <span style="font-size:0.875rem;color:#374151;font-weight:500;">${escapeHtml(file.name)}</span>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <span style="font-size:0.75rem;color:#6b7280;">${(file.size / 1024 / 1024).toFixed(1)}MB</span>
+          <button type="button" class="remove-attachment-btn" data-index="${idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.25rem;line-height:1;padding:0.25rem;transition:color 0.2s;" title="Remove file" aria-label="Remove ${escapeHtml(file.name)}">✕</button>
+        </div>
       </div>
     `
       )
@@ -761,6 +774,14 @@ function openConversation(conversationId) {
 
     // Add event listeners for remove buttons
     previewContainer.querySelectorAll('.remove-attachment-btn').forEach(btn => {
+      // Add hover effect
+      btn.addEventListener('mouseenter', () => {
+        btn.style.color = '#dc2626';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.color = '#ef4444';
+      });
+
       btn.addEventListener('click', e => {
         const index = parseInt(e.target.getAttribute('data-index'));
         selectedFiles.splice(index, 1);
@@ -814,6 +835,9 @@ function openConversation(conversationId) {
 
         const response = await fetch('/api/v2/messages', {
           method: 'POST',
+          headers: {
+            'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+          },
           body: formData,
           credentials: 'include',
         });
