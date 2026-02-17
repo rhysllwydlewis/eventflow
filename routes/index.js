@@ -16,6 +16,9 @@ const adminRoutes = require('./admin');
 const adminDebugRoutes = require('./admin-debug');
 const messagesRoutes = require('./messages');
 const messagingV2Routes = require('./messaging-v2');
+const foldersRoutes = require('./folders');
+const labelsRoutes = require('./labels');
+const advancedSearchRoutes = require('./advanced-search');
 const newsletterRoutes = require('./newsletter');
 const paymentsRoutes = require('./payments');
 const pexelsRoutes = require('./pexels');
@@ -109,6 +112,24 @@ function mountRoutes(app, deps) {
     messagingV2Routes.initializeDependencies(deps);
   }
   app.use('/api/v2/messages', messagingV2Routes);
+
+  // Folders routes (Phase 2)
+  if (deps && foldersRoutes.initializeDependencies) {
+    foldersRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/v2/folders', foldersRoutes);
+
+  // Labels routes (Phase 2)
+  if (deps && labelsRoutes.initializeDependencies) {
+    labelsRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/v2/labels', labelsRoutes);
+
+  // Advanced Search routes (Phase 2)
+  if (deps && advancedSearchRoutes.initializeDependencies) {
+    advancedSearchRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/v2/search/advanced', advancedSearchRoutes);
 
   // Newsletter routes (public, no auth required)
   app.use('/api/v1/newsletter', newsletterRoutes);

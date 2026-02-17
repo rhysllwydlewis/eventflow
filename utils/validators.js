@@ -102,6 +102,79 @@ function isValidObjectId(id) {
   return typeof id === 'string' && /^[a-f\d]{24}$/i.test(id);
 }
 
+/**
+ * Validate hex color format
+ * @param {string} color - Color to validate (#RGB or #RRGGBB)
+ * @returns {boolean} True if color is valid hex
+ */
+function isValidHexColor(color) {
+  if (typeof color !== 'string') {
+    return false;
+  }
+  return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
+}
+
+/**
+ * Validate folder/label name
+ * @param {string} name - Name to validate
+ * @param {number} maxLength - Maximum length (default 100)
+ * @returns {boolean} True if name is valid
+ */
+function isValidFolderLabelName(name, maxLength = 100) {
+  return (
+    typeof name === 'string' &&
+    name.trim().length > 0 &&
+    name.length <= maxLength &&
+    !/[<>:"/\\|?*\x00-\x1f]/.test(name) // No invalid file system chars
+  );
+}
+
+/**
+ * Validate icon/emoji (single char or short string)
+ * @param {string} icon - Icon to validate
+ * @returns {boolean} True if icon is valid
+ */
+function isValidIcon(icon) {
+  return typeof icon === 'string' && icon.length >= 1 && icon.length <= 10;
+}
+
+/**
+ * Validate search query length
+ * @param {string} query - Search query to validate
+ * @param {number} maxLength - Maximum length (default 500)
+ * @returns {boolean} True if query is valid
+ */
+function isValidSearchQuery(query, maxLength = 500) {
+  return typeof query === 'string' && query.trim().length > 0 && query.length <= maxLength;
+}
+
+/**
+ * Validate pagination parameters
+ * @param {number} page - Page number
+ * @param {number} limit - Items per page
+ * @param {number} maxLimit - Maximum items per page (default 100)
+ * @returns {Object} Validated pagination params or error
+ */
+function validatePagination(page, limit, maxLimit = 100) {
+  const parsedPage = parseInt(page, 10) || 1;
+  const parsedLimit = parseInt(limit, 10) || 25;
+
+  if (parsedPage < 1) {
+    return { isValid: false, error: 'Page must be >= 1' };
+  }
+
+  if (parsedLimit < 1 || parsedLimit > maxLimit) {
+    return { isValid: false, error: `Limit must be between 1 and ${maxLimit}` };
+  }
+
+  return {
+    isValid: true,
+    page: parsedPage,
+    limit: parsedLimit,
+    skip: (parsedPage - 1) * parsedLimit,
+  };
+}
+
 module.exports = {
   passwordOk,
   isValidEmail,
@@ -112,4 +185,9 @@ module.exports = {
   isValidPhone,
   sanitizeString,
   isValidObjectId,
+  isValidHexColor,
+  isValidFolderLabelName,
+  isValidIcon,
+  isValidSearchQuery,
+  validatePagination,
 };
