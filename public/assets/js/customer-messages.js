@@ -9,8 +9,26 @@ import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/sk
 // Initialize messaging manager
 const messagingManager = new MessagingManager();
 
+// Initialize debug logging array on window for troubleshooting
+if (!window.dashboardLogs) {
+  window.dashboardLogs = [];
+}
+
 // Constants
 const MESSAGE_PREVIEW_MAX_LENGTH = 100;
+
+// Helper function for detailed logging
+function logMessageState(state, data) {
+  const timestamp = new Date().toISOString();
+  const logEntry = { timestamp, state, data };
+  console.log(`[${timestamp}] [Dashboard Messaging] ${state}:`, data);
+
+  // Store in window.dashboardLogs for debugging (keep last 100 entries)
+  window.dashboardLogs.push(logEntry);
+  if (window.dashboardLogs.length > 100) {
+    window.dashboardLogs.shift();
+  }
+}
 
 // Helper function to extract message text from various field names
 function extractMessageText(message) {
@@ -47,12 +65,6 @@ function extractSenderId(message) {
   return (
     message.senderId || message.userId || message.fromUserId || message.sender?.id || 'unknown'
   );
-}
-
-// Helper function for detailed logging
-function logMessageState(state, data) {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] [Dashboard Messaging] ${state}:`, data);
 }
 
 // HTTP fallback for loading messages when real-time fails
@@ -166,6 +178,18 @@ function renderConversations(conversations, currentUser) {
   let html = '<div class="thread-list" style="display:flex;flex-direction:column;gap:0.75rem;">';
 
   conversations.forEach(conversation => {
+    // Defensive: Skip invalid conversation objects
+    if (!conversation || typeof conversation !== 'object') {
+      console.warn('Skipping invalid conversation:', conversation);
+      return;
+    }
+
+    // Defensive: Skip conversations without IDs
+    if (!conversation.id) {
+      console.warn('Skipping conversation without ID:', conversation);
+      return;
+    }
+
     // Determine the name to display (supplier name for customers)
     const displayName = conversation.supplierName || conversation.recipientName || 'User';
 
@@ -186,13 +210,15 @@ function renderConversations(conversations, currentUser) {
     const unreadCount = conversation.unreadCount || 0;
     const isUnread = unreadCount > 0;
 
-    // Generate initials for avatar
-    const initials = displayName
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase();
+    // Generate initials for avatar (defensive with null handling)
+    const initials =
+      (displayName || 'U')
+        .split(' ')
+        .filter(n => n && n.length > 0) // Filter out empty strings
+        .map(n => n[0] || '')
+        .join('')
+        .substring(0, 2)
+        .toUpperCase() || 'U';
 
     html += `
       <div class="thread-item ${isUnread ? 'unread' : ''}" 
@@ -689,11 +715,11 @@ async function init() {
     return;
   }
 
-  // Validate MessagingSystem is ready
-  if (!window.messagingSystem || typeof window.messagingSystem.listenToMessages !== 'function') {
+  // Validate MessagingSystem is ready (check module-scoped import, not window)
+  if (!messagingSystem || typeof messagingSystem.listenToMessages !== 'function') {
     logMessageState('SYSTEM_NOT_READY', {
-      hasMessagingSystem: !!window.messagingSystem,
-      hasListenToMessages: typeof window.messagingSystem?.listenToMessages === 'function',
+      hasMessagingSystem: !!messagingSystem,
+      hasListenToMessages: typeof messagingSystem?.listenToMessages === 'function',
     });
     showErrorState(container, {
       icon: '⚠️',

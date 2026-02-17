@@ -14,6 +14,24 @@ import {
 // Constants
 const MESSAGE_PREVIEW_MAX_LENGTH = 100;
 
+// Initialize debug logging array on window for troubleshooting
+if (!window.dashboardLogs) {
+  window.dashboardLogs = [];
+}
+
+// Helper function for detailed logging
+function logMessageState(state, data) {
+  const timestamp = new Date().toISOString();
+  const logEntry = { timestamp, state, data };
+  console.log(`[${timestamp}] [Dashboard Messaging] ${state}:`, data);
+
+  // Store in window.dashboardLogs for debugging (keep last 100 entries)
+  window.dashboardLogs.push(logEntry);
+  if (window.dashboardLogs.length > 100) {
+    window.dashboardLogs.shift();
+  }
+}
+
 // Helper function to extract message text from various field names
 function extractMessageText(message) {
   if (!message) {
@@ -49,12 +67,6 @@ function extractSenderId(message) {
   return (
     message.senderId || message.userId || message.fromUserId || message.sender?.id || 'unknown'
   );
-}
-
-// Helper function for detailed logging
-function logMessageState(state, data) {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] [Dashboard Messaging] ${state}:`, data);
 }
 
 // HTTP fallback for loading messages when real-time fails
@@ -246,6 +258,18 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
   `;
 
   filteredConversations.forEach(conversation => {
+    // Defensive: Skip invalid conversation objects
+    if (!conversation || typeof conversation !== 'object') {
+      console.warn('Skipping invalid conversation:', conversation);
+      return;
+    }
+
+    // Defensive: Skip conversations without IDs
+    if (!conversation.id) {
+      console.warn('Skipping conversation without ID:', conversation);
+      return;
+    }
+
     const customerName = conversation.customerName || 'Customer';
 
     // Format preview with "You:" prefix if current user sent last message
@@ -661,11 +685,11 @@ async function init() {
     return;
   }
 
-  // Validate MessagingSystem is ready
-  if (!window.messagingSystem || typeof window.messagingSystem.listenToMessages !== 'function') {
+  // Validate MessagingSystem is ready (check module-scoped import, not window)
+  if (!messagingSystem || typeof messagingSystem.listenToMessages !== 'function') {
     logMessageState('SYSTEM_NOT_READY', {
-      hasMessagingSystem: !!window.messagingSystem,
-      hasListenToMessages: typeof window.messagingSystem?.listenToMessages === 'function',
+      hasMessagingSystem: !!messagingSystem,
+      hasListenToMessages: typeof messagingSystem?.listenToMessages === 'function',
     });
     showErrorState(container, {
       icon: '⚠️',

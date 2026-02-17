@@ -284,19 +284,38 @@ describe('Messaging Dashboard Fixes', () => {
     });
 
     describe('MessagingSystem validation', () => {
-      it('should validate messagingSystem exists', () => {
-        expect(customerMessagesJs).toContain('!window.messagingSystem');
+      it('should validate messagingSystem exists (module-scoped)', () => {
+        expect(customerMessagesJs).toContain('!messagingSystem');
       });
 
       it('should validate listenToMessages function exists', () => {
         expect(customerMessagesJs).toContain(
-          "typeof window.messagingSystem.listenToMessages !== 'function'"
+          "typeof messagingSystem.listenToMessages !== 'function'"
         );
       });
 
       it('should show error state when system not ready', () => {
         expect(customerMessagesJs).toContain('System not ready');
         expect(customerMessagesJs).toContain('Messaging system initialization failed');
+      });
+
+      it('should include dashboard logging for debugging', () => {
+        expect(customerMessagesJs).toContain('window.dashboardLogs');
+      });
+
+      it('should validate conversation objects before rendering', () => {
+        expect(customerMessagesJs).toContain('Skipping invalid conversation');
+        expect(customerMessagesJs).toContain("typeof conversation !== 'object'");
+      });
+
+      it('should skip conversations without IDs', () => {
+        expect(customerMessagesJs).toContain('Skipping conversation without ID');
+        expect(customerMessagesJs).toContain('!conversation.id');
+      });
+
+      it('should safely generate initials with fallback', () => {
+        expect(customerMessagesJs).toContain('.filter(n => n && n.length > 0)');
+        expect(customerMessagesJs).toContain(".toUpperCase() || 'U'");
       });
     });
   });
@@ -408,15 +427,29 @@ describe('Messaging Dashboard Fixes', () => {
     });
 
     describe('MessagingSystem validation', () => {
-      it('should validate messagingSystem readiness', () => {
-        expect(supplierMessagesJs).toContain('!window.messagingSystem');
+      it('should validate messagingSystem readiness (module-scoped)', () => {
+        expect(supplierMessagesJs).toContain('!messagingSystem');
         expect(supplierMessagesJs).toContain(
-          "typeof window.messagingSystem.listenToMessages !== 'function'"
+          "typeof messagingSystem.listenToMessages !== 'function'"
         );
       });
 
       it('should show error state when system not ready', () => {
         expect(supplierMessagesJs).toContain('System not ready');
+      });
+
+      it('should include dashboard logging for debugging', () => {
+        expect(supplierMessagesJs).toContain('window.dashboardLogs');
+      });
+
+      it('should validate conversation objects before rendering', () => {
+        expect(supplierMessagesJs).toContain('Skipping invalid conversation');
+        expect(supplierMessagesJs).toContain("typeof conversation !== 'object'");
+      });
+
+      it('should skip conversations without IDs', () => {
+        expect(supplierMessagesJs).toContain('Skipping conversation without ID');
+        expect(supplierMessagesJs).toContain('!conversation.id');
       });
     });
   });
