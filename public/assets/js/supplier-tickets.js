@@ -211,23 +211,25 @@ function viewTicket(ticketId) {
 
   document.body.appendChild(modal);
 
-  // Close handlers
-  const closeModal = () => {
-    if (ticketUnsubscribe) {
-      ticketUnsubscribe();
-    }
-    modal.remove();
-  };
-
-  modal.querySelector('.modal-close').addEventListener('click', closeModal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) {
-      closeModal();
-    }
-  });
+  // Store the element that opened the modal for focus restoration
+  const previouslyFocusedElement = document.activeElement;
+  const cleanupCallbacks = [];
 
   // Load ticket details with real-time updates
   let ticketUnsubscribe = null;
+
+  // Close handler with cleanup support
+  const closeModal = createModalCloseHandler(modal, cleanupCallbacks, previouslyFocusedElement);
+
+  // Register cleanup for ticket subscription
+  cleanupCallbacks.push(() => {
+    if (ticketUnsubscribe) {
+      ticketUnsubscribe();
+    }
+  });
+
+  // Setup all close handlers (button, overlay, Escape key)
+  setupModalCloseHandlers(modal, closeModal, cleanupCallbacks);
 
   const renderTicketDetails = ticket => {
     if (!ticket) {
