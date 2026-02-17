@@ -97,16 +97,8 @@ function initializeDependencies(deps) {
 async function initializeRouter(deps) {
   initializeDependencies(deps);
 
-  // Initialize services
-  if (mongoDb) {
-    messagingService = new MessagingService(mongoDb);
-    notificationService = new NotificationService(mongoDb, wsServerV2);
-    presenceService = new PresenceService(mongoDb);
-
-    if (logger) {
-      logger.info('Messaging v2 services initialized');
-    }
-  }
+  // Services will be initialized lazily on first request to avoid blocking
+  // MongoDB connection during startup
 
   // Ensure attachments directory exists at startup
   const fs = require('fs').promises;
@@ -155,14 +147,23 @@ function applyCsrfProtection(req, res, next) {
   return csrfProtection(req, res, next);
 }
 
-// Initialize services
-function initializeServices(db, wsServer) {
-  if (db && !messagingService) {
-    messagingService = new MessagingService(db);
-    notificationService = new NotificationService(db, wsServer);
-    presenceService = new PresenceService();
-    if (logger) {
-      logger.info('Messaging v2 services initialized');
+// Initialize services with database instance
+async function initializeServices() {
+  if (mongoDb && !messagingService) {
+    try {
+      // Get database instance (not module)
+      const db = await mongoDb.getDb();
+      messagingService = new MessagingService(db);
+      notificationService = new NotificationService(db, wsServerV2);
+      presenceService = new PresenceService();
+      if (logger) {
+        logger.info('Messaging v2 services initialized');
+      }
+    } catch (error) {
+      if (logger) {
+        logger.error('Failed to initialize messaging services:', error);
+      }
+      throw error;
     }
   }
 }
@@ -221,12 +222,17 @@ async function storeAttachment(file) {
 }
 
 // Middleware to ensure services are initialized
-function ensureServices(req, res, next) {
-  const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
-  const wsServer = req.app.get('wsServerV2') || wsServerV2 || global.wsServerV2;
-
-  if (db) {
-    initializeServices(db, wsServer);
+// Lazily initializes services with database instance on first request
+async function ensureServices(req, res, next) {
+  if (!messagingService && mongoDb) {
+    try {
+      await initializeServices();
+    } catch (error) {
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Failed to initialize messaging services',
+      });
+    }
   }
 
   if (!messagingService) {

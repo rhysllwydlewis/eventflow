@@ -230,6 +230,12 @@
   </style>
   <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
   <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0">
+  
+  <!-- Phase 2: Custom Folders, Labels, Search, and Grouping -->
+  <link rel="stylesheet" href="/assets/css/folders.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/labels.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/search.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/grouping.css?v=18.0.0">
 </head>
 <body>
 <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
@@ -509,6 +515,86 @@
           Clear All
         </button>
       </div>
+    </div>
+
+    <!-- Phase 2: Folders, Labels, Advanced Search, and Grouping -->
+    <div id="phase2-features" class="phase2-features" style="margin-bottom: 20px;">
+      
+      <!-- Folder Sidebar (initially hidden, can be toggled) -->
+      <div id="folder-sidebar-container" class="folder-sidebar-container" style="display: none; margin-bottom: 16px;">
+        <div class="folder-sidebar">
+          <div class="folder-sidebar-header">
+            <h3 class="folder-sidebar-title">Folders</h3>
+            <button class="folder-create-btn" onclick="window.EF_Folders?.showCreateFolderModal()">
+              + New
+            </button>
+          </div>
+          <div id="folder-list" class="folder-list">
+            <!-- Folders will be rendered here by folders.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Label Filter Sidebar (initially hidden, can be toggled) -->
+      <div id="label-sidebar-container" class="label-sidebar-container" style="display: none; margin-bottom: 16px;">
+        <div id="label-list" class="label-sidebar">
+          <!-- Labels will be rendered here by labels.js -->
+        </div>
+      </div>
+
+      <!-- Advanced Search Bar -->
+      <div id="advanced-search-container" class="advanced-search-container" style="margin-bottom: 16px; padding: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+          <input 
+            type="text" 
+            id="advanced-search-input" 
+            placeholder="Search messages... (e.g., from:john@example.com is:unread)" 
+            style="flex: 1; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+          >
+          <button id="advanced-search-btn" class="btn btn-primary" style="padding: 10px 20px; white-space: nowrap;">
+            Search
+          </button>
+          <button onclick="window.EF_Search?.showSearchHelp()" class="btn btn-secondary" style="padding: 10px 16px;" title="Search help">
+            ?
+          </button>
+          <button onclick="window.EF_Search?.showSaveSearchModal()" class="btn btn-secondary" style="padding: 10px 16px;" title="Save search">
+            💾
+          </button>
+        </div>
+        
+        <!-- Autocomplete Dropdown -->
+        <div id="search-autocomplete" class="search-autocomplete" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 300px; overflow-y: auto;">
+          <!-- Autocomplete suggestions will be rendered here -->
+        </div>
+
+        <!-- Saved Searches -->
+        <div id="saved-searches-list" style="display: none; margin-top: 12px;">
+          <!-- Saved searches will be rendered here by advanced-search.js -->
+        </div>
+      </div>
+
+      <!-- Grouping Controls -->
+      <div id="grouping-controls" class="grouping-controls" style="margin-bottom: 16px; padding: 12px 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <!-- Grouping controls will be rendered here by grouping.js -->
+      </div>
+
+      <!-- Phase 2 Toggle Buttons -->
+      <div class="phase2-toggles" style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+        <button id="toggle-folders" class="btn btn-secondary" style="padding: 8px 16px;" onclick="document.getElementById('folder-sidebar-container').style.display = document.getElementById('folder-sidebar-container').style.display === 'none' ? 'block' : 'none'">
+          📁 Folders
+        </button>
+        <button id="toggle-labels" class="btn btn-secondary" style="padding: 8px 16px;" onclick="document.getElementById('label-sidebar-container').style.display = document.getElementById('label-sidebar-container').style.display === 'none' ? 'block' : 'none'">
+          🏷️ Labels
+        </button>
+      </div>
+
+      <!-- Label Picker Modal (for applying labels to messages) -->
+      <div id="label-picker" class="label-picker-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; background: white; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-width: 400px; width: 90%;">
+        <div id="label-picker-dropdown">
+          <!-- Label picker will be rendered here by labels.js -->
+        </div>
+      </div>
+
     </div>
 
     <div id="errorMessage" class="error" style="display: none;"></div>
@@ -1860,6 +1946,12 @@
       };
     })();
   </script>
+
+<!-- Phase 2: Custom Folders, Labels, Advanced Search, and Grouping -->
+<script src="/assets/js/folders.js?v=18.0.0" defer></script>
+<script src="/assets/js/labels.js?v=18.0.0" defer></script>
+<script src="/assets/js/advanced-search.js?v=18.0.0" defer></script>
+<script src="/assets/js/grouping.js?v=18.0.0" defer></script>
 
 <!-- JadeAssist Chat Widget -->
 <script 

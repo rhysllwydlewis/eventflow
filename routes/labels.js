@@ -40,9 +40,7 @@ function initializeDependencies(deps) {
   logger = deps.logger;
   mongoDb = deps.mongoDb;
 
-  // Initialize service
-  const LabelService = require('../services/LabelService');
-  labelService = new LabelService(mongoDb);
+  // Service will be initialized lazily on first request
 }
 
 /**
@@ -67,8 +65,29 @@ function applyCsrfProtection(req, res, next) {
 
 /**
  * Middleware to ensure services are initialized
+ * Lazily initializes the service with database instance on first request
  */
-function ensureServices(req, res, next) {
+async function ensureServices(req, res, next) {
+  if (!labelService && mongoDb) {
+    try {
+      // Get database instance (not module) and initialize service
+      const LabelService = require('../services/LabelService');
+      const db = await mongoDb.getDb();
+      labelService = new LabelService(db);
+      if (logger) {
+        logger.info('Label service initialized');
+      }
+    } catch (error) {
+      if (logger) {
+        logger.error('Failed to initialize label service:', error);
+      }
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Failed to initialize label service',
+      });
+    }
+  }
+
   if (!labelService) {
     return res.status(503).json({
       error: 'Service unavailable',
@@ -86,31 +105,38 @@ function ensureServices(req, res, next) {
  * POST /api/v2/labels
  * Create a new label
  */
-router.post("/", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { name, color, backgroundColor, icon } = req.body;
+router.post(
+  '/',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { name, color, backgroundColor, icon } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ error: 'Label name is required' });
+      if (!name) {
+        return res.status(400).json({ error: 'Label name is required' });
+      }
+
+      const label = await labelService.createLabel(userId, name, color, backgroundColor, icon);
+
+      logger.info('Label created via API', { userId, labelId: label._id.toString() });
+
+      res.status(201).json({
+        success: true,
+        label,
+      });
+    } catch (error) {
+      logger.error('Create label API error', { error: error.message, userId: req.user.id });
+      res.status(400).json({
+        error: 'Failed to create label',
+        message: error.message,
+      });
     }
-
-    const label = await labelService.createLabel(userId, name, color, backgroundColor, icon);
-
-    logger.info('Label created via API', { userId, labelId: label._id.toString() });
-
-    res.status(201).json({
-      success: true,
-      label,
-    });
-  } catch (error) {
-    logger.error('Create label API error', { error: error.message, userId: req.user.id });
-    res.status(400).json({
-      error: 'Failed to create label',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /api/v2/labels

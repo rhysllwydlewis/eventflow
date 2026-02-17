@@ -39,9 +39,7 @@ function initializeDependencies(deps) {
   logger = deps.logger;
   mongoDb = deps.mongoDb;
 
-  // Initialize service
-  const SearchService = require('../services/SearchService');
-  searchService = new SearchService(mongoDb);
+  // Service will be initialized lazily on first request
 }
 
 /**
@@ -66,8 +64,29 @@ function applyCsrfProtection(req, res, next) {
 
 /**
  * Middleware to ensure services are initialized
+ * Lazily initializes the service with database instance on first request
  */
-function ensureServices(req, res, next) {
+async function ensureServices(req, res, next) {
+  if (!searchService && mongoDb) {
+    try {
+      // Get database instance (not module) and initialize service
+      const SearchService = require('../services/SearchService');
+      const db = await mongoDb.getDb();
+      searchService = new SearchService(db);
+      if (logger) {
+        logger.info('Search service initialized');
+      }
+    } catch (error) {
+      if (logger) {
+        logger.error('Failed to initialize search service:', error);
+      }
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Failed to initialize search service',
+      });
+    }
+  }
+
   if (!searchService) {
     return res.status(503).json({
       error: 'Service unavailable',
@@ -96,7 +115,7 @@ function ensureServices(req, res, next) {
  * - is:unread has:attachment
  * - after:2025-01-01 before:2025-12-31
  */
-router.get("/", searchLimiter, applyAuthRequired, ensureServices, async (req, res) => {
+router.get('/', searchLimiter, applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { q: query, page = 1, pageSize = 25, sortBy = 'relevance' } = req.query;
