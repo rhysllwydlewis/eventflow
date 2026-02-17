@@ -807,8 +807,17 @@ class MessagingService {
     try {
       // Fetch messages to save their current state
       const messages = await this.messagesCollection
-        .find({ _id: { $in: messageIds.map(id => new ObjectId(id)) } })
+        .find({ 
+          _id: { $in: messageIds.map(id => new ObjectId(id)) },
+          threadId: threadId, // Ensure messages belong to the specified thread
+          deletedAt: null // Don't delete already deleted messages
+        })
         .toArray();
+
+      // Security check: ensure all requested messages were found and belong to thread
+      if (messages.length !== messageIds.length) {
+        throw new Error(`Some messages not found or don't belong to thread. Expected ${messageIds.length}, found ${messages.length}`);
+      }
 
       // Store previous state for undo
       const previousState = {
@@ -823,7 +832,11 @@ class MessagingService {
 
       // Soft delete the messages
       const result = await this.messagesCollection.updateMany(
-        { _id: { $in: messageIds.map(id => new ObjectId(id)) } },
+        { 
+          _id: { $in: messageIds.map(id => new ObjectId(id)) },
+          threadId: threadId, // Ensure messages belong to thread
+          deletedAt: null // Don't delete already deleted messages
+        },
         {
           $set: {
             deletedAt: now,
@@ -888,8 +901,13 @@ class MessagingService {
     const now = new Date();
 
     try {
+      // Security: Only update messages where user is a recipient
       const result = await this.messagesCollection.updateMany(
-        { _id: { $in: messageIds.map(id => new ObjectId(id)) } },
+        { 
+          _id: { $in: messageIds.map(id => new ObjectId(id)) },
+          recipientIds: userId, // User must be a recipient
+          deletedAt: null // Don't modify deleted messages
+        },
         isRead
           ? {
               $addToSet: {
@@ -947,7 +965,14 @@ class MessagingService {
 
     try {
       const result = await this.messagesCollection.findOneAndUpdate(
-        { _id: new ObjectId(messageId) },
+        { 
+          _id: new ObjectId(messageId),
+          $or: [
+            { senderId: userId }, // User is sender
+            { recipientIds: userId } // User is recipient
+          ],
+          deletedAt: null // Can't flag deleted messages
+        },
         {
           $set: {
             isStarred: isFlagged,
@@ -958,6 +983,10 @@ class MessagingService {
         },
         { returnDocument: 'after' }
       );
+
+      if (!result.value) {
+        throw new Error('Message not found or access denied');
+      }
 
       logger.info('Flag message', {
         userId,
@@ -992,7 +1021,14 @@ class MessagingService {
 
     try {
       const result = await this.messagesCollection.findOneAndUpdate(
-        { _id: new ObjectId(messageId) },
+        { 
+          _id: new ObjectId(messageId),
+          $or: [
+            { senderId: userId }, // User is sender
+            { recipientIds: userId } // User is recipient
+          ],
+          deletedAt: null // Can't archive deleted messages
+        },
         {
           $set: {
             isArchived: isArchive,
@@ -1004,6 +1040,10 @@ class MessagingService {
         },
         { returnDocument: 'after' }
       );
+
+      if (!result.value) {
+        throw new Error('Message not found or access denied');
+      }
 
       logger.info('Archive message', {
         userId,

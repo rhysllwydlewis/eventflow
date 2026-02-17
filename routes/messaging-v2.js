@@ -2518,6 +2518,7 @@ router.post(
   writeLimiter,
   applyAuthRequired,
   applyCsrfProtection,
+  ensureServices,
   async (req, res) => {
     try {
       const { messageIds, threadId, reason } = req.body;
@@ -2573,6 +2574,7 @@ router.post(
   writeLimiter,
   applyAuthRequired,
   applyCsrfProtection,
+  ensureServices,
   async (req, res) => {
     try {
       const { messageIds, isRead } = req.body;
@@ -2611,6 +2613,7 @@ router.post(
   writeLimiter,
   applyAuthRequired,
   applyCsrfProtection,
+  ensureServices,
   async (req, res) => {
     try {
       const { operationId } = req.params;
@@ -2645,7 +2648,7 @@ router.post(
  * Flag/unflag a message
  * POST /api/v2/messages/:id/flag
  */
-router.post('/:id/flag', writeLimiter, applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.post('/:id/flag', writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const { id } = req.params;
     const { isFlagged } = req.body;
@@ -2678,6 +2681,7 @@ router.post(
   writeLimiter,
   applyAuthRequired,
   applyCsrfProtection,
+  ensureServices,
   async (req, res) => {
     try {
       const { id } = req.params;
