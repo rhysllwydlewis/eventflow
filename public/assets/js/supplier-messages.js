@@ -73,23 +73,28 @@ function escapeHtml(text) {
 }
 
 // Format message preview with "You:" prefix for outbound messages
-function formatMessagePreview(messageText, lastMessageSenderId, currentUserId, maxLength = MESSAGE_PREVIEW_MAX_LENGTH) {
+function formatMessagePreview(
+  messageText,
+  lastMessageSenderId,
+  currentUserId,
+  maxLength = MESSAGE_PREVIEW_MAX_LENGTH
+) {
   if (!messageText || messageText === 'No messages yet') {
     return 'No messages yet';
   }
-  
+
   // Trim and clean the text
   const cleanText = messageText.trim();
-  
+
   // Add "You:" prefix if the current user sent the last message
   const prefix = lastMessageSenderId === currentUserId ? 'You: ' : '';
   const fullText = prefix + cleanText;
-  
+
   // Clamp to maxLength with ellipsis
   if (fullText.length > maxLength) {
-    return fullText.substring(0, maxLength) + '...';
+    return `${fullText.substring(0, maxLength)}...`;
   }
-  
+
   return fullText;
 }
 
@@ -159,13 +164,18 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
 
   filteredConversations.forEach(conversation => {
     const customerName = conversation.customerName || 'Customer';
-    
-    // Format preview with "You:" prefix if current user sent last message  
+
+    // Format preview with "You:" prefix if current user sent last message
     const lastMessageText = conversation.lastMessage || conversation.lastMessageText || '';
     const lastMessageSenderId = conversation.lastMessageSenderId || '';
     const currentUserId = currentUser?.id || '';
-    const lastMessage = formatMessagePreview(lastMessageText, lastMessageSenderId, currentUserId, MESSAGE_PREVIEW_MAX_LENGTH);
-    
+    const lastMessage = formatMessagePreview(
+      lastMessageText,
+      lastMessageSenderId,
+      currentUserId,
+      MESSAGE_PREVIEW_MAX_LENGTH
+    );
+
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
@@ -231,6 +241,17 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
 
 // Open conversation modal
 function openConversation(conversationId) {
+  // Validate conversationId
+  if (!conversationId) {
+    console.error('Cannot open conversation: conversationId is missing');
+    if (typeof EFToast !== 'undefined') {
+      EFToast.error('Unable to open conversation. Please try again.');
+    }
+    return;
+  }
+
+  console.log('Opening conversation:', conversationId);
+
   const modal = document.createElement('div');
   modal.className = 'modal-overlay modal-overlay--glass active';
   modal.innerHTML = `
@@ -276,26 +297,37 @@ function openConversation(conversationId) {
   const renderMessages = messages => {
     const container = document.getElementById('conversationMessages');
     if (!container) {
+      console.warn('conversationMessages container not found');
       return;
     }
 
     if (!messages || messages.length === 0) {
-      container.innerHTML = '<p class="small" style="text-align:center;color:#6b7280;">No messages yet. Start the conversation!</p>';
+      container.innerHTML =
+        '<p class="small" style="text-align:center;color:#6b7280;">No messages yet. Start the conversation!</p>';
       return;
     }
 
     let html = '<div class="messages-list" style="display:flex;flex-direction:column;gap:1rem;">';
 
     messages.forEach(message => {
-      const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
+      // Defensive handling for message data
+      if (!message) {
+        console.warn('Skipping null/undefined message');
+        return;
+      }
+
+      const timestamp = message.timestamp
+        ? messagingSystem.formatFullTimestamp(message.timestamp)
+        : '';
       const isFromSupplier = message.senderType === 'supplier';
       const bubbleClass = isFromSupplier ? 'message-bubble--sent' : 'message-bubble--received';
       const alignStyle = isFromSupplier ? 'margin-left:auto;' : 'margin-right:auto;';
+      const messageContent = message.message || message.content || '[No message content]';
 
       html += `
         <div class="message-bubble ${bubbleClass}" style="${alignStyle}">
           <div class="message-sender">${escapeHtml(message.senderName || 'Unknown')}</div>
-          <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(message.message)}</p>
+          <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(messageContent)}</p>
           <div class="message-time">${timestamp}</div>
         </div>
       `;
@@ -311,12 +343,31 @@ function openConversation(conversationId) {
   // Get current user and set up listener
   getCurrentUser().then(user => {
     if (!user) {
+      const container = document.getElementById('conversationMessages');
+      if (container) {
+        container.innerHTML =
+          '<p class="small" style="text-align:center;color:#ef4444;">Please sign in to view messages.</p>';
+      }
+      console.error('User not authenticated when opening conversation');
       return;
     }
     currentUser = user;
 
-    // Listen to messages
-    messagesUnsubscribe = messagingSystem.listenToMessages(conversationId, renderMessages);
+    // Listen to messages with error handling
+    try {
+      messagesUnsubscribe = messagingSystem.listenToMessages(conversationId, renderMessages);
+    } catch (error) {
+      console.error('Error setting up message listener:', error);
+      const container = document.getElementById('conversationMessages');
+      if (container) {
+        container.innerHTML =
+          '<p class="small" style="text-align:center;color:#ef4444;">Unable to load messages. Please try again.</p>';
+      }
+      if (typeof EFToast !== 'undefined') {
+        EFToast.error('Failed to load conversation');
+      }
+      return;
+    }
 
     // Set up typing indicator
     const typingIndicator = messagingManager.createTypingIndicator('#typingIndicatorContainer');
