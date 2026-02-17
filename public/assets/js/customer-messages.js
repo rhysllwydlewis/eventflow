@@ -396,6 +396,9 @@ function openConversation(conversationId) {
 
   document.body.appendChild(modal);
 
+  // Store the element that opened the modal for focus restoration
+  const previouslyFocusedElement = document.activeElement;
+
   // Load messages with real-time updates
   let messagesUnsubscribe = null;
   let currentUser = null;
@@ -419,6 +422,11 @@ function openConversation(conversationId) {
 
     // Remove modal from DOM
     modal.remove();
+
+    // Restore focus to the element that opened the modal
+    if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+      previouslyFocusedElement.focus();
+    }
   };
 
   // Attach close button handler with defensive check
@@ -438,6 +446,27 @@ function openConversation(conversationId) {
       closeModal();
     }
   });
+
+  // Close modal with Escape key
+  const handleEscapeKey = e => {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+      closeModal();
+    }
+  };
+  document.addEventListener('keydown', handleEscapeKey);
+
+  // Register cleanup for escape key listener
+  cleanupCallbacks.push(() => {
+    document.removeEventListener('keydown', handleEscapeKey);
+  });
+
+  // Set initial focus to message input for better UX
+  setTimeout(() => {
+    const messageInput = modal.querySelector('#messageInput');
+    if (messageInput) {
+      messageInput.focus();
+    }
+  }, 100);
 
   const renderMessages = messages => {
     try {
