@@ -477,9 +477,11 @@ function openConversation(conversationId) {
 
           const messageId = message.id || message._id || `msg-${index}`;
           const messageContent = extractMessageText(message);
+          const hasAttachments = message.attachments && message.attachments.length > 0;
 
-          if (!messageContent) {
-            console.warn(`Message ${messageId} has no content`, message);
+          // Skip if no content AND no attachments
+          if (!messageContent && !hasAttachments) {
+            console.warn(`Message ${messageId} has no content or attachments`, message);
             return;
           }
 
@@ -497,7 +499,42 @@ function openConversation(conversationId) {
           html += `
             <div class="message-bubble ${bubbleClass}" style="${alignStyle}" data-message-id="${messageId}">
               <div class="message-sender">${escapeHtml(senderName)}</div>
-              <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(messageContent)}</p>
+              ${messageContent ? `<p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(messageContent)}</p>` : ''}`;
+
+          // Render attachments if present
+          if (hasAttachments) {
+            html += '<div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem;">';
+            message.attachments.forEach((attachment, attIdx) => {
+              const isImage = attachment.type === 'image' || attachment.mimeType?.startsWith('image/');
+              const filename = escapeHtml(attachment.filename || 'attachment');
+              const url = attachment.url || '#';
+              const size = attachment.size ? `(${(attachment.size / 1024 / 1024).toFixed(1)}MB)` : '';
+
+              if (isImage) {
+                // Render image with preview
+                html += `
+                  <a href="${url}" target="_blank" rel="noopener noreferrer" style="max-width:300px;">
+                    <img src="${url}" alt="${filename}" style="max-width:100%;border-radius:4px;display:block;" loading="lazy" />
+                  </a>
+                `;
+              } else {
+                // Render document/file link
+                html += `
+                  <a href="${url}" target="_blank" rel="noopener noreferrer" download="${filename}" style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;background:#f3f4f6;border-radius:4px;text-decoration:none;color:#374151;font-size:0.875rem;">
+                    <span style="font-size:1.25rem;">📄</span>
+                    <div style="flex:1;overflow:hidden;">
+                      <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${filename}</div>
+                      ${size ? `<div style="font-size:0.75rem;color:#6b7280;">${size}</div>` : ''}
+                    </div>
+                    <span style="font-size:0.875rem;color:#6b7280;">⬇</span>
+                  </a>
+                `;
+              }
+            });
+            html += '</div>';
+          }
+
+          html += `
               <div class="message-time">${formattedTime}</div>
             </div>
           `;
@@ -788,9 +825,6 @@ function openConversation(conversationId) {
       // If there are attachments, use FormData
       if (selectedFiles.length > 0) {
         const formData = new FormData();
-        formData.append('senderId', currentUser.id);
-        formData.append('senderType', 'supplier');
-        formData.append('senderName', currentUser.name || currentUser.email);
 
         // Only append message if there is text content
         if (messageText) {
