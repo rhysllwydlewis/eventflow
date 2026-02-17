@@ -337,11 +337,21 @@
 <script src="/assets/js/toast-notifications.js"></script>
 <script type="module">
   // Import messaging system for real-time updates
-  import messagingSystem, { MessagingManager } from '/assets/js/messaging.js';
+  import messagingSystem, { 
+    MessagingManager, 
+    SelectionManager,
+    BulkOperationManager,
+    SortFilterManager 
+  } from '/assets/js/messaging.js';
   
   // Make available globally for inline script
   window.messagingSystem = messagingSystem;
   window.messagingManager = new MessagingManager();
+  
+  // Phase 1: Initialize managers
+  window.selectionManager = new SelectionManager();
+  window.bulkOperationManager = new BulkOperationManager();
+  window.sortFilterManager = new SortFilterManager();
 </script>
 
   <main id="main-content" class="messages-container">
@@ -592,6 +602,7 @@
         setupNewMessageHandler();
         setupSearchHandler();
         setupDateFilterHandler();
+        setupPhase1Handlers(); // Phase 1: Bulk operations setup
         loadThreads();
         setupRealtimeUpdates();
       }
@@ -721,6 +732,26 @@
             renderCurrentView();
           });
         }
+      }
+
+      // Phase 1: Setup bulk operations handlers
+      function setupPhase1Handlers() {
+        // Note: Phase 1 UI is present but requires custom event wiring
+        // The managers are initialized (selectionManager, bulkOperationManager, sortFilterManager)
+        // but the UI event handlers need to be wired up when the conversation view is implemented
+        
+        // Placeholder for future implementation:
+        // - Wire up bulk select checkboxes
+        // - Wire up bulk delete button
+        // - Wire up sort dropdown
+        // - Wire up filter sidebar
+        // - Wire up keyboard shortcuts
+        
+        console.log('Phase 1 managers initialized:', {
+          selectionManager: typeof window.selectionManager !== 'undefined',
+          bulkOperationManager: typeof window.bulkOperationManager !== 'undefined',
+          sortFilterManager: typeof window.sortFilterManager !== 'undefined'
+        });
       }
 
       function renderCurrentView() {
