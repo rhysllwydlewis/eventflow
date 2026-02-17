@@ -214,6 +214,11 @@ async function createIndexes(db) {
   await operationsCollection.createIndex({ createdAt: -1 });
   await operationsCollection.createIndex({ undoExpiresAt: 1 });
   await operationsCollection.createIndex({ isUndone: 1 });
+  // TTL index to auto-delete operations after 30 days
+  await operationsCollection.createIndex(
+    { createdAt: 1 },
+    { expireAfterSeconds: 2592000 } // 30 days
+  );
 
   // Message Folders indexes (Phase 1)
   await foldersCollection.createIndex({ userId: 1 });

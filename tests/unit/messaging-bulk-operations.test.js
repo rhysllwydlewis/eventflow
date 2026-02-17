@@ -91,7 +91,14 @@ describe('MessagingService - Bulk Operations', () => {
       expect(result.undoToken).toBeDefined();
       expect(result.undoExpiresAt).toBeDefined();
 
-      expect(mockMessagesCollection.find).toHaveBeenCalled();
+      // Verify security filters in query
+      expect(mockMessagesCollection.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _id: expect.any(Object),
+          threadId: threadId, // Security: Validate thread ownership
+          deletedAt: null, // Security: Don't delete already deleted messages
+        })
+      );
       expect(mockMessagesCollection.updateMany).toHaveBeenCalled();
       expect(mockOperationsCollection.insertOne).toHaveBeenCalled();
     });
@@ -128,6 +135,23 @@ describe('MessagingService - Bulk Operations', () => {
 
       await messagingService.bulkDeleteMessages(messageIds, userId, threadId);
     });
+
+    it('should reject deletion when message count mismatch (security check)', async () => {
+      const messageIds = [new ObjectId().toString(), new ObjectId().toString(), new ObjectId().toString()];
+      const userId = 'user123';
+      const threadId = 'thread456';
+
+      // Return fewer messages than requested (some don't belong to thread or user)
+      mockMessagesCollection.find.mockReturnValue({
+        toArray: jest.fn().mockResolvedValue([
+          { _id: new ObjectId(), isStarred: false },
+        ]),
+      });
+
+      await expect(
+        messagingService.bulkDeleteMessages(messageIds, userId, threadId)
+      ).rejects.toThrow("Some messages not found or don't belong to thread");
+    });
   });
 
   describe('bulkMarkRead', () => {
@@ -143,8 +167,13 @@ describe('MessagingService - Bulk Operations', () => {
 
       expect(result.success).toBe(true);
       expect(result.updatedCount).toBe(2);
+      // Verify security filters in query
       expect(mockMessagesCollection.updateMany).toHaveBeenCalledWith(
-        expect.any(Object),
+        expect.objectContaining({
+          _id: expect.any(Object),
+          recipientIds: userId, // Security: User must be recipient
+          deletedAt: null, // Security: Don't modify deleted messages
+        }),
         expect.objectContaining({
           $addToSet: expect.any(Object),
           $set: expect.objectContaining({
