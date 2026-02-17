@@ -63,6 +63,24 @@ const MessageSchema = {
   messageStatus: String, // 'new', 'waiting_response', 'resolved'
   lastActionedBy: String, // User ID who last performed action
   lastActionedAt: Date, // When last action was performed
+  // Phase 2: Folders and Labels
+  folderId: String, // Folder ID (per user)
+  labels: [String], // Array of label IDs
+  previousFolders: [
+    {
+      folderId: String,
+      movedAt: Date,
+      movedBy: String,
+    },
+  ],
+  previousLabels: [
+    {
+      labelId: String,
+      action: String, // 'added', 'removed'
+      actionAt: Date,
+      actionBy: String,
+    },
+  ],
   metadata: Object, // Additional metadata
   createdAt: Date,
   updatedAt: Date,
@@ -198,6 +216,10 @@ async function createIndexes(db) {
   await messagesCollection.createIndex({ isArchived: 1 });
   await messagesCollection.createIndex({ messageStatus: 1 });
   await messagesCollection.createIndex({ lastActionedAt: -1 });
+  // Phase 2 indexes - Folders and Labels
+  await messagesCollection.createIndex({ folderId: 1 });
+  await messagesCollection.createIndex({ labels: 1 });
+  await messagesCollection.createIndex({ folderId: 1, createdAt: -1 });
   // Text search index for message content
   await messagesCollection.createIndex({ content: 'text' }, { default_language: 'english' });
 
@@ -290,6 +312,11 @@ function createMessage(data) {
     messageStatus: data.messageStatus || MESSAGE_WORKFLOW_STATUS.NEW,
     lastActionedBy: null,
     lastActionedAt: null,
+    // Phase 2 fields
+    folderId: data.folderId || null,
+    labels: data.labels || [],
+    previousFolders: [],
+    previousLabels: [],
     metadata: data.metadata || {},
     createdAt: now,
     updatedAt: now,
