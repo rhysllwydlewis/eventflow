@@ -672,6 +672,8 @@ function openConversation(conversationId) {
       const validFiles = [];
       let totalSize = 0;
 
+      // Note: This replaces previous selection (standard file input behavior)
+      // Users can remove individual files from preview and reselect if needed
       // Validate each file and calculate total size
       for (const file of files) {
         if (file.size > MAX_FILE_SIZE) {
@@ -769,7 +771,11 @@ function openConversation(conversationId) {
         formData.append('senderId', currentUser.id);
         formData.append('senderType', 'supplier');
         formData.append('senderName', currentUser.name || currentUser.email);
-        formData.append('message', messageText);
+
+        // Only append message if there is text content
+        if (messageText) {
+          formData.append('message', messageText);
+        }
 
         selectedFiles.forEach(file => {
           formData.append('attachments', file);
@@ -782,7 +788,9 @@ function openConversation(conversationId) {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to send message');
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}`;
+          throw new Error(errorMessage);
         }
 
         selectedFiles = [];
