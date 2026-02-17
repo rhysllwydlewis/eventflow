@@ -139,10 +139,16 @@ async function storeAttachment(file) {
   const fs = require('fs').promises;
   const crypto = require('crypto');
   
-  // Generate unique filename
+  // Sanitize original filename to prevent path traversal and special chars
+  const sanitizedOriginalName = file.originalname
+    .replace(/[^a-zA-Z0-9._-]/g, '_')  // Replace special chars with underscore
+    .replace(/\.{2,}/g, '_')            // Replace multiple dots with underscore
+    .substring(0, 255);                 // Limit length
+  
+  // Generate unique filename for storage
   const hash = crypto.randomBytes(16).toString('hex');
   const timestamp = Date.now();
-  const ext = path.extname(file.originalname).toLowerCase();
+  const ext = path.extname(sanitizedOriginalName).toLowerCase();
   const filename = `${timestamp}-${hash}${ext}`;
   
   // Store in uploads/attachments directory
@@ -160,11 +166,11 @@ async function storeAttachment(file) {
   // Write file
   await fs.writeFile(filepath, file.buffer);
   
-  // Return attachment object
+  // Return attachment object with sanitized original filename
   return {
     type: file.mimetype.startsWith('image/') ? 'image' : 'document',
     url: `/uploads/attachments/${filename}`,
-    filename: file.originalname,
+    filename: sanitizedOriginalName || 'attachment',
     size: file.size,
     mimeType: file.mimetype,
     metadata: {},
