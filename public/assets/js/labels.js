@@ -772,8 +772,6 @@
   // ==========================================
 
   function init() {
-    console.log('Initializing EventFlow Labels');
-
     // Load labels
     loadLabels();
 

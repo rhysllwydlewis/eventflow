@@ -652,8 +652,6 @@
   // ==========================================
 
   function init() {
-    console.log('Initializing EventFlow Advanced Search');
-
     // Load operators
     loadOperators();
 

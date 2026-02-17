@@ -671,8 +671,6 @@
   // ==========================================
 
   function init() {
-    console.log('Initializing EventFlow Folders');
-
     // Load folders
     loadFolders();
 

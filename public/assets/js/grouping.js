@@ -612,8 +612,6 @@
   // ==========================================
 
   function init() {
-    console.log('Initializing EventFlow Grouping');
-
     // Render grouping controls
     renderGroupingControls();
 
