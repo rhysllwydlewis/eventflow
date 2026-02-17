@@ -743,7 +743,9 @@ class MessagingService {
           $set: {
             lastMessageId: message._id.toString(),
             lastMessageAt: message.createdAt,
-            lastMessageText: message.content ? message.content.substring(0, MESSAGE_PREVIEW_MAX_LENGTH) : '',
+            lastMessageText: message.content
+              ? message.content.substring(0, MESSAGE_PREVIEW_MAX_LENGTH)
+              : '',
             lastMessageSenderId: message.senderId,
             unreadCount,
             updatedAt: new Date(),
@@ -784,6 +786,420 @@ class MessagingService {
         userId,
         error: error.message,
       });
+    }
+  }
+
+  /**
+   * Bulk delete messages (Phase 1)
+   * @param {Array<string>} messageIds - Array of message IDs to delete
+   * @param {string} userId - User performing the deletion
+   * @param {string} threadId - Thread ID for context
+   * @param {string} reason - Optional reason for deletion
+   * @returns {Promise<Object>} Operation result with undo information
+   */
+  async bulkDeleteMessages(messageIds, userId, threadId, reason = '') {
+    const crypto = require('crypto');
+    const operationId = crypto.randomUUID();
+    const undoToken = crypto.randomBytes(32).toString('hex');
+    const now = new Date();
+    const undoExpiresAt = new Date(now.getTime() + 30000); // 30 seconds
+
+    try {
+      // Fetch messages to save their current state
+      const messages = await this.messagesCollection
+        .find({ _id: { $in: messageIds.map(id => new ObjectId(id)) } })
+        .toArray();
+
+      // Store previous state for undo
+      const previousState = {
+        messages: messages.map(msg => ({
+          _id: msg._id,
+          isStarred: msg.isStarred,
+          isArchived: msg.isArchived,
+          messageStatus: msg.messageStatus,
+          deletedAt: msg.deletedAt,
+        })),
+      };
+
+      // Soft delete the messages
+      const result = await this.messagesCollection.updateMany(
+        { _id: { $in: messageIds.map(id => new ObjectId(id)) } },
+        {
+          $set: {
+            deletedAt: now,
+            lastActionedBy: userId,
+            lastActionedAt: now,
+            updatedAt: now,
+          },
+        }
+      );
+
+      // Store operation for undo
+      const { COLLECTIONS, OPERATION_TYPES } = require('../models/Message');
+      const operationsCollection = this.db.collection(COLLECTIONS.MESSAGE_OPERATIONS);
+      await operationsCollection.insertOne({
+        operationId,
+        userId,
+        operationType: OPERATION_TYPES.DELETE,
+        messageIds,
+        threadId,
+        previousState,
+        action: 'Bulk delete',
+        reason,
+        createdAt: now,
+        undoExpiresAt,
+        undoToken,
+        isUndone: false,
+        undoneAt: null,
+      });
+
+      logger.info('Bulk delete messages', {
+        userId,
+        threadId,
+        messageCount: result.modifiedCount,
+        operationId,
+      });
+
+      return {
+        success: true,
+        deletedCount: result.modifiedCount,
+        operationId,
+        undoToken,
+        undoExpiresAt,
+      };
+    } catch (error) {
+      logger.error('Error bulk deleting messages', {
+        userId,
+        messageIds,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk mark messages as read/unread (Phase 1)
+   * @param {Array<string>} messageIds - Array of message IDs
+   * @param {string} userId - User performing the action
+   * @param {boolean} isRead - Mark as read (true) or unread (false)
+   * @returns {Promise<Object>} Operation result
+   */
+  async bulkMarkRead(messageIds, userId, isRead) {
+    const now = new Date();
+
+    try {
+      const result = await this.messagesCollection.updateMany(
+        { _id: { $in: messageIds.map(id => new ObjectId(id)) } },
+        isRead
+          ? {
+              $addToSet: {
+                readBy: { userId, readAt: now },
+              },
+              $set: {
+                status: 'read',
+                lastActionedBy: userId,
+                lastActionedAt: now,
+                updatedAt: now,
+              },
+            }
+          : {
+              $pull: {
+                readBy: { userId },
+              },
+              $set: {
+                status: 'delivered',
+                lastActionedBy: userId,
+                lastActionedAt: now,
+                updatedAt: now,
+              },
+            }
+      );
+
+      logger.info('Bulk mark read', {
+        userId,
+        messageCount: result.modifiedCount,
+        isRead,
+      });
+
+      return {
+        success: true,
+        updatedCount: result.modifiedCount,
+      };
+    } catch (error) {
+      logger.error('Error bulk marking messages', {
+        userId,
+        messageIds,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Flag/unflag a message (Phase 1)
+   * @param {string} messageId - Message ID
+   * @param {string} userId - User performing the action
+   * @param {boolean} isFlagged - Flag status
+   * @returns {Promise<Object>} Updated message
+   */
+  async flagMessage(messageId, userId, isFlagged) {
+    const now = new Date();
+
+    try {
+      const result = await this.messagesCollection.findOneAndUpdate(
+        { _id: new ObjectId(messageId) },
+        {
+          $set: {
+            isStarred: isFlagged,
+            lastActionedBy: userId,
+            lastActionedAt: now,
+            updatedAt: now,
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Flag message', {
+        userId,
+        messageId,
+        isFlagged,
+      });
+
+      return {
+        success: true,
+        message: result.value,
+      };
+    } catch (error) {
+      logger.error('Error flagging message', {
+        userId,
+        messageId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Archive/restore a message (Phase 1)
+   * @param {string} messageId - Message ID
+   * @param {string} userId - User performing the action
+   * @param {string} action - 'archive' or 'restore'
+   * @returns {Promise<Object>} Updated message
+   */
+  async archiveMessage(messageId, userId, action) {
+    const now = new Date();
+    const isArchive = action === 'archive';
+
+    try {
+      const result = await this.messagesCollection.findOneAndUpdate(
+        { _id: new ObjectId(messageId) },
+        {
+          $set: {
+            isArchived: isArchive,
+            archivedAt: isArchive ? now : null,
+            lastActionedBy: userId,
+            lastActionedAt: now,
+            updatedAt: now,
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Archive message', {
+        userId,
+        messageId,
+        action,
+      });
+
+      return {
+        success: true,
+        message: result.value,
+      };
+    } catch (error) {
+      logger.error('Error archiving message', {
+        userId,
+        messageId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Undo an operation (Phase 1)
+   * @param {string} operationId - Operation ID to undo
+   * @param {string} undoToken - Token for verification
+   * @param {string} userId - User requesting undo
+   * @returns {Promise<Object>} Undo result
+   */
+  async undoOperation(operationId, undoToken, userId) {
+    const now = new Date();
+
+    try {
+      const { COLLECTIONS } = require('../models/Message');
+      const operationsCollection = this.db.collection(COLLECTIONS.MESSAGE_OPERATIONS);
+
+      // Find the operation
+      const operation = await operationsCollection.findOne({
+        operationId,
+        userId,
+        undoToken,
+        isUndone: false,
+      });
+
+      if (!operation) {
+        return {
+          success: false,
+          error: 'Operation not found or already undone',
+        };
+      }
+
+      // Check if undo window has expired
+      if (new Date() > operation.undoExpiresAt) {
+        return {
+          success: false,
+          error: 'Undo window has expired',
+        };
+      }
+
+      // Restore messages to previous state
+      const restorePromises = operation.previousState.messages.map(msg =>
+        this.messagesCollection.updateOne(
+          { _id: new ObjectId(msg._id) },
+          {
+            $set: {
+              isStarred: msg.isStarred,
+              isArchived: msg.isArchived,
+              messageStatus: msg.messageStatus,
+              deletedAt: msg.deletedAt,
+              lastActionedBy: userId,
+              lastActionedAt: now,
+              updatedAt: now,
+            },
+          }
+        )
+      );
+
+      await Promise.all(restorePromises);
+
+      // Mark operation as undone
+      await operationsCollection.updateOne(
+        { operationId },
+        {
+          $set: {
+            isUndone: true,
+            undoneAt: now,
+          },
+        }
+      );
+
+      logger.info('Undo operation', {
+        userId,
+        operationId,
+        restoredCount: operation.messageIds.length,
+      });
+
+      return {
+        success: true,
+        restoredCount: operation.messageIds.length,
+      };
+    } catch (error) {
+      logger.error('Error undoing operation', {
+        userId,
+        operationId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get messages with sorting and filtering (Phase 1)
+   * @param {string} threadId - Thread ID
+   * @param {Object} options - Query options
+   * @returns {Promise<Array>} Filtered and sorted messages
+   */
+  async getMessagesWithFilters(threadId, options = {}) {
+    const {
+      sortBy = 'date-desc',
+      filterBy = 'all',
+      dateFrom = null,
+      dateTo = null,
+      hasAttachments = null,
+      status = null,
+      page = 1,
+      pageSize = 50,
+    } = options;
+
+    try {
+      // Build query
+      const query = { threadId, deletedAt: null };
+
+      // Apply filters
+      if (filterBy === 'read') {
+        query['readBy.userId'] = { $exists: true };
+      } else if (filterBy === 'unread') {
+        query['readBy.userId'] = { $exists: false };
+      } else if (filterBy === 'flagged') {
+        query.isStarred = true;
+      } else if (filterBy === 'archived') {
+        query.isArchived = true;
+      }
+
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) {
+          query.createdAt.$gte = new Date(dateFrom);
+        }
+        if (dateTo) {
+          query.createdAt.$lte = new Date(dateTo);
+        }
+      }
+
+      if (hasAttachments !== null) {
+        query['attachments.0'] = hasAttachments ? { $exists: true } : { $exists: false };
+      }
+
+      if (status) {
+        query.messageStatus = status;
+      }
+
+      // Build sort
+      let sort = {};
+      switch (sortBy) {
+        case 'date-asc':
+          sort = { createdAt: 1 };
+          break;
+        case 'date-desc':
+        default:
+          sort = { createdAt: -1 };
+          break;
+      }
+
+      // Execute query with pagination
+      const skip = (page - 1) * pageSize;
+      const messages = await this.messagesCollection
+        .find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(pageSize)
+        .toArray();
+
+      const total = await this.messagesCollection.countDocuments(query);
+
+      return {
+        messages,
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      logger.error('Error getting messages with filters', {
+        threadId,
+        options,
+        error: error.message,
+      });
+      throw error;
     }
   }
 }
