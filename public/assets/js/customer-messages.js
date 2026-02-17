@@ -460,7 +460,7 @@ function openConversation(conversationId) {
           renderedCount++;
         } catch (msgError) {
           console.warn(`Error rendering message ${index}:`, msgError, message);
-          // Continue with next message instead of breaking
+          // Continue with next message - individual errors won't stop rendering
         }
       });
 
