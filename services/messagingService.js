@@ -804,14 +804,23 @@ class MessagingService {
     const now = new Date();
     const undoExpiresAt = new Date(now.getTime() + 30000); // 30 seconds
 
+    // Start a MongoDB session for transaction support
+    const session = this.db.client.startSession();
+
     try {
+      // Start transaction
+      await session.startTransaction();
+
       // Fetch messages to save their current state
       const messages = await this.messagesCollection
-        .find({ 
-          _id: { $in: messageIds.map(id => new ObjectId(id)) },
-          threadId: threadId, // Ensure messages belong to the specified thread
-          deletedAt: null // Don't delete already deleted messages
-        })
+        .find(
+          { 
+            _id: { $in: messageIds.map(id => new ObjectId(id)) },
+            threadId: threadId, // Ensure messages belong to the specified thread
+            deletedAt: null // Don't delete already deleted messages
+          },
+          { session }
+        )
         .toArray();
 
       // Security check: ensure all requested messages were found and belong to thread
@@ -844,27 +853,34 @@ class MessagingService {
             lastActionedAt: now,
             updatedAt: now,
           },
-        }
+        },
+        { session }
       );
 
       // Store operation for undo
       const { COLLECTIONS, OPERATION_TYPES } = require('../models/Message');
       const operationsCollection = this.db.collection(COLLECTIONS.MESSAGE_OPERATIONS);
-      await operationsCollection.insertOne({
-        operationId,
-        userId,
-        operationType: OPERATION_TYPES.DELETE,
-        messageIds,
-        threadId,
-        previousState,
-        action: 'Bulk delete',
-        reason,
-        createdAt: now,
-        undoExpiresAt,
-        undoToken,
-        isUndone: false,
-        undoneAt: null,
-      });
+      await operationsCollection.insertOne(
+        {
+          operationId,
+          userId,
+          operationType: OPERATION_TYPES.DELETE,
+          messageIds,
+          threadId,
+          previousState,
+          action: 'Bulk delete',
+          reason,
+          createdAt: now,
+          undoExpiresAt,
+          undoToken,
+          isUndone: false,
+          undoneAt: null,
+        },
+        { session }
+      );
+
+      // Commit transaction
+      await session.commitTransaction();
 
       logger.info('Bulk delete messages', {
         userId,
@@ -881,12 +897,18 @@ class MessagingService {
         undoExpiresAt,
       };
     } catch (error) {
+      // Rollback transaction on error
+      await session.abortTransaction();
+      
       logger.error('Error bulk deleting messages', {
         userId,
         messageIds,
         error: error.message,
       });
       throw error;
+    } finally {
+      // Always end the session
+      await session.endSession();
     }
   }
 
@@ -899,8 +921,14 @@ class MessagingService {
    */
   async bulkMarkRead(messageIds, userId, isRead) {
     const now = new Date();
+    
+    // Start a MongoDB session for transaction support
+    const session = this.db.client.startSession();
 
     try {
+      // Start transaction
+      await session.startTransaction();
+
       // Security: Only update messages where user is a recipient
       const result = await this.messagesCollection.updateMany(
         { 
@@ -930,8 +958,12 @@ class MessagingService {
                 lastActionedAt: now,
                 updatedAt: now,
               },
-            }
+            },
+        { session }
       );
+
+      // Commit transaction
+      await session.commitTransaction();
 
       logger.info('Bulk mark read', {
         userId,
@@ -944,12 +976,18 @@ class MessagingService {
         updatedCount: result.modifiedCount,
       };
     } catch (error) {
+      // Rollback transaction on error
+      await session.abortTransaction();
+      
       logger.error('Error bulk marking messages', {
         userId,
         messageIds,
         error: error.message,
       });
       throw error;
+    } finally {
+      // Always end the session
+      await session.endSession();
     }
   }
 
