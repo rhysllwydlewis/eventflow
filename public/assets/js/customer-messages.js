@@ -194,6 +194,7 @@ function renderConversations(conversations, currentUser) {
     const isUnread = unreadCount > 0;
 
     // Generate initials for avatar (defensive with null handling)
+    // First fallback handles null/undefined, final fallback handles empty result after processing
     const initials =
       (displayName || 'U')
         .split(' ')
