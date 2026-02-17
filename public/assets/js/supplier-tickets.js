@@ -4,32 +4,16 @@
  */
 
 import ticketingSystem from './ticketing.js?v=18.3.0';
+import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
+import {
+  getCurrentUser,
+  escapeHtml,
+  showToast,
+  createModalCloseHandler,
+  setupModalCloseHandlers,
+} from './utils/common-helpers.js';
 
 let ticketsUnsubscribe = null;
-
-// Get current user
-async function getCurrentUser() {
-  try {
-    const response = await fetch('/api/v1/auth/me', {
-      credentials: 'include',
-    });
-    if (!response.ok) {
-      return null;
-    }
-    const data = await response.json();
-    return data.user || null;
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
-  }
-}
-
-// Escape HTML
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text || '';
-  return div.innerHTML;
-}
 
 // Render tickets
 function renderTickets(tickets) {
@@ -39,14 +23,28 @@ function renderTickets(tickets) {
   }
 
   if (!tickets || tickets.length === 0) {
-    container.innerHTML =
-      '<p class="small">No support tickets yet. Create one if you need help!</p>';
+    showEmptyState(container, {
+      icon: '🎫',
+      title: 'No support tickets yet',
+      description: 'Create one if you need help!',
+    });
     return;
   }
 
   let html = '<div class="ticket-list">';
 
   tickets.forEach(ticket => {
+    // Defensive checks for ticket data
+    if (!ticket || typeof ticket !== 'object') {
+      console.warn('Skipping invalid ticket:', ticket);
+      return;
+    }
+
+    if (!ticket.id) {
+      console.warn('Skipping ticket without ID:', ticket);
+      return;
+    }
+
     const status = typeof ticket?.status === 'string' ? ticket.status : 'open';
     const priority = typeof ticket?.priority === 'string' ? ticket.priority : 'medium';
     const message = typeof ticket?.message === 'string' ? ticket.message : '';
@@ -58,7 +56,7 @@ function renderTickets(tickets) {
     html += `
       <div class="ticket-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;" data-ticket-id="${ticket.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <strong>${escapeHtml(ticket.subject)}</strong>
+          <strong>${escapeHtml(ticket.subject || 'No Subject')}</strong>
           <div style="display:flex;gap:0.5rem;">
             <span class="badge ${statusClass}">${status.replace('_', ' ')}</span>
             <span class="badge ${priorityClass}">${priority}</span>
@@ -124,72 +122,75 @@ function showCreateTicketModal() {
 
   document.body.appendChild(modal);
 
-  // Close handlers
-  const closeModal = () => {
-    modal.remove();
-  };
+  // Store the element that opened the modal for focus restoration
+  const previouslyFocusedElement = document.activeElement;
+  const cleanupCallbacks = [];
 
-  modal.querySelector('.modal-close').addEventListener('click', closeModal);
-  modal.querySelector('.modal-close-btn').addEventListener('click', closeModal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) {
-      closeModal();
-    }
-  });
+  // Close handler with cleanup support
+  const closeModal = createModalCloseHandler(modal, cleanupCallbacks, previouslyFocusedElement);
+
+  // Setup all close handlers (button, overlay, Escape key)
+  setupModalCloseHandlers(modal, closeModal, cleanupCallbacks);
+
+  // Additional close button for cancel
+  const cancelBtn = modal.querySelector('.modal-close-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', closeModal);
+  }
 
   // Form submit
-  modal.querySelector('#createTicketForm').addEventListener('submit', async e => {
-    e.preventDefault();
+  const form = modal.querySelector('#createTicketForm');
+  if (form) {
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
 
-    const user = await getCurrentUser();
-    if (!user) {
-      if (typeof Toast !== 'undefined') {
-        Toast.error('Please sign in to create a ticket');
+      const user = await getCurrentUser();
+      if (!user) {
+        showToast('Please sign in to create a ticket', 'error');
+        return;
       }
-      return;
+
+      const ticketData = {
+        senderId: user.id,
+        senderType: 'supplier',
+        senderName: user.name || user.email,
+        senderEmail: user.email,
+        subject: modal.querySelector('#ticketSubject')?.value || '',
+        message: modal.querySelector('#ticketMessage')?.value || '',
+        priority: modal.querySelector('#ticketPriority')?.value || 'medium',
+      };
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Submitting...';
+        }
+
+        await ticketingSystem.createTicket(ticketData);
+
+        showToast('Ticket created successfully', 'success');
+        closeModal();
+      } catch (error) {
+        console.error('Error creating ticket:', error);
+        showToast(`Failed to create ticket: ${error.message}`, 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Ticket';
+        }
+      }
+    });
+  }
+
+  // Set initial focus to subject input for better UX
+  setTimeout(() => {
+    const subjectInput = modal.querySelector('#ticketSubject');
+    if (subjectInput) {
+      subjectInput.focus();
     }
-
-    const ticketData = {
-      senderId: user.id,
-      senderType: 'supplier',
-      senderName: user.name || user.email,
-      senderEmail: user.email,
-      subject: document.getElementById('ticketSubject').value,
-      message: document.getElementById('ticketMessage').value,
-      priority: document.getElementById('ticketPriority').value,
-    };
-
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-
-    try {
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Submitting...';
-      }
-
-      await ticketingSystem.createTicket(ticketData);
-
-      if (typeof Toast !== 'undefined') {
-        Toast.success('Ticket created successfully');
-      } else {
-        alert('Ticket created successfully');
-      }
-
-      closeModal();
-    } catch (error) {
-      console.error('Error creating ticket:', error);
-      if (typeof Toast !== 'undefined') {
-        Toast.error(`Failed to create ticket: ${error.message}`);
-      } else {
-        alert(`Failed to create ticket: ${error.message}`);
-      }
-    } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Ticket';
-      }
-    }
-  });
+  }, 100);
 }
 
 // View ticket modal
