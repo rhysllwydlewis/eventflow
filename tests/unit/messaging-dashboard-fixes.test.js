@@ -122,6 +122,41 @@ describe('Messaging Dashboard Fixes', () => {
       'utf8'
     );
 
+    it('imports MessagingManager from messaging.js', () => {
+      // Should import MessagingManager to avoid "messagingManager is not defined" error
+      expect(customerMessagesJs).toContain('import messagingSystem, { MessagingManager }');
+      expect(customerMessagesJs).toContain('const messagingManager = new MessagingManager()');
+    });
+
+    it('validates conversationId in openConversation', () => {
+      // Should validate conversationId before opening conversation modal
+      expect(customerMessagesJs).toContain('if (!conversationId)');
+      expect(customerMessagesJs).toContain(
+        "console.error('Cannot open conversation: conversationId is missing')"
+      );
+    });
+
+    it('handles authentication errors in openConversation', () => {
+      // Should show user-friendly error when not authenticated
+      expect(customerMessagesJs).toContain('if (!user)');
+      expect(customerMessagesJs).toContain('Please sign in to view messages');
+    });
+
+    it('handles message loading errors with try-catch', () => {
+      // Should wrap listenToMessages in try-catch for error handling
+      expect(customerMessagesJs).toContain('try {');
+      expect(customerMessagesJs).toContain(
+        'messagesUnsubscribe = messagingSystem.listenToMessages'
+      );
+      expect(customerMessagesJs).toContain('} catch (error)');
+      expect(customerMessagesJs).toContain('Unable to load messages');
+    });
+
+    it('handles missing message content defensively', () => {
+      // Should handle both message and content fields
+      expect(customerMessagesJs).toContain('message.message || message.content');
+    });
+
     it('sends message with sendMessage method from messaging system', () => {
       // Should use messagingSystem.sendMessage which now handles transformation
       expect(customerMessagesJs).toContain('await messagingSystem.sendMessage(conversationId,');
@@ -139,6 +174,35 @@ describe('Messaging Dashboard Fixes', () => {
       path.join(process.cwd(), 'public/assets/js/supplier-messages.js'),
       'utf8'
     );
+
+    it('validates conversationId in openConversation', () => {
+      // Should validate conversationId before opening conversation modal
+      expect(supplierMessagesJs).toContain('if (!conversationId)');
+      expect(supplierMessagesJs).toContain(
+        "console.error('Cannot open conversation: conversationId is missing')"
+      );
+    });
+
+    it('handles authentication errors in openConversation', () => {
+      // Should show user-friendly error when not authenticated
+      expect(supplierMessagesJs).toContain('if (!user)');
+      expect(supplierMessagesJs).toContain('Please sign in to view messages');
+    });
+
+    it('handles message loading errors with try-catch', () => {
+      // Should wrap listenToMessages in try-catch for error handling
+      expect(supplierMessagesJs).toContain('try {');
+      expect(supplierMessagesJs).toContain(
+        'messagesUnsubscribe = messagingSystem.listenToMessages'
+      );
+      expect(supplierMessagesJs).toContain('} catch (error)');
+      expect(supplierMessagesJs).toContain('Unable to load messages');
+    });
+
+    it('handles missing message content defensively', () => {
+      // Should handle both message and content fields
+      expect(supplierMessagesJs).toContain('message.message || message.content');
+    });
 
     it('sends message with sendMessage method from messaging system', () => {
       // Should use messagingSystem.sendMessage which now handles transformation
