@@ -271,7 +271,7 @@ GET    /api/v2/search/advanced/operators
 ### Complete Documentation Delivered
 
 1. **API Documentation (11,000 words)**
-   - All 32 endpoints documented
+   - All 36 endpoints documented
    - Request/response examples
    - Error handling
    - Rate limiting info

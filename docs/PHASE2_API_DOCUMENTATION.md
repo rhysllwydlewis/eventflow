@@ -260,6 +260,117 @@ Initialize default system folders for user (Inbox, Sent, Drafts, Starred, Archiv
 }
 ```
 
+### Create Folder Rule
+
+**POST** `/api/v2/folders/:id/rules`
+
+Create an auto-filing rule for a folder.
+
+**Request Body:**
+
+```json
+{
+  "name": "Auto-file work emails",
+  "condition": {
+    "from": "@company.com"
+  },
+  "action": "move",
+  "isActive": true
+}
+```
+
+**Response:** `201 Created`
+
+```json
+{
+  "success": true,
+  "rule": {
+    "_id": "507f1f77bcf86cd799439022",
+    "name": "Auto-file work emails",
+    "isActive": true
+  }
+}
+```
+
+### Update Folder Rule
+
+**PUT** `/api/v2/folders/:id/rules/:ruleId`
+
+Update a folder rule.
+
+**Request Body:**
+
+```json
+{
+  "name": "Updated rule name",
+  "isActive": false
+}
+```
+
+**Response:** `200 OK`
+
+### Delete Folder Rule
+
+**DELETE** `/api/v2/folders/:id/rules/:ruleId`
+
+Delete a folder rule.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Rule deleted successfully"
+}
+```
+
+### Test Folder Rule
+
+**POST** `/api/v2/folders/:id/rules/:ruleId/test`
+
+Test a rule to see how many messages it would match.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "result": {
+    "ruleId": "507f1f77bcf86cd799439022",
+    "ruleName": "Auto-file work emails",
+    "matchCount": 15,
+    "condition": { "from": "@company.com" }
+  }
+}
+```
+
+### Reorder Folders
+
+**POST** `/api/v2/folders/reorder`
+
+Reorder multiple folders at once.
+
+**Request Body:**
+
+```json
+{
+  "folderOrders": [
+    { "folderId": "507f1f77bcf86cd799439011", "order": 1 },
+    { "folderId": "507f1f77bcf86cd799439012", "order": 2 }
+  ]
+}
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Folders reordered",
+  "count": 2
+}
+```
+
 ---
 
 ## Label API
@@ -485,6 +596,93 @@ Get label usage statistics.
 Initialize default labels for user.
 
 **Response:** `200 OK`
+
+### Create Label Auto-Rule
+
+**POST** `/api/v2/labels/:id/auto-rules`
+
+Create an auto-labeling rule for a label.
+
+**Request Body:**
+
+```json
+{
+  "name": "Auto-label urgent emails",
+  "condition": {
+    "subject": "URGENT"
+  },
+  "confidence": 0.9,
+  "isActive": true
+}
+```
+
+**Response:** `201 Created`
+
+```json
+{
+  "success": true,
+  "rule": {
+    "_id": "507f1f77bcf86cd799439025",
+    "name": "Auto-label urgent emails",
+    "isActive": true,
+    "confidence": 0.9
+  }
+}
+```
+
+### Update Label Auto-Rule
+
+**PUT** `/api/v2/labels/:id/auto-rules/:ruleId`
+
+Update a label auto-rule.
+
+**Request Body:**
+
+```json
+{
+  "name": "Updated rule name",
+  "confidence": 0.95,
+  "isActive": false
+}
+```
+
+**Response:** `200 OK`
+
+### Delete Label Auto-Rule
+
+**DELETE** `/api/v2/labels/:id/auto-rules/:ruleId`
+
+Delete a label auto-rule.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Auto-rule deleted successfully"
+}
+```
+
+### Test Label Auto-Rule
+
+**POST** `/api/v2/labels/:id/auto-rules/:ruleId/test`
+
+Test an auto-rule to see how many messages it would match.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "result": {
+    "ruleId": "507f1f77bcf86cd799439025",
+    "ruleName": "Auto-label urgent emails",
+    "matchCount": 8,
+    "condition": { "subject": "URGENT" },
+    "confidence": 0.9
+  }
+}
+```
 
 ---
 
