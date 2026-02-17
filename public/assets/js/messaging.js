@@ -718,7 +718,7 @@ class MessagingSystem {
     // Use relative time for recent messages, full date for older
     const now = new Date();
     const diff = now - date;
-    
+
     // Handle future dates (clock skew or incorrect system time)
     if (diff < 0) {
       return date.toLocaleDateString('en-GB', {
@@ -728,7 +728,7 @@ class MessagingSystem {
         minute: '2-digit',
       });
     }
-    
+
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -1254,9 +1254,381 @@ class MessagingManager {
   }
 }
 
+// ============================================
+// PHASE 1: BULK OPERATIONS & MANAGEMENT
+// ============================================
+
+/**
+ * SelectionManager - Handles message selection state
+ */
+class SelectionManager {
+  constructor() {
+    this.selectedItems = new Set();
+    this.isSelectingAll = false;
+  }
+
+  toggle(itemId) {
+    if (this.selectedItems.has(itemId)) {
+      this.selectedItems.delete(itemId);
+    } else {
+      this.selectedItems.add(itemId);
+    }
+    return this.selectedItems.has(itemId);
+  }
+
+  selectAll(items) {
+    this.selectedItems.clear();
+    items.forEach(item => this.selectedItems.add(item));
+    this.isSelectingAll = true;
+  }
+
+  deselectAll() {
+    this.selectedItems.clear();
+    this.isSelectingAll = false;
+  }
+
+  getSelectedCount() {
+    return this.selectedItems.size;
+  }
+
+  getSelectedIds() {
+    return Array.from(this.selectedItems);
+  }
+
+  isSelected(itemId) {
+    return this.selectedItems.has(itemId);
+  }
+
+  hasSelection() {
+    return this.selectedItems.size > 0;
+  }
+}
+
+/**
+ * BulkOperationManager - Handles bulk operations on messages
+ */
+class BulkOperationManager {
+  constructor() {
+    this.undoQueue = [];
+  }
+
+  async bulkDelete(messageIds, threadId, reason = '') {
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const response = await fetch('/api/v2/messages/bulk-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ messageIds, threadId, reason }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete messages');
+      }
+
+      // Store undo information
+      this.undoQueue.push({
+        operationId: result.operationId,
+        undoToken: result.undoToken,
+        type: 'delete',
+        count: result.deletedCount,
+        expiresAt: Date.now() + 30000, // 30 seconds
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      throw error;
+    }
+  }
+
+  async bulkMarkRead(messageIds, isRead) {
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const response = await fetch('/api/v2/messages/bulk-mark-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ messageIds, isRead }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to mark messages');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Bulk mark read error:', error);
+      throw error;
+    }
+  }
+
+  async flagMessage(messageId, isFlagged) {
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const response = await fetch(`/api/v2/messages/${messageId}/flag`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ isFlagged }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to flag message');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Flag message error:', error);
+      throw error;
+    }
+  }
+
+  async archiveMessage(messageId, action) {
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const response = await fetch(`/api/v2/messages/${messageId}/archive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to archive message');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Archive message error:', error);
+      throw error;
+    }
+  }
+
+  async undo(operationId, undoToken) {
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const response = await fetch(`/api/v2/messages/operations/${operationId}/undo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ undoToken }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to undo operation');
+      }
+
+      // Remove from undo queue
+      this.undoQueue = this.undoQueue.filter(op => op.operationId !== operationId);
+
+      return result;
+    } catch (error) {
+      console.error('Undo error:', error);
+      throw error;
+    }
+  }
+
+  getUndoQueue() {
+    // Filter expired operations
+    const now = Date.now();
+    this.undoQueue = this.undoQueue.filter(op => op.expiresAt > now);
+    return this.undoQueue;
+  }
+
+  getLastOperation() {
+    const queue = this.getUndoQueue();
+    return queue.length > 0 ? queue[queue.length - 1] : null;
+  }
+}
+
+/**
+ * SortFilterManager - Handles sorting and filtering of messages
+ */
+class SortFilterManager {
+  constructor() {
+    this.sortMethod = 'date-desc';
+    this.filters = {
+      readStatus: 'all',
+      hasAttachments: null,
+      flagged: false,
+      archived: false,
+      dateFrom: null,
+      dateTo: null,
+      status: null,
+    };
+    this.loadPreferences();
+  }
+
+  setSortMethod(method) {
+    this.sortMethod = method;
+    this.savePreferences();
+  }
+
+  getSortMethod() {
+    return this.sortMethod;
+  }
+
+  setFilter(filterName, value) {
+    if (this.filters.hasOwnProperty(filterName)) {
+      this.filters[filterName] = value;
+      this.savePreferences();
+    }
+  }
+
+  getFilter(filterName) {
+    return this.filters[filterName];
+  }
+
+  getAllFilters() {
+    return { ...this.filters };
+  }
+
+  clearFilters() {
+    this.filters = {
+      readStatus: 'all',
+      hasAttachments: null,
+      flagged: false,
+      archived: false,
+      dateFrom: null,
+      dateTo: null,
+      status: null,
+    };
+    this.savePreferences();
+  }
+
+  getActiveFilterCount() {
+    let count = 0;
+    if (this.filters.readStatus !== 'all') {
+      count++;
+    }
+    if (this.filters.hasAttachments !== null) {
+      count++;
+    }
+    if (this.filters.flagged) {
+      count++;
+    }
+    if (this.filters.archived) {
+      count++;
+    }
+    if (this.filters.dateFrom || this.filters.dateTo) {
+      count++;
+    }
+    if (this.filters.status) {
+      count++;
+    }
+    return count;
+  }
+
+  async fetchMessagesWithFilters(threadId) {
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('sortBy', this.sortMethod);
+
+      if (this.filters.readStatus !== 'all') {
+        params.append('filterBy', this.filters.readStatus);
+      }
+      if (this.filters.hasAttachments !== null) {
+        params.append('hasAttachments', this.filters.hasAttachments);
+      }
+      if (this.filters.flagged) {
+        params.append('filterBy', 'flagged');
+      }
+      if (this.filters.archived) {
+        params.append('filterBy', 'archived');
+      }
+      if (this.filters.dateFrom) {
+        params.append('dateFrom', this.filters.dateFrom);
+      }
+      if (this.filters.dateTo) {
+        params.append('dateTo', this.filters.dateTo);
+      }
+      if (this.filters.status) {
+        params.append('status', this.filters.status);
+      }
+
+      const response = await fetch(`/api/v2/messages/${threadId}?${params.toString()}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch messages');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Fetch messages with filters error:', error);
+      throw error;
+    }
+  }
+
+  savePreferences() {
+    try {
+      const prefs = {
+        sortMethod: this.sortMethod,
+        filters: this.filters,
+      };
+      localStorage.setItem('messaging_preferences', JSON.stringify(prefs));
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+    }
+  }
+
+  loadPreferences() {
+    try {
+      const stored = localStorage.getItem('messaging_preferences');
+      if (stored) {
+        const prefs = JSON.parse(stored);
+        if (prefs.sortMethod) {
+          this.sortMethod = prefs.sortMethod;
+        }
+        if (prefs.filters) {
+          this.filters = { ...this.filters, ...prefs.filters };
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load preferences:', error);
+    }
+  }
+}
+
 // Create and export singleton instance
 const messagingSystem = new MessagingSystem();
 const messagingManager = new MessagingManager();
 
+// Phase 1 instances
+const selectionManager = new SelectionManager();
+const bulkOperationManager = new BulkOperationManager();
+const sortFilterManager = new SortFilterManager();
+
 export default messagingSystem;
-export { MessagingManager, messagingManager };
+export {
+  MessagingManager,
+  messagingManager,
+  SelectionManager,
+  selectionManager,
+  BulkOperationManager,
+  bulkOperationManager,
+  SortFilterManager,
+  sortFilterManager,
+};
