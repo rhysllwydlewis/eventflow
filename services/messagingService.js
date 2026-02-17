@@ -7,6 +7,7 @@
 
 const logger = require('../utils/logger');
 const { ObjectId } = require('mongodb');
+const crypto = require('crypto');
 const { MESSAGE_LIMITS } = require('../config/messagingLimits');
 const {
   COLLECTIONS,
@@ -743,7 +744,9 @@ class MessagingService {
           $set: {
             lastMessageId: message._id.toString(),
             lastMessageAt: message.createdAt,
-            lastMessageText: message.content ? message.content.substring(0, MESSAGE_PREVIEW_MAX_LENGTH) : '',
+            lastMessageText: message.content
+              ? message.content.substring(0, MESSAGE_PREVIEW_MAX_LENGTH)
+              : '',
             lastMessageSenderId: message.senderId,
             unreadCount,
             updatedAt: new Date(),
@@ -784,6 +787,553 @@ class MessagingService {
         userId,
         error: error.message,
       });
+    }
+  }
+
+  /**
+   * Bulk delete messages (Phase 1)
+   * @param {Array<string>} messageIds - Array of message IDs to delete
+   * @param {string} userId - User performing the deletion
+   * @param {string} threadId - Thread ID for context
+   * @param {string} reason - Optional reason for deletion
+   * @returns {Promise<Object>} Operation result with undo information
+   */
+  async bulkDeleteMessages(messageIds, userId, threadId, reason = '') {
+    // Validate inputs
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      throw new Error('messageIds must be a non-empty array');
+    }
+    if (messageIds.length > 100) {
+      throw new Error('Cannot delete more than 100 messages at once');
+    }
+    
+    // Validate all message IDs are valid ObjectIds
+    const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      throw new Error('Invalid message IDs provided');
+    }
+    
+    if (!ObjectId.isValid(threadId)) {
+      throw new Error('Invalid threadId');
+    }
+
+    const operationId = crypto.randomUUID();
+    const undoToken = crypto.randomBytes(32).toString('hex');
+    // Hash the token for secure storage
+    const undoTokenHash = crypto.createHash('sha256').update(undoToken).digest('hex');
+    const now = new Date();
+    const undoExpiresAt = new Date(now.getTime() + 30000); // 30 seconds
+
+    // Start a MongoDB session for transaction support
+    const session = this.db.client.startSession();
+
+    try {
+      // Start transaction
+      await session.startTransaction();
+
+      // Fetch messages to save their current state
+      const messages = await this.messagesCollection
+        .find(
+          { 
+            _id: { $in: messageIds.map(id => new ObjectId(id)) },
+            threadId: threadId, // Ensure messages belong to the specified thread
+            deletedAt: null // Don't delete already deleted messages
+          },
+          { session }
+        )
+        .toArray();
+
+      // Security check: ensure all requested messages were found and belong to thread
+      if (messages.length !== messageIds.length) {
+        throw new Error(`Some messages not found or don't belong to thread. Expected ${messageIds.length}, found ${messages.length}`);
+      }
+
+      // Store previous state for undo
+      const previousState = {
+        messages: messages.map(msg => ({
+          _id: msg._id,
+          isStarred: msg.isStarred,
+          isArchived: msg.isArchived,
+          messageStatus: msg.messageStatus,
+          deletedAt: msg.deletedAt,
+        })),
+      };
+
+      // Soft delete the messages
+      const result = await this.messagesCollection.updateMany(
+        { 
+          _id: { $in: messageIds.map(id => new ObjectId(id)) },
+          threadId: threadId, // Ensure messages belong to thread
+          deletedAt: null // Don't delete already deleted messages
+        },
+        {
+          $set: {
+            deletedAt: now,
+            lastActionedBy: userId,
+            lastActionedAt: now,
+            updatedAt: now,
+          },
+        },
+        { session }
+      );
+
+      // Store operation for undo
+      const { COLLECTIONS, OPERATION_TYPES } = require('../models/Message');
+      const operationsCollection = this.db.collection(COLLECTIONS.MESSAGE_OPERATIONS);
+      await operationsCollection.insertOne(
+        {
+          operationId,
+          userId,
+          operationType: OPERATION_TYPES.DELETE,
+          messageIds,
+          threadId,
+          previousState,
+          action: 'Bulk delete',
+          reason,
+          createdAt: now,
+          undoExpiresAt,
+          undoTokenHash, // Store hash instead of plaintext token
+          isUndone: false,
+          undoneAt: null,
+        },
+        { session }
+      );
+
+      // Commit transaction
+      await session.commitTransaction();
+
+      logger.info('Bulk delete messages', {
+        userId,
+        threadId,
+        messageCount: result.modifiedCount,
+        operationId,
+      });
+
+      return {
+        success: true,
+        deletedCount: result.modifiedCount,
+        operationId,
+        undoToken,
+        undoExpiresAt,
+      };
+    } catch (error) {
+      // Rollback transaction on error
+      await session.abortTransaction();
+      
+      logger.error('Error bulk deleting messages', {
+        userId,
+        messageIds,
+        error: error.message,
+      });
+      throw error;
+    } finally {
+      // Always end the session
+      await session.endSession();
+    }
+  }
+
+  /**
+   * Bulk mark messages as read/unread (Phase 1)
+   * @param {Array<string>} messageIds - Array of message IDs
+   * @param {string} userId - User performing the action
+   * @param {boolean} isRead - Mark as read (true) or unread (false)
+   * @returns {Promise<Object>} Operation result
+   */
+  async bulkMarkRead(messageIds, userId, isRead) {
+    // Validate inputs
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      throw new Error('messageIds must be a non-empty array');
+    }
+    if (messageIds.length > 100) {
+      throw new Error('Cannot mark more than 100 messages at once');
+    }
+    
+    // Validate all message IDs are valid ObjectIds
+    const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      throw new Error('Invalid message IDs provided');
+    }
+
+    const now = new Date();
+    
+    // Start a MongoDB session for transaction support
+    const session = this.db.client.startSession();
+
+    try {
+      // Start transaction
+      await session.startTransaction();
+
+      // Security: Only update messages where user is a recipient
+      const result = await this.messagesCollection.updateMany(
+        { 
+          _id: { $in: messageIds.map(id => new ObjectId(id)) },
+          recipientIds: userId, // User must be a recipient
+          deletedAt: null // Don't modify deleted messages
+        },
+        isRead
+          ? {
+              $addToSet: {
+                readBy: { userId, readAt: now },
+              },
+              $set: {
+                status: 'read',
+                lastActionedBy: userId,
+                lastActionedAt: now,
+                updatedAt: now,
+              },
+            }
+          : {
+              $pull: {
+                readBy: { userId: userId },
+              },
+              $set: {
+                status: 'delivered',
+                lastActionedBy: userId,
+                lastActionedAt: now,
+                updatedAt: now,
+              },
+            },
+        { session }
+      );
+
+      // Commit transaction
+      await session.commitTransaction();
+
+      logger.info('Bulk mark read', {
+        userId,
+        messageCount: result.modifiedCount,
+        isRead,
+      });
+
+      return {
+        success: true,
+        updatedCount: result.modifiedCount,
+      };
+    } catch (error) {
+      // Rollback transaction on error
+      await session.abortTransaction();
+      
+      logger.error('Error bulk marking messages', {
+        userId,
+        messageIds,
+        error: error.message,
+      });
+      throw error;
+    } finally {
+      // Always end the session
+      await session.endSession();
+    }
+  }
+
+  /**
+   * Flag/unflag a message (Phase 1)
+   * @param {string} messageId - Message ID
+   * @param {string} userId - User performing the action
+   * @param {boolean} isFlagged - Flag status
+   * @returns {Promise<Object>} Updated message
+   */
+  async flagMessage(messageId, userId, isFlagged) {
+    const now = new Date();
+
+    try {
+      const result = await this.messagesCollection.findOneAndUpdate(
+        { 
+          _id: new ObjectId(messageId),
+          $or: [
+            { senderId: userId }, // User is sender
+            { recipientIds: userId } // User is recipient
+          ],
+          deletedAt: null // Can't flag deleted messages
+        },
+        {
+          $set: {
+            isStarred: isFlagged,
+            lastActionedBy: userId,
+            lastActionedAt: now,
+            updatedAt: now,
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      if (!result.value) {
+        throw new Error('Message not found or access denied');
+      }
+
+      logger.info('Flag message', {
+        userId,
+        messageId,
+        isFlagged,
+      });
+
+      return {
+        success: true,
+        message: result.value,
+      };
+    } catch (error) {
+      logger.error('Error flagging message', {
+        userId,
+        messageId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Archive/restore a message (Phase 1)
+   * @param {string} messageId - Message ID
+   * @param {string} userId - User performing the action
+   * @param {string} action - 'archive' or 'restore'
+   * @returns {Promise<Object>} Updated message
+   */
+  async archiveMessage(messageId, userId, action) {
+    const now = new Date();
+    const isArchive = action === 'archive';
+
+    try {
+      const result = await this.messagesCollection.findOneAndUpdate(
+        { 
+          _id: new ObjectId(messageId),
+          $or: [
+            { senderId: userId }, // User is sender
+            { recipientIds: userId } // User is recipient
+          ],
+          deletedAt: null // Can't archive deleted messages
+        },
+        {
+          $set: {
+            isArchived: isArchive,
+            archivedAt: isArchive ? now : null,
+            lastActionedBy: userId,
+            lastActionedAt: now,
+            updatedAt: now,
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      if (!result.value) {
+        throw new Error('Message not found or access denied');
+      }
+
+      logger.info('Archive message', {
+        userId,
+        messageId,
+        action,
+      });
+
+      return {
+        success: true,
+        message: result.value,
+      };
+    } catch (error) {
+      logger.error('Error archiving message', {
+        userId,
+        messageId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Undo an operation (Phase 1)
+   * @param {string} operationId - Operation ID to undo
+   * @param {string} undoToken - Token for verification
+   * @param {string} userId - User requesting undo
+   * @returns {Promise<Object>} Undo result
+   */
+  async undoOperation(operationId, undoToken, userId) {
+    const now = new Date();
+    
+    // Hash the provided token to compare with stored hash
+    const undoTokenHash = crypto.createHash('sha256').update(undoToken).digest('hex');
+
+    try {
+      const operationsCollection = this.db.collection(COLLECTIONS.MESSAGE_OPERATIONS);
+
+      // Find the operation using the hashed token
+      const operation = await operationsCollection.findOne({
+        operationId,
+        userId,
+        undoTokenHash, // Compare with stored hash
+        isUndone: false,
+      });
+
+      if (!operation) {
+        return {
+          success: false,
+          error: 'Operation not found or already undone',
+        };
+      }
+
+      // Check if undo window has expired
+      if (new Date() > operation.undoExpiresAt) {
+        return {
+          success: false,
+          error: 'Undo window has expired',
+        };
+      }
+
+      // Restore messages to previous state
+      const restorePromises = operation.previousState.messages.map(msg =>
+        this.messagesCollection.updateOne(
+          { _id: new ObjectId(msg._id) },
+          {
+            $set: {
+              isStarred: msg.isStarred,
+              isArchived: msg.isArchived,
+              messageStatus: msg.messageStatus,
+              deletedAt: msg.deletedAt,
+              lastActionedBy: userId,
+              lastActionedAt: now,
+              updatedAt: now,
+            },
+          }
+        )
+      );
+
+      await Promise.all(restorePromises);
+
+      // Mark operation as undone
+      await operationsCollection.updateOne(
+        { operationId },
+        {
+          $set: {
+            isUndone: true,
+            undoneAt: now,
+          },
+        }
+      );
+
+      const restoredCount = operation.previousState.messages.length;
+
+      logger.info('Undo operation', {
+        userId,
+        operationId,
+        restoredCount,
+      });
+
+      return {
+        success: true,
+        restoredCount,
+      };
+    } catch (error) {
+      logger.error('Error undoing operation', {
+        userId,
+        operationId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get messages with sorting and filtering (Phase 1)
+   * @param {string} threadId - Thread ID
+   * @param {Object} options - Query options
+   * @returns {Promise<Array>} Filtered and sorted messages
+   */
+  async getMessagesWithFilters(threadId, options = {}) {
+    const {
+      sortBy = 'date-desc',
+      filterBy = 'all',
+      dateFrom = null,
+      dateTo = null,
+      hasAttachments = null,
+      status = null,
+      page = 1,
+      pageSize = 50,
+    } = options;
+
+    try {
+      // Validate pagination parameters
+      if (page < 1 || pageSize < 1 || pageSize > 100) {
+        throw new Error('Invalid pagination parameters');
+      }
+
+      // Validate threadId
+      if (!threadId || !ObjectId.isValid(threadId)) {
+        throw new Error('Invalid threadId');
+      }
+
+      // Build query
+      const query = { threadId, deletedAt: null };
+
+      // Apply filters
+      if (filterBy === 'read') {
+        query['readBy.userId'] = { $exists: true };
+      } else if (filterBy === 'unread') {
+        query['readBy.userId'] = { $exists: false };
+      } else if (filterBy === 'flagged') {
+        query.isStarred = true;
+      } else if (filterBy === 'archived') {
+        query.isArchived = true;
+      }
+
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) {
+          const date = new Date(dateFrom);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid dateFrom format');
+          }
+          query.createdAt.$gte = date;
+        }
+        if (dateTo) {
+          const date = new Date(dateTo);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid dateTo format');
+          }
+          query.createdAt.$lte = date;
+        }
+      }
+
+      if (hasAttachments !== null) {
+        query['attachments.0'] = hasAttachments ? { $exists: true } : { $exists: false };
+      }
+
+      if (status) {
+        query.messageStatus = status;
+      }
+
+      // Build sort
+      let sort = {};
+      switch (sortBy) {
+        case 'date-asc':
+          sort = { createdAt: 1 };
+          break;
+        case 'date-desc':
+        default:
+          sort = { createdAt: -1 };
+          break;
+      }
+
+      // Execute query with pagination
+      const skip = (page - 1) * pageSize;
+      const messages = await this.messagesCollection
+        .find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(pageSize)
+        .toArray();
+
+      const total = await this.messagesCollection.countDocuments(query);
+
+      return {
+        messages,
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      logger.error('Error getting messages with filters', {
+        threadId,
+        options,
+        error: error.message,
+      });
+      throw error;
     }
   }
 }

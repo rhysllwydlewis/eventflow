@@ -9,6 +9,7 @@ const express = require('express');
 const { ObjectId } = require('mongodb');
 const multer = require('multer');
 const path = require('path');
+const { writeLimiter } = require('../middleware/rateLimits');
 
 // Dependencies injected by server.js
 let authRequired;
@@ -95,18 +96,18 @@ function initializeDependencies(deps) {
  */
 async function initializeRouter(deps) {
   initializeDependencies(deps);
-  
+
   // Initialize services
   if (mongoDb) {
     messagingService = new MessagingService(mongoDb);
     notificationService = new NotificationService(mongoDb, wsServerV2);
     presenceService = new PresenceService(mongoDb);
-    
+
     if (logger) {
       logger.info('Messaging v2 services initialized');
     }
   }
-  
+
   // Ensure attachments directory exists at startup
   const fs = require('fs').promises;
   const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
@@ -174,22 +175,22 @@ function initializeServices(db, wsServer) {
 async function storeAttachment(file) {
   const fs = require('fs').promises;
   const crypto = require('crypto');
-  
+
   // Sanitize original filename to prevent path traversal and special chars
   const sanitizedOriginalName = file.originalname
-    .replace(/[^a-zA-Z0-9._-]/g, '_')  // Replace special chars with underscore
-    .replace(/\.{2,}/g, '_')            // Replace multiple dots with underscore
-    .substring(0, 255);                 // Limit length
-  
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace special chars with underscore
+    .replace(/\.{2,}/g, '_') // Replace multiple dots with underscore
+    .substring(0, 255); // Limit length
+
   // Generate unique filename for storage
   const hash = crypto.randomBytes(16).toString('hex');
   const timestamp = Date.now();
   const ext = path.extname(sanitizedOriginalName).toLowerCase();
   const filename = `${timestamp}-${hash}${ext}`;
-  
+
   // Store in uploads/attachments directory
   const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
-  
+
   // Ensure directory exists with proper error handling
   try {
     await fs.mkdir(uploadsDir, { recursive: true });
@@ -202,12 +203,12 @@ async function storeAttachment(file) {
       throw new Error('Storage system unavailable');
     }
   }
-  
+
   const filepath = path.join(uploadsDir, filename);
-  
+
   // Write file
   await fs.writeFile(filepath, file.buffer);
-  
+
   // Return attachment object with sanitized original filename
   return {
     type: file.mimetype.startsWith('image/') ? 'image' : 'document',
@@ -705,7 +706,19 @@ router.get('/conversations', applyAuthRequired, ensureServices, async (req, res)
 router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { threadId } = req.params;
-    const { limit = 100, skip = 0, before } = req.query;
+    const {
+      limit = 100,
+      skip = 0,
+      before,
+      // Phase 1: Sorting and filtering options
+      sortBy,
+      filterBy,
+      dateFrom,
+      dateTo,
+      hasAttachments,
+      status,
+      page,
+    } = req.query;
 
     // Verify access
     const thread = await messagingService.getThread(threadId);
@@ -720,12 +733,33 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const messages = await messagingService.getThreadMessages(threadId, {
-      limit: parseInt(limit, 10),
-      skip: parseInt(skip, 10),
-      before,
-      thread, // Pass thread to avoid extra lookup
-    });
+    // Phase 1: Use new filtering/sorting method if params provided
+    let messages, total, pageNum, pageSize;
+    if (sortBy || filterBy || dateFrom || dateTo || hasAttachments !== undefined || status) {
+      const result = await messagingService.getMessagesWithFilters(threadId, {
+        sortBy,
+        filterBy,
+        dateFrom,
+        dateTo,
+        hasAttachments:
+          hasAttachments === 'true' ? true : hasAttachments === 'false' ? false : null,
+        status,
+        page: page ? parseInt(page, 10) : 1,
+        pageSize: limit ? parseInt(limit, 10) : 50,
+      });
+      messages = result.messages;
+      total = result.total;
+      pageNum = result.page;
+      pageSize = result.pageSize;
+    } else {
+      // Legacy behavior
+      messages = await messagingService.getThreadMessages(threadId, {
+        limit: parseInt(limit, 10),
+        skip: parseInt(skip, 10),
+        before,
+        thread, // Pass thread to avoid extra lookup
+      });
+    }
 
     // Transform for response
     const messagesData = messages.map(msg => ({
@@ -742,13 +776,26 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
       sentAt: msg.sentAt || msg.createdAt,
       createdAt: msg.createdAt,
       updatedAt: msg.updatedAt,
+      // Phase 1 fields
+      isStarred: msg.isStarred || false,
+      isArchived: msg.isArchived || false,
+      messageStatus: msg.messageStatus || 'new',
     }));
 
-    res.json({
+    const response = {
       success: true,
       messages: messagesData,
       count: messagesData.length,
-    });
+    };
+
+    // Add pagination info if using new method
+    if (total !== undefined) {
+      response.total = total;
+      response.page = pageNum;
+      response.pageSize = pageSize;
+    }
+
+    res.json(response);
   } catch (error) {
     logger.error('Get messages error', { error: error.message, userId: req.user.id });
     res.status(500).json({
@@ -832,7 +879,7 @@ router.post(
       }
 
       // Process uploaded files
-      let attachments = [];
+      const attachments = [];
       if (req.files && req.files.length > 0) {
         // Store files and create attachment objects
         for (const file of req.files) {
@@ -2454,6 +2501,240 @@ router.put(
     } catch (error) {
       logger.error('Update report error', { error: error.message, userId: req.user.id });
       res.status(500).json({ error: 'Failed to update report', message: error.message });
+    }
+  }
+);
+
+// ============================================
+// PHASE 1: BULK OPERATIONS & MANAGEMENT
+// ============================================
+
+/**
+ * Bulk delete messages
+ * POST /api/v2/messages/bulk-delete
+ */
+router.post(
+  '/bulk-delete',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { messageIds, threadId, reason } = req.body;
+      const userId = req.user.id;
+
+      // Validation
+      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({ error: 'messageIds array is required' });
+      }
+
+      if (messageIds.length > 100) {
+        return res.status(400).json({ error: 'Cannot delete more than 100 messages at once' });
+      }
+
+      // Validate all message IDs are valid ObjectIds
+      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({ error: 'Invalid message IDs provided' });
+      }
+
+      if (!threadId) {
+        return res.status(400).json({ error: 'threadId is required' });
+      }
+
+      if (!ObjectId.isValid(threadId)) {
+        return res.status(400).json({ error: 'Invalid threadId format' });
+      }
+
+      // Verify user has access to the thread
+      const thread = await messagingService.getThread(threadId, userId);
+      if (!thread) {
+        return res.status(404).json({ error: 'Thread not found or access denied' });
+      }
+
+      // Perform bulk delete
+      const result = await messagingService.bulkDeleteMessages(
+        messageIds,
+        userId,
+        threadId,
+        reason
+      );
+
+      res.json({
+        success: true,
+        deletedCount: result.deletedCount,
+        operationId: result.operationId,
+        undoToken: result.undoToken,
+        message: `${result.deletedCount} message(s) deleted successfully`,
+      });
+    } catch (error) {
+      logger.error('Bulk delete error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to delete messages', message: error.message });
+    }
+  }
+);
+
+/**
+ * Bulk mark messages as read/unread
+ * POST /api/v2/messages/bulk-mark-read
+ */
+router.post(
+  '/bulk-mark-read',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { messageIds, isRead } = req.body;
+      const userId = req.user.id;
+
+      // Validation
+      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({ error: 'messageIds array is required' });
+      }
+
+      if (messageIds.length > 100) {
+        return res.status(400).json({ error: 'Cannot mark more than 100 messages at once' });
+      }
+
+      // Validate all message IDs are valid ObjectIds
+      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({ error: 'Invalid message IDs provided' });
+      }
+
+      if (typeof isRead !== 'boolean') {
+        return res.status(400).json({ error: 'isRead must be a boolean' });
+      }
+
+      // Perform bulk mark read
+      const result = await messagingService.bulkMarkRead(messageIds, userId, isRead);
+
+      res.json({
+        success: true,
+        updatedCount: result.updatedCount,
+        message: `${result.updatedCount} message(s) marked as ${isRead ? 'read' : 'unread'}`,
+      });
+    } catch (error) {
+      logger.error('Bulk mark read error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to mark messages', message: error.message });
+    }
+  }
+);
+
+/**
+ * Undo an operation
+ * POST /api/v2/messages/operations/:operationId/undo
+ */
+router.post(
+  '/operations/:operationId/undo',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { operationId } = req.params;
+      const { undoToken } = req.body;
+      const userId = req.user.id;
+
+      // Validation
+      if (!operationId) {
+        return res.status(400).json({ error: 'operationId is required' });
+      }
+
+      if (!undoToken || typeof undoToken !== 'string') {
+        return res.status(400).json({ error: 'undoToken is required' });
+      }
+
+      // Perform undo
+      const result = await messagingService.undoOperation(operationId, undoToken, userId);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        restoredCount: result.restoredCount,
+        message: `${result.restoredCount} message(s) restored successfully`,
+      });
+    } catch (error) {
+      logger.error('Undo operation error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to undo operation', message: error.message });
+    }
+  }
+);
+
+/**
+ * Flag/unflag a message
+ * POST /api/v2/messages/:id/flag
+ */
+router.post('/:id/flag', writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isFlagged } = req.body;
+    const userId = req.user.id;
+
+    // Validation
+    if (!id || !ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    if (typeof isFlagged !== 'boolean') {
+      return res.status(400).json({ error: 'isFlagged must be a boolean' });
+    }
+
+    // Perform flag
+    const result = await messagingService.flagMessage(id, userId, isFlagged);
+
+    res.json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    logger.error('Flag message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to flag message', message: error.message });
+  }
+});
+
+/**
+ * Archive/restore a message
+ * POST /api/v2/messages/:id/archive
+ */
+router.post(
+  '/:id/archive',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action } = req.body;
+      const userId = req.user.id;
+
+      // Validation
+      if (!id || !ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+
+      if (!action || !['archive', 'restore'].includes(action)) {
+        return res.status(400).json({ error: 'action must be "archive" or "restore"' });
+      }
+
+      // Perform archive
+      const result = await messagingService.archiveMessage(id, userId, action);
+
+      res.json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      logger.error('Archive message error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to archive message', message: error.message });
     }
   }
 );

@@ -337,11 +337,21 @@
 <script src="/assets/js/toast-notifications.js"></script>
 <script type="module">
   // Import messaging system for real-time updates
-  import messagingSystem, { MessagingManager } from '/assets/js/messaging.js';
+  import messagingSystem, { 
+    MessagingManager, 
+    SelectionManager,
+    BulkOperationManager,
+    SortFilterManager 
+  } from '/assets/js/messaging.js';
   
   // Make available globally for inline script
   window.messagingSystem = messagingSystem;
   window.messagingManager = new MessagingManager();
+  
+  // Phase 1: Initialize managers
+  window.selectionManager = new SelectionManager();
+  window.bulkOperationManager = new BulkOperationManager();
+  window.sortFilterManager = new SortFilterManager();
 </script>
 
   <main id="main-content" class="messages-container">
@@ -378,9 +388,50 @@
         Drafts
         <span id="draftsCount" style="margin-left: 6px; color: #9ca3af; display: none;">0</span>
       </button>
+      <button class="messages-tab" data-tab="archived" style="margin-left: auto;" aria-label="View archived messages">
+        Archived
+        <span id="archivedCount" style="margin-left: 6px; color: #9ca3af; display: none;">0</span>
+      </button>
+    </div>
+
+    <!-- Phase 1: Bulk Actions Toolbar -->
+    <div id="bulkActionsToolbar" class="bulk-actions-toolbar" style="display: none; margin-bottom: 12px; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+        <span id="selectionCount" class="selection-counter" style="font-size: 14px; font-weight: 500; color: #374151;">
+          0 selected
+        </span>
+        <button id="deselectAllBtn" class="btn-text" style="font-size: 14px; color: #6b7280;">
+          Deselect all
+        </button>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="bulkMarkReadBtn" class="btn btn-secondary" style="padding: 8px 16px;">
+          Mark as read
+        </button>
+        <button id="bulkMarkUnreadBtn" class="btn btn-secondary" style="padding: 8px 16px;">
+          Mark as unread
+        </button>
+        <button id="bulkDeleteBtn" class="btn btn-danger" style="padding: 8px 16px; background: #dc2626; color: white;">
+          Delete
+        </button>
+      </div>
     </div>
 
     <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+      <!-- Phase 1: Sort dropdown -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="sortDropdown" style="font-size: 14px; color: #6b7280; white-space: nowrap;">Sort by:</label>
+        <select id="sortDropdown" class="sort-dropdown" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 150px;">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="sender-asc">Sender (A-Z)</option>
+          <option value="sender-desc">Sender (Z-A)</option>
+          <option value="subject-asc">Subject (A-Z)</option>
+          <option value="subject-desc">Subject (Z-A)</option>
+          <option value="unread-first">Unread first</option>
+        </select>
+      </div>
+
       <div class="messages-search" style="flex: 1; min-width: 200px;">
         <input 
           type="text" 
@@ -390,6 +441,14 @@
         />
       </div>
       <div style="display: flex; gap: 8px;">
+        <!-- Phase 1: Filter button -->
+        <button id="filterToggleBtn" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap; position: relative;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          Filters
+          <span id="filterBadge" class="filter-badge" style="display: none; margin-left: 6px; background: #0B8073; color: white; border-radius: 10px; padding: 2px 8px; font-size: 12px; font-weight: 600;">0</span>
+        </button>
         <select id="dateFilter" style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;">
           <option value="all">All time</option>
           <option value="today">Today</option>
@@ -399,6 +458,55 @@
         </select>
         <button id="clearFilters" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;">
           Clear Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Phase 1: Filter Sidebar -->
+    <div id="filterSidebar" class="filter-sidebar" style="display: none; margin-bottom: 16px; padding: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">
+      <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1f2937;">Filter Messages</h3>
+      
+      <div class="filter-section" style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #374151;">Read Status</label>
+        <select id="filterReadStatus" class="filter-control" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+          <option value="all">All messages</option>
+          <option value="unread">Unread only</option>
+          <option value="read">Read only</option>
+        </select>
+      </div>
+
+      <div class="filter-section" style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #374151;">Has Attachments</label>
+        <select id="filterAttachments" class="filter-control" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+          <option value="all">All messages</option>
+          <option value="yes">With attachments</option>
+          <option value="no">Without attachments</option>
+        </select>
+      </div>
+
+      <div class="filter-section" style="margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="filterFlagged" class="filter-control" style="width: 16px; height: 16px;">
+          <span style="font-size: 14px; color: #374151;">Flagged only</span>
+        </label>
+      </div>
+
+      <div class="filter-section" style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #374151;">Message Status</label>
+        <select id="filterMessageStatus" class="filter-control" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+          <option value="">All statuses</option>
+          <option value="new">New</option>
+          <option value="waiting_response">Waiting Response</option>
+          <option value="resolved">Resolved</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 16px;">
+        <button id="applyFiltersBtn" class="btn btn-primary" style="flex: 1; padding: 10px 16px;">
+          Apply Filters
+        </button>
+        <button id="clearFiltersBtn" class="btn btn-secondary" style="flex: 1; padding: 10px 16px;">
+          Clear All
         </button>
       </div>
     </div>
@@ -494,6 +602,7 @@
         setupNewMessageHandler();
         setupSearchHandler();
         setupDateFilterHandler();
+        setupPhase1Handlers(); // Phase 1: Bulk operations setup
         loadThreads();
         setupRealtimeUpdates();
       }
@@ -622,6 +731,202 @@
             document.getElementById('dateFilter').value = 'all';
             renderCurrentView();
           });
+        }
+      }
+
+      // Phase 1: Setup bulk operations handlers
+      function setupPhase1Handlers() {
+        console.log('Phase 1: Initializing event handlers...');
+        
+        // Get UI elements
+        const bulkToolbar = document.getElementById('bulkActionsToolbar');
+        const selectionCount = document.getElementById('selectionCount');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const sortDropdown = document.getElementById('sortDropdown');
+        const filterToggleBtn = document.getElementById('filterToggleBtn');
+        
+        // Wire sort dropdown
+        if (sortDropdown) {
+          sortDropdown.addEventListener('change', (e) => {
+            const sortMethod = e.target.value;
+            window.sortFilterManager.setSortMethod(sortMethod);
+            console.log('Sort changed to:', sortMethod);
+            // In a real implementation, this would re-render the message list
+            showToast('Sort preference saved: ' + sortMethod, 'success');
+          });
+        }
+        
+        // Wire filter toggle
+        if (filterToggleBtn) {
+          filterToggleBtn.addEventListener('click', () => {
+            const filterSidebar = document.getElementById('filterSidebar');
+            if (filterSidebar) {
+              const isVisible = filterSidebar.style.display !== 'none';
+              filterSidebar.style.display = isVisible ? 'none' : 'block';
+              console.log('Filter sidebar toggled:', !isVisible);
+            }
+          });
+        }
+        
+        // Wire bulk delete button
+        if (bulkDeleteBtn) {
+          bulkDeleteBtn.addEventListener('click', async () => {
+            const selectedIds = window.selectionManager.getSelectedIds();
+            if (selectedIds.length === 0) {
+              showToast('No messages selected', 'error');
+              return;
+            }
+            
+            // Show confirmation modal
+            const confirmed = await showConfirmModal(
+              'Delete Messages',
+              `Are you sure you want to delete ${selectedIds.length} message(s)? This action can be undone within 30 seconds.`,
+              'Delete',
+              'Cancel'
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+              // Get threadId from current context (would need to be passed in real implementation)
+              const threadId = new URLSearchParams(window.location.search).get('threadId') || 'current-thread';
+              
+              const result = await window.bulkOperationManager.bulkDelete(
+                selectedIds,
+                threadId,
+                'User initiated bulk delete'
+              );
+              
+              // Clear selection
+              window.selectionManager.deselectAll();
+              updateSelectionUI();
+              
+              // Show success toast with undo button
+              showUndoToast(
+                `${result.deletedCount} message(s) deleted`,
+                result.operationId,
+                result.undoToken
+              );
+              
+              console.log('Bulk delete successful:', result);
+            } catch (error) {
+              console.error('Bulk delete error:', error);
+              showToast('Failed to delete messages: ' + error.message, 'error');
+            }
+          });
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+          // Only handle shortcuts when not in input fields
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+          }
+          
+          // D key - Delete selected
+          if (e.key === 'd' || e.key === 'D') {
+            e.preventDefault();
+            if (bulkDeleteBtn && window.selectionManager.hasSelection()) {
+              bulkDeleteBtn.click();
+            }
+          }
+          
+          // F key - Flag/unflag selected
+          if (e.key === 'f' || e.key === 'F') {
+            e.preventDefault();
+            const selectedIds = window.selectionManager.getSelectedIds();
+            if (selectedIds.length > 0) {
+              console.log('Flag shortcut pressed for:', selectedIds);
+              showToast('Flag feature activated (demo)', 'info');
+            }
+          }
+          
+          // Ctrl+A / Cmd+A - Select all
+          if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+            e.preventDefault();
+            // In real implementation, would select all messages in current view
+            console.log('Select all shortcut pressed');
+            showToast('Select all activated (would select all visible messages)', 'info');
+          }
+          
+          // Esc - Deselect all
+          if (e.key === 'Escape') {
+            if (window.selectionManager.hasSelection()) {
+              window.selectionManager.deselectAll();
+              updateSelectionUI();
+              console.log('Deselected all via Esc key');
+            }
+          }
+        });
+        
+        console.log('Phase 1 handlers wired:', {
+          selectionManager: typeof window.selectionManager !== 'undefined',
+          bulkOperationManager: typeof window.bulkOperationManager !== 'undefined',
+          sortFilterManager: typeof window.sortFilterManager !== 'undefined',
+          sortDropdown: !!sortDropdown,
+          bulkDeleteBtn: !!bulkDeleteBtn,
+          filterToggleBtn: !!filterToggleBtn
+        });
+      }
+      
+      // Update selection UI (toolbar visibility, counter)
+      function updateSelectionUI() {
+        const bulkToolbar = document.getElementById('bulkActionsToolbar');
+        const selectionCount = document.getElementById('selectionCount');
+        const selectedCount = window.selectionManager.getSelectedCount();
+        
+        if (bulkToolbar) {
+          bulkToolbar.style.display = selectedCount > 0 ? 'flex' : 'none';
+        }
+        
+        if (selectionCount) {
+          selectionCount.textContent = `${selectedCount} selected`;
+        }
+      }
+      
+      // Show confirmation modal
+      function showConfirmModal(title, message, confirmText, cancelText) {
+        return new Promise((resolve) => {
+          const confirmed = confirm(`${title}\n\n${message}`);
+          resolve(confirmed);
+        });
+      }
+      
+      // Show toast notification
+      function showToast(message, type = 'info') {
+        console.log(`Toast [${type}]:`, message);
+        // In real implementation, would show a styled toast
+        // For now, using browser alert for visibility
+        if (window.showNotification) {
+          window.showNotification(message, type);
+        } else {
+          alert(`[${type.toUpperCase()}] ${message}`);
+        }
+      }
+      
+      // Show undo toast with action button
+      function showUndoToast(message, operationId, undoToken) {
+        console.log('Undo toast:', { message, operationId, undoToken });
+        
+        const undoConfirm = confirm(
+          `${message}\n\nPress OK to undo this action (30 second window)`
+        );
+        
+        if (undoConfirm) {
+          handleUndo(operationId, undoToken);
+        }
+      }
+      
+      // Handle undo action
+      async function handleUndo(operationId, undoToken) {
+        try {
+          const result = await window.bulkOperationManager.undo(operationId, undoToken);
+          console.log('Undo successful:', result);
+          showToast(`Restored ${result.restoredCount} message(s)`, 'success');
+          // In real implementation, would refresh the message list
+        } catch (error) {
+          console.error('Undo error:', error);
+          showToast('Failed to undo: ' + error.message, 'error');
         }
       }
 
