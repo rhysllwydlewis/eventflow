@@ -365,24 +365,48 @@ function openConversation(conversationId) {
 
   document.body.appendChild(modal);
 
-  // Close handlers
-  let closeModal = () => {
+  // Load messages with real-time updates
+  let messagesUnsubscribe = null;
+  let currentUser = null;
+  const cleanupCallbacks = []; // Array to store cleanup functions
+
+  // Close handler with cleanup support
+  const closeModal = () => {
+    // Run all cleanup callbacks
+    cleanupCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('Error in cleanup callback:', error);
+      }
+    });
+
+    // Cleanup message subscription
     if (messagesUnsubscribe) {
       messagesUnsubscribe();
     }
+
+    // Remove modal from DOM
     modal.remove();
   };
 
-  modal.querySelector('.modal-close').addEventListener('click', closeModal);
+  // Attach close button handler with defensive check
+  const closeButton = modal.querySelector('.modal-close');
+  if (closeButton) {
+    closeButton.addEventListener('click', e => {
+      e.stopPropagation(); // Prevent event from bubbling to overlay
+      closeModal();
+    });
+  } else {
+    console.error('Modal close button not found');
+  }
+
+  // Close when clicking outside the modal
   modal.addEventListener('click', e => {
     if (e.target === modal) {
       closeModal();
     }
   });
-
-  // Load messages with real-time updates
-  let messagesUnsubscribe = null;
-  let currentUser = null;
 
   const renderMessages = messages => {
     try {
@@ -576,12 +600,10 @@ function openConversation(conversationId) {
 
     window.addEventListener('messaging:typing', handleTyping);
 
-    // Cleanup typing listener when modal closes
-    const originalCloseModal = closeModal;
-    closeModal = () => {
+    // Register cleanup for typing listener
+    cleanupCallbacks.push(() => {
       window.removeEventListener('messaging:typing', handleTyping);
-      originalCloseModal();
-    };
+    });
 
     // Mark messages as read
     messagingSystem.markMessagesAsRead(conversationId, user.id).catch(err => {
@@ -600,7 +622,7 @@ function openConversation(conversationId) {
       return;
     }
 
-    const messageInput = document.getElementById('messageInput');
+    const messageInput = modal.querySelector('#messageInput');
     const messageText = messageInput.value.trim();
 
     if (!messageText) {
@@ -657,6 +679,13 @@ function openConversation(conversationId) {
     // Stop typing when input loses focus
     if (currentUser && conversationId) {
       messagingSystem.sendTypingStatus(conversationId, false);
+    }
+  });
+
+  // Register cleanup for typing timeout
+  cleanupCallbacks.push(() => {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
     }
   });
 }
