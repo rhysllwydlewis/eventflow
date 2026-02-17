@@ -87,7 +87,7 @@ async function ensureServices(req, res, next) {
       });
     }
   }
-  
+
   if (!labelService) {
     return res.status(503).json({
       error: 'Service unavailable',
@@ -105,31 +105,38 @@ async function ensureServices(req, res, next) {
  * POST /api/v2/labels
  * Create a new label
  */
-router.post("/", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { name, color, backgroundColor, icon } = req.body;
+router.post(
+  '/',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { name, color, backgroundColor, icon } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ error: 'Label name is required' });
+      if (!name) {
+        return res.status(400).json({ error: 'Label name is required' });
+      }
+
+      const label = await labelService.createLabel(userId, name, color, backgroundColor, icon);
+
+      logger.info('Label created via API', { userId, labelId: label._id.toString() });
+
+      res.status(201).json({
+        success: true,
+        label,
+      });
+    } catch (error) {
+      logger.error('Create label API error', { error: error.message, userId: req.user.id });
+      res.status(400).json({
+        error: 'Failed to create label',
+        message: error.message,
+      });
     }
-
-    const label = await labelService.createLabel(userId, name, color, backgroundColor, icon);
-
-    logger.info('Label created via API', { userId, labelId: label._id.toString() });
-
-    res.status(201).json({
-      success: true,
-      label,
-    });
-  } catch (error) {
-    logger.error('Create label API error', { error: error.message, userId: req.user.id });
-    res.status(400).json({
-      error: 'Failed to create label',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /api/v2/labels

@@ -86,7 +86,7 @@ async function ensureServices(req, res, next) {
       });
     }
   }
-  
+
   if (!searchService) {
     return res.status(503).json({
       error: 'Service unavailable',
@@ -115,7 +115,7 @@ async function ensureServices(req, res, next) {
  * - is:unread has:attachment
  * - after:2025-01-01 before:2025-12-31
  */
-router.get("/", searchLimiter, applyAuthRequired, ensureServices, async (req, res) => {
+router.get('/', searchLimiter, applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { q: query, page = 1, pageSize = 25, sortBy = 'relevance' } = req.query;
