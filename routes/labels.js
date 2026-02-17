@@ -122,6 +122,33 @@ router.get('/', applyAuthRequired, ensureServices, async (req, res) => {
 });
 
 /**
+ * POST /api/v2/labels/initialize
+ * Initialize default labels for current user
+ */
+router.post('/initialize', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const labels = await labelService.initializeDefaultLabels(userId);
+
+    logger.info('Default labels initialized via API', { userId, count: labels.length });
+
+    res.json({
+      success: true,
+      message: 'Default labels initialized',
+      labels,
+      count: labels.length,
+    });
+  } catch (error) {
+    logger.error('Initialize labels API error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to initialize labels',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/v2/labels/:id
  * Get label details
  */
@@ -391,33 +418,6 @@ router.get('/:id/stats', applyAuthRequired, ensureServices, async (req, res) => 
     const status = error.message.includes('not found') ? 404 : 500;
     res.status(status).json({
       error: 'Failed to fetch label stats',
-      message: error.message,
-    });
-  }
-});
-
-/**
- * POST /api/v2/labels/initialize
- * Initialize default labels for current user
- */
-router.post('/initialize', applyAuthRequired, ensureServices, async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const labels = await labelService.initializeDefaultLabels(userId);
-
-    logger.info('Default labels initialized via API', { userId, count: labels.length });
-
-    res.json({
-      success: true,
-      message: 'Default labels initialized',
-      labels,
-      count: labels.length,
-    });
-  } catch (error) {
-    logger.error('Initialize labels API error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to initialize labels',
       message: error.message,
     });
   }

@@ -132,6 +132,33 @@ router.get('/', applyAuthRequired, ensureServices, async (req, res) => {
 });
 
 /**
+ * POST /api/v2/folders/initialize
+ * Initialize system folders for current user
+ */
+router.post('/initialize', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const folders = await folderService.initializeSystemFolders(userId);
+
+    logger.info('System folders initialized via API', { userId, count: folders.length });
+
+    res.json({
+      success: true,
+      message: 'System folders initialized',
+      folders,
+      count: folders.length,
+    });
+  } catch (error) {
+    logger.error('Initialize folders API error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to initialize folders',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/v2/folders/:id
  * Get folder details
  */
@@ -358,33 +385,6 @@ router.get('/:id/stats', applyAuthRequired, ensureServices, async (req, res) => 
     const status = error.message.includes('not found') ? 404 : 500;
     res.status(status).json({
       error: 'Failed to fetch folder stats',
-      message: error.message,
-    });
-  }
-});
-
-/**
- * POST /api/v2/folders/initialize
- * Initialize system folders for current user
- */
-router.post('/initialize', applyAuthRequired, ensureServices, async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const folders = await folderService.initializeSystemFolders(userId);
-
-    logger.info('System folders initialized via API', { userId, count: folders.length });
-
-    res.json({
-      success: true,
-      message: 'System folders initialized',
-      folders,
-      count: folders.length,
-    });
-  } catch (error) {
-    logger.error('Initialize folders API error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to initialize folders',
       message: error.message,
     });
   }
