@@ -6,9 +6,11 @@
 'use strict';
 
 const express = require('express');
+const { searchLimiter } = require('../middleware/rateLimits');
 
 // Dependencies injected by server.js
 let authRequired;
+let csrfProtection;
 let logger;
 let mongoDb;
 
@@ -26,19 +28,40 @@ function initializeDependencies(deps) {
     throw new Error('Search routes: dependencies object is required');
   }
 
-  const required = ['authRequired', 'logger', 'mongoDb'];
+  const required = ['authRequired', 'csrfProtection', 'logger', 'mongoDb'];
   const missing = required.filter(key => deps[key] === undefined);
   if (missing.length > 0) {
     throw new Error(`Search routes: missing required dependencies: ${missing.join(', ')}`);
   }
 
   authRequired = deps.authRequired;
+  csrfProtection = deps.csrfProtection;
   logger = deps.logger;
   mongoDb = deps.mongoDb;
 
   // Initialize service
   const SearchService = require('../services/SearchService');
   searchService = new SearchService(mongoDb);
+}
+
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
 }
 
 /**
@@ -53,14 +76,6 @@ function ensureServices(req, res, next) {
   }
   next();
 }
-
-// Apply auth middleware to all routes
-const applyAuthRequired = (req, res, next) => {
-  if (authRequired) {
-    return authRequired(req, res, next);
-  }
-  next();
-};
 
 // =========================
 // Search Operations
@@ -81,7 +96,7 @@ const applyAuthRequired = (req, res, next) => {
  * - is:unread has:attachment
  * - after:2025-01-01 before:2025-12-31
  */
-router.get('/', applyAuthRequired, ensureServices, async (req, res) => {
+router.get("/", searchLimiter, applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { q: query, page = 1, pageSize = 25, sortBy = 'relevance' } = req.query;

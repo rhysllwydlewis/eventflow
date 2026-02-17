@@ -7,9 +7,11 @@
 
 const express = require('express');
 const { ObjectId } = require('mongodb');
+const { writeLimiter } = require('../middleware/rateLimits');
 
 // Dependencies injected by server.js
 let authRequired;
+let csrfProtection;
 let logger;
 let mongoDb;
 
@@ -27,19 +29,40 @@ function initializeDependencies(deps) {
     throw new Error('Folders routes: dependencies object is required');
   }
 
-  const required = ['authRequired', 'logger', 'mongoDb'];
+  const required = ['authRequired', 'csrfProtection', 'logger', 'mongoDb'];
   const missing = required.filter(key => deps[key] === undefined);
   if (missing.length > 0) {
     throw new Error(`Folders routes: missing required dependencies: ${missing.join(', ')}`);
   }
 
   authRequired = deps.authRequired;
+  csrfProtection = deps.csrfProtection;
   logger = deps.logger;
   mongoDb = deps.mongoDb;
 
   // Initialize service
   const FolderService = require('../services/FolderService');
   folderService = new FolderService(mongoDb);
+}
+
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
 }
 
 /**
@@ -55,14 +78,6 @@ function ensureServices(req, res, next) {
   next();
 }
 
-// Apply auth middleware to all routes
-const applyAuthRequired = (req, res, next) => {
-  if (authRequired) {
-    return authRequired(req, res, next);
-  }
-  next();
-};
-
 // =========================
 // Folder CRUD Operations
 // =========================
@@ -71,7 +86,7 @@ const applyAuthRequired = (req, res, next) => {
  * POST /api/v2/folders
  * Create a new folder
  */
-router.post('/', applyAuthRequired, ensureServices, async (req, res) => {
+router.post('/', writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { name, parentId, color, icon, settings } = req.body;
@@ -135,7 +150,7 @@ router.get('/', applyAuthRequired, ensureServices, async (req, res) => {
  * POST /api/v2/folders/initialize
  * Initialize system folders for current user
  */
-router.post('/initialize', applyAuthRequired, ensureServices, async (req, res) => {
+router.post("/initialize", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -187,7 +202,7 @@ router.get('/:id', applyAuthRequired, ensureServices, async (req, res) => {
  * PUT /api/v2/folders/:id
  * Update folder
  */
-router.put('/:id', applyAuthRequired, ensureServices, async (req, res) => {
+router.put("/:id", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -215,7 +230,7 @@ router.put('/:id', applyAuthRequired, ensureServices, async (req, res) => {
  * DELETE /api/v2/folders/:id
  * Delete folder (soft delete)
  */
-router.delete('/:id', applyAuthRequired, ensureServices, async (req, res) => {
+router.delete("/:id", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -243,7 +258,7 @@ router.delete('/:id', applyAuthRequired, ensureServices, async (req, res) => {
  * POST /api/v2/folders/:id/restore
  * Restore deleted folder
  */
-router.post('/:id/restore', applyAuthRequired, ensureServices, async (req, res) => {
+router.post("/:id/restore", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -275,7 +290,7 @@ router.post('/:id/restore', applyAuthRequired, ensureServices, async (req, res) 
  * POST /api/v2/folders/:id/move
  * Move folder to new parent
  */
-router.post('/:id/move', applyAuthRequired, ensureServices, async (req, res) => {
+router.post("/:id/move", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -303,7 +318,7 @@ router.post('/:id/move', applyAuthRequired, ensureServices, async (req, res) => 
  * POST /api/v2/folders/reorder
  * Reorder multiple folders
  */
-router.post('/reorder', applyAuthRequired, ensureServices, async (req, res) => {
+router.post('/reorder', writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { folders } = req.body;
@@ -334,7 +349,7 @@ router.post('/reorder', applyAuthRequired, ensureServices, async (req, res) => {
  * POST /api/v2/folders/:id/messages
  * Move messages to folder
  */
-router.post('/:id/messages', applyAuthRequired, ensureServices, async (req, res) => {
+router.post('/:id/messages', writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -373,7 +388,7 @@ router.post('/:id/messages', applyAuthRequired, ensureServices, async (req, res)
  * POST /api/v2/folders/:id/empty
  * Empty folder (delete all messages)
  */
-router.post('/:id/empty', applyAuthRequired, ensureServices, async (req, res) => {
+router.post("/:id/empty", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -429,7 +444,7 @@ router.get('/:id/stats', applyAuthRequired, ensureServices, async (req, res) => 
  * POST /api/v2/folders/:id/rules
  * Create a folder rule
  */
-router.post('/:id/rules', applyAuthRequired, ensureServices, async (req, res) => {
+router.post("/:id/rules", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -460,7 +475,7 @@ router.post('/:id/rules', applyAuthRequired, ensureServices, async (req, res) =>
  * PUT /api/v2/folders/:id/rules/:ruleId
  * Update a folder rule
  */
-router.put('/:id/rules/:ruleId', applyAuthRequired, ensureServices, async (req, res) => {
+router.put("/:id/rules/:ruleId", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id, ruleId } = req.params;
@@ -487,7 +502,7 @@ router.put('/:id/rules/:ruleId', applyAuthRequired, ensureServices, async (req, 
  * DELETE /api/v2/folders/:id/rules/:ruleId
  * Delete a folder rule
  */
-router.delete('/:id/rules/:ruleId', applyAuthRequired, ensureServices, async (req, res) => {
+router.delete("/:id/rules/:ruleId", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id, ruleId } = req.params;
@@ -514,7 +529,7 @@ router.delete('/:id/rules/:ruleId', applyAuthRequired, ensureServices, async (re
  * POST /api/v2/folders/:id/rules/:ruleId/test
  * Test a folder rule
  */
-router.post('/:id/rules/:ruleId/test', applyAuthRequired, ensureServices, async (req, res) => {
+router.post("/:id/rules/:ruleId/test", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id, ruleId } = req.params;

@@ -7,9 +7,11 @@
 
 const express = require('express');
 const { ObjectId } = require('mongodb');
+const { writeLimiter } = require('../middleware/rateLimits');
 
 // Dependencies injected by server.js
 let authRequired;
+let csrfProtection;
 let logger;
 let mongoDb;
 
@@ -27,19 +29,40 @@ function initializeDependencies(deps) {
     throw new Error('Labels routes: dependencies object is required');
   }
 
-  const required = ['authRequired', 'logger', 'mongoDb'];
+  const required = ['authRequired', 'csrfProtection', 'logger', 'mongoDb'];
   const missing = required.filter(key => deps[key] === undefined);
   if (missing.length > 0) {
     throw new Error(`Labels routes: missing required dependencies: ${missing.join(', ')}`);
   }
 
   authRequired = deps.authRequired;
+  csrfProtection = deps.csrfProtection;
   logger = deps.logger;
   mongoDb = deps.mongoDb;
 
   // Initialize service
   const LabelService = require('../services/LabelService');
   labelService = new LabelService(mongoDb);
+}
+
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
 }
 
 /**
@@ -55,14 +78,6 @@ function ensureServices(req, res, next) {
   next();
 }
 
-// Apply auth middleware to all routes
-const applyAuthRequired = (req, res, next) => {
-  if (authRequired) {
-    return authRequired(req, res, next);
-  }
-  next();
-};
-
 // =========================
 // Label CRUD Operations
 // =========================
@@ -71,7 +86,7 @@ const applyAuthRequired = (req, res, next) => {
  * POST /api/v2/labels
  * Create a new label
  */
-router.post('/', applyAuthRequired, ensureServices, async (req, res) => {
+router.post("/", writeLimiter, applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
     const { name, color, backgroundColor, icon } = req.body;
