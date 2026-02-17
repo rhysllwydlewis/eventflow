@@ -669,28 +669,38 @@ function openConversation(conversationId) {
     // Handle file selection
     attachmentInput.addEventListener('change', e => {
       const files = Array.from(e.target.files);
-      selectedFiles = [];
+      const validFiles = [];
       let totalSize = 0;
 
-      files.forEach(file => {
+      // Validate each file and calculate total size
+      for (const file of files) {
         if (file.size > MAX_FILE_SIZE) {
           if (typeof EFToast !== 'undefined') {
             EFToast.warning(`File ${file.name} is too large (max 10MB)`);
           }
-          return;
+          continue;
         }
-        totalSize += file.size;
-        selectedFiles.push(file);
-      });
 
-      if (totalSize > MAX_TOTAL_SIZE) {
-        if (typeof EFToast !== 'undefined') {
-          EFToast.warning('Total file size exceeds 25MB');
+        const newTotal = totalSize + file.size;
+        if (newTotal > MAX_TOTAL_SIZE) {
+          if (typeof EFToast !== 'undefined') {
+            EFToast.warning(
+              `Adding ${file.name} would exceed 25MB total limit. Some files were not added.`
+            );
+          }
+          break; // Stop adding more files
         }
-        selectedFiles = selectedFiles.slice(0, -1);
+
+        validFiles.push(file);
+        totalSize = newTotal;
       }
 
+      // Replace selectedFiles with valid files from this selection
+      selectedFiles = validFiles;
       updateAttachmentsPreview();
+
+      // Reset input to allow selecting the same file again if needed
+      attachmentInput.value = '';
     });
   }
 
