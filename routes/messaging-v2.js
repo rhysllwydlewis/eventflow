@@ -752,6 +752,32 @@ router.post(
       next();
     });
   },
+  // Validate total file size and file contents
+  (req, res, next) => {
+    if (req.files && req.files.length > 0) {
+      // Check for zero-byte files
+      const emptyFiles = req.files.filter(f => f.size === 0);
+      if (emptyFiles.length > 0) {
+        return res.status(400).json({
+          error: 'Empty files detected',
+          message: `The following files are empty (0 bytes): ${emptyFiles.map(f => f.originalname).join(', ')}`,
+        });
+      }
+
+      // Check total size across all files
+      const totalSize = req.files.reduce((sum, f) => sum + f.size, 0);
+      const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB total
+
+      if (totalSize > MAX_TOTAL_SIZE) {
+        const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+        return res.status(413).json({
+          error: 'Total size too large',
+          message: `Total attachment size (${totalSizeMB}MB) exceeds maximum of 25MB`,
+        });
+      }
+    }
+    next();
+  },
   async (req, res) => {
     try {
       const { threadId } = req.params;
