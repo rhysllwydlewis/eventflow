@@ -153,8 +153,8 @@ describe('Messaging Dashboard Fixes', () => {
     });
 
     it('handles missing message content defensively', () => {
-      // Should handle both message and content fields
-      expect(customerMessagesJs).toContain('message.message || message.content');
+      // Should use extractMessageText helper function
+      expect(customerMessagesJs).toContain('extractMessageText(message)');
     });
 
     it('sends message with sendMessage method from messaging system', () => {
@@ -166,6 +166,138 @@ describe('Messaging Dashboard Fixes', () => {
     it('marks messages as read using markMessagesAsRead', () => {
       // Should use messagingSystem.markMessagesAsRead which now uses correct endpoint
       expect(customerMessagesJs).toContain('messagingSystem.markMessagesAsRead(conversationId');
+    });
+
+    // New tests for comprehensive fixes
+    describe('message field normalization', () => {
+      it('should extract content from message field', () => {
+        expect(customerMessagesJs).toContain('message.message ||');
+      });
+
+      it('should extract content from content field', () => {
+        expect(customerMessagesJs).toContain('message.content ||');
+      });
+
+      it('should extract content from text field', () => {
+        expect(customerMessagesJs).toContain('message.text ||');
+      });
+
+      it('should extract content from body field', () => {
+        expect(customerMessagesJs).toContain('message.body ||');
+      });
+
+      it('should extract content from value field', () => {
+        expect(customerMessagesJs).toContain('message.value ||');
+      });
+
+      it('should handle string messages directly', () => {
+        expect(customerMessagesJs).toContain("typeof message === 'string'");
+      });
+
+      it('should provide fallback text for missing content', () => {
+        expect(customerMessagesJs).toContain('[No message content]');
+      });
+    });
+
+    describe('HTTP fallback mechanism', () => {
+      it('should have loadMessagesHTTPFallback function', () => {
+        expect(customerMessagesJs).toContain('async function loadMessagesHTTPFallback');
+      });
+
+      it('should try v2 API first', () => {
+        expect(customerMessagesJs).toContain('/api/v2/messages/${conversationId}');
+      });
+
+      it('should try v1 API for legacy thread IDs', () => {
+        expect(customerMessagesJs).toContain("conversationId.startsWith('thd_')");
+        expect(customerMessagesJs).toContain('/api/v1/threads/${conversationId}/messages');
+      });
+
+      it('should handle HTTP fallback failure gracefully', () => {
+        expect(customerMessagesJs).toContain('HTTP fallback failed');
+      });
+
+      it('should implement timeout mechanism', () => {
+        expect(customerMessagesJs).toContain('setTimeout');
+        expect(customerMessagesJs).toContain('3000');
+      });
+
+      it('should implement retry logic', () => {
+        expect(customerMessagesJs).toContain('retryCount');
+        expect(customerMessagesJs).toContain('maxRetries');
+      });
+
+      it('should show error state if all fallbacks fail', () => {
+        expect(customerMessagesJs).toContain('Unable to load messages. Please refresh');
+      });
+    });
+
+    describe('callback error handling', () => {
+      it('should catch errors in renderMessages', () => {
+        const renderMessagesMatch = customerMessagesJs.match(
+          /const renderMessages = messages => \{[\s\S]*?\n\s{2}\};/
+        );
+        expect(renderMessagesMatch).toBeTruthy();
+        expect(renderMessagesMatch[0]).toContain('try {');
+        expect(renderMessagesMatch[0]).toContain('} catch (error)');
+      });
+
+      it('should continue rendering valid messages on error', () => {
+        expect(customerMessagesJs).toContain('} catch (msgError)');
+        expect(customerMessagesJs).toContain('// Continue with next message');
+      });
+
+      it('should display user-friendly error message', () => {
+        expect(customerMessagesJs).toContain('Error displaying messages');
+      });
+
+      it('should handle per-message errors', () => {
+        expect(customerMessagesJs).toContain('forEach((message, index)');
+        expect(customerMessagesJs).toContain('Skipping invalid message');
+      });
+    });
+
+    describe('logging and debugging', () => {
+      it('should have logMessageState function', () => {
+        expect(customerMessagesJs).toContain('function logMessageState');
+      });
+
+      it('should log initialization', () => {
+        expect(customerMessagesJs).toContain("logMessageState('INIT'");
+      });
+
+      it('should log listener setup', () => {
+        expect(customerMessagesJs).toContain("logMessageState('LISTENER_SETUP'");
+      });
+
+      it('should log messages received', () => {
+        expect(customerMessagesJs).toContain("logMessageState('MESSAGES_RECEIVED'");
+      });
+
+      it('should log render completion', () => {
+        expect(customerMessagesJs).toContain("logMessageState('RENDER_COMPLETE'");
+      });
+
+      it('should log fallback triggers', () => {
+        expect(customerMessagesJs).toContain("logMessageState('FALLBACK_TRIGGERED'");
+      });
+    });
+
+    describe('MessagingSystem validation', () => {
+      it('should validate messagingSystem exists', () => {
+        expect(customerMessagesJs).toContain('!window.messagingSystem');
+      });
+
+      it('should validate listenToMessages function exists', () => {
+        expect(customerMessagesJs).toContain(
+          "typeof window.messagingSystem.listenToMessages !== 'function'"
+        );
+      });
+
+      it('should show error state when system not ready', () => {
+        expect(customerMessagesJs).toContain('System not ready');
+        expect(customerMessagesJs).toContain('Messaging system initialization failed');
+      });
     });
   });
 
@@ -200,8 +332,8 @@ describe('Messaging Dashboard Fixes', () => {
     });
 
     it('handles missing message content defensively', () => {
-      // Should handle both message and content fields
-      expect(supplierMessagesJs).toContain('message.message || message.content');
+      // Should use extractMessageText helper function
+      expect(supplierMessagesJs).toContain('extractMessageText(message)');
     });
 
     it('sends message with sendMessage method from messaging system', () => {
@@ -213,6 +345,79 @@ describe('Messaging Dashboard Fixes', () => {
     it('marks messages as read using markMessagesAsRead', () => {
       // Should use messagingSystem.markMessagesAsRead which now uses correct endpoint
       expect(supplierMessagesJs).toContain('messagingSystem.markMessagesAsRead(conversationId');
+    });
+
+    // New tests for comprehensive fixes
+    describe('message field normalization', () => {
+      it('should extract content from all field variations', () => {
+        expect(supplierMessagesJs).toContain('message.message ||');
+        expect(supplierMessagesJs).toContain('message.content ||');
+        expect(supplierMessagesJs).toContain('message.text ||');
+        expect(supplierMessagesJs).toContain('message.body ||');
+        expect(supplierMessagesJs).toContain('message.value ||');
+      });
+
+      it('should provide fallback text for missing content', () => {
+        expect(supplierMessagesJs).toContain('[No message content]');
+      });
+    });
+
+    describe('HTTP fallback mechanism', () => {
+      it('should have loadMessagesHTTPFallback function', () => {
+        expect(supplierMessagesJs).toContain('async function loadMessagesHTTPFallback');
+      });
+
+      it('should implement timeout and retry logic', () => {
+        expect(supplierMessagesJs).toContain('setTimeout');
+        expect(supplierMessagesJs).toContain('retryCount');
+        expect(supplierMessagesJs).toContain('maxRetries');
+      });
+
+      it('should try both v2 and v1 APIs', () => {
+        expect(supplierMessagesJs).toContain('/api/v2/messages/${conversationId}');
+        expect(supplierMessagesJs).toContain('/api/v1/threads/${conversationId}/messages');
+      });
+    });
+
+    describe('callback error handling', () => {
+      it('should catch errors in renderMessages', () => {
+        const renderMessagesMatch = supplierMessagesJs.match(
+          /const renderMessages = messages => \{[\s\S]*?\n\s{2}\};/
+        );
+        expect(renderMessagesMatch).toBeTruthy();
+        expect(renderMessagesMatch[0]).toContain('try {');
+        expect(renderMessagesMatch[0]).toContain('} catch (error)');
+      });
+
+      it('should handle per-message errors', () => {
+        expect(supplierMessagesJs).toContain('forEach((message, index)');
+        expect(supplierMessagesJs).toContain('Skipping invalid message');
+      });
+    });
+
+    describe('logging and debugging', () => {
+      it('should have logMessageState function', () => {
+        expect(supplierMessagesJs).toContain('function logMessageState');
+      });
+
+      it('should log key events', () => {
+        expect(supplierMessagesJs).toContain("logMessageState('INIT'");
+        expect(supplierMessagesJs).toContain("logMessageState('LISTENER_SETUP'");
+        expect(supplierMessagesJs).toContain("logMessageState('MESSAGES_RECEIVED'");
+      });
+    });
+
+    describe('MessagingSystem validation', () => {
+      it('should validate messagingSystem readiness', () => {
+        expect(supplierMessagesJs).toContain('!window.messagingSystem');
+        expect(supplierMessagesJs).toContain(
+          "typeof window.messagingSystem.listenToMessages !== 'function'"
+        );
+      });
+
+      it('should show error state when system not ready', () => {
+        expect(supplierMessagesJs).toContain('System not ready');
+      });
     });
   });
 });
