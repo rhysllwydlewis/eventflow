@@ -345,7 +345,7 @@ function openConversation(conversationId) {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay modal-overlay--glass active';
   modal.innerHTML = `
-    <div class="modal modal--glass" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
+    <div class="modal modal--glass" style="max-width:600px;width:calc(100% - 2rem);height:80vh;max-height:90vh;display:flex;flex-direction:column;">
       <div class="modal-header">
         <h3 class="modal-title">Conversation</h3>
         <button class="modal-close" type="button" aria-label="Close">&times;</button>
@@ -354,20 +354,20 @@ function openConversation(conversationId) {
         <div id="conversationMessages"><p class="small">Loading...</p></div>
         <div id="typingIndicatorContainer" style="min-height:24px;padding:0.5rem 0;"></div>
       </div>
-      <div class="modal-footer" style="padding:1.5rem;">
-        <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;flex-wrap:wrap;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:0;"></textarea>
+      <div class="modal-footer" style="padding:1rem 1.5rem;">
+        <form id="sendMessageForm" style="display:flex;gap:0.5rem;width:100%;flex-wrap:wrap;align-items:flex-end;">
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:0;padding:0.75rem;border:1px solid #e5e7eb;border-radius:6px;font-family:inherit;font-size:0.875rem;"></textarea>
           
           <!-- File input (hidden) -->
           <input type="file" id="attachmentInput" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"/>
           
           <!-- Attachment button -->
-          <button type="button" id="attachmentBtn" class="btn btn-secondary" style="align-self:flex-end;padding:0.75rem;border:none;background:#f3f4f6;color:#6b7280;cursor:pointer;transition:background-color 0.2s,color 0.2s;" title="Attach files" aria-label="Attach files">
+          <button type="button" id="attachmentBtn" class="btn btn-secondary" style="padding:0.75rem;border:none;background:#f3f4f6;color:#6b7280;cursor:pointer;transition:background-color 0.2s,color 0.2s;border-radius:6px;min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;" title="Attach files" aria-label="Attach files">
             📎
           </button>
           
           <!-- Send button -->
-          <button type="submit" class="btn btn-primary" style="align-self:flex-end;padding:0.75rem 1.5rem;">Send</button>
+          <button type="submit" class="btn btn-primary" style="padding:0.75rem 1.5rem;border-radius:6px;min-height:44px;white-space:nowrap;">Send</button>
         </form>
         
         <!-- Selected attachments preview -->
@@ -788,7 +788,6 @@ function openConversation(conversationId) {
       // If there are attachments, use FormData
       if (selectedFiles.length > 0) {
         const formData = new FormData();
-        formData.append('conversationId', conversationId);
         formData.append('senderId', currentUser.id);
         formData.append('senderType', 'supplier');
         formData.append('senderName', currentUser.name || currentUser.email);
@@ -802,7 +801,7 @@ function openConversation(conversationId) {
           formData.append('attachments', file);
         });
 
-        const response = await fetch('/api/v2/messages', {
+        const response = await fetch(`/api/v2/messages/${conversationId}`, {
           method: 'POST',
           headers: {
             'X-CSRF-Token': window.__CSRF_TOKEN__ || '',

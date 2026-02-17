@@ -103,9 +103,8 @@ describe('Messaging Dashboard Fixes', () => {
       const sendMessageRoute = messagingV2Js.substring(startIdx, endIdx);
 
       // Should still validate that content or attachments are required
-      expect(sendMessageRoute).toContain(
-        'if (!content && (!attachments || attachments.length === 0))'
-      );
+      // Updated to match new implementation that checks attachments.length
+      expect(sendMessageRoute).toContain("attachments.length === 0");
       expect(sendMessageRoute).toContain("error: 'content or attachments required'");
     });
 

@@ -7,6 +7,8 @@
 
 const express = require('express');
 const { ObjectId } = require('mongodb');
+const multer = require('multer');
+const path = require('path');
 
 // Dependencies injected by server.js
 let authRequired;
@@ -27,6 +29,39 @@ const router = express.Router();
 let messagingService;
 let notificationService;
 let presenceService;
+
+// Configure multer for message attachments
+const attachmentStorage = multer.memoryStorage();
+
+const attachmentFileFilter = (req, file, cb) => {
+  // Allow images, PDFs, and common document types
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images, PDFs, and office documents are allowed.'), false);
+  }
+};
+
+const attachmentUpload = multer({
+  storage: attachmentStorage,
+  fileFilter: attachmentFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 10, // Max 10 files per message
+  },
+});
 
 /**
  * Initialize dependencies from server.js
@@ -93,6 +128,47 @@ function initializeServices(db, wsServer) {
       logger.info('Messaging v2 services initialized');
     }
   }
+}
+
+/**
+ * Helper function to store attachment files
+ * For now, stores files in uploads directory
+ * TODO: Integrate with existing photo-upload for cloud storage
+ */
+async function storeAttachment(file) {
+  const fs = require('fs').promises;
+  const crypto = require('crypto');
+  
+  // Generate unique filename
+  const hash = crypto.randomBytes(16).toString('hex');
+  const timestamp = Date.now();
+  const ext = path.extname(file.originalname).toLowerCase();
+  const filename = `${timestamp}-${hash}${ext}`;
+  
+  // Store in uploads/attachments directory
+  const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
+  
+  // Ensure directory exists
+  try {
+    await fs.mkdir(uploadsDir, { recursive: true });
+  } catch (err) {
+    // Directory might already exist, ignore error
+  }
+  
+  const filepath = path.join(uploadsDir, filename);
+  
+  // Write file
+  await fs.writeFile(filepath, file.buffer);
+  
+  // Return attachment object
+  return {
+    type: file.mimetype.startsWith('image/') ? 'image' : 'document',
+    url: `/uploads/attachments/${filename}`,
+    filename: file.originalname,
+    size: file.size,
+    mimeType: file.mimetype,
+    metadata: {},
+  };
 }
 
 // Middleware to ensure services are initialized
@@ -637,24 +713,69 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
 /**
  * POST /api/v2/messages/:threadId
  * Send message in thread
+ * Supports both JSON and multipart/form-data (for attachments)
  */
 router.post(
   '/:threadId',
   applyAuthRequired,
   applyCsrfProtection,
   ensureServices,
+  // Use multer middleware to handle file uploads
+  (req, res, next) => {
+    attachmentUpload.array('attachments', 10)(req, res, err => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+              error: 'File too large',
+              message: 'Maximum file size is 10MB per file',
+            });
+          }
+          if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({
+              error: 'Too many files',
+              message: 'Maximum 10 files per message',
+            });
+          }
+        }
+        return res.status(400).json({
+          error: 'File upload error',
+          message: err.message,
+        });
+      }
+      next();
+    });
+  },
   async (req, res) => {
     try {
       const { threadId } = req.params;
       // Support both 'content' (v2) and 'message' (legacy v1) for backward compatibility
-      let { content, attachments, message: legacyMessage } = req.body;
+      let { content, message: legacyMessage } = req.body;
 
       // If 'message' is provided but not 'content', use 'message' as 'content'
       if (!content && legacyMessage) {
         content = legacyMessage;
       }
 
-      if (!content && (!attachments || attachments.length === 0)) {
+      // Process uploaded files
+      let attachments = [];
+      if (req.files && req.files.length > 0) {
+        // Store files and create attachment objects
+        for (const file of req.files) {
+          try {
+            const attachment = await storeAttachment(file);
+            attachments.push(attachment);
+          } catch (fileError) {
+            logger.error('Failed to store attachment', {
+              error: fileError.message,
+              filename: file.originalname,
+            });
+            // Continue with other files, don't fail the whole request
+          }
+        }
+      }
+
+      if (!content && attachments.length === 0) {
         return res.status(400).json({
           error: 'content or attachments required',
         });
@@ -690,8 +811,8 @@ router.post(
           threadId,
           senderId: req.user.id,
           recipientIds,
-          content,
-          attachments: attachments || [],
+          content: content || '',
+          attachments: attachments,
         },
         subscriptionTier
       );
