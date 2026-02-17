@@ -472,11 +472,11 @@ class MessagingSystem {
   /**
    * Mark messages as read via MongoDB API
    * @param {string} conversationId - Conversation ID
-   * @param {string} userId - User ID
+   * @param {string} userId - User ID (not used by v2 API, kept for backward compatibility)
    * @returns {Promise<void>}
    */
   async markMessagesAsRead(conversationId, userId) {
-    await this.markMessagesAsReadViaAPI(conversationId, userId);
+    await this.markMessagesAsReadViaAPI(conversationId);
 
     // Also emit via WebSocket if connected for immediate read receipt
     if (this.isConnected && this.socket) {
@@ -565,6 +565,14 @@ class MessagingSystem {
 
   async sendMessageViaAPI(conversationId, messageData) {
     try {
+      // Transform messageData to match v2 API expectations
+      // v2 API expects 'content' field, but maintain backward compatibility with 'message'
+      const payload = { ...messageData };
+      if (payload.message && !payload.content) {
+        payload.content = payload.message;
+        delete payload.message;
+      }
+
       const response = await fetch(`/api/v2/messages/${conversationId}`, {
         method: 'POST',
         headers: {
@@ -572,13 +580,17 @@ class MessagingSystem {
           'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
         credentials: 'include',
-        body: JSON.stringify(messageData),
+        body: JSON.stringify(payload),
       });
+
       if (response.ok) {
         const data = await response.json();
-        return data.messageId;
+        return data.messageId || (data.message && data.message.id);
       } else {
-        throw new Error('Failed to send message');
+        // Extract error message from response for better error reporting
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -586,17 +598,24 @@ class MessagingSystem {
     }
   }
 
-  async markMessagesAsReadViaAPI(conversationId, userId) {
+  async markMessagesAsReadViaAPI(conversationId) {
     try {
-      await fetch(`/api/v2/messages/${conversationId}/read`, {
+      // Use correct v2 endpoint: /api/v2/messages/threads/:threadId/read
+      // Note: v2 API uses req.user.id from session, no need to send userId in body
+      const response = await fetch(`/api/v2/messages/threads/${conversationId}/read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
         credentials: 'include',
-        body: JSON.stringify({ userId }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+        console.error('Error marking messages as read:', errorMessage);
+      }
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
@@ -940,7 +959,8 @@ class MessagingManager {
    */
   async markMessagesAsRead(threadId) {
     try {
-      const response = await fetch(`/api/v2/messages/threads/${threadId}/mark-read`, {
+      // Use correct v2 endpoint: /api/v2/messages/threads/:threadId/read
+      const response = await fetch(`/api/v2/messages/threads/${threadId}/read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -954,7 +974,10 @@ class MessagingManager {
         return true;
       }
 
-      console.error('Failed to mark messages as read');
+      // Extract and log error message for better debugging
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+      console.error('Failed to mark messages as read:', errorMessage);
       return false;
     } catch (error) {
       console.error('Error marking messages as read:', error);
