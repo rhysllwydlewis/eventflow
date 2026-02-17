@@ -14,6 +14,8 @@ const {
   createSystemFolders,
 } = require('../models/MessageFolder');
 const { COLLECTIONS: MESSAGE_COLLECTIONS } = require('../models/Message');
+const { withTransaction, validateObjectId } = require('../utils/mongoHelpers');
+const { isValidFolderLabelName } = require('../utils/validators');
 
 class FolderService {
   constructor(db) {
@@ -32,6 +34,11 @@ class FolderService {
    */
   async createFolder(userId, name, parentId = null, options = {}) {
     try {
+      // Validate name
+      if (!isValidFolderLabelName(name)) {
+        throw new Error('Invalid folder name. Must be 1-100 characters and contain no special characters.');
+      }
+
       // Validate input
       const validation = validateFolder({ userId, name, ...options });
       if (!validation.isValid) {
@@ -51,6 +58,8 @@ class FolderService {
 
       // If parentId is provided, verify it exists and belongs to user
       if (parentId) {
+        validateObjectId(parentId, 'parentId');
+
         const parent = await this.foldersCollection.findOne({
           _id: new ObjectId(parentId),
           userId,
@@ -89,6 +98,8 @@ class FolderService {
    */
   async getFolder(userId, folderId) {
     try {
+      validateObjectId(folderId, 'folderId');
+
       const folder = await this.foldersCollection.findOne({
         _id: new ObjectId(folderId),
         userId,
@@ -251,6 +262,8 @@ class FolderService {
    */
   async deleteFolder(userId, folderId) {
     try {
+      validateObjectId(folderId, 'folderId');
+
       const folder = await this.getFolder(userId, folderId);
 
       // Don't allow deleting system folders
@@ -269,44 +282,51 @@ class FolderService {
         throw new Error('Cannot delete folder with subfolders. Delete subfolders first.');
       }
 
-      // Move messages to inbox
-      const inboxFolder = await this.foldersCollection.findOne({
-        userId,
-        name: 'Inbox',
-        isSystemFolder: true,
-      });
-
-      if (inboxFolder && folder.messageCount > 0) {
-        await this.messagesCollection.updateMany(
-          { folderId: folderId },
+      // Use transaction for atomic operation
+      return await withTransaction(this.db, async session => {
+        // Move messages to inbox
+        const inboxFolder = await this.foldersCollection.findOne(
           {
-            $set: { folderId: inboxFolder._id.toString() },
-            $push: {
-              previousFolders: {
-                folderId: folderId,
-                movedAt: new Date(),
-                movedBy: userId,
+            userId,
+            name: 'Inbox',
+            isSystemFolder: true,
+          },
+          { session }
+        );
+
+        if (inboxFolder && folder.messageCount > 0) {
+          await this.messagesCollection.updateMany(
+            { folderId: folderId },
+            {
+              $set: { folderId: inboxFolder._id.toString() },
+              $push: {
+                previousFolders: {
+                  folderId: folderId,
+                  movedAt: new Date(),
+                  movedBy: userId,
+                },
               },
             },
-          }
-        );
-      }
+            { session }
+          );
+        }
 
-      // Soft delete folder
-      const result = await this.foldersCollection.findOneAndUpdate(
-        { _id: new ObjectId(folderId), userId },
-        {
-          $set: {
-            'metadata.deletedAt': new Date(),
-            'metadata.updatedAt': new Date(),
+        // Soft delete folder
+        const result = await this.foldersCollection.findOneAndUpdate(
+          { _id: new ObjectId(folderId), userId },
+          {
+            $set: {
+              'metadata.deletedAt': new Date(),
+              'metadata.updatedAt': new Date(),
+            },
           },
-        },
-        { returnDocument: 'after' }
-      );
+          { returnDocument: 'after', session }
+        );
 
-      logger.info('Folder deleted', { userId, folderId });
+        logger.info('Folder deleted', { userId, folderId });
 
-      return result.value;
+        return result.value;
+      });
     } catch (error) {
       logger.error('Delete folder error', { error: error.message, userId, folderId });
       throw error;
@@ -487,41 +507,111 @@ class FolderService {
    */
   async moveMessagesToFolder(userId, messageIds, folderId) {
     try {
+      validateObjectId(folderId, 'folderId');
+
+      // Validate all message IDs
+      for (const messageId of messageIds) {
+        validateObjectId(messageId, 'messageId');
+      }
+
       // Verify folder exists and belongs to user
       await this.getFolder(userId, folderId);
 
-      const result = await this.messagesCollection.updateMany(
-        {
-          _id: { $in: messageIds.map(id => new ObjectId(id)) },
-          $or: [{ senderId: userId }, { recipientIds: userId }],
-        },
-        {
-          $set: {
-            folderId: folderId,
-            updatedAt: new Date(),
+      // Use transaction for atomic operation
+      return await withTransaction(this.db, async session => {
+        const result = await this.messagesCollection.updateMany(
+          {
+            _id: { $in: messageIds.map(id => new ObjectId(id)) },
+            $or: [{ senderId: userId }, { recipientIds: userId }],
           },
-          $push: {
-            previousFolders: {
+          {
+            $set: {
               folderId: folderId,
-              movedAt: new Date(),
-              movedBy: userId,
+              updatedAt: new Date(),
+            },
+            $push: {
+              previousFolders: {
+                folderId: folderId,
+                movedAt: new Date(),
+                movedBy: userId,
+              },
             },
           },
-        }
-      );
+          { session }
+        );
 
-      // Update message counts
-      await this.updateFolderCounts(userId);
+        // Update message counts within transaction
+        await this.updateFolderCountsInSession(userId, session);
 
-      logger.info('Messages moved to folder', {
-        userId,
-        folderId,
-        count: result.modifiedCount,
+        logger.info('Messages moved to folder', {
+          userId,
+          folderId,
+          count: result.modifiedCount,
+        });
+
+        return { modifiedCount: result.modifiedCount };
       });
-
-      return { modifiedCount: result.modifiedCount };
     } catch (error) {
       logger.error('Move messages to folder error', { error: error.message, userId, folderId });
+      throw error;
+    }
+  }
+
+  /**
+   * Update folder message counts within a session
+   * @param {string} userId - User ID
+   * @param {Object} session - MongoDB session
+   * @returns {Promise<void>}
+   */
+  async updateFolderCountsInSession(userId, session) {
+    try {
+      const options = session ? { session } : {};
+      const folders = await this.foldersCollection
+        .find(
+          {
+            userId,
+            'metadata.deletedAt': null,
+          },
+          options
+        )
+        .toArray();
+
+      for (const folder of folders) {
+        const folderId = folder._id.toString();
+
+        // Count total messages
+        const messageCount = await this.messagesCollection.countDocuments(
+          {
+            folderId: folderId,
+            deletedAt: null,
+          },
+          options
+        );
+
+        // Count unread messages
+        const unreadCount = await this.messagesCollection.countDocuments(
+          {
+            folderId: folderId,
+            deletedAt: null,
+            readBy: { $not: { $elemMatch: { userId: userId } } },
+          },
+          options
+        );
+
+        await this.foldersCollection.updateOne(
+          { _id: folder._id },
+          {
+            $set: {
+              messageCount,
+              unreadCount,
+              'metadata.updatedAt': new Date(),
+            },
+          },
+          options
+        );
+      }
+    } catch (error) {
+      logger.error('Update folder counts in session error', { error: error.message, userId });
       throw error;
     }
   }
@@ -532,40 +622,7 @@ class FolderService {
    * @returns {Promise<void>}
    */
   async updateFolderCounts(userId) {
-    try {
-      const folders = await this.getUserFolders(userId);
-
-      for (const folder of folders) {
-        const folderId = folder._id.toString();
-
-        // Count total messages
-        const messageCount = await this.messagesCollection.countDocuments({
-          folderId: folderId,
-          deletedAt: null,
-        });
-
-        // Count unread messages
-        const unreadCount = await this.messagesCollection.countDocuments({
-          folderId: folderId,
-          deletedAt: null,
-          readBy: { $not: { $elemMatch: { userId: userId } } },
-        });
-
-        await this.foldersCollection.updateOne(
-          { _id: folder._id },
-          {
-            $set: {
-              messageCount,
-              unreadCount,
-              'metadata.updatedAt': new Date(),
-            },
-          }
-        );
-      }
-    } catch (error) {
-      logger.error('Update folder counts error', { error: error.message, userId });
-      throw error;
-    }
+    return this.updateFolderCountsInSession(userId, null);
   }
 
   /**
