@@ -40,9 +40,7 @@ function initializeDependencies(deps) {
   logger = deps.logger;
   mongoDb = deps.mongoDb;
 
-  // Initialize service
-  const LabelService = require('../services/LabelService');
-  labelService = new LabelService(mongoDb);
+  // Service will be initialized lazily on first request
 }
 
 /**
@@ -67,8 +65,29 @@ function applyCsrfProtection(req, res, next) {
 
 /**
  * Middleware to ensure services are initialized
+ * Lazily initializes the service with database instance on first request
  */
-function ensureServices(req, res, next) {
+async function ensureServices(req, res, next) {
+  if (!labelService && mongoDb) {
+    try {
+      // Get database instance (not module) and initialize service
+      const LabelService = require('../services/LabelService');
+      const db = await mongoDb.getDb();
+      labelService = new LabelService(db);
+      if (logger) {
+        logger.info('Label service initialized');
+      }
+    } catch (error) {
+      if (logger) {
+        logger.error('Failed to initialize label service:', error);
+      }
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Failed to initialize label service',
+      });
+    }
+  }
+  
   if (!labelService) {
     return res.status(503).json({
       error: 'Service unavailable',

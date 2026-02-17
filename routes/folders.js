@@ -40,9 +40,7 @@ function initializeDependencies(deps) {
   logger = deps.logger;
   mongoDb = deps.mongoDb;
 
-  // Initialize service
-  const FolderService = require('../services/FolderService');
-  folderService = new FolderService(mongoDb);
+  // Service will be initialized lazily on first request
 }
 
 /**
@@ -67,8 +65,29 @@ function applyCsrfProtection(req, res, next) {
 
 /**
  * Middleware to ensure services are initialized
+ * Lazily initializes the service with database instance on first request
  */
-function ensureServices(req, res, next) {
+async function ensureServices(req, res, next) {
+  if (!folderService && mongoDb) {
+    try {
+      // Get database instance (not module) and initialize service
+      const FolderService = require('../services/FolderService');
+      const db = await mongoDb.getDb();
+      folderService = new FolderService(db);
+      if (logger) {
+        logger.info('Folder service initialized');
+      }
+    } catch (error) {
+      if (logger) {
+        logger.error('Failed to initialize folder service:', error);
+      }
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Failed to initialize folder service',
+      });
+    }
+  }
+  
   if (!folderService) {
     return res.status(503).json({
       error: 'Service unavailable',
