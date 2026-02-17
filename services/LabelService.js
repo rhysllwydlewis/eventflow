@@ -14,6 +14,8 @@ const {
   createDefaultLabels,
 } = require('../models/MessageLabel');
 const { COLLECTIONS: MESSAGE_COLLECTIONS } = require('../models/Message');
+const { withTransaction, validateObjectId } = require('../utils/mongoHelpers');
+const { isValidFolderLabelName, isValidHexColor } = require('../utils/validators');
 
 class LabelService {
   constructor(db) {
