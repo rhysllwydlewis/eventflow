@@ -1252,6 +1252,37 @@ class MessagingManager {
     }
     indicator.style.display = 'none';
   }
+
+  /**
+   * Cleanup - Stop all polling, disconnect socket, clear timers
+   * Call this before page unload to prevent memory leaks
+   */
+  cleanup() {
+    // Stop all polling intervals
+    this.pollingIntervals.forEach(intervalId => clearInterval(intervalId));
+    this.pollingIntervals = [];
+
+    // Clear typing timeouts
+    this.typingTimeouts.forEach(timeout => clearTimeout(timeout));
+    this.typingTimeouts.clear();
+
+    // Clear typing debounce timers
+    this._typingDebounceTimers.forEach(timer => clearTimeout(timer));
+    this._typingDebounceTimers.clear();
+
+    // Disconnect WebSocket
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+
+    // Clear conversation callbacks
+    this.conversationCallbacks.clear();
+    this.messageCallbacks.clear();
+    this.activeConversations.clear();
+
+    console.log('MessagingSystem cleaned up');
+  }
 }
 
 // ============================================
@@ -1315,20 +1346,27 @@ class BulkOperationManager {
   async bulkDelete(messageIds, threadId, reason = '') {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found');
+      }
+
       const response = await fetch('/api/v2/messages/bulk-delete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'CSRF-Token': csrfToken,
         },
+        credentials: 'include',
         body: JSON.stringify({ messageIds, threadId, reason }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to delete messages');
+        const result = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(result.error || `Request failed with status ${response.status}`);
       }
+
+      const result = await response.json();
 
       // Store undo information
       this.undoQueue.push({
@@ -1349,21 +1387,27 @@ class BulkOperationManager {
   async bulkMarkRead(messageIds, isRead) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found');
+      }
+
       const response = await fetch('/api/v2/messages/bulk-mark-read', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'CSRF-Token': csrfToken,
         },
+        credentials: 'include',
         body: JSON.stringify({ messageIds, isRead }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to mark messages');
+        const result = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(result.error || `Request failed with status ${response.status}`);
       }
 
+      const result = await response.json();
       return result;
     } catch (error) {
       console.error('Bulk mark read error:', error);
@@ -1374,21 +1418,27 @@ class BulkOperationManager {
   async flagMessage(messageId, isFlagged) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found');
+      }
+
       const response = await fetch(`/api/v2/messages/${messageId}/flag`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'CSRF-Token': csrfToken,
         },
+        credentials: 'include',
         body: JSON.stringify({ isFlagged }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to flag message');
+        const result = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(result.error || `Request failed with status ${response.status}`);
       }
 
+      const result = await response.json();
       return result;
     } catch (error) {
       console.error('Flag message error:', error);
@@ -1399,21 +1449,27 @@ class BulkOperationManager {
   async archiveMessage(messageId, action) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found');
+      }
+
       const response = await fetch(`/api/v2/messages/${messageId}/archive`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'CSRF-Token': csrfToken,
         },
+        credentials: 'include',
         body: JSON.stringify({ action }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to archive message');
+        const result = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(result.error || `Request failed with status ${response.status}`);
       }
 
+      const result = await response.json();
       return result;
     } catch (error) {
       console.error('Archive message error:', error);
@@ -1424,20 +1480,27 @@ class BulkOperationManager {
   async undo(operationId, undoToken) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found');
+      }
+
       const response = await fetch(`/api/v2/messages/operations/${operationId}/undo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'CSRF-Token': csrfToken,
         },
+        credentials: 'include',
         body: JSON.stringify({ undoToken }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to undo operation');
+        const result = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(result.error || `Request failed with status ${response.status}`);
       }
+
+      const result = await response.json();
 
       // Remove from undo queue
       this.undoQueue = this.undoQueue.filter(op => op.operationId !== operationId);
@@ -1568,13 +1631,16 @@ class SortFilterManager {
         params.append('status', this.filters.status);
       }
 
-      const response = await fetch(`/api/v2/messages/${threadId}?${params.toString()}`);
-      const result = await response.json();
+      const response = await fetch(`/api/v2/messages/${threadId}?${params.toString()}`, {
+        credentials: 'include',
+      });
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch messages');
+        const result = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(result.error || `Request failed with status ${response.status}`);
       }
 
+      const result = await response.json();
       return result;
     } catch (error) {
       console.error('Fetch messages with filters error:', error);
@@ -1620,6 +1686,13 @@ const messagingManager = new MessagingManager();
 const selectionManager = new SelectionManager();
 const bulkOperationManager = new BulkOperationManager();
 const sortFilterManager = new SortFilterManager();
+
+// Register cleanup on page unload to prevent memory leaks
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    messagingSystem.cleanup();
+  });
+}
 
 export default messagingSystem;
 export {
