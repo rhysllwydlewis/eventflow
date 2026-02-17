@@ -155,13 +155,17 @@ function sanitizeAttachmentUrl(url) {
   if (!url || typeof url !== 'string') {
     return '#';
   }
-  
+
   // Only allow URLs that start with /uploads/ or are relative paths
   // This prevents javascript: or data: URL injection
-  if (url.startsWith('/uploads/') || url.startsWith('./uploads/') || url.startsWith('../uploads/')) {
+  if (
+    url.startsWith('/uploads/') ||
+    url.startsWith('./uploads/') ||
+    url.startsWith('../uploads/')
+  ) {
     return url;
   }
-  
+
   // If it's an absolute URL, only allow http/https
   try {
     const urlObj = new URL(url, window.location.origin);
@@ -171,7 +175,7 @@ function sanitizeAttachmentUrl(url) {
   } catch (e) {
     // Invalid URL, return safe default
   }
-  
+
   return '#';
 }
 
@@ -180,13 +184,17 @@ function sanitizeAttachmentUrl(url) {
   if (!url || typeof url !== 'string') {
     return '#';
   }
-  
+
   // Only allow URLs that start with /uploads/ or are relative paths
   // This prevents javascript: or data: URL injection
-  if (url.startsWith('/uploads/') || url.startsWith('./uploads/') || url.startsWith('../uploads/')) {
+  if (
+    url.startsWith('/uploads/') ||
+    url.startsWith('./uploads/') ||
+    url.startsWith('../uploads/')
+  ) {
     return url;
   }
-  
+
   // If it's an absolute URL, only allow http/https
   try {
     const urlObj = new URL(url, window.location.origin);
@@ -196,7 +204,7 @@ function sanitizeAttachmentUrl(url) {
   } catch (e) {
     // Invalid URL, return safe default
   }
-  
+
   return '#';
 }
 
@@ -553,13 +561,17 @@ function openConversation(conversationId) {
 
           // Render attachments if present
           if (hasAttachments) {
-            html += '<div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem;">';
+            html +=
+              '<div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem;">';
             message.attachments.forEach((attachment, attIdx) => {
-              const isImage = attachment.type === 'image' || attachment.mimeType?.startsWith('image/');
+              const isImage =
+                attachment.type === 'image' || attachment.mimeType?.startsWith('image/');
               const filename = escapeHtml(attachment.filename || 'attachment');
               const rawUrl = attachment.url || '#';
               const url = sanitizeAttachmentUrl(rawUrl);
-              const size = attachment.size ? `(${(attachment.size / 1024 / 1024).toFixed(1)}MB)` : '';
+              const size = attachment.size
+                ? `(${(attachment.size / 1024 / 1024).toFixed(1)}MB)`
+                : '';
 
               if (isImage) {
                 // Render image with preview
@@ -749,6 +761,10 @@ function openConversation(conversationId) {
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
   const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB total
   let selectedFiles = [];
+  let typingTimeout = null;
+
+  // Track event listeners for cleanup
+  const listeners = [];
 
   const attachmentBtn = modal.querySelector('#attachmentBtn');
   const attachmentInput = modal.querySelector('#attachmentInput');
@@ -757,19 +773,28 @@ function openConversation(conversationId) {
   // Click button to open file picker
   if (attachmentBtn && attachmentInput) {
     // Add hover effect
-    attachmentBtn.addEventListener('mouseenter', () => {
+    const mouseenterHandler = () => {
       attachmentBtn.style.background = '#e5e7eb';
       attachmentBtn.style.color = '#374151';
-    });
-    attachmentBtn.addEventListener('mouseleave', () => {
+    };
+    const mouseleaveHandler = () => {
       attachmentBtn.style.background = '#f3f4f6';
       attachmentBtn.style.color = '#6b7280';
+    };
+    const clickHandler = () => attachmentInput.click();
+
+    attachmentBtn.addEventListener('mouseenter', mouseenterHandler);
+    attachmentBtn.addEventListener('mouseleave', mouseleaveHandler);
+    attachmentBtn.addEventListener('click', clickHandler);
+
+    listeners.push(() => {
+      attachmentBtn.removeEventListener('mouseenter', mouseenterHandler);
+      attachmentBtn.removeEventListener('mouseleave', mouseleaveHandler);
+      attachmentBtn.removeEventListener('click', clickHandler);
     });
 
-    attachmentBtn.addEventListener('click', () => attachmentInput.click());
-
     // Handle file selection
-    attachmentInput.addEventListener('change', e => {
+    const fileChangeHandler = e => {
       const files = Array.from(e.target.files);
       const validFiles = [];
       let totalSize = 0;
@@ -813,6 +838,11 @@ function openConversation(conversationId) {
 
       // Reset input to allow selecting the same file again if needed
       attachmentInput.value = '';
+    };
+
+    attachmentInput.addEventListener('change', fileChangeHandler);
+    listeners.push(() => {
+      attachmentInput.removeEventListener('change', fileChangeHandler);
     });
   }
 
@@ -844,7 +874,7 @@ function openConversation(conversationId) {
 
   // Use event delegation for remove buttons (prevents memory leaks)
   if (previewContainer) {
-    previewContainer.addEventListener('click', e => {
+    const clickHandler = e => {
       const removeBtn = e.target.closest('.remove-attachment-btn');
       if (removeBtn) {
         const index = parseInt(removeBtn.getAttribute('data-index'));
@@ -856,26 +886,36 @@ function openConversation(conversationId) {
           }
         }
       }
-    });
+    };
 
     // Add hover effects with event delegation
-    previewContainer.addEventListener('mouseover', e => {
+    const mouseoverHandler = e => {
       const removeBtn = e.target.closest('.remove-attachment-btn');
       if (removeBtn) {
         removeBtn.style.color = '#dc2626';
       }
-    });
+    };
 
-    previewContainer.addEventListener('mouseout', e => {
+    const mouseoutHandler = e => {
       const removeBtn = e.target.closest('.remove-attachment-btn');
       if (removeBtn) {
         removeBtn.style.color = '#ef4444';
       }
+    };
+
+    previewContainer.addEventListener('click', clickHandler);
+    previewContainer.addEventListener('mouseover', mouseoverHandler);
+    previewContainer.addEventListener('mouseout', mouseoutHandler);
+
+    listeners.push(() => {
+      previewContainer.removeEventListener('click', clickHandler);
+      previewContainer.removeEventListener('mouseover', mouseoverHandler);
+      previewContainer.removeEventListener('mouseout', mouseoutHandler);
     });
   }
 
   // Send message form
-  modal.querySelector('#sendMessageForm').addEventListener('submit', async e => {
+  const formSubmitHandler = async e => {
     e.preventDefault();
 
     if (!currentUser) {
@@ -892,11 +932,18 @@ function openConversation(conversationId) {
       return;
     }
 
-    try {
-      const submitBtn = e.target.querySelector('button[type="submit"]');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending...';
+    const submitBtn = e.target.querySelector('button[type="submit"]');
 
+    // Prevent double-submission
+    if (submitBtn.disabled) {
+      return;
+    }
+
+    // Disable button immediately (before async operations)
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+
+    try {
       // If there are attachments, use FormData
       if (selectedFiles.length > 0) {
         const formData = new FormData();
@@ -941,8 +988,6 @@ function openConversation(conversationId) {
       }
 
       messageInput.value = '';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Send';
 
       // Stop typing indicator when message sent
       messagingSystem.sendTypingStatus(conversationId, false);
@@ -951,18 +996,25 @@ function openConversation(conversationId) {
       if (typeof EFToast !== 'undefined') {
         EFToast.error(`Failed to send message: ${error.message}`);
       }
-
-      const submitBtn = e.target.querySelector('button[type="submit"]');
+    } finally {
+      // Always re-enable button, even on error
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send';
     }
-  });
+  };
+
+  const sendForm = modal.querySelector('#sendMessageForm');
+  if (sendForm) {
+    sendForm.addEventListener('submit', formSubmitHandler);
+    listeners.push(() => {
+      sendForm.removeEventListener('submit', formSubmitHandler);
+    });
+  }
 
   // Send typing indicator when user types
   const messageInput = modal.querySelector('#messageInput');
-  let typingTimeout = null;
 
-  messageInput.addEventListener('input', () => {
+  const inputHandler = () => {
     if (currentUser && conversationId) {
       messagingSystem.sendTypingStatus(conversationId, true);
 
@@ -972,14 +1024,30 @@ function openConversation(conversationId) {
         messagingSystem.sendTypingStatus(conversationId, false);
       }, 2000);
     }
-  });
+  };
 
-  messageInput.addEventListener('blur', () => {
+  const blurHandler = () => {
     // Stop typing when input loses focus
     if (currentUser && conversationId) {
       messagingSystem.sendTypingStatus(conversationId, false);
     }
+  };
+
+  messageInput.addEventListener('input', inputHandler);
+  messageInput.addEventListener('blur', blurHandler);
+
+  listeners.push(() => {
+    messageInput.removeEventListener('input', inputHandler);
+    messageInput.removeEventListener('blur', blurHandler);
+    // Clear any pending typing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      typingTimeout = null;
+    }
   });
+
+  // Register all event listener cleanup functions
+  listeners.forEach(cleanup => cleanupCallbacks.push(cleanup));
 
   // Register cleanup for typing timeout
   cleanupCallbacks.push(() => {
