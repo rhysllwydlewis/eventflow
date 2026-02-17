@@ -114,6 +114,31 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Sanitize and validate attachment URL
+function sanitizeAttachmentUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return '#';
+  }
+  
+  // Only allow URLs that start with /uploads/ or are relative paths
+  // This prevents javascript: or data: URL injection
+  if (url.startsWith('/uploads/') || url.startsWith('./uploads/') || url.startsWith('../uploads/')) {
+    return url;
+  }
+  
+  // If it's an absolute URL, only allow http/https
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+      return urlObj.href;
+    }
+  } catch (e) {
+    // Invalid URL, return safe default
+  }
+  
+  return '#';
+}
+
 // Format message preview with "You:" prefix for outbound messages
 function formatMessagePreview(
   messageText,
@@ -538,14 +563,19 @@ function openConversation(conversationId) {
             message.attachments.forEach((attachment, attIdx) => {
               const isImage = attachment.type === 'image' || attachment.mimeType?.startsWith('image/');
               const filename = escapeHtml(attachment.filename || 'attachment');
-              const url = attachment.url || '#';
+              const rawUrl = attachment.url || '#';
+              const url = sanitizeAttachmentUrl(rawUrl);
               const size = attachment.size ? `(${(attachment.size / 1024 / 1024).toFixed(1)}MB)` : '';
 
               if (isImage) {
                 // Render image with preview
                 html += `
                   <a href="${url}" target="_blank" rel="noopener noreferrer" style="max-width:300px;">
-                    <img src="${url}" alt="${filename}" style="max-width:100%;border-radius:4px;display:block;" loading="lazy" />
+                    <img src="${url}" 
+                         alt="${filename}" 
+                         style="max-width:100%;border-radius:4px;display:block;" 
+                         loading="lazy"
+                         onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'padding:0.5rem;background:#fee;color:#c00;border-radius:4px;font-size:0.875rem;\\'>Image failed to load</div>';" />
                   </a>
                 `;
               } else {
