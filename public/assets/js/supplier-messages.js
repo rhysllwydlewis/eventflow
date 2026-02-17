@@ -10,27 +10,10 @@ import {
   calculateLeadQuality,
   filterThreadsByQualityLevel,
 } from './utils/lead-quality-helper.js';
+import { logMessageState } from './utils/dashboard-logger.js';
 
 // Constants
 const MESSAGE_PREVIEW_MAX_LENGTH = 100;
-
-// Initialize debug logging array on window for troubleshooting
-if (!window.dashboardLogs) {
-  window.dashboardLogs = [];
-}
-
-// Helper function for detailed logging
-function logMessageState(state, data) {
-  const timestamp = new Date().toISOString();
-  const logEntry = { timestamp, state, data };
-  console.log(`[${timestamp}] [Dashboard Messaging] ${state}:`, data);
-
-  // Store in window.dashboardLogs for debugging (keep last 100 entries)
-  window.dashboardLogs.push(logEntry);
-  if (window.dashboardLogs.length > 100) {
-    window.dashboardLogs.shift();
-  }
-}
 
 // Helper function to extract message text from various field names
 function extractMessageText(message) {

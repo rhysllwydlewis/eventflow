@@ -258,8 +258,10 @@ describe('Messaging Dashboard Fixes', () => {
     });
 
     describe('logging and debugging', () => {
-      it('should have logMessageState function', () => {
-        expect(customerMessagesJs).toContain('function logMessageState');
+      it('should import logMessageState from dashboard-logger utility', () => {
+        expect(customerMessagesJs).toContain(
+          "import { logMessageState } from './utils/dashboard-logger.js'"
+        );
       });
 
       it('should log initialization', () => {
@@ -300,7 +302,9 @@ describe('Messaging Dashboard Fixes', () => {
       });
 
       it('should include dashboard logging for debugging', () => {
-        expect(customerMessagesJs).toContain('window.dashboardLogs');
+        expect(customerMessagesJs).toContain(
+          "import { logMessageState } from './utils/dashboard-logger.js'"
+        );
       });
 
       it('should validate conversation objects before rendering', () => {
@@ -415,8 +419,10 @@ describe('Messaging Dashboard Fixes', () => {
     });
 
     describe('logging and debugging', () => {
-      it('should have logMessageState function', () => {
-        expect(supplierMessagesJs).toContain('function logMessageState');
+      it('should import logMessageState from dashboard-logger utility', () => {
+        expect(supplierMessagesJs).toContain(
+          "import { logMessageState } from './utils/dashboard-logger.js'"
+        );
       });
 
       it('should log key events', () => {
@@ -439,7 +445,9 @@ describe('Messaging Dashboard Fixes', () => {
       });
 
       it('should include dashboard logging for debugging', () => {
-        expect(supplierMessagesJs).toContain('window.dashboardLogs');
+        expect(supplierMessagesJs).toContain(
+          "import { logMessageState } from './utils/dashboard-logger.js'"
+        );
       });
 
       it('should validate conversation objects before rendering', () => {
@@ -451,6 +459,34 @@ describe('Messaging Dashboard Fixes', () => {
         expect(supplierMessagesJs).toContain('Skipping conversation without ID');
         expect(supplierMessagesJs).toContain('!conversation.id');
       });
+    });
+  });
+
+  describe('dashboard-logger.js utility', () => {
+    const dashboardLoggerJs = fs.readFileSync(
+      path.join(process.cwd(), 'public/assets/js/utils/dashboard-logger.js'),
+      'utf8'
+    );
+
+    it('should initialize window.dashboardLogs array', () => {
+      expect(dashboardLoggerJs).toContain('window.dashboardLogs = []');
+    });
+
+    it('should export logMessageState function', () => {
+      expect(dashboardLoggerJs).toContain('export function logMessageState');
+    });
+
+    it('should maintain last 100 log entries', () => {
+      expect(dashboardLoggerJs).toContain('window.dashboardLogs.length > 100');
+      expect(dashboardLoggerJs).toContain('window.dashboardLogs.shift()');
+    });
+
+    it('should export getDashboardLogs function', () => {
+      expect(dashboardLoggerJs).toContain('export function getDashboardLogs');
+    });
+
+    it('should export clearDashboardLogs function', () => {
+      expect(dashboardLoggerJs).toContain('export function clearDashboardLogs');
     });
   });
 });
