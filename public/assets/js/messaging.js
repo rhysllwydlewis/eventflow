@@ -693,7 +693,7 @@ class MessagingSystem {
    */
   formatFullTimestamp(timestamp) {
     if (!timestamp) {
-      return '';
+      return 'Unknown time';
     }
 
     let date;
@@ -702,10 +702,43 @@ class MessagingSystem {
     } else if (timestamp instanceof Date) {
       date = timestamp;
     } else {
-      date = new Date(timestamp);
+      try {
+        date = new Date(timestamp);
+      } catch (e) {
+        console.error('Invalid timestamp:', timestamp);
+        return 'Unknown time';
+      }
     }
 
-    return date.toLocaleString();
+    // Validate date is valid
+    if (isNaN(date.getTime())) {
+      return 'Unknown time';
+    }
+
+    // Use relative time for recent messages, full date for older
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) {
+      return 'Just now';
+    } else if (minutes < 60) {
+      return `${minutes}m ago`;
+    } else if (hours < 24) {
+      return `${hours}h ago`;
+    } else if (days < 7) {
+      return `${days}d ago`;
+    } else {
+      // For older messages, show friendly date without seconds
+      return date.toLocaleDateString('en-GB', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
   }
 
   /**

@@ -386,10 +386,23 @@ function openConversation(conversationId) {
         <div id="typingIndicatorContainer" style="min-height:24px;padding:0.5rem 0;"></div>
       </div>
       <div class="modal-footer" style="padding:1.5rem;">
-        <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;" required></textarea>
+        <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;flex-wrap:wrap;">
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:250px;" required></textarea>
+          
+          <!-- File input (hidden) -->
+          <input type="file" id="attachmentInput" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"/>
+          
+          <!-- Attachment button -->
+          <button type="button" id="attachmentBtn" class="btn btn-secondary" style="align-self:flex-end;padding:0.75rem;border:none;background:#f3f4f6;color:#6b7280;cursor:pointer;" title="Attach files">
+            📎
+          </button>
+          
+          <!-- Send button -->
           <button type="submit" class="btn btn-primary" style="align-self:flex-end;padding:0.75rem 1.5rem;">Send</button>
         </form>
+        
+        <!-- Selected attachments preview -->
+        <div id="attachmentsPreview" style="display:none;margin-top:0.75rem;padding:0.75rem;background:#f9fafb;border-radius:6px;"></div>
       </div>
     </div>
   `;
@@ -671,6 +684,82 @@ function openConversation(conversationId) {
     });
   });
 
+  // File attachment handling
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+  const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB total
+  let selectedFiles = [];
+
+  const attachmentBtn = modal.querySelector('#attachmentBtn');
+  const attachmentInput = modal.querySelector('#attachmentInput');
+  const previewContainer = modal.querySelector('#attachmentsPreview');
+
+  // Click button to open file picker
+  if (attachmentBtn && attachmentInput) {
+    attachmentBtn.addEventListener('click', () => attachmentInput.click());
+
+    // Handle file selection
+    attachmentInput.addEventListener('change', e => {
+      const files = Array.from(e.target.files);
+      selectedFiles = [];
+      let totalSize = 0;
+
+      files.forEach(file => {
+        if (file.size > MAX_FILE_SIZE) {
+          if (typeof EFToast !== 'undefined') {
+            EFToast.warning(`File ${file.name} is too large (max 10MB)`);
+          }
+          return;
+        }
+        totalSize += file.size;
+        selectedFiles.push(file);
+      });
+
+      if (totalSize > MAX_TOTAL_SIZE) {
+        if (typeof EFToast !== 'undefined') {
+          EFToast.warning('Total file size exceeds 25MB');
+        }
+        selectedFiles = selectedFiles.slice(0, -1);
+      }
+
+      updateAttachmentsPreview();
+    });
+  }
+
+  function updateAttachmentsPreview() {
+    if (!previewContainer) {
+      return;
+    }
+
+    if (selectedFiles.length === 0) {
+      previewContainer.style.display = 'none';
+      return;
+    }
+
+    previewContainer.style.display = 'block';
+    previewContainer.innerHTML = selectedFiles
+      .map(
+        (file, idx) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;background:white;border-radius:4px;margin-bottom:0.5rem;border:1px solid #e5e7eb;">
+        <span style="font-size:0.875rem;color:#374151;">${escapeHtml(file.name)} (${(file.size / 1024 / 1024).toFixed(1)}MB)</span>
+        <button type="button" class="remove-attachment-btn" data-index="${idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;">✕</button>
+      </div>
+    `
+      )
+      .join('');
+
+    // Add event listeners for remove buttons
+    previewContainer.querySelectorAll('.remove-attachment-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const index = parseInt(e.target.getAttribute('data-index'));
+        selectedFiles.splice(index, 1);
+        updateAttachmentsPreview();
+        if (attachmentInput) {
+          attachmentInput.value = '';
+        }
+      });
+    });
+  }
+
   // Send message form
   modal.querySelector('#sendMessageForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -685,7 +774,7 @@ function openConversation(conversationId) {
     const messageInput = modal.querySelector('#messageInput');
     const messageText = messageInput.value.trim();
 
-    if (!messageText) {
+    if (!messageText && selectedFiles.length === 0) {
       return;
     }
 
@@ -694,12 +783,43 @@ function openConversation(conversationId) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
 
-      await messagingSystem.sendMessage(conversationId, {
-        senderId: currentUser.id,
-        senderType: 'customer',
-        senderName: currentUser.name || currentUser.email,
-        message: messageText,
-      });
+      // If there are attachments, use FormData
+      if (selectedFiles.length > 0) {
+        const formData = new FormData();
+        formData.append('conversationId', conversationId);
+        formData.append('senderId', currentUser.id);
+        formData.append('senderType', 'customer');
+        formData.append('senderName', currentUser.name || currentUser.email);
+        formData.append('message', messageText);
+
+        selectedFiles.forEach(file => {
+          formData.append('attachments', file);
+        });
+
+        const response = await fetch('/api/v2/messages', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to send message');
+        }
+
+        selectedFiles = [];
+        updateAttachmentsPreview();
+        if (attachmentInput) {
+          attachmentInput.value = '';
+        }
+      } else {
+        // No attachments, use regular sendMessage
+        await messagingSystem.sendMessage(conversationId, {
+          senderId: currentUser.id,
+          senderType: 'customer',
+          senderName: currentUser.name || currentUser.email,
+          message: messageText,
+        });
+      }
 
       messageInput.value = '';
       submitBtn.disabled = false;
