@@ -7,6 +7,8 @@
 
 const express = require('express');
 const { ObjectId } = require('mongodb');
+const multer = require('multer');
+const path = require('path');
 
 // Dependencies injected by server.js
 let authRequired;
@@ -27,6 +29,39 @@ const router = express.Router();
 let messagingService;
 let notificationService;
 let presenceService;
+
+// Configure multer for message attachments
+const attachmentStorage = multer.memoryStorage();
+
+const attachmentFileFilter = (req, file, cb) => {
+  // Allow images, PDFs, and common document types
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images, PDFs, and office documents are allowed.'), false);
+  }
+};
+
+const attachmentUpload = multer({
+  storage: attachmentStorage,
+  fileFilter: attachmentFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 10, // Max 10 files per message
+  },
+});
 
 /**
  * Initialize dependencies from server.js
@@ -52,6 +87,42 @@ function initializeDependencies(deps) {
   mongoDb = deps.mongoDb;
   // wsServerV2 is optional (may not be available in all environments)
   wsServerV2 = deps.wsServerV2;
+}
+
+/**
+ * Initialize router and create required directories
+ * @param {Object} deps - Dependencies object
+ */
+async function initializeRouter(deps) {
+  initializeDependencies(deps);
+  
+  // Initialize services
+  if (mongoDb) {
+    messagingService = new MessagingService(mongoDb);
+    notificationService = new NotificationService(mongoDb, wsServerV2);
+    presenceService = new PresenceService(mongoDb);
+    
+    if (logger) {
+      logger.info('Messaging v2 services initialized');
+    }
+  }
+  
+  // Ensure attachments directory exists at startup
+  const fs = require('fs').promises;
+  const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
+  try {
+    await fs.mkdir(uploadsDir, { recursive: true });
+    if (logger) {
+      logger.info('Attachments directory ready:', uploadsDir);
+    }
+  } catch (err) {
+    if (err.code !== 'EEXIST') {
+      if (logger) {
+        logger.error('Failed to initialize attachments directory:', err);
+      }
+      throw err; // Fail fast if storage unavailable
+    }
+  }
 }
 
 /**
@@ -93,6 +164,59 @@ function initializeServices(db, wsServer) {
       logger.info('Messaging v2 services initialized');
     }
   }
+}
+
+/**
+ * Helper function to store attachment files
+ * For now, stores files in uploads directory
+ * TODO: Integrate with existing photo-upload for cloud storage
+ */
+async function storeAttachment(file) {
+  const fs = require('fs').promises;
+  const crypto = require('crypto');
+  
+  // Sanitize original filename to prevent path traversal and special chars
+  const sanitizedOriginalName = file.originalname
+    .replace(/[^a-zA-Z0-9._-]/g, '_')  // Replace special chars with underscore
+    .replace(/\.{2,}/g, '_')            // Replace multiple dots with underscore
+    .substring(0, 255);                 // Limit length
+  
+  // Generate unique filename for storage
+  const hash = crypto.randomBytes(16).toString('hex');
+  const timestamp = Date.now();
+  const ext = path.extname(sanitizedOriginalName).toLowerCase();
+  const filename = `${timestamp}-${hash}${ext}`;
+  
+  // Store in uploads/attachments directory
+  const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
+  
+  // Ensure directory exists with proper error handling
+  try {
+    await fs.mkdir(uploadsDir, { recursive: true });
+  } catch (err) {
+    // Only ignore if directory already exists
+    if (err.code !== 'EEXIST') {
+      if (logger) {
+        logger.error('Failed to create attachments directory:', err);
+      }
+      throw new Error('Storage system unavailable');
+    }
+  }
+  
+  const filepath = path.join(uploadsDir, filename);
+  
+  // Write file
+  await fs.writeFile(filepath, file.buffer);
+  
+  // Return attachment object with sanitized original filename
+  return {
+    type: file.mimetype.startsWith('image/') ? 'image' : 'document',
+    url: `/uploads/attachments/${filename}`,
+    filename: sanitizedOriginalName || 'attachment',
+    size: file.size,
+    mimeType: file.mimetype,
+    metadata: {},
+  };
 }
 
 // Middleware to ensure services are initialized
@@ -637,24 +761,95 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
 /**
  * POST /api/v2/messages/:threadId
  * Send message in thread
+ * Supports both JSON and multipart/form-data (for attachments)
  */
 router.post(
   '/:threadId',
   applyAuthRequired,
   applyCsrfProtection,
   ensureServices,
+  // Use multer middleware to handle file uploads
+  (req, res, next) => {
+    attachmentUpload.array('attachments', 10)(req, res, err => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+              error: 'File too large',
+              message: 'Maximum file size is 10MB per file',
+            });
+          }
+          if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({
+              error: 'Too many files',
+              message: 'Maximum 10 files per message',
+            });
+          }
+        }
+        return res.status(400).json({
+          error: 'File upload error',
+          message: err.message,
+        });
+      }
+      next();
+    });
+  },
+  // Validate total file size and file contents
+  (req, res, next) => {
+    if (req.files && req.files.length > 0) {
+      // Check for zero-byte files
+      const emptyFiles = req.files.filter(f => f.size === 0);
+      if (emptyFiles.length > 0) {
+        return res.status(400).json({
+          error: 'Empty files detected',
+          message: `The following files are empty (0 bytes): ${emptyFiles.map(f => f.originalname).join(', ')}`,
+        });
+      }
+
+      // Check total size across all files
+      const totalSize = req.files.reduce((sum, f) => sum + f.size, 0);
+      const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB total
+
+      if (totalSize > MAX_TOTAL_SIZE) {
+        const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+        return res.status(413).json({
+          error: 'Total size too large',
+          message: `Total attachment size (${totalSizeMB}MB) exceeds maximum of 25MB`,
+        });
+      }
+    }
+    next();
+  },
   async (req, res) => {
     try {
       const { threadId } = req.params;
       // Support both 'content' (v2) and 'message' (legacy v1) for backward compatibility
-      let { content, attachments, message: legacyMessage } = req.body;
+      let { content, message: legacyMessage } = req.body;
 
       // If 'message' is provided but not 'content', use 'message' as 'content'
       if (!content && legacyMessage) {
         content = legacyMessage;
       }
 
-      if (!content && (!attachments || attachments.length === 0)) {
+      // Process uploaded files
+      let attachments = [];
+      if (req.files && req.files.length > 0) {
+        // Store files and create attachment objects
+        for (const file of req.files) {
+          try {
+            const attachment = await storeAttachment(file);
+            attachments.push(attachment);
+          } catch (fileError) {
+            logger.error('Failed to store attachment', {
+              error: fileError.message,
+              filename: file.originalname,
+            });
+            // Continue with other files, don't fail the whole request
+          }
+        }
+      }
+
+      if (!content && attachments.length === 0) {
         return res.status(400).json({
           error: 'content or attachments required',
         });
@@ -690,8 +885,8 @@ router.post(
           threadId,
           senderId: req.user.id,
           recipientIds,
-          content,
-          attachments: attachments || [],
+          content: content || '',
+          attachments: attachments,
         },
         subscriptionTier
       );
@@ -2265,3 +2460,4 @@ router.put(
 
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;
+module.exports.initializeRouter = initializeRouter;

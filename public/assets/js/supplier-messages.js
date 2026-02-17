@@ -150,6 +150,64 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Sanitize and validate attachment URL
+function sanitizeAttachmentUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return '#';
+  }
+
+  // Only allow URLs that start with /uploads/ or are relative paths
+  // This prevents javascript: or data: URL injection
+  if (
+    url.startsWith('/uploads/') ||
+    url.startsWith('./uploads/') ||
+    url.startsWith('../uploads/')
+  ) {
+    return url;
+  }
+
+  // If it's an absolute URL, only allow http/https
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+      return urlObj.href;
+    }
+  } catch (e) {
+    // Invalid URL, return safe default
+  }
+
+  return '#';
+}
+
+// Sanitize and validate attachment URL
+function sanitizeAttachmentUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return '#';
+  }
+
+  // Only allow URLs that start with /uploads/ or are relative paths
+  // This prevents javascript: or data: URL injection
+  if (
+    url.startsWith('/uploads/') ||
+    url.startsWith('./uploads/') ||
+    url.startsWith('../uploads/')
+  ) {
+    return url;
+  }
+
+  // If it's an absolute URL, only allow http/https
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+      return urlObj.href;
+    }
+  } catch (e) {
+    // Invalid URL, return safe default
+  }
+
+  return '#';
+}
+
 // Format message preview with "You:" prefix for outbound messages
 function formatMessagePreview(
   messageText,
@@ -340,12 +398,14 @@ function openConversation(conversationId) {
     return;
   }
 
-  console.log('Opening conversation:', conversationId);
+  if (window.dashboardLogger) {
+    window.dashboardLogger.log('CONVERSATION', 'Opening conversation', { conversationId });
+  }
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay modal-overlay--glass active';
   modal.innerHTML = `
-    <div class="modal modal--glass" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
+    <div class="modal modal--glass" style="max-width:600px;width:calc(100% - 2rem);height:80vh;max-height:90vh;display:flex;flex-direction:column;">
       <div class="modal-header">
         <h3 class="modal-title">Conversation</h3>
         <button class="modal-close" type="button" aria-label="Close">&times;</button>
@@ -354,11 +414,24 @@ function openConversation(conversationId) {
         <div id="conversationMessages"><p class="small">Loading...</p></div>
         <div id="typingIndicatorContainer" style="min-height:24px;padding:0.5rem 0;"></div>
       </div>
-      <div class="modal-footer" style="padding:1.5rem;">
-        <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;" required></textarea>
-          <button type="submit" class="btn btn-primary" style="align-self:flex-end;padding:0.75rem 1.5rem;">Send</button>
+      <div class="modal-footer" style="padding:1rem 1.5rem;">
+        <form id="sendMessageForm" style="display:flex;gap:0.5rem;width:100%;flex-wrap:wrap;align-items:flex-end;">
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:0;padding:0.75rem;border:1px solid #e5e7eb;border-radius:6px;font-family:inherit;font-size:0.875rem;"></textarea>
+          
+          <!-- File input (hidden) -->
+          <input type="file" id="attachmentInput" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"/>
+          
+          <!-- Attachment button -->
+          <button type="button" id="attachmentBtn" class="btn btn-secondary" style="padding:0.75rem;border:none;background:#f3f4f6;color:#6b7280;cursor:pointer;transition:background-color 0.2s,color 0.2s;border-radius:6px;min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;" title="Attach files" aria-label="Attach files">
+            📎
+          </button>
+          
+          <!-- Send button -->
+          <button type="submit" class="btn btn-primary" style="padding:0.75rem 1.5rem;border-radius:6px;min-height:44px;white-space:nowrap;">Send</button>
         </form>
+        
+        <!-- Selected attachments preview -->
+        <div id="attachmentsPreview" style="display:none;margin-top:0.75rem;padding:0.75rem;background:#f9fafb;border-radius:6px;"></div>
       </div>
     </div>
   `;
@@ -464,9 +537,11 @@ function openConversation(conversationId) {
 
           const messageId = message.id || message._id || `msg-${index}`;
           const messageContent = extractMessageText(message);
+          const hasAttachments = message.attachments && message.attachments.length > 0;
 
-          if (!messageContent) {
-            console.warn(`Message ${messageId} has no content`, message);
+          // Skip if no content AND no attachments
+          if (!messageContent && !hasAttachments) {
+            console.warn(`Message ${messageId} has no content or attachments`, message);
             return;
           }
 
@@ -484,7 +559,51 @@ function openConversation(conversationId) {
           html += `
             <div class="message-bubble ${bubbleClass}" style="${alignStyle}" data-message-id="${messageId}">
               <div class="message-sender">${escapeHtml(senderName)}</div>
-              <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(messageContent)}</p>
+              ${messageContent ? `<p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(messageContent)}</p>` : ''}`;
+
+          // Render attachments if present
+          if (hasAttachments) {
+            html +=
+              '<div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem;">';
+            message.attachments.forEach((attachment, attIdx) => {
+              const isImage =
+                attachment.type === 'image' || attachment.mimeType?.startsWith('image/');
+              const filename = escapeHtml(attachment.filename || 'attachment');
+              const rawUrl = attachment.url || '#';
+              const url = sanitizeAttachmentUrl(rawUrl);
+              const size = attachment.size
+                ? `(${(attachment.size / 1024 / 1024).toFixed(1)}MB)`
+                : '';
+
+              if (isImage) {
+                // Render image with preview
+                html += `
+                  <a href="${url}" target="_blank" rel="noopener noreferrer" style="max-width:300px;">
+                    <img src="${url}" 
+                         alt="${filename}" 
+                         style="max-width:100%;border-radius:4px;display:block;" 
+                         loading="lazy"
+                         onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'padding:0.5rem;background:#fee;color:#c00;border-radius:4px;font-size:0.875rem;\\'>Image failed to load</div>';" />
+                  </a>
+                `;
+              } else {
+                // Render document/file link
+                html += `
+                  <a href="${url}" target="_blank" rel="noopener noreferrer" download="${filename}" style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;background:#f3f4f6;border-radius:4px;text-decoration:none;color:#374151;font-size:0.875rem;">
+                    <span style="font-size:1.25rem;">📄</span>
+                    <div style="flex:1;overflow:hidden;">
+                      <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${filename}</div>
+                      ${size ? `<div style="font-size:0.75rem;color:#6b7280;">${size}</div>` : ''}
+                    </div>
+                    <span style="font-size:0.875rem;color:#6b7280;">⬇</span>
+                  </a>
+                `;
+              }
+            });
+            html += '</div>';
+          }
+
+          html += `
               <div class="message-time">${formattedTime}</div>
             </div>
           `;
@@ -572,7 +691,9 @@ function openConversation(conversationId) {
             conversationId,
             attempt: retryCount,
           });
-          console.log(`Real-time timeout (attempt ${retryCount}), trying HTTP fallback...`);
+          if (window.dashboardLogger) {
+            window.dashboardLogger.log('MESSAGE_LISTENER', `Real-time timeout (attempt ${retryCount}), trying HTTP fallback`, { conversationId, retryCount });
+          }
 
           const httpMessages = await loadMessagesHTTPFallback(conversationId);
           if (httpMessages && httpMessages.length > 0) {
@@ -640,8 +761,165 @@ function openConversation(conversationId) {
     });
   });
 
+  // File attachment handling
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+  const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB total
+  let selectedFiles = [];
+  let typingTimeout = null;
+
+  // Track event listeners for cleanup
+  const listeners = [];
+
+  const attachmentBtn = modal.querySelector('#attachmentBtn');
+  const attachmentInput = modal.querySelector('#attachmentInput');
+  const previewContainer = modal.querySelector('#attachmentsPreview');
+
+  // Click button to open file picker
+  if (attachmentBtn && attachmentInput) {
+    // Add hover effect
+    const mouseenterHandler = () => {
+      attachmentBtn.style.background = '#e5e7eb';
+      attachmentBtn.style.color = '#374151';
+    };
+    const mouseleaveHandler = () => {
+      attachmentBtn.style.background = '#f3f4f6';
+      attachmentBtn.style.color = '#6b7280';
+    };
+    const clickHandler = () => attachmentInput.click();
+
+    attachmentBtn.addEventListener('mouseenter', mouseenterHandler);
+    attachmentBtn.addEventListener('mouseleave', mouseleaveHandler);
+    attachmentBtn.addEventListener('click', clickHandler);
+
+    listeners.push(() => {
+      attachmentBtn.removeEventListener('mouseenter', mouseenterHandler);
+      attachmentBtn.removeEventListener('mouseleave', mouseleaveHandler);
+      attachmentBtn.removeEventListener('click', clickHandler);
+    });
+
+    // Handle file selection
+    const fileChangeHandler = e => {
+      const files = Array.from(e.target.files);
+      const validFiles = [];
+      let totalSize = 0;
+
+      // Note: This replaces previous selection (standard file input behavior)
+      // Users can remove individual files from preview and reselect if needed
+      // Validate each file and calculate total size
+      for (const file of files) {
+        // Check for zero-byte files
+        if (file.size === 0) {
+          if (typeof EFToast !== 'undefined') {
+            EFToast.warning(`File ${file.name} is empty (0 bytes)`);
+          }
+          continue;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+          if (typeof EFToast !== 'undefined') {
+            EFToast.warning(`File ${file.name} is too large (max 10MB)`);
+          }
+          continue;
+        }
+
+        const newTotal = totalSize + file.size;
+        if (newTotal > MAX_TOTAL_SIZE) {
+          if (typeof EFToast !== 'undefined') {
+            EFToast.warning(
+              `Adding ${file.name} would exceed 25MB total limit. Some files were not added.`
+            );
+          }
+          break; // Stop adding more files
+        }
+
+        validFiles.push(file);
+        totalSize = newTotal;
+      }
+
+      // Replace selectedFiles with valid files from this selection
+      selectedFiles = validFiles;
+      updateAttachmentsPreview();
+
+      // Reset input to allow selecting the same file again if needed
+      attachmentInput.value = '';
+    };
+
+    attachmentInput.addEventListener('change', fileChangeHandler);
+    listeners.push(() => {
+      attachmentInput.removeEventListener('change', fileChangeHandler);
+    });
+  }
+
+  function updateAttachmentsPreview() {
+    if (!previewContainer) {
+      return;
+    }
+
+    if (selectedFiles.length === 0) {
+      previewContainer.style.display = 'none';
+      return;
+    }
+
+    previewContainer.style.display = 'block';
+    previewContainer.innerHTML = selectedFiles
+      .map(
+        (file, idx) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:white;border-radius:6px;margin-bottom:0.5rem;border:1px solid #e5e7eb;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);">
+        <span style="font-size:0.875rem;color:#374151;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:0.5rem;">${escapeHtml(file.name)}</span>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+          <span style="font-size:0.75rem;color:#6b7280;white-space:nowrap;">${(file.size / 1024 / 1024).toFixed(1)}MB</span>
+          <button type="button" class="remove-attachment-btn" data-index="${idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.25rem;line-height:1;padding:0.25rem;transition:color 0.2s;" title="Remove file" aria-label="Remove ${escapeHtml(file.name)}">✕</button>
+        </div>
+      </div>
+    `
+      )
+      .join('');
+  }
+
+  // Use event delegation for remove buttons (prevents memory leaks)
+  if (previewContainer) {
+    const clickHandler = e => {
+      const removeBtn = e.target.closest('.remove-attachment-btn');
+      if (removeBtn) {
+        const index = parseInt(removeBtn.getAttribute('data-index'));
+        if (!isNaN(index) && index >= 0 && index < selectedFiles.length) {
+          selectedFiles.splice(index, 1);
+          updateAttachmentsPreview();
+          if (attachmentInput) {
+            attachmentInput.value = '';
+          }
+        }
+      }
+    };
+
+    // Add hover effects with event delegation
+    const mouseoverHandler = e => {
+      const removeBtn = e.target.closest('.remove-attachment-btn');
+      if (removeBtn) {
+        removeBtn.style.color = '#dc2626';
+      }
+    };
+
+    const mouseoutHandler = e => {
+      const removeBtn = e.target.closest('.remove-attachment-btn');
+      if (removeBtn) {
+        removeBtn.style.color = '#ef4444';
+      }
+    };
+
+    previewContainer.addEventListener('click', clickHandler);
+    previewContainer.addEventListener('mouseover', mouseoverHandler);
+    previewContainer.addEventListener('mouseout', mouseoutHandler);
+
+    listeners.push(() => {
+      previewContainer.removeEventListener('click', clickHandler);
+      previewContainer.removeEventListener('mouseover', mouseoverHandler);
+      previewContainer.removeEventListener('mouseout', mouseoutHandler);
+    });
+  }
+
   // Send message form
-  modal.querySelector('#sendMessageForm').addEventListener('submit', async e => {
+  const formSubmitHandler = async e => {
     e.preventDefault();
 
     if (!currentUser) {
@@ -654,25 +932,66 @@ function openConversation(conversationId) {
     const messageInput = modal.querySelector('#messageInput');
     const messageText = messageInput.value.trim();
 
-    if (!messageText) {
+    if (!messageText && selectedFiles.length === 0) {
       return;
     }
 
-    try {
-      const submitBtn = e.target.querySelector('button[type="submit"]');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending...';
+    const submitBtn = e.target.querySelector('button[type="submit"]');
 
-      await messagingSystem.sendMessage(conversationId, {
-        senderId: currentUser.id,
-        senderType: 'supplier',
-        senderName: currentUser.name || currentUser.email,
-        message: messageText,
-      });
+    // Prevent double-submission
+    if (submitBtn.disabled) {
+      return;
+    }
+
+    // Disable button immediately (before async operations)
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+
+    try {
+      // If there are attachments, use FormData
+      if (selectedFiles.length > 0) {
+        const formData = new FormData();
+
+        // Only append message if there is text content
+        if (messageText) {
+          formData.append('message', messageText);
+        }
+
+        selectedFiles.forEach(file => {
+          formData.append('attachments', file);
+        });
+
+        const response = await fetch(`/api/v2/messages/${conversationId}`, {
+          method: 'POST',
+          headers: {
+            'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+          },
+          body: formData,
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}`;
+          throw new Error(errorMessage);
+        }
+
+        selectedFiles = [];
+        updateAttachmentsPreview();
+        if (attachmentInput) {
+          attachmentInput.value = '';
+        }
+      } else {
+        // No attachments, use regular sendMessage
+        await messagingSystem.sendMessage(conversationId, {
+          senderId: currentUser.id,
+          senderType: 'supplier',
+          senderName: currentUser.name || currentUser.email,
+          message: messageText,
+        });
+      }
 
       messageInput.value = '';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Send';
 
       // Stop typing indicator when message sent
       messagingSystem.sendTypingStatus(conversationId, false);
@@ -681,18 +1000,25 @@ function openConversation(conversationId) {
       if (typeof EFToast !== 'undefined') {
         EFToast.error(`Failed to send message: ${error.message}`);
       }
-
-      const submitBtn = e.target.querySelector('button[type="submit"]');
+    } finally {
+      // Always re-enable button, even on error
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send';
     }
-  });
+  };
+
+  const sendForm = modal.querySelector('#sendMessageForm');
+  if (sendForm) {
+    sendForm.addEventListener('submit', formSubmitHandler);
+    listeners.push(() => {
+      sendForm.removeEventListener('submit', formSubmitHandler);
+    });
+  }
 
   // Send typing indicator when user types
   const messageInput = modal.querySelector('#messageInput');
-  let typingTimeout = null;
 
-  messageInput.addEventListener('input', () => {
+  const inputHandler = () => {
     if (currentUser && conversationId) {
       messagingSystem.sendTypingStatus(conversationId, true);
 
@@ -702,14 +1028,30 @@ function openConversation(conversationId) {
         messagingSystem.sendTypingStatus(conversationId, false);
       }, 2000);
     }
-  });
+  };
 
-  messageInput.addEventListener('blur', () => {
+  const blurHandler = () => {
     // Stop typing when input loses focus
     if (currentUser && conversationId) {
       messagingSystem.sendTypingStatus(conversationId, false);
     }
+  };
+
+  messageInput.addEventListener('input', inputHandler);
+  messageInput.addEventListener('blur', blurHandler);
+
+  listeners.push(() => {
+    messageInput.removeEventListener('input', inputHandler);
+    messageInput.removeEventListener('blur', blurHandler);
+    // Clear any pending typing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      typingTimeout = null;
+    }
   });
+
+  // Register all event listener cleanup functions
+  listeners.forEach(cleanup => cleanupCallbacks.push(cleanup));
 
   // Register cleanup for typing timeout
   cleanupCallbacks.push(() => {
