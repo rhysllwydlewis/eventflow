@@ -736,22 +736,198 @@
 
       // Phase 1: Setup bulk operations handlers
       function setupPhase1Handlers() {
-        // Note: Phase 1 UI is present but requires custom event wiring
-        // The managers are initialized (selectionManager, bulkOperationManager, sortFilterManager)
-        // but the UI event handlers need to be wired up when the conversation view is implemented
+        console.log('Phase 1: Initializing event handlers...');
         
-        // Placeholder for future implementation:
-        // - Wire up bulk select checkboxes
-        // - Wire up bulk delete button
-        // - Wire up sort dropdown
-        // - Wire up filter sidebar
-        // - Wire up keyboard shortcuts
+        // Get UI elements
+        const bulkToolbar = document.getElementById('bulkActionsToolbar');
+        const selectionCount = document.getElementById('selectionCount');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const sortDropdown = document.getElementById('sortDropdown');
+        const filterToggleBtn = document.getElementById('filterToggleBtn');
         
-        console.log('Phase 1 managers initialized:', {
+        // Wire sort dropdown
+        if (sortDropdown) {
+          sortDropdown.addEventListener('change', (e) => {
+            const sortMethod = e.target.value;
+            window.sortFilterManager.setSortMethod(sortMethod);
+            console.log('Sort changed to:', sortMethod);
+            // In a real implementation, this would re-render the message list
+            showToast('Sort preference saved: ' + sortMethod, 'success');
+          });
+        }
+        
+        // Wire filter toggle
+        if (filterToggleBtn) {
+          filterToggleBtn.addEventListener('click', () => {
+            const filterSidebar = document.getElementById('filterSidebar');
+            if (filterSidebar) {
+              const isVisible = filterSidebar.style.display !== 'none';
+              filterSidebar.style.display = isVisible ? 'none' : 'block';
+              console.log('Filter sidebar toggled:', !isVisible);
+            }
+          });
+        }
+        
+        // Wire bulk delete button
+        if (bulkDeleteBtn) {
+          bulkDeleteBtn.addEventListener('click', async () => {
+            const selectedIds = window.selectionManager.getSelectedIds();
+            if (selectedIds.length === 0) {
+              showToast('No messages selected', 'error');
+              return;
+            }
+            
+            // Show confirmation modal
+            const confirmed = await showConfirmModal(
+              'Delete Messages',
+              `Are you sure you want to delete ${selectedIds.length} message(s)? This action can be undone within 30 seconds.`,
+              'Delete',
+              'Cancel'
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+              // Get threadId from current context (would need to be passed in real implementation)
+              const threadId = new URLSearchParams(window.location.search).get('threadId') || 'current-thread';
+              
+              const result = await window.bulkOperationManager.bulkDelete(
+                selectedIds,
+                threadId,
+                'User initiated bulk delete'
+              );
+              
+              // Clear selection
+              window.selectionManager.deselectAll();
+              updateSelectionUI();
+              
+              // Show success toast with undo button
+              showUndoToast(
+                `${result.deletedCount} message(s) deleted`,
+                result.operationId,
+                result.undoToken
+              );
+              
+              console.log('Bulk delete successful:', result);
+            } catch (error) {
+              console.error('Bulk delete error:', error);
+              showToast('Failed to delete messages: ' + error.message, 'error');
+            }
+          });
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+          // Only handle shortcuts when not in input fields
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+          }
+          
+          // D key - Delete selected
+          if (e.key === 'd' || e.key === 'D') {
+            e.preventDefault();
+            if (bulkDeleteBtn && window.selectionManager.hasSelection()) {
+              bulkDeleteBtn.click();
+            }
+          }
+          
+          // F key - Flag/unflag selected
+          if (e.key === 'f' || e.key === 'F') {
+            e.preventDefault();
+            const selectedIds = window.selectionManager.getSelectedIds();
+            if (selectedIds.length > 0) {
+              console.log('Flag shortcut pressed for:', selectedIds);
+              showToast('Flag feature activated (demo)', 'info');
+            }
+          }
+          
+          // Ctrl+A / Cmd+A - Select all
+          if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+            e.preventDefault();
+            // In real implementation, would select all messages in current view
+            console.log('Select all shortcut pressed');
+            showToast('Select all activated (would select all visible messages)', 'info');
+          }
+          
+          // Esc - Deselect all
+          if (e.key === 'Escape') {
+            if (window.selectionManager.hasSelection()) {
+              window.selectionManager.deselectAll();
+              updateSelectionUI();
+              console.log('Deselected all via Esc key');
+            }
+          }
+        });
+        
+        console.log('Phase 1 handlers wired:', {
           selectionManager: typeof window.selectionManager !== 'undefined',
           bulkOperationManager: typeof window.bulkOperationManager !== 'undefined',
-          sortFilterManager: typeof window.sortFilterManager !== 'undefined'
+          sortFilterManager: typeof window.sortFilterManager !== 'undefined',
+          sortDropdown: !!sortDropdown,
+          bulkDeleteBtn: !!bulkDeleteBtn,
+          filterToggleBtn: !!filterToggleBtn
         });
+      }
+      
+      // Update selection UI (toolbar visibility, counter)
+      function updateSelectionUI() {
+        const bulkToolbar = document.getElementById('bulkActionsToolbar');
+        const selectionCount = document.getElementById('selectionCount');
+        const selectedCount = window.selectionManager.getSelectedCount();
+        
+        if (bulkToolbar) {
+          bulkToolbar.style.display = selectedCount > 0 ? 'flex' : 'none';
+        }
+        
+        if (selectionCount) {
+          selectionCount.textContent = `${selectedCount} selected`;
+        }
+      }
+      
+      // Show confirmation modal
+      function showConfirmModal(title, message, confirmText, cancelText) {
+        return new Promise((resolve) => {
+          const confirmed = confirm(`${title}\n\n${message}`);
+          resolve(confirmed);
+        });
+      }
+      
+      // Show toast notification
+      function showToast(message, type = 'info') {
+        console.log(`Toast [${type}]:`, message);
+        // In real implementation, would show a styled toast
+        // For now, using browser alert for visibility
+        if (window.showNotification) {
+          window.showNotification(message, type);
+        } else {
+          alert(`[${type.toUpperCase()}] ${message}`);
+        }
+      }
+      
+      // Show undo toast with action button
+      function showUndoToast(message, operationId, undoToken) {
+        console.log('Undo toast:', { message, operationId, undoToken });
+        
+        const undoConfirm = confirm(
+          `${message}\n\nPress OK to undo this action (30 second window)`
+        );
+        
+        if (undoConfirm) {
+          handleUndo(operationId, undoToken);
+        }
+      }
+      
+      // Handle undo action
+      async function handleUndo(operationId, undoToken) {
+        try {
+          const result = await window.bulkOperationManager.undo(operationId, undoToken);
+          console.log('Undo successful:', result);
+          showToast(`Restored ${result.restoredCount} message(s)`, 'success');
+          // In real implementation, would refresh the message list
+        } catch (error) {
+          console.error('Undo error:', error);
+          showToast('Failed to undo: ' + error.message, 'error');
+        }
       }
 
       function renderCurrentView() {
