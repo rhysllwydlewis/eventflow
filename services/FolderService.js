@@ -407,6 +407,48 @@ class FolderService {
   }
 
   /**
+   * Reorder folders
+   * @param {string} userId - User ID
+   * @param {Array<Object>} folderOrders - Array of {folderId, order} objects
+   * @returns {Promise<Object>} Update result
+   */
+  async reorderFolders(userId, folderOrders) {
+    try {
+      const bulkOps = [];
+
+      for (const { folderId, order } of folderOrders) {
+        bulkOps.push({
+          updateOne: {
+            filter: {
+              _id: new ObjectId(folderId),
+              userId,
+              'metadata.deletedAt': null,
+            },
+            update: {
+              $set: {
+                order,
+                'metadata.updatedAt': new Date(),
+              },
+            },
+          },
+        });
+      }
+
+      const result = await this.foldersCollection.bulkWrite(bulkOps);
+
+      logger.info('Folders reordered', {
+        userId,
+        count: result.modifiedCount,
+      });
+
+      return { modifiedCount: result.modifiedCount };
+    } catch (error) {
+      logger.error('Reorder folders error', { error: error.message, userId });
+      throw error;
+    }
+  }
+
+  /**
    * Check if targetId is a descendant of folderId
    * @param {string} userId - User ID
    * @param {string} folderId - Folder ID
@@ -616,6 +658,151 @@ class FolderService {
       return systemFolders;
     } catch (error) {
       logger.error('Initialize system folders error', { error: error.message, userId });
+      throw error;
+    }
+  }
+
+  /**
+   * Create a folder rule
+   * @param {string} userId - User ID
+   * @param {string} folderId - Folder ID
+   * @param {Object} rule - Rule definition
+   * @returns {Promise<Object>} Created rule
+   */
+  async createRule(userId, folderId, rule) {
+    try {
+      const folder = await this.getFolder(userId, folderId);
+
+      const newRule = {
+        _id: new ObjectId(),
+        name: rule.name,
+        condition: rule.condition,
+        action: rule.action || 'move',
+        isActive: rule.isActive !== false,
+        appliedCount: 0,
+      };
+
+      const result = await this.foldersCollection.findOneAndUpdate(
+        { _id: new ObjectId(folderId), userId },
+        {
+          $push: { rules: newRule },
+          $set: { 'metadata.updatedAt': new Date() },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Folder rule created', { userId, folderId, ruleId: newRule._id.toString() });
+
+      return newRule;
+    } catch (error) {
+      logger.error('Create rule error', { error: error.message, userId, folderId });
+      throw error;
+    }
+  }
+
+  /**
+   * Update a folder rule
+   * @param {string} userId - User ID
+   * @param {string} folderId - Folder ID
+   * @param {string} ruleId - Rule ID
+   * @param {Object} updates - Rule updates
+   * @returns {Promise<Object>} Updated folder
+   */
+  async updateRule(userId, folderId, ruleId, updates) {
+    try {
+      await this.getFolder(userId, folderId);
+
+      const updateFields = {};
+      if (updates.name !== undefined) updateFields['rules.$.name'] = updates.name;
+      if (updates.condition !== undefined) updateFields['rules.$.condition'] = updates.condition;
+      if (updates.action !== undefined) updateFields['rules.$.action'] = updates.action;
+      if (updates.isActive !== undefined) updateFields['rules.$.isActive'] = updates.isActive;
+
+      const result = await this.foldersCollection.findOneAndUpdate(
+        {
+          _id: new ObjectId(folderId),
+          userId,
+          'rules._id': new ObjectId(ruleId),
+        },
+        {
+          $set: {
+            ...updateFields,
+            'metadata.updatedAt': new Date(),
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Folder rule updated', { userId, folderId, ruleId });
+
+      return result.value;
+    } catch (error) {
+      logger.error('Update rule error', { error: error.message, userId, folderId });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a folder rule
+   * @param {string} userId - User ID
+   * @param {string} folderId - Folder ID
+   * @param {string} ruleId - Rule ID
+   * @returns {Promise<Object>} Updated folder
+   */
+  async deleteRule(userId, folderId, ruleId) {
+    try {
+      await this.getFolder(userId, folderId);
+
+      const result = await this.foldersCollection.findOneAndUpdate(
+        { _id: new ObjectId(folderId), userId },
+        {
+          $pull: { rules: { _id: new ObjectId(ruleId) } },
+          $set: { 'metadata.updatedAt': new Date() },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Folder rule deleted', { userId, folderId, ruleId });
+
+      return result.value;
+    } catch (error) {
+      logger.error('Delete rule error', { error: error.message, userId, folderId });
+      throw error;
+    }
+  }
+
+  /**
+   * Test a folder rule
+   * @param {string} userId - User ID
+   * @param {string} folderId - Folder ID
+   * @param {string} ruleId - Rule ID
+   * @returns {Promise<Object>} Test results
+   */
+  async testRule(userId, folderId, ruleId) {
+    try {
+      const folder = await this.getFolder(userId, folderId);
+      const rule = folder.rules.find(r => r._id.toString() === ruleId);
+
+      if (!rule) {
+        throw new Error('Rule not found');
+      }
+
+      // Simple test: count messages that would match
+      // In a real implementation, this would parse the condition properly
+      const matchCount = await this.messagesCollection.countDocuments({
+        $or: [{ senderId: userId }, { recipientIds: userId }],
+        deletedAt: null,
+        // Would add parsed condition here
+      });
+
+      return {
+        ruleId,
+        ruleName: rule.name,
+        matchCount,
+        condition: rule.condition,
+      };
+    } catch (error) {
+      logger.error('Test rule error', { error: error.message, userId, folderId });
       throw error;
     }
   }

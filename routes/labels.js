@@ -423,6 +423,119 @@ router.get('/:id/stats', applyAuthRequired, ensureServices, async (req, res) => 
   }
 });
 
+// =========================
+// Label Auto-Rules
+// =========================
+
+/**
+ * POST /api/v2/labels/:id/auto-rules
+ * Create an auto-rule for a label
+ */
+router.post('/:id/auto-rules', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const rule = req.body;
+
+    if (!rule.name || !rule.condition) {
+      return res.status(400).json({ error: 'Rule name and condition are required' });
+    }
+
+    const newRule = await labelService.createAutoRule(userId, id, rule);
+
+    logger.info('Label auto-rule created via API', { userId, labelId: id });
+
+    res.status(201).json({
+      success: true,
+      rule: newRule,
+    });
+  } catch (error) {
+    logger.error('Create auto-rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to create auto-rule',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/v2/labels/:id/auto-rules/:ruleId
+ * Update a label auto-rule
+ */
+router.put('/:id/auto-rules/:ruleId', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id, ruleId } = req.params;
+    const updates = req.body;
+
+    const label = await labelService.updateAutoRule(userId, id, ruleId, updates);
+
+    logger.info('Label auto-rule updated via API', { userId, labelId: id, ruleId });
+
+    res.json({
+      success: true,
+      label,
+    });
+  } catch (error) {
+    logger.error('Update auto-rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to update auto-rule',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/v2/labels/:id/auto-rules/:ruleId
+ * Delete a label auto-rule
+ */
+router.delete('/:id/auto-rules/:ruleId', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id, ruleId } = req.params;
+
+    const label = await labelService.deleteAutoRule(userId, id, ruleId);
+
+    logger.info('Label auto-rule deleted via API', { userId, labelId: id, ruleId });
+
+    res.json({
+      success: true,
+      message: 'Auto-rule deleted successfully',
+      label,
+    });
+  } catch (error) {
+    logger.error('Delete auto-rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to delete auto-rule',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/v2/labels/:id/auto-rules/:ruleId/test
+ * Test a label auto-rule
+ */
+router.post('/:id/auto-rules/:ruleId/test', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id, ruleId } = req.params;
+
+    const result = await labelService.testAutoRule(userId, id, ruleId);
+
+    res.json({
+      success: true,
+      result,
+    });
+  } catch (error) {
+    logger.error('Test auto-rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to test auto-rule',
+      message: error.message,
+    });
+  }
+});
+
 // Export router and initialization function
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;

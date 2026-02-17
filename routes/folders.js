@@ -300,6 +300,37 @@ router.post('/:id/move', applyAuthRequired, ensureServices, async (req, res) => 
 });
 
 /**
+ * POST /api/v2/folders/reorder
+ * Reorder multiple folders
+ */
+router.post('/reorder', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { folders } = req.body;
+
+    if (!folders || !Array.isArray(folders)) {
+      return res.status(400).json({ error: 'folders array is required' });
+    }
+
+    const result = await folderService.reorderFolders(userId, folders);
+
+    logger.info('Folders reordered via API', { userId, count: result.modifiedCount });
+
+    res.json({
+      success: true,
+      message: `${result.modifiedCount} folder(s) reordered`,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    logger.error('Reorder folders API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to reorder folders',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * POST /api/v2/folders/:id/messages
  * Move messages to folder
  */
@@ -382,6 +413,130 @@ router.get('/:id/stats', applyAuthRequired, ensureServices, async (req, res) => 
     });
   } catch (error) {
     logger.error('Get folder stats API error', { error: error.message, userId: req.user.id });
+    const status = error.message.includes('not found') ? 404 : 500;
+    res.status(status).json({
+      error: 'Failed to fetch folder stats',
+      message: error.message,
+    });
+  }
+});
+
+// =========================
+// Folder Rules
+// =========================
+
+/**
+ * POST /api/v2/folders/:id/rules
+ * Create a folder rule
+ */
+router.post('/:id/rules', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const rule = req.body;
+
+    if (!rule.name || !rule.condition) {
+      return res.status(400).json({ error: 'Rule name and condition are required' });
+    }
+
+    const newRule = await folderService.createRule(userId, id, rule);
+
+    logger.info('Folder rule created via API', { userId, folderId: id });
+
+    res.status(201).json({
+      success: true,
+      rule: newRule,
+    });
+  } catch (error) {
+    logger.error('Create rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to create rule',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/v2/folders/:id/rules/:ruleId
+ * Update a folder rule
+ */
+router.put('/:id/rules/:ruleId', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id, ruleId } = req.params;
+    const updates = req.body;
+
+    const folder = await folderService.updateRule(userId, id, ruleId, updates);
+
+    logger.info('Folder rule updated via API', { userId, folderId: id, ruleId });
+
+    res.json({
+      success: true,
+      folder,
+    });
+  } catch (error) {
+    logger.error('Update rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to update rule',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/v2/folders/:id/rules/:ruleId
+ * Delete a folder rule
+ */
+router.delete('/:id/rules/:ruleId', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id, ruleId } = req.params;
+
+    const folder = await folderService.deleteRule(userId, id, ruleId);
+
+    logger.info('Folder rule deleted via API', { userId, folderId: id, ruleId });
+
+    res.json({
+      success: true,
+      message: 'Rule deleted successfully',
+      folder,
+    });
+  } catch (error) {
+    logger.error('Delete rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to delete rule',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/v2/folders/:id/rules/:ruleId/test
+ * Test a folder rule
+ */
+router.post('/:id/rules/:ruleId/test', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id, ruleId } = req.params;
+
+    const result = await folderService.testRule(userId, id, ruleId);
+
+    res.json({
+      success: true,
+      result,
+    });
+  } catch (error) {
+    logger.error('Test rule API error', { error: error.message, userId: req.user.id });
+    res.status(400).json({
+      error: 'Failed to test rule',
+      message: error.message,
+    });
+  }
+});
+
+// Export router and initialization function
+module.exports = router;
+module.exports.initializeDependencies = initializeDependencies;
     const status = error.message.includes('not found') ? 404 : 500;
     res.status(status).json({
       error: 'Failed to fetch folder stats',

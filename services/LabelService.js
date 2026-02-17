@@ -592,6 +592,154 @@ class LabelService {
       throw error;
     }
   }
+
+  /**
+   * Create an auto-rule for a label
+   * @param {string} userId - User ID
+   * @param {string} labelId - Label ID
+   * @param {Object} rule - Rule definition
+   * @returns {Promise<Object>} Created rule
+   */
+  async createAutoRule(userId, labelId, rule) {
+    try {
+      const label = await this.getLabel(userId, labelId);
+
+      const newRule = {
+        _id: new ObjectId(),
+        name: rule.name,
+        condition: rule.condition,
+        confidence: rule.confidence || 0.8,
+        isActive: rule.isActive !== false,
+        appliedCount: 0,
+      };
+
+      const result = await this.labelsCollection.findOneAndUpdate(
+        { _id: new ObjectId(labelId), userId },
+        {
+          $push: { autoRules: newRule },
+          $set: { 'metadata.updatedAt': new Date() },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Label auto-rule created', { userId, labelId, ruleId: newRule._id.toString() });
+
+      return newRule;
+    } catch (error) {
+      logger.error('Create auto-rule error', { error: error.message, userId, labelId });
+      throw error;
+    }
+  }
+
+  /**
+   * Update a label auto-rule
+   * @param {string} userId - User ID
+   * @param {string} labelId - Label ID
+   * @param {string} ruleId - Rule ID
+   * @param {Object} updates - Rule updates
+   * @returns {Promise<Object>} Updated label
+   */
+  async updateAutoRule(userId, labelId, ruleId, updates) {
+    try {
+      await this.getLabel(userId, labelId);
+
+      const updateFields = {};
+      if (updates.name !== undefined) updateFields['autoRules.$.name'] = updates.name;
+      if (updates.condition !== undefined)
+        updateFields['autoRules.$.condition'] = updates.condition;
+      if (updates.confidence !== undefined)
+        updateFields['autoRules.$.confidence'] = updates.confidence;
+      if (updates.isActive !== undefined) updateFields['autoRules.$.isActive'] = updates.isActive;
+
+      const result = await this.labelsCollection.findOneAndUpdate(
+        {
+          _id: new ObjectId(labelId),
+          userId,
+          'autoRules._id': new ObjectId(ruleId),
+        },
+        {
+          $set: {
+            ...updateFields,
+            'metadata.updatedAt': new Date(),
+          },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Label auto-rule updated', { userId, labelId, ruleId });
+
+      return result.value;
+    } catch (error) {
+      logger.error('Update auto-rule error', { error: error.message, userId, labelId });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a label auto-rule
+   * @param {string} userId - User ID
+   * @param {string} labelId - Label ID
+   * @param {string} ruleId - Rule ID
+   * @returns {Promise<Object>} Updated label
+   */
+  async deleteAutoRule(userId, labelId, ruleId) {
+    try {
+      await this.getLabel(userId, labelId);
+
+      const result = await this.labelsCollection.findOneAndUpdate(
+        { _id: new ObjectId(labelId), userId },
+        {
+          $pull: { autoRules: { _id: new ObjectId(ruleId) } },
+          $set: { 'metadata.updatedAt': new Date() },
+        },
+        { returnDocument: 'after' }
+      );
+
+      logger.info('Label auto-rule deleted', { userId, labelId, ruleId });
+
+      return result.value;
+    } catch (error) {
+      logger.error('Delete auto-rule error', { error: error.message, userId, labelId });
+      throw error;
+    }
+  }
+
+  /**
+   * Test a label auto-rule
+   * @param {string} userId - User ID
+   * @param {string} labelId - Label ID
+   * @param {string} ruleId - Rule ID
+   * @returns {Promise<Object>} Test results
+   */
+  async testAutoRule(userId, labelId, ruleId) {
+    try {
+      const label = await this.getLabel(userId, labelId);
+      const rule = label.autoRules.find(r => r._id.toString() === ruleId);
+
+      if (!rule) {
+        throw new Error('Auto-rule not found');
+      }
+
+      // Simple test: count messages that would match
+      const matchCount = await this.messagesCollection.countDocuments({
+        $or: [{ senderId: userId }, { recipientIds: userId }],
+        deletedAt: null,
+        labels: { $ne: labelId },
+        // Would add parsed condition here
+      });
+
+      return {
+        ruleId,
+        ruleName: rule.name,
+        matchCount,
+        condition: rule.condition,
+        confidence: rule.confidence,
+      };
+    } catch (error) {
+      logger.error('Test auto-rule error', { error: error.message, userId, labelId });
+      throw error;
+    }
+  }
 }
 
 module.exports = LabelService;
