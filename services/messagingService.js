@@ -7,6 +7,7 @@
 
 const logger = require('../utils/logger');
 const { ObjectId } = require('mongodb');
+const crypto = require('crypto');
 const { MESSAGE_LIMITS } = require('../config/messagingLimits');
 const {
   COLLECTIONS,
@@ -798,7 +799,24 @@ class MessagingService {
    * @returns {Promise<Object>} Operation result with undo information
    */
   async bulkDeleteMessages(messageIds, userId, threadId, reason = '') {
-    const crypto = require('crypto');
+    // Validate inputs
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      throw new Error('messageIds must be a non-empty array');
+    }
+    if (messageIds.length > 100) {
+      throw new Error('Cannot delete more than 100 messages at once');
+    }
+    
+    // Validate all message IDs are valid ObjectIds
+    const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      throw new Error('Invalid message IDs provided');
+    }
+    
+    if (!ObjectId.isValid(threadId)) {
+      throw new Error('Invalid threadId');
+    }
+
     const operationId = crypto.randomUUID();
     const undoToken = crypto.randomBytes(32).toString('hex');
     // Hash the token for secure storage
@@ -922,6 +940,20 @@ class MessagingService {
    * @returns {Promise<Object>} Operation result
    */
   async bulkMarkRead(messageIds, userId, isRead) {
+    // Validate inputs
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      throw new Error('messageIds must be a non-empty array');
+    }
+    if (messageIds.length > 100) {
+      throw new Error('Cannot mark more than 100 messages at once');
+    }
+    
+    // Validate all message IDs are valid ObjectIds
+    const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      throw new Error('Invalid message IDs provided');
+    }
+
     const now = new Date();
     
     // Start a MongoDB session for transaction support
@@ -952,7 +984,7 @@ class MessagingService {
             }
           : {
               $pull: {
-                readBy: { userId },
+                readBy: { userId: userId },
               },
               $set: {
                 status: 'delivered',
@@ -1113,14 +1145,12 @@ class MessagingService {
    * @returns {Promise<Object>} Undo result
    */
   async undoOperation(operationId, undoToken, userId) {
-    const crypto = require('crypto');
     const now = new Date();
     
     // Hash the provided token to compare with stored hash
     const undoTokenHash = crypto.createHash('sha256').update(undoToken).digest('hex');
 
     try {
-      const { COLLECTIONS } = require('../models/Message');
       const operationsCollection = this.db.collection(COLLECTIONS.MESSAGE_OPERATIONS);
 
       // Find the operation using the hashed token
@@ -1177,15 +1207,17 @@ class MessagingService {
         }
       );
 
+      const restoredCount = operation.previousState.messages.length;
+
       logger.info('Undo operation', {
         userId,
         operationId,
-        restoredCount: operation.messageIds.length,
+        restoredCount,
       });
 
       return {
         success: true,
-        restoredCount: operation.messageIds.length,
+        restoredCount,
       };
     } catch (error) {
       logger.error('Error undoing operation', {
@@ -1216,6 +1248,16 @@ class MessagingService {
     } = options;
 
     try {
+      // Validate pagination parameters
+      if (page < 1 || pageSize < 1 || pageSize > 100) {
+        throw new Error('Invalid pagination parameters');
+      }
+
+      // Validate threadId
+      if (!threadId || !ObjectId.isValid(threadId)) {
+        throw new Error('Invalid threadId');
+      }
+
       // Build query
       const query = { threadId, deletedAt: null };
 
@@ -1233,10 +1275,18 @@ class MessagingService {
       if (dateFrom || dateTo) {
         query.createdAt = {};
         if (dateFrom) {
-          query.createdAt.$gte = new Date(dateFrom);
+          const date = new Date(dateFrom);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid dateFrom format');
+          }
+          query.createdAt.$gte = date;
         }
         if (dateTo) {
-          query.createdAt.$lte = new Date(dateTo);
+          const date = new Date(dateTo);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid dateTo format');
+          }
+          query.createdAt.$lte = date;
         }
       }
 

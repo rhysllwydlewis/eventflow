@@ -2533,8 +2533,18 @@ router.post(
         return res.status(400).json({ error: 'Cannot delete more than 100 messages at once' });
       }
 
+      // Validate all message IDs are valid ObjectIds
+      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({ error: 'Invalid message IDs provided' });
+      }
+
       if (!threadId) {
         return res.status(400).json({ error: 'threadId is required' });
+      }
+
+      if (!ObjectId.isValid(threadId)) {
+        return res.status(400).json({ error: 'Invalid threadId format' });
       }
 
       // Verify user has access to the thread
@@ -2585,6 +2595,16 @@ router.post(
         return res.status(400).json({ error: 'messageIds array is required' });
       }
 
+      if (messageIds.length > 100) {
+        return res.status(400).json({ error: 'Cannot mark more than 100 messages at once' });
+      }
+
+      // Validate all message IDs are valid ObjectIds
+      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({ error: 'Invalid message IDs provided' });
+      }
+
       if (typeof isRead !== 'boolean') {
         return res.status(400).json({ error: 'isRead must be a boolean' });
       }
@@ -2621,7 +2641,11 @@ router.post(
       const userId = req.user.id;
 
       // Validation
-      if (!undoToken) {
+      if (!operationId) {
+        return res.status(400).json({ error: 'operationId is required' });
+      }
+
+      if (!undoToken || typeof undoToken !== 'string') {
         return res.status(400).json({ error: 'undoToken is required' });
       }
 
@@ -2655,6 +2679,10 @@ router.post('/:id/flag', writeLimiter, applyAuthRequired, applyCsrfProtection, e
     const userId = req.user.id;
 
     // Validation
+    if (!id || !ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
     if (typeof isFlagged !== 'boolean') {
       return res.status(400).json({ error: 'isFlagged must be a boolean' });
     }
@@ -2689,6 +2717,10 @@ router.post(
       const userId = req.user.id;
 
       // Validation
+      if (!id || !ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+
       if (!action || !['archive', 'restore'].includes(action)) {
         return res.status(400).json({ error: 'action must be "archive" or "restore"' });
       }
