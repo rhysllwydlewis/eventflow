@@ -398,7 +398,9 @@ function openConversation(conversationId) {
     return;
   }
 
-  console.log('Opening conversation:', conversationId);
+  if (window.dashboardLogger) {
+    window.dashboardLogger.log('CONVERSATION', 'Opening conversation', { conversationId });
+  }
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay modal-overlay--glass active';
@@ -689,7 +691,9 @@ function openConversation(conversationId) {
             conversationId,
             attempt: retryCount,
           });
-          console.log(`Real-time timeout (attempt ${retryCount}), trying HTTP fallback...`);
+          if (window.dashboardLogger) {
+            window.dashboardLogger.log('MESSAGE_LISTENER', `Real-time timeout (attempt ${retryCount}), trying HTTP fallback`, { conversationId, retryCount });
+          }
 
           const httpMessages = await loadMessagesHTTPFallback(conversationId);
           if (httpMessages && httpMessages.length > 0) {

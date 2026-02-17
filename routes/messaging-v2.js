@@ -90,6 +90,42 @@ function initializeDependencies(deps) {
 }
 
 /**
+ * Initialize router and create required directories
+ * @param {Object} deps - Dependencies object
+ */
+async function initializeRouter(deps) {
+  initializeDependencies(deps);
+  
+  // Initialize services
+  if (mongoDb) {
+    messagingService = new MessagingService(mongoDb);
+    notificationService = new NotificationService(mongoDb, wsServerV2);
+    presenceService = new PresenceService(mongoDb);
+    
+    if (logger) {
+      logger.info('Messaging v2 services initialized');
+    }
+  }
+  
+  // Ensure attachments directory exists at startup
+  const fs = require('fs').promises;
+  const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
+  try {
+    await fs.mkdir(uploadsDir, { recursive: true });
+    if (logger) {
+      logger.info('Attachments directory ready:', uploadsDir);
+    }
+  } catch (err) {
+    if (err.code !== 'EEXIST') {
+      if (logger) {
+        logger.error('Failed to initialize attachments directory:', err);
+      }
+      throw err; // Fail fast if storage unavailable
+    }
+  }
+}
+
+/**
  * Deferred middleware wrappers
  * These are safe to reference in route definitions at require() time
  * because they defer the actual middleware call to request time,
@@ -154,11 +190,17 @@ async function storeAttachment(file) {
   // Store in uploads/attachments directory
   const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
   
-  // Ensure directory exists
+  // Ensure directory exists with proper error handling
   try {
     await fs.mkdir(uploadsDir, { recursive: true });
   } catch (err) {
-    // Directory might already exist, ignore error
+    // Only ignore if directory already exists
+    if (err.code !== 'EEXIST') {
+      if (logger) {
+        logger.error('Failed to create attachments directory:', err);
+      }
+      throw new Error('Storage system unavailable');
+    }
   }
   
   const filepath = path.join(uploadsDir, filename);
@@ -2418,3 +2460,4 @@ router.put(
 
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;
+module.exports.initializeRouter = initializeRouter;
