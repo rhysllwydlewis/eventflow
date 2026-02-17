@@ -1490,7 +1490,7 @@ class SortFilterManager {
   }
 
   setFilter(filterName, value) {
-    if (this.filters.hasOwnProperty(filterName)) {
+    if (Object.prototype.hasOwnProperty.call(this.filters, filterName)) {
       this.filters[filterName] = value;
       this.savePreferences();
     }

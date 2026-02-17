@@ -9,6 +9,7 @@ const express = require('express');
 const { ObjectId } = require('mongodb');
 const multer = require('multer');
 const path = require('path');
+const { writeLimiter } = require('../middleware/rateLimits');
 
 // Dependencies injected by server.js
 let authRequired;
@@ -740,7 +741,8 @@ router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => 
         filterBy,
         dateFrom,
         dateTo,
-        hasAttachments: hasAttachments ? hasAttachments === 'true' : null,
+        hasAttachments:
+          hasAttachments === 'true' ? true : hasAttachments === 'false' ? false : null,
         status,
         page: page ? parseInt(page, 10) : 1,
         pageSize: limit ? parseInt(limit, 10) : 50,
@@ -869,8 +871,7 @@ router.post(
     try {
       const { threadId } = req.params;
       // Support both 'content' (v2) and 'message' (legacy v1) for backward compatibility
-      const { message: legacyMessage } = req.body;
-      let { content } = req.body;
+      let { content, message: legacyMessage } = req.body;
 
       // If 'message' is provided but not 'content', use 'message' as 'content'
       if (!content && legacyMessage) {
@@ -2512,77 +2513,94 @@ router.put(
  * Bulk delete messages
  * POST /api/v2/messages/bulk-delete
  */
-router.post('/bulk-delete', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { messageIds, threadId, reason } = req.body;
-    const userId = req.user.id;
+router.post(
+  '/bulk-delete',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const { messageIds, threadId, reason } = req.body;
+      const userId = req.user.id;
 
-    // Validation
-    if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
-      return res.status(400).json({ error: 'messageIds array is required' });
+      // Validation
+      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({ error: 'messageIds array is required' });
+      }
+
+      if (messageIds.length > 100) {
+        return res.status(400).json({ error: 'Cannot delete more than 100 messages at once' });
+      }
+
+      if (!threadId) {
+        return res.status(400).json({ error: 'threadId is required' });
+      }
+
+      // Verify user has access to the thread
+      const thread = await messagingService.getThread(threadId, userId);
+      if (!thread) {
+        return res.status(404).json({ error: 'Thread not found or access denied' });
+      }
+
+      // Perform bulk delete
+      const result = await messagingService.bulkDeleteMessages(
+        messageIds,
+        userId,
+        threadId,
+        reason
+      );
+
+      res.json({
+        success: true,
+        deletedCount: result.deletedCount,
+        operationId: result.operationId,
+        undoToken: result.undoToken,
+        message: `${result.deletedCount} message(s) deleted successfully`,
+      });
+    } catch (error) {
+      logger.error('Bulk delete error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to delete messages', message: error.message });
     }
-
-    if (messageIds.length > 100) {
-      return res.status(400).json({ error: 'Cannot delete more than 100 messages at once' });
-    }
-
-    if (!threadId) {
-      return res.status(400).json({ error: 'threadId is required' });
-    }
-
-    // Verify user has access to the thread
-    const thread = await messagingService.getThread(threadId, userId);
-    if (!thread) {
-      return res.status(404).json({ error: 'Thread not found or access denied' });
-    }
-
-    // Perform bulk delete
-    const result = await messagingService.bulkDeleteMessages(messageIds, userId, threadId, reason);
-
-    res.json({
-      success: true,
-      deletedCount: result.deletedCount,
-      operationId: result.operationId,
-      undoToken: result.undoToken,
-      message: `${result.deletedCount} message(s) deleted successfully`,
-    });
-  } catch (error) {
-    logger.error('Bulk delete error', { error: error.message, userId: req.user.id });
-    res.status(500).json({ error: 'Failed to delete messages', message: error.message });
   }
-});
+);
 
 /**
  * Bulk mark messages as read/unread
  * POST /api/v2/messages/bulk-mark-read
  */
-router.post('/bulk-mark-read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { messageIds, isRead } = req.body;
-    const userId = req.user.id;
+router.post(
+  '/bulk-mark-read',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const { messageIds, isRead } = req.body;
+      const userId = req.user.id;
 
-    // Validation
-    if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
-      return res.status(400).json({ error: 'messageIds array is required' });
+      // Validation
+      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({ error: 'messageIds array is required' });
+      }
+
+      if (typeof isRead !== 'boolean') {
+        return res.status(400).json({ error: 'isRead must be a boolean' });
+      }
+
+      // Perform bulk mark read
+      const result = await messagingService.bulkMarkRead(messageIds, userId, isRead);
+
+      res.json({
+        success: true,
+        updatedCount: result.updatedCount,
+        message: `${result.updatedCount} message(s) marked as ${isRead ? 'read' : 'unread'}`,
+      });
+    } catch (error) {
+      logger.error('Bulk mark read error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to mark messages', message: error.message });
     }
-
-    if (typeof isRead !== 'boolean') {
-      return res.status(400).json({ error: 'isRead must be a boolean' });
-    }
-
-    // Perform bulk mark read
-    const result = await messagingService.bulkMarkRead(messageIds, userId, isRead);
-
-    res.json({
-      success: true,
-      updatedCount: result.updatedCount,
-      message: `${result.updatedCount} message(s) marked as ${isRead ? 'read' : 'unread'}`,
-    });
-  } catch (error) {
-    logger.error('Bulk mark read error', { error: error.message, userId: req.user.id });
-    res.status(500).json({ error: 'Failed to mark messages', message: error.message });
   }
-});
+);
 
 /**
  * Undo an operation
@@ -2590,6 +2608,7 @@ router.post('/bulk-mark-read', applyAuthRequired, applyCsrfProtection, async (re
  */
 router.post(
   '/operations/:operationId/undo',
+  writeLimiter,
   applyAuthRequired,
   applyCsrfProtection,
   async (req, res) => {
@@ -2626,7 +2645,7 @@ router.post(
  * Flag/unflag a message
  * POST /api/v2/messages/:id/flag
  */
-router.post('/:id/flag', applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.post('/:id/flag', writeLimiter, applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { isFlagged } = req.body;
@@ -2654,29 +2673,35 @@ router.post('/:id/flag', applyAuthRequired, applyCsrfProtection, async (req, res
  * Archive/restore a message
  * POST /api/v2/messages/:id/archive
  */
-router.post('/:id/archive', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { action } = req.body;
-    const userId = req.user.id;
+router.post(
+  '/:id/archive',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action } = req.body;
+      const userId = req.user.id;
 
-    // Validation
-    if (!action || !['archive', 'restore'].includes(action)) {
-      return res.status(400).json({ error: 'action must be "archive" or "restore"' });
+      // Validation
+      if (!action || !['archive', 'restore'].includes(action)) {
+        return res.status(400).json({ error: 'action must be "archive" or "restore"' });
+      }
+
+      // Perform archive
+      const result = await messagingService.archiveMessage(id, userId, action);
+
+      res.json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      logger.error('Archive message error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to archive message', message: error.message });
     }
-
-    // Perform archive
-    const result = await messagingService.archiveMessage(id, userId, action);
-
-    res.json({
-      success: true,
-      message: result.message,
-    });
-  } catch (error) {
-    logger.error('Archive message error', { error: error.message, userId: req.user.id });
-    res.status(500).json({ error: 'Failed to archive message', message: error.message });
   }
-});
+);
 
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;
