@@ -778,6 +778,14 @@ function openConversation(conversationId) {
       // Users can remove individual files from preview and reselect if needed
       // Validate each file and calculate total size
       for (const file of files) {
+        // Check for zero-byte files
+        if (file.size === 0) {
+          if (typeof EFToast !== 'undefined') {
+            EFToast.warning(`File ${file.name} is empty (0 bytes)`);
+          }
+          continue;
+        }
+
         if (file.size > MAX_FILE_SIZE) {
           if (typeof EFToast !== 'undefined') {
             EFToast.warning(`File ${file.name} is too large (max 10MB)`);
@@ -832,25 +840,37 @@ function openConversation(conversationId) {
     `
       )
       .join('');
+  }
 
-    // Add event listeners for remove buttons
-    previewContainer.querySelectorAll('.remove-attachment-btn').forEach(btn => {
-      // Add hover effect
-      btn.addEventListener('mouseenter', () => {
-        btn.style.color = '#dc2626';
-      });
-      btn.addEventListener('mouseleave', () => {
-        btn.style.color = '#ef4444';
-      });
-
-      btn.addEventListener('click', e => {
-        const index = parseInt(e.target.getAttribute('data-index'));
-        selectedFiles.splice(index, 1);
-        updateAttachmentsPreview();
-        if (attachmentInput) {
-          attachmentInput.value = '';
+  // Use event delegation for remove buttons (prevents memory leaks)
+  if (previewContainer) {
+    previewContainer.addEventListener('click', e => {
+      const removeBtn = e.target.closest('.remove-attachment-btn');
+      if (removeBtn) {
+        const index = parseInt(removeBtn.getAttribute('data-index'));
+        if (!isNaN(index) && index >= 0 && index < selectedFiles.length) {
+          selectedFiles.splice(index, 1);
+          updateAttachmentsPreview();
+          if (attachmentInput) {
+            attachmentInput.value = '';
+          }
         }
-      });
+      }
+    });
+
+    // Add hover effects with event delegation
+    previewContainer.addEventListener('mouseover', e => {
+      const removeBtn = e.target.closest('.remove-attachment-btn');
+      if (removeBtn) {
+        removeBtn.style.color = '#dc2626';
+      }
+    });
+
+    previewContainer.addEventListener('mouseout', e => {
+      const removeBtn = e.target.closest('.remove-attachment-btn');
+      if (removeBtn) {
+        removeBtn.style.color = '#ef4444';
+      }
     });
   }
 
