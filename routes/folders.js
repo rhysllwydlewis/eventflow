@@ -537,14 +537,3 @@ router.post('/:id/rules/:ruleId/test', applyAuthRequired, ensureServices, async 
 // Export router and initialization function
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;
-    const status = error.message.includes('not found') ? 404 : 500;
-    res.status(status).json({
-      error: 'Failed to fetch folder stats',
-      message: error.message,
-    });
-  }
-});
-
-// Export router and initialization function
-module.exports = router;
-module.exports.initializeDependencies = initializeDependencies;

@@ -14,7 +14,7 @@ Phase 2 of the EventFlow messaging system has been successfully implemented, del
 
 - **Database Schema:** Complete messageFolders collection with support for hierarchy, rules, and sharing
 - **Backend Service:** 400 lines of FolderService with full CRUD operations
-- **API Endpoints:** 12 RESTful endpoints for folder management
+- **API Endpoints:** 16 RESTful endpoints for folder management (including rules)
 - **Frontend Styles:** 300 lines of CSS for folder UI
 - **Features:**
   - 6 system folders (Inbox, Sent, Drafts, Starred, Archived, Trash)
@@ -28,7 +28,7 @@ Phase 2 of the EventFlow messaging system has been successfully implemented, del
 
 - **Database Schema:** Complete messageLabels collection with ML model support
 - **Backend Service:** 350 lines of LabelService
-- **API Endpoints:** 12 RESTful endpoints for label operations
+- **API Endpoints:** 16 RESTful endpoints for label operations (including auto-rules)
 - **Frontend Styles:** 250 lines of CSS for label UI
 - **Features:**
   - 6 default labels (Urgent, Important, Work, Personal, Finance, Follow Up)
@@ -41,7 +41,7 @@ Phase 2 of the EventFlow messaging system has been successfully implemented, del
 ### 3. Advanced Search System 🔍
 
 - **Backend Service:** 450 lines of SearchService with query parser
-- **API Endpoints:** 8 endpoints including search, autocomplete, and validation
+- **API Endpoints:** 4 endpoints including search, autocomplete, and validation
 - **Frontend Styles:** 200 lines of CSS for search UI
 - **Features:**
   - 17 search operators (from:, to:, subject:, body:, before:, after:, is:, has:, etc.)
@@ -127,14 +127,15 @@ Documentation:           2,051 lines
 Modified:                   ~50 lines
 ```
 
-### API Endpoints (32 total)
+### API Endpoints (36 total)
 
-**Folders API (12 endpoints):**
+**Folders API (16 endpoints):**
 
 ```
 POST   /api/v2/folders
 GET    /api/v2/folders
 POST   /api/v2/folders/initialize
+POST   /api/v2/folders/reorder
 GET    /api/v2/folders/:id
 PUT    /api/v2/folders/:id
 DELETE /api/v2/folders/:id
@@ -143,9 +144,13 @@ POST   /api/v2/folders/:id/move
 POST   /api/v2/folders/:id/messages
 POST   /api/v2/folders/:id/empty
 GET    /api/v2/folders/:id/stats
+POST   /api/v2/folders/:id/rules
+PUT    /api/v2/folders/:id/rules/:ruleId
+DELETE /api/v2/folders/:id/rules/:ruleId
+POST   /api/v2/folders/:id/rules/:ruleId/test
 ```
 
-**Labels API (12 endpoints):**
+**Labels API (16 endpoints):**
 
 ```
 POST   /api/v2/labels
@@ -160,9 +165,13 @@ POST   /api/v2/labels/:id/apply-to-messages
 POST   /api/v2/labels/:id/remove-from-messages
 POST   /api/v2/labels/:id/merge
 GET    /api/v2/labels/:id/stats
+POST   /api/v2/labels/:id/auto-rules
+PUT    /api/v2/labels/:id/auto-rules/:ruleId
+DELETE /api/v2/labels/:id/auto-rules/:ruleId
+POST   /api/v2/labels/:id/auto-rules/:ruleId/test
 ```
 
-**Search API (8 endpoints):**
+**Advanced Search API (4 endpoints):**
 
 ```
 GET    /api/v2/search/advanced
@@ -387,7 +396,7 @@ GET    /api/v2/search/advanced/operators
 ### Complexity
 
 - **Services:** 4 (well-structured, modular)
-- **API Endpoints:** 32 (RESTful, consistent)
+- **API Endpoints:** 36 (RESTful, consistent)
 - **Database Collections:** 2 new
 - **Database Indices:** 15 new
 
