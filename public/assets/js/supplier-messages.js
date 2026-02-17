@@ -14,6 +14,89 @@ import {
 // Constants
 const MESSAGE_PREVIEW_MAX_LENGTH = 100;
 
+// Helper function to extract message text from various field names
+function extractMessageText(message) {
+  if (!message) {
+    return '';
+  }
+  // Try all possible field names in order of likelihood
+  return (
+    message.message ||
+    message.content ||
+    message.text ||
+    message.body ||
+    message.value ||
+    (typeof message === 'string' ? message : '') ||
+    '[No message content]'
+  );
+}
+
+// Helper function to extract message timestamp from various field names
+function extractMessageTimestamp(message) {
+  if (!message) {
+    return null;
+  }
+  return (
+    message.timestamp || message.sentAt || message.createdAt || message.updatedAt || message.date
+  );
+}
+
+// Helper function to extract sender ID from various field names
+function extractSenderId(message) {
+  if (!message) {
+    return 'unknown';
+  }
+  return (
+    message.senderId || message.userId || message.fromUserId || message.sender?.id || 'unknown'
+  );
+}
+
+// Helper function for detailed logging
+function logMessageState(state, data) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] [Dashboard Messaging] ${state}:`, data);
+}
+
+// HTTP fallback for loading messages when real-time fails
+async function loadMessagesHTTPFallback(conversationId) {
+  try {
+    logMessageState('HTTP_FALLBACK_ATTEMPT', { conversationId });
+
+    // Try v2 API first
+    let response = await fetch(`/api/v2/messages/${conversationId}`, {
+      credentials: 'include',
+    });
+
+    // Try v1 API for legacy thread IDs
+    if (!response.ok && conversationId.startsWith('thd_')) {
+      logMessageState('HTTP_FALLBACK_V1_ATTEMPT', { conversationId });
+      response = await fetch(`/api/v1/threads/${conversationId}/messages`, {
+        credentials: 'include',
+      });
+    }
+
+    if (!response.ok) {
+      logMessageState('HTTP_FALLBACK_FAILED', {
+        conversationId,
+        status: response.status,
+      });
+      return null;
+    }
+
+    const data = await response.json();
+    const messages = data.messages || data.items || [];
+    logMessageState('HTTP_FALLBACK_SUCCESS', {
+      conversationId,
+      messageCount: messages.length,
+    });
+    return messages;
+  } catch (error) {
+    logMessageState('HTTP_FALLBACK_ERROR', { conversationId, error: error.message });
+    console.error('HTTP fallback failed:', error);
+    return null;
+  }
+}
+
 // Initialize messaging manager
 const messagingManager = new MessagingManager();
 
@@ -295,53 +378,93 @@ function openConversation(conversationId) {
   let currentUser = null;
 
   const renderMessages = messages => {
-    const container = document.getElementById('conversationMessages');
-    if (!container) {
-      console.warn('conversationMessages container not found');
-      return;
-    }
-
-    if (!messages || messages.length === 0) {
-      container.innerHTML =
-        '<p class="small" style="text-align:center;color:#6b7280;">No messages yet. Start the conversation!</p>';
-      return;
-    }
-
-    let html = '<div class="messages-list" style="display:flex;flex-direction:column;gap:1rem;">';
-
-    messages.forEach(message => {
-      // Defensive handling for message data
-      if (!message) {
-        console.warn('Skipping null/undefined message');
+    try {
+      const container = document.getElementById('conversationMessages');
+      if (!container) {
+        console.warn('conversationMessages container not found');
         return;
       }
 
-      const timestamp = message.timestamp
-        ? messagingSystem.formatFullTimestamp(message.timestamp)
-        : '';
-      const isFromSupplier = message.senderType === 'supplier';
-      const bubbleClass = isFromSupplier ? 'message-bubble--sent' : 'message-bubble--received';
-      const alignStyle = isFromSupplier ? 'margin-left:auto;' : 'margin-right:auto;';
-      const messageContent = message.message || message.content || '[No message content]';
+      if (!messages || messages.length === 0) {
+        container.innerHTML =
+          '<p class="small" style="text-align:center;color:#6b7280;">No messages yet. Start the conversation!</p>';
+        return;
+      }
 
-      html += `
-        <div class="message-bubble ${bubbleClass}" style="${alignStyle}">
-          <div class="message-sender">${escapeHtml(message.senderName || 'Unknown')}</div>
-          <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(messageContent)}</p>
-          <div class="message-time">${timestamp}</div>
-        </div>
-      `;
-    });
+      let html = '<div class="messages-list" style="display:flex;flex-direction:column;gap:1rem;">';
+      let renderedCount = 0;
 
-    html += '</div>';
-    container.innerHTML = html;
+      messages.forEach((message, index) => {
+        try {
+          // Defensive handling for message data
+          if (!message || typeof message !== 'object') {
+            console.warn(`Skipping invalid message at index ${index}:`, message);
+            return;
+          }
 
-    // Scroll to bottom
-    container.scrollTop = container.scrollHeight;
+          const messageId = message.id || message._id || `msg-${index}`;
+          const messageContent = extractMessageText(message);
+
+          if (!messageContent) {
+            console.warn(`Message ${messageId} has no content`, message);
+            return;
+          }
+
+          const timestamp = extractMessageTimestamp(message);
+          const formattedTime = timestamp
+            ? messagingSystem.formatFullTimestamp(timestamp)
+            : 'Unknown time';
+
+          const senderId = extractSenderId(message);
+          const isFromSupplier = message.senderType === 'supplier' || senderId === currentUser?.id;
+          const bubbleClass = isFromSupplier ? 'message-bubble--sent' : 'message-bubble--received';
+          const alignStyle = isFromSupplier ? 'margin-left:auto;' : 'margin-right:auto;';
+          const senderName = isFromSupplier ? 'You' : message.senderName || 'Other';
+
+          html += `
+            <div class="message-bubble ${bubbleClass}" style="${alignStyle}" data-message-id="${messageId}">
+              <div class="message-sender">${escapeHtml(senderName)}</div>
+              <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(messageContent)}</p>
+              <div class="message-time">${formattedTime}</div>
+            </div>
+          `;
+
+          renderedCount++;
+        } catch (msgError) {
+          console.warn(`Error rendering message ${index}:`, msgError, message);
+          // Continue with next message instead of breaking
+        }
+      });
+
+      if (renderedCount === 0) {
+        container.innerHTML =
+          '<p class="small" style="text-align:center;color:#6b7280;">No valid messages to display.</p>';
+        return;
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+
+      logMessageState('RENDER_COMPLETE', {
+        count: renderedCount,
+        htmlLength: html.length,
+      });
+
+      // Scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    } catch (error) {
+      console.error('Critical error in renderMessages:', error);
+      logMessageState('RENDER_ERROR', { error: error.message });
+      const container = document.getElementById('conversationMessages');
+      if (container) {
+        container.innerHTML =
+          '<p style="color:#ef4444;text-align:center;">Error displaying messages. Please try refreshing.</p>';
+      }
+    }
   };
 
   // Get current user and set up listener
-  getCurrentUser().then(user => {
+  getCurrentUser().then(async user => {
     if (!user) {
       const container = document.getElementById('conversationMessages');
       if (container) {
@@ -353,15 +476,73 @@ function openConversation(conversationId) {
     }
     currentUser = user;
 
+    logMessageState('INIT', { conversationId, userId: currentUser.id });
+
+    let messagesLoaded = false;
+    let retryCount = 0;
+    const maxRetries = 2;
+    let timeoutId = null;
+
     // Listen to messages with error handling
     try {
-      messagesUnsubscribe = messagingSystem.listenToMessages(conversationId, renderMessages);
+      logMessageState('LISTENER_SETUP', { conversationId });
+
+      messagesUnsubscribe = messagingSystem.listenToMessages(conversationId, messages => {
+        if (messages && messages.length > 0) {
+          messagesLoaded = true;
+          retryCount = 0; // Reset retry on success
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          logMessageState('MESSAGES_RECEIVED', {
+            count: messages.length,
+            firstMessage: messages[0],
+          });
+          renderMessages(messages);
+        }
+      });
+
+      // Set 3-second timeout to trigger fallback if real-time doesn't deliver
+      timeoutId = setTimeout(async () => {
+        if (!messagesLoaded && retryCount < maxRetries) {
+          retryCount++;
+          logMessageState('FALLBACK_TRIGGERED', {
+            reason: 'real-time timeout',
+            conversationId,
+            attempt: retryCount,
+          });
+          console.log(`Real-time timeout (attempt ${retryCount}), trying HTTP fallback...`);
+
+          const httpMessages = await loadMessagesHTTPFallback(conversationId);
+          if (httpMessages && httpMessages.length > 0) {
+            messagesLoaded = true;
+            renderMessages(httpMessages);
+          } else if (retryCount >= maxRetries) {
+            // Final fallback: show error
+            logMessageState('ALL_FALLBACKS_FAILED', { conversationId, retryCount });
+            const container = document.getElementById('conversationMessages');
+            if (container) {
+              container.innerHTML =
+                '<p style="color:#ef4444;text-align:center;">Unable to load messages. Please refresh and try again.</p>';
+            }
+          }
+        }
+      }, 3000);
     } catch (error) {
       console.error('Error setting up message listener:', error);
-      const container = document.getElementById('conversationMessages');
-      if (container) {
-        container.innerHTML =
-          '<p class="small" style="text-align:center;color:#ef4444;">Unable to load messages. Please try again.</p>';
+      logMessageState('LISTENER_ERROR', { conversationId, error: error.message });
+
+      // Immediately try HTTP fallback on error
+      const httpMessages = await loadMessagesHTTPFallback(conversationId);
+      if (httpMessages && httpMessages.length > 0) {
+        renderMessages(httpMessages);
+      } else {
+        const container = document.getElementById('conversationMessages');
+        if (container) {
+          container.innerHTML =
+            '<p class="small" style="text-align:center;color:#ef4444;">Unable to load messages. Please try again.</p>';
+        }
       }
       if (typeof EFToast !== 'undefined') {
         EFToast.error('Failed to load conversation');
@@ -477,6 +658,22 @@ function openConversation(conversationId) {
 async function init() {
   const container = document.getElementById('threads-sup');
   if (!container) {
+    return;
+  }
+
+  // Validate MessagingSystem is ready
+  if (!window.messagingSystem || typeof window.messagingSystem.listenToMessages !== 'function') {
+    logMessageState('SYSTEM_NOT_READY', {
+      hasMessagingSystem: !!window.messagingSystem,
+      hasListenToMessages: typeof window.messagingSystem?.listenToMessages === 'function',
+    });
+    showErrorState(container, {
+      icon: '⚠️',
+      title: 'System not ready',
+      description: 'Messaging system initialization failed. Please refresh the page.',
+      actionText: 'Refresh',
+      actionHref: window.location.href,
+    });
     return;
   }
 
