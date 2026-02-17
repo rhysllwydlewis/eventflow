@@ -801,6 +801,8 @@ class MessagingService {
     const crypto = require('crypto');
     const operationId = crypto.randomUUID();
     const undoToken = crypto.randomBytes(32).toString('hex');
+    // Hash the token for secure storage
+    const undoTokenHash = crypto.createHash('sha256').update(undoToken).digest('hex');
     const now = new Date();
     const undoExpiresAt = new Date(now.getTime() + 30000); // 30 seconds
 
@@ -872,7 +874,7 @@ class MessagingService {
           reason,
           createdAt: now,
           undoExpiresAt,
-          undoToken,
+          undoTokenHash, // Store hash instead of plaintext token
           isUndone: false,
           undoneAt: null,
         },
@@ -1111,17 +1113,21 @@ class MessagingService {
    * @returns {Promise<Object>} Undo result
    */
   async undoOperation(operationId, undoToken, userId) {
+    const crypto = require('crypto');
     const now = new Date();
+    
+    // Hash the provided token to compare with stored hash
+    const undoTokenHash = crypto.createHash('sha256').update(undoToken).digest('hex');
 
     try {
       const { COLLECTIONS } = require('../models/Message');
       const operationsCollection = this.db.collection(COLLECTIONS.MESSAGE_OPERATIONS);
 
-      // Find the operation
+      // Find the operation using the hashed token
       const operation = await operationsCollection.findOne({
         operationId,
         userId,
-        undoToken,
+        undoTokenHash, // Compare with stored hash
         isUndone: false,
       });
 

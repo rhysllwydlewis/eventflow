@@ -103,7 +103,7 @@ const MessageOperationSchema = {
   reason: String, // Optional reason
   createdAt: Date,
   undoExpiresAt: Date, // Undo window expiration (30 seconds)
-  undoToken: String, // Token for undo verification
+  undoTokenHash: String, // SHA-256 hash of undo token for security
   isUndone: Boolean, // Whether operation was undone
   undoneAt: Date, // When it was undone
   ipAddress: String, // Client IP for audit
