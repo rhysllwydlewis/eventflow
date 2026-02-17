@@ -10,6 +10,7 @@ import {
   calculateLeadQuality,
   filterThreadsByQualityLevel,
 } from './utils/lead-quality-helper.js';
+import { logMessageState } from './utils/dashboard-logger.js';
 
 // Constants
 const MESSAGE_PREVIEW_MAX_LENGTH = 100;
@@ -49,12 +50,6 @@ function extractSenderId(message) {
   return (
     message.senderId || message.userId || message.fromUserId || message.sender?.id || 'unknown'
   );
-}
-
-// Helper function for detailed logging
-function logMessageState(state, data) {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] [Dashboard Messaging] ${state}:`, data);
 }
 
 // HTTP fallback for loading messages when real-time fails
@@ -246,6 +241,18 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
   `;
 
   filteredConversations.forEach(conversation => {
+    // Defensive: Skip invalid conversation objects
+    if (!conversation || typeof conversation !== 'object') {
+      console.warn('Skipping invalid conversation:', conversation);
+      return;
+    }
+
+    // Defensive: Skip conversations without IDs
+    if (!conversation.id) {
+      console.warn('Skipping conversation without ID:', conversation);
+      return;
+    }
+
     const customerName = conversation.customerName || 'Customer';
 
     // Format preview with "You:" prefix if current user sent last message
@@ -358,24 +365,77 @@ function openConversation(conversationId) {
 
   document.body.appendChild(modal);
 
-  // Close handlers
-  let closeModal = () => {
+  // Store the element that opened the modal for focus restoration
+  const previouslyFocusedElement = document.activeElement;
+
+  // Load messages with real-time updates
+  let messagesUnsubscribe = null;
+  let currentUser = null;
+  const cleanupCallbacks = []; // Array to store cleanup functions
+
+  // Close handler with cleanup support
+  const closeModal = () => {
+    // Run all cleanup callbacks
+    cleanupCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('Error in cleanup callback:', error);
+      }
+    });
+
+    // Cleanup message subscription
     if (messagesUnsubscribe) {
       messagesUnsubscribe();
     }
+
+    // Remove modal from DOM
     modal.remove();
+
+    // Restore focus to the element that opened the modal
+    if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+      previouslyFocusedElement.focus();
+    }
   };
 
-  modal.querySelector('.modal-close').addEventListener('click', closeModal);
+  // Attach close button handler with defensive check
+  const closeButton = modal.querySelector('.modal-close');
+  if (closeButton) {
+    closeButton.addEventListener('click', e => {
+      e.stopPropagation(); // Prevent event from bubbling to overlay
+      closeModal();
+    });
+  } else {
+    console.error('Modal close button not found');
+  }
+
+  // Close when clicking outside the modal
   modal.addEventListener('click', e => {
     if (e.target === modal) {
       closeModal();
     }
   });
 
-  // Load messages with real-time updates
-  let messagesUnsubscribe = null;
-  let currentUser = null;
+  // Close modal with Escape key
+  const handleEscapeKey = e => {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+      closeModal();
+    }
+  };
+  document.addEventListener('keydown', handleEscapeKey);
+
+  // Register cleanup for escape key listener
+  cleanupCallbacks.push(() => {
+    document.removeEventListener('keydown', handleEscapeKey);
+  });
+
+  // Set initial focus to message input for better UX
+  setTimeout(() => {
+    const messageInput = modal.querySelector('#messageInput');
+    if (messageInput) {
+      messageInput.focus();
+    }
+  }, 100);
 
   const renderMessages = messages => {
     try {
@@ -569,12 +629,10 @@ function openConversation(conversationId) {
 
     window.addEventListener('messaging:typing', handleTyping);
 
-    // Cleanup typing listener when modal closes
-    const originalCloseModal = closeModal;
-    closeModal = () => {
+    // Register cleanup for typing listener
+    cleanupCallbacks.push(() => {
       window.removeEventListener('messaging:typing', handleTyping);
-      originalCloseModal();
-    };
+    });
 
     // Mark messages as read
     messagingSystem.markMessagesAsRead(conversationId, user.id).catch(err => {
@@ -593,7 +651,7 @@ function openConversation(conversationId) {
       return;
     }
 
-    const messageInput = document.getElementById('messageInput');
+    const messageInput = modal.querySelector('#messageInput');
     const messageText = messageInput.value.trim();
 
     if (!messageText) {
@@ -652,6 +710,13 @@ function openConversation(conversationId) {
       messagingSystem.sendTypingStatus(conversationId, false);
     }
   });
+
+  // Register cleanup for typing timeout
+  cleanupCallbacks.push(() => {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+  });
 }
 
 // Initialize
@@ -661,11 +726,11 @@ async function init() {
     return;
   }
 
-  // Validate MessagingSystem is ready
-  if (!window.messagingSystem || typeof window.messagingSystem.listenToMessages !== 'function') {
+  // Validate MessagingSystem is ready (check module-scoped import, not window)
+  if (!messagingSystem || typeof messagingSystem.listenToMessages !== 'function') {
     logMessageState('SYSTEM_NOT_READY', {
-      hasMessagingSystem: !!window.messagingSystem,
-      hasListenToMessages: typeof window.messagingSystem?.listenToMessages === 'function',
+      hasMessagingSystem: !!messagingSystem,
+      hasListenToMessages: typeof messagingSystem?.listenToMessages === 'function',
     });
     showErrorState(container, {
       icon: '⚠️',
