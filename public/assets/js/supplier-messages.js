@@ -356,7 +356,7 @@ function openConversation(conversationId) {
       </div>
       <div class="modal-footer" style="padding:1.5rem;">
         <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;flex-wrap:wrap;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:250px;"></textarea>
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:0;"></textarea>
           
           <!-- File input (hidden) -->
           <input type="file" id="attachmentInput" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"/>
@@ -731,9 +731,9 @@ function openConversation(conversationId) {
       .map(
         (file, idx) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:white;border-radius:6px;margin-bottom:0.5rem;border:1px solid #e5e7eb;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);">
-        <span style="font-size:0.875rem;color:#374151;font-weight:500;">${escapeHtml(file.name)}</span>
-        <div style="display:flex;align-items:center;gap:0.5rem;">
-          <span style="font-size:0.75rem;color:#6b7280;">${(file.size / 1024 / 1024).toFixed(1)}MB</span>
+        <span style="font-size:0.875rem;color:#374151;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:0.5rem;">${escapeHtml(file.name)}</span>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+          <span style="font-size:0.75rem;color:#6b7280;white-space:nowrap;">${(file.size / 1024 / 1024).toFixed(1)}MB</span>
           <button type="button" class="remove-attachment-btn" data-index="${idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.25rem;line-height:1;padding:0.25rem;transition:color 0.2s;" title="Remove file" aria-label="Remove ${escapeHtml(file.name)}">✕</button>
         </div>
       </div>

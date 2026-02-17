@@ -718,6 +718,17 @@ class MessagingSystem {
     // Use relative time for recent messages, full date for older
     const now = new Date();
     const diff = now - date;
+    
+    // Handle future dates (clock skew or incorrect system time)
+    if (diff < 0) {
+      return date.toLocaleDateString('en-GB', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+    
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
