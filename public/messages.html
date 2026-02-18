@@ -452,16 +452,16 @@
         <p style="color: #6b7280; margin-top: 4px;">Communicate with suppliers about your event</p>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-secondary" id="exportAllBtn" title="Export all conversations">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+        <button class="btn btn-secondary" id="exportAllBtn" title="Export all conversations to CSV file">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
           Export
         </button>
-        <button class="btn btn-primary" id="newMessageBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+        <button class="btn btn-primary" id="newMessageBtn" title="Start a new conversation with a supplier">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;" aria-hidden="true">
             <path d="M12 5v14M5 12h14"/>
           </svg>
           New Message
@@ -470,12 +470,12 @@
     </div>
 
     <!-- Connection Status Indicator -->
-    <div id="connection-status" class="connection-status" style="display: none;">
+    <div id="connection-status" class="connection-status" style="display: none;" role="status" aria-live="polite" aria-atomic="true">
       <div class="connection-indicator">
         <span class="connection-dot"></span>
-        <span class="connection-text">Connected</span>
+        <span class="connection-text" title="Real-time messaging is active. Your messages will sync instantly.">Connected</span>
       </div>
-      <button id="manual-reconnect-btn" class="connection-reconnect-btn" style="display: none;">
+      <button id="manual-reconnect-btn" class="connection-reconnect-btn" style="display: none;" title="Manually reconnect to messaging server" aria-label="Reconnect to server">
         🔄 Reconnect
       </button>
     </div>
@@ -523,7 +523,7 @@
       <!-- Phase 1: Sort dropdown -->
       <div style="display: flex; align-items: center; gap: 8px;">
         <label for="sortDropdown" style="font-size: 14px; color: #6b7280; white-space: nowrap;">Sort by:</label>
-        <select id="sortDropdown" class="sort-dropdown" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 150px;">
+        <select id="sortDropdown" class="sort-dropdown" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 150px;" title="Choose how to sort your messages" aria-label="Sort messages by">
           <option value="date-desc">Newest first</option>
           <option value="date-asc">Oldest first</option>
           <option value="sender-asc">Sender (A-Z)</option>
@@ -534,31 +534,34 @@
         </select>
       </div>
 
+      <!-- Quick Search Bar - Intentional Design -->
+      <!-- This is the primary quick search for simple queries. The advanced search below provides additional syntax support. -->
       <div class="messages-search" style="flex: 1; min-width: 200px;">
         <input 
           type="text" 
           id="searchInput" 
           placeholder="Search messages..." 
+          aria-label="Quick search messages"
           style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;"
         />
       </div>
       <div style="display: flex; gap: 8px;">
         <!-- Phase 1: Filter button -->
-        <button id="filterToggleBtn" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap; position: relative;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+        <button id="filterToggleBtn" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap; position: relative;" title="Show or hide message filters" aria-label="Toggle filters" aria-expanded="false" aria-controls="filterSidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;" aria-hidden="true">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
           </svg>
           Filters
-          <span id="filterBadge" class="filter-badge" style="display: none; margin-left: 6px; background: #0B8073; color: white; border-radius: 10px; padding: 2px 8px; font-size: 12px; font-weight: 600;">0</span>
+          <span id="filterBadge" class="filter-badge" style="display: none; margin-left: 6px; background: #0B8073; color: white; border-radius: 10px; padding: 2px 8px; font-size: 12px; font-weight: 600;" aria-live="polite">0</span>
         </button>
-        <select id="dateFilter" style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;">
+        <select id="dateFilter" style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;" title="Filter messages by date range" aria-label="Date filter">
           <option value="all">All time</option>
           <option value="today">Today</option>
           <option value="week">This week</option>
           <option value="month">This month</option>
           <option value="custom">Custom range...</option>
         </select>
-        <button id="clearFilters" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;">
+        <button id="clearFilters" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;" title="Remove all active filters" aria-label="Clear all filters">
           Clear Filters
         </button>
       </div>
@@ -638,13 +641,16 @@
         </div>
       </div>
 
-      <!-- Advanced Search Bar -->
-      <div id="advanced-search-container" class="advanced-search-container" style="margin-bottom: 16px; padding: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">
+      <!-- Advanced Search Bar - Intentional Design -->
+      <!-- This provides power-user features with syntax like "from:user@example.com is:unread" -->
+      <!-- Note: Both quick search (above) and advanced search (here) serve different user needs -->
+      <div id="advanced-search-container" class="advanced-search-container" role="search" aria-label="Advanced message search" style="margin-bottom: 16px; padding: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">
         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
           <input 
             type="text" 
             id="advanced-search-input" 
             placeholder="Search messages... (e.g., from:john@example.com is:unread)" 
+            aria-label="Advanced search with syntax support"
             style="flex: 1; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
           >
           <button id="advanced-search-btn" class="btn btn-primary" style="padding: 10px 20px; white-space: nowrap;">
@@ -693,9 +699,9 @@
 
     </div>
 
-    <div id="errorMessage" class="error" style="display: none;"></div>
+    <div id="errorMessage" class="error" style="display: none;" role="alert" aria-live="polite"></div>
     
-    <div id="threadList" class="thread-list">
+    <div id="threadList" class="thread-list" role="region" aria-label="Message threads" aria-live="polite">
       <div class="loading">Loading messages...</div>
     </div>
   </main>
@@ -768,6 +774,43 @@
     (function () {
       'use strict';
 
+      /**
+       * Debounce utility - prevents function from being called too frequently
+       * @param {Function} func - Function to debounce
+       * @param {number} wait - Milliseconds to wait
+       * @returns {Function} Debounced function
+       */
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const context = this;
+          const later = () => {
+            clearTimeout(timeout);
+            func.apply(context, args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      /**
+       * Throttle utility - ensures function runs at most once per interval
+       * @param {Function} func - Function to throttle
+       * @param {number} limit - Milliseconds between calls
+       * @returns {Function} Throttled function
+       */
+      function throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+          const context = this;
+          if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+          }
+        };
+      }
+
       let currentTab = 'inbox';
       let threads = [];
       let drafts = [];
@@ -775,6 +818,54 @@
       let searchQuery = '';
       let dateFilter = 'all';
       let cachedUserId = null; // Cache user ID to avoid redundant API calls
+
+      /**
+       * Validate message content before sending
+       * @param {string} text - Message text to validate
+       * @returns {Object} - { valid: boolean, error: string }
+       */
+      function validateMessage(text) {
+        if (!text || typeof text !== 'string') {
+          return { valid: false, error: 'Message is required' };
+        }
+        
+        const trimmed = text.trim();
+        
+        if (trimmed.length === 0) {
+          return { valid: false, error: 'Message cannot be empty' };
+        }
+        
+        if (trimmed.length > 10000) {
+          return { valid: false, error: 'Message is too long (maximum 10,000 characters)' };
+        }
+        
+        return { valid: true, error: null };
+      }
+
+      /**
+       * Show user-friendly error message
+       * @param {string} message - Error message to display
+       * @param {string} type - Type of error (error, warning, info)
+       */
+      function showUserError(message, type = 'error') {
+        const errorDiv = document.getElementById('errorMessage');
+        if (errorDiv) {
+          errorDiv.textContent = message;
+          errorDiv.className = type;
+          errorDiv.style.display = 'block';
+          errorDiv.setAttribute('role', 'alert');
+          
+          // Auto-hide after 5 seconds
+          setTimeout(() => {
+            errorDiv.style.display = 'none';
+          }, 5000);
+        }
+        
+        // Also show toast if available
+        if (typeof showToast === 'function') {
+          showToast(message, type);
+        }
+      }
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
@@ -1065,7 +1156,8 @@
         
         // Wire bulk mark read button
         if (bulkMarkReadBtn) {
-          bulkMarkReadBtn.addEventListener('click', async () => {
+          // Debounce to prevent rapid clicks
+          const handleBulkMarkRead = debounce(async () => {
             const selectedIds = window.selectionManager.getSelectedIds();
             if (selectedIds.length === 0) {
               showToast('No messages selected', 'error');
@@ -1082,12 +1174,15 @@
               console.error('Bulk mark read error:', error);
               showToast('Failed to mark messages as read: ' + error.message, 'error');
             }
-          });
+          }, 300); // 300ms debounce
+          
+          bulkMarkReadBtn.addEventListener('click', handleBulkMarkRead);
         }
         
         // Wire bulk mark unread button
         if (bulkMarkUnreadBtn) {
-          bulkMarkUnreadBtn.addEventListener('click', async () => {
+          // Debounce to prevent rapid clicks
+          const handleBulkMarkUnread = debounce(async () => {
             const selectedIds = window.selectionManager.getSelectedIds();
             if (selectedIds.length === 0) {
               showToast('No messages selected', 'error');
@@ -1104,7 +1199,9 @@
               console.error('Bulk mark unread error:', error);
               showToast('Failed to mark messages as unread: ' + error.message, 'error');
             }
-          });
+          }, 300); // 300ms debounce
+          
+          bulkMarkUnreadBtn.addEventListener('click', handleBulkMarkUnread);
         }
         
         // Wire sort dropdown
@@ -1126,6 +1223,7 @@
             if (filterSidebar) {
               const isVisible = filterSidebar.style.display !== 'none';
               filterSidebar.style.display = isVisible ? 'none' : 'block';
+              filterToggleBtn.setAttribute('aria-expanded', !isVisible);
               console.log('Filter sidebar toggled:', !isVisible);
             }
           });
@@ -1133,7 +1231,8 @@
         
         // Wire bulk delete button
         if (bulkDeleteBtn) {
-          bulkDeleteBtn.addEventListener('click', async () => {
+          // Debounce to prevent rapid clicks
+          const handleBulkDelete = debounce(async () => {
             const selectedIds = window.selectionManager.getSelectedIds();
             if (selectedIds.length === 0) {
               showToast('No messages selected', 'error');
@@ -1179,7 +1278,9 @@
               console.error('Bulk delete error:', error);
               showToast('Failed to delete messages: ' + error.message, 'error');
             }
-          });
+          }, 300); // 300ms debounce
+          
+          bulkDeleteBtn.addEventListener('click', handleBulkDelete);
         }
         
         // Keyboard shortcuts
@@ -1419,30 +1520,37 @@
           
           // Create modal
           const modal = document.createElement('div');
-          modal.className = 'modal-overlay';
+          modal.className = 'modal-overlay modal-overlay--glass';
+          modal.setAttribute('role', 'dialog');
+          modal.setAttribute('aria-modal', 'true');
+          modal.setAttribute('aria-labelledby', 'new-message-title');
           modal.innerHTML = `
-            <div class="modal">
+            <div class="modal modal--glass">
               <div class="modal-header">
-                <h3>New Message</h3>
-                <button class="modal-close" type="button" aria-label="Close">&times;</button>
+                <h3 id="new-message-title">New Message</h3>
+                <button class="modal-close" type="button" aria-label="Close modal">&times;</button>
               </div>
               <form id="newMessageForm">
                 <div class="modal-body">
                   <div class="form-group">
                     <label for="supplierSelect">To (Supplier) *</label>
-                    <select id="supplierSelect" name="supplier" required>
+                    <select id="supplierSelect" name="supplier" required aria-required="true">
                       <option value="">Select a supplier...</option>
                       ${suppliers.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('')}
                     </select>
                   </div>
                   <div class="form-group">
                     <label for="messageSubject">Subject</label>
-                    <input type="text" id="messageSubject" name="subject" placeholder="What is this about?">
+                    <input type="text" id="messageSubject" name="subject" placeholder="What is this about?" aria-label="Message subject (optional)">
                   </div>
                   <div class="form-group">
                     <label for="messageText">Message *</label>
-                    <textarea id="messageText" name="message" rows="6" placeholder="Type your message here..." required></textarea>
-                    <div id="draft-indicator" class="draft-indicator"></div>
+                    <textarea id="messageText" name="message" rows="6" placeholder="Type your message here..." required aria-required="true" aria-label="Message content" aria-describedby="char-limit-text char-counter" maxlength="10000"></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                      <small id="char-limit-text" style="color: #6b7280; font-size: 12px;">Maximum 10,000 characters</small>
+                      <small id="char-counter" aria-live="polite" style="color: #6b7280; font-size: 12px;">10,000 remaining</small>
+                    </div>
+                    <div id="draft-indicator" class="draft-indicator" aria-live="polite"></div>
                   </div>
                 </div>
                 <div class="form-actions">
@@ -1479,14 +1587,23 @@
             const subject = document.getElementById('messageSubject').value;
             const messageText = document.getElementById('messageText').value;
             
-            if (!supplierId || !messageText.trim()) {
-              alert('Please select a supplier and enter a message');
+            // Validate supplier selection
+            if (!supplierId) {
+              showUserError('Please select a supplier', 'warning');
+              return;
+            }
+            
+            // Validate message content
+            const validation = validateMessage(messageText);
+            if (!validation.valid) {
+              showUserError(validation.error, 'warning');
               return;
             }
             
             const sendBtn = document.getElementById('sendNewMessage');
             sendBtn.disabled = true;
             sendBtn.textContent = 'Sending...';
+            sendBtn.setAttribute('aria-busy', 'true');
             
             try {
               // Create thread
@@ -1535,9 +1652,13 @@
               window.location.href = `/conversation.html?id=${thread.id}`;
             } catch (error) {
               console.error('Error sending message:', error);
-              alert('Failed to send message. Please try again.');
+              showUserError(
+                error.message || 'Failed to send message. Please check your connection and try again.',
+                'error'
+              );
               sendBtn.disabled = false;
               sendBtn.textContent = 'Send Message';
+              sendBtn.removeAttribute('aria-busy');
             }
           });
           
@@ -1639,6 +1760,24 @@
           const messageTextarea = document.getElementById('messageText');
           const subjectInput = document.getElementById('messageSubject');
           const supplierSelect = document.getElementById('supplierSelect');
+          const charCounter = document.getElementById('char-counter');
+          
+          // Character counter
+          function updateCharCounter() {
+            const remaining = 10000 - messageTextarea.value.length;
+            charCounter.textContent = `${remaining.toLocaleString()} remaining`;
+            
+            // Change color when getting close to limit
+            if (remaining < 100) {
+              charCounter.style.color = '#dc2626'; // Red
+            } else if (remaining < 500) {
+              charCounter.style.color = '#f59e0b'; // Orange
+            } else {
+              charCounter.style.color = '#6b7280'; // Gray
+            }
+          }
+          
+          messageTextarea.addEventListener('input', updateCharCounter);
           
           // Restore draft when supplier is selected
           supplierSelect.addEventListener('change', () => {
