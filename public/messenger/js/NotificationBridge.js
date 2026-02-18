@@ -9,22 +9,21 @@
   // Configuration constants
   const NOTIFICATION_AUTO_CLOSE_DELAY = 5000; // 5 seconds
   const UNREAD_COUNT_POLL_INTERVAL = 120000; // 2 minutes
+  const BADGE_SELECTORS = [
+    '#ef-notification-badge',
+    '#unread-messages-count',
+    '.messenger-unread-badge'
+  ];
 
   let notificationPermission = 'default';
   let hasRequestedPermission = false;
 
   /**
    * Update global unread badge in site header
+   * @param {number} count - Number of unread messages
    */
   function updateUnreadBadge(count) {
-    // Find all possible badge elements
-    const badgeSelectors = [
-      '#ef-notification-badge',
-      '#unread-messages-count',
-      '.messenger-unread-badge'
-    ];
-
-    badgeSelectors.forEach(selector => {
+    BADGE_SELECTORS.forEach(selector => {
       const badges = document.querySelectorAll(selector);
       badges.forEach(badge => {
         if (count > 0) {
@@ -39,6 +38,10 @@
 
   /**
    * Show browser desktop notification
+   * @param {Object} data - Notification data
+   * @param {string} data.senderName - Name of message sender
+   * @param {string} data.messagePreview - Preview of message content
+   * @param {string} data.conversationId - ID of the conversation
    */
   function showDesktopNotification(data) {
     const { senderName, messagePreview, conversationId } = data;
@@ -67,7 +70,10 @@
   }
 
   /**
-   * Create and display notification
+   * Create and display browser notification
+   * @param {string} senderName - Name of message sender
+   * @param {string} messagePreview - Preview of message content
+   * @param {string} conversationId - ID of the conversation
    */
   function createNotification(senderName, messagePreview, conversationId) {
     const title = senderName || 'New Message';

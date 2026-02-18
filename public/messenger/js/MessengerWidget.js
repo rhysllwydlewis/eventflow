@@ -98,6 +98,10 @@
       this.refreshTimer = null;
       this.wsConnected = false;
       this.isLoading = false;
+      
+      // Store event handler references for cleanup
+      this.onlineHandler = null;
+      this.offlineHandler = null;
 
       this.init();
     }
@@ -118,14 +122,17 @@
      * Setup online/offline event handlers
      */
     setupOnlineOfflineHandlers() {
-      window.addEventListener('online', () => {
+      this.onlineHandler = () => {
         console.log('Connection restored, refreshing conversations');
         this.fetchConversations();
-      });
-
-      window.addEventListener('offline', () => {
+      };
+      
+      this.offlineHandler = () => {
         console.log('Connection lost, conversations will refresh when back online');
-      });
+      };
+      
+      window.addEventListener('online', this.onlineHandler);
+      window.addEventListener('offline', this.offlineHandler);
     }
 
     /**
@@ -500,12 +507,26 @@
     }
 
     /**
-     * Destroy widget and cleanup
+     * Destroy widget and cleanup resources
      */
     destroy() {
+      // Clear timer
       if (this.refreshTimer) {
         clearInterval(this.refreshTimer);
+        this.refreshTimer = null;
       }
+      
+      // Remove event listeners
+      if (this.onlineHandler) {
+        window.removeEventListener('online', this.onlineHandler);
+        this.onlineHandler = null;
+      }
+      if (this.offlineHandler) {
+        window.removeEventListener('offline', this.offlineHandler);
+        this.offlineHandler = null;
+      }
+      
+      // Clear container
       if (this.container) {
         this.container.innerHTML = '';
       }
