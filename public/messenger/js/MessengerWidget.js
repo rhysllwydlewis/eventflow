@@ -6,6 +6,10 @@
 'use strict';
 
 (function() {
+  // Configuration constants
+  const DEFAULT_MAX_ITEMS = 5;
+  const DEFAULT_REFRESH_INTERVAL = 60000; // 1 minute
+
   /**
    * HTML escape utility
    */
@@ -69,9 +73,9 @@
       }
 
       this.options = {
-        maxItems: options.maxItems || 5,
+        maxItems: options.maxItems || DEFAULT_MAX_ITEMS,
         showUnreadBadge: options.showUnreadBadge !== false,
-        refreshInterval: options.refreshInterval || 60000
+        refreshInterval: options.refreshInterval || DEFAULT_REFRESH_INTERVAL
       };
 
       this.conversations = [];

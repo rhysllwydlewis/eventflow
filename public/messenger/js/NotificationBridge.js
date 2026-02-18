@@ -6,6 +6,10 @@
 'use strict';
 
 (function() {
+  // Configuration constants
+  const NOTIFICATION_AUTO_CLOSE_DELAY = 5000; // 5 seconds
+  const UNREAD_COUNT_POLL_INTERVAL = 120000; // 2 minutes
+
   let notificationPermission = 'default';
   let hasRequestedPermission = false;
 
@@ -83,8 +87,8 @@
       notification.close();
     };
 
-    // Auto-close after 5 seconds
-    setTimeout(() => notification.close(), 5000);
+    // Auto-close after configured delay
+    setTimeout(() => notification.close(), NOTIFICATION_AUTO_CLOSE_DELAY);
   }
 
   /**
@@ -192,8 +196,8 @@
     // Fetch initial unread count
     fetchUnreadCount();
 
-    // Periodically update unread count (every 2 minutes)
-    setInterval(fetchUnreadCount, 120000);
+    // Periodically update unread count
+    setInterval(fetchUnreadCount, UNREAD_COUNT_POLL_INTERVAL);
   }
 
   // Auto-initialize when DOM is ready
