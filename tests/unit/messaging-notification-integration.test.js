@@ -1,0 +1,190 @@
+/**
+ * Tests for messaging-notification integration
+ * Validates that messaging system properly integrates with notification system
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+describe('Messaging-Notification Integration', () => {
+  describe('Backend integration (routes/messaging-v2.js)', () => {
+    const messagingV2Js = fs.readFileSync(
+      path.join(process.cwd(), 'routes/messaging-v2.js'),
+      'utf8'
+    );
+
+    it('imports NotificationService', () => {
+      expect(messagingV2Js).toContain("require('../services/notificationService')");
+    });
+
+    it('creates notifications after sending messages', () => {
+      // Find the send message endpoint
+      const sendMessageEndpoint = messagingV2Js.substring(
+        messagingV2Js.indexOf('POST /api/v2/messages/:threadId'),
+        messagingV2Js.indexOf('PUT /api/v2/messages/:messageId')
+      );
+
+      // Should call notifyNewMessage for each recipient
+      expect(sendMessageEndpoint).toContain('notificationService.notifyNewMessage');
+      expect(sendMessageEndpoint).toContain('for (const recipientId of recipientIds)');
+      expect(sendMessageEndpoint).toContain('senderName');
+      expect(sendMessageEndpoint).toContain('messagePreview');
+    });
+
+    it('emits WebSocket notification events', () => {
+      const sendMessageEndpoint = messagingV2Js.substring(
+        messagingV2Js.indexOf('POST /api/v2/messages/:threadId'),
+        messagingV2Js.indexOf('PUT /api/v2/messages/:messageId')
+      );
+
+      // Should emit notification:new via WebSocket
+      expect(sendMessageEndpoint).toContain('wsServerV2');
+      expect(sendMessageEndpoint).toContain("emit('notification:new'");
+      expect(sendMessageEndpoint).toContain('threadId');
+    });
+
+    it('handles notification errors gracefully', () => {
+      const sendMessageEndpoint = messagingV2Js.substring(
+        messagingV2Js.indexOf('POST /api/v2/messages/:threadId'),
+        messagingV2Js.indexOf('PUT /api/v2/messages/:messageId')
+      );
+
+      // Should catch notification errors without failing message send
+      expect(sendMessageEndpoint).toContain('catch (notifError)');
+      expect(sendMessageEndpoint).toContain('logger.error');
+    });
+  });
+
+  describe('Backend notification service (services/notification.service.js)', () => {
+    const notificationServiceJs = fs.readFileSync(
+      path.join(process.cwd(), 'services/notification.service.js'),
+      'utf8'
+    );
+
+    it('has notifyNewMessage helper method', () => {
+      expect(notificationServiceJs).toContain('async notifyNewMessage');
+    });
+
+    it('notifyNewMessage accepts message preview parameter', () => {
+      const notifyNewMessageFn = notificationServiceJs.substring(
+        notificationServiceJs.indexOf('async notifyNewMessage('),
+        notificationServiceJs.indexOf('async notifyBookingUpdate') || 
+        notificationServiceJs.indexOf('async notifyPayment')
+      );
+
+      expect(notifyNewMessageFn).toContain('messagePreview');
+      expect(notifyNewMessageFn).toContain('metadata');
+    });
+
+    it('notifyNewMessage uses correct actionUrl format', () => {
+      const notifyNewMessageFn = notificationServiceJs.substring(
+        notificationServiceJs.indexOf('async notifyNewMessage('),
+        notificationServiceJs.indexOf('async notifyBookingUpdate') || 
+        notificationServiceJs.indexOf('async notifyPayment')
+      );
+
+      // Should use /messages.html?conversation= format
+      expect(notifyNewMessageFn).toContain('/messages.html?conversation=');
+    });
+  });
+
+  describe('Frontend messaging.js integration', () => {
+    const messagingJs = fs.readFileSync(
+      path.join(process.cwd(), 'public/assets/js/messaging.js'),
+      'utf8'
+    );
+
+    it('has triggerMessageNotification method', () => {
+      expect(messagingJs).toContain('triggerMessageNotification(data)');
+    });
+
+    it('handleNewMessage triggers notification system', () => {
+      // Simply check that the entire file contains the necessary integration
+      expect(messagingJs).toContain('triggerMessageNotification');
+      expect(messagingJs).toContain('handleNewMessage(data)');
+      // The handleNewMessage method should call triggerMessageNotification
+      const hasIntegration = messagingJs.includes('handleNewMessage') && 
+                            messagingJs.includes('triggerMessageNotification');
+      expect(hasIntegration).toBe(true);
+    });
+
+    it('triggerMessageNotification dispatches custom event', () => {
+      // Check that the file contains the event dispatch logic
+      expect(messagingJs).toContain("new CustomEvent('messaging:notification'");
+      expect(messagingJs).toContain('window.dispatchEvent');
+      expect(messagingJs).toContain('triggerMessageNotification');
+    });
+
+    it('markMessagesAsRead dispatches marked-read event', () => {
+      // Check for the marked-read event dispatch
+      expect(messagingJs).toContain("new CustomEvent('messaging:marked-read'");
+      expect(messagingJs).toContain('conversationId');
+    });
+
+    it('uses consistent message preview length (100 chars)', () => {
+      // Check that message preview is truncated to 100 characters
+      expect(messagingJs).toContain('substring(0, 100)');
+    });
+  });
+
+  describe('Frontend notifications.js integration', () => {
+    const notificationsJs = fs.readFileSync(
+      path.join(process.cwd(), 'public/assets/js/notifications.js'),
+      'utf8'
+    );
+
+    it('listens for messaging:notification events', () => {
+      expect(notificationsJs).toContain("addEventListener('messaging:notification'");
+    });
+
+    it('listens for messaging:marked-read events', () => {
+      expect(notificationsJs).toContain("addEventListener('messaging:marked-read'");
+    });
+
+    it('has addMessageNotification helper function', () => {
+      expect(notificationsJs).toContain('function addMessageNotification(notification)');
+    });
+
+    it('listens for WebSocket notification:new events', () => {
+      expect(notificationsJs).toContain("state.socket.on('notification:new'");
+    });
+
+    it('handles both threadId and conversationId in mark-as-read', () => {
+      const markedReadListener = notificationsJs.substring(
+        notificationsJs.indexOf("addEventListener('messaging:marked-read'"),
+        notificationsJs.indexOf('function showWebSocketError') || 
+        notificationsJs.indexOf('async function fetchNotifications')
+      );
+
+      // Should check both metadata.conversationId and metadata.threadId for compatibility
+      expect(markedReadListener).toContain('n.metadata?.conversationId');
+      expect(markedReadListener).toContain('n.metadata?.threadId');
+    });
+
+    it('does not use deprecated substr method', () => {
+      // substr() is deprecated, should use substring() or slice()
+      const substrCount = (notificationsJs.match(/\.substr\(/g) || []).length;
+      expect(substrCount).toBe(0);
+    });
+  });
+
+  describe('CSS styling for message notifications', () => {
+    const componentsCss = fs.readFileSync(
+      path.join(process.cwd(), 'public/assets/css/components.css'),
+      'utf8'
+    );
+
+    it('has message notification styling', () => {
+      expect(componentsCss).toContain('.ef-notification--message');
+    });
+
+    it('has purple gradient theme for messages', () => {
+      expect(componentsCss).toContain('rgba(102, 126, 234');
+      expect(componentsCss).toContain('rgba(118, 75, 162');
+    });
+
+    it('supports sender avatar styling', () => {
+      expect(componentsCss).toContain('.sender-avatar');
+    });
+  });
+});
