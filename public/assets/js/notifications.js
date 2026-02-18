@@ -138,7 +138,13 @@
       });
 
       // Listen for real-time notifications
+      // v1 WebSocket server emits 'notification'
       state.socket.on('notification', notification => {
+        handleRealtimeNotification(notification);
+      });
+
+      // v2 WebSocket server emits 'notification:received'
+      state.socket.on('notification:received', notification => {
         handleRealtimeNotification(notification);
       });
 
@@ -161,6 +167,56 @@
       showWebSocketError('Failed to connect to notification server.');
     }
   }
+
+  // Listen for message notifications from messaging system
+  window.addEventListener('messaging:notification', event => {
+    const { type, title, message, actionUrl, metadata } = event.detail;
+
+    // Add to notification list if notification system is initialized
+    if (state.isInitialized) {
+      addMessageNotification({
+        type,
+        title,
+        message,
+        actionUrl,
+        metadata,
+        timestamp: new Date(),
+        isRead: false,
+      });
+
+      // Update unread count
+      state.unreadCount++;
+      updateUnreadBadge();
+
+      // Show desktop notification if permitted
+      if (state.hasDesktopPermission) {
+        showDesktopNotification({ title, message, actionUrl });
+      }
+
+      // Play sound if enabled
+      if (state.soundEnabled) {
+        playNotificationSound();
+      }
+    }
+  });
+
+  // Listen for messages being marked as read
+  window.addEventListener('messaging:marked-read', async event => {
+    const { conversationId } = event.detail;
+
+    // Find and mark related notifications as read
+    // Check both conversationId and threadId for compatibility
+    const messageNotifications = state.notifications.filter(
+      n =>
+        n.type === 'message' &&
+        (n.metadata?.conversationId === conversationId || n.metadata?.threadId === conversationId) &&
+        !n.isRead
+    );
+
+    for (const notification of messageNotifications) {
+      await markAsRead(notification.id);
+    }
+  });
 
   function showWebSocketError(message) {
     // Show a non-intrusive error message
@@ -334,6 +390,40 @@
 
     // Show in-app toast notification
     showToastNotification(notification);
+  }
+
+  /**
+   * Add a message notification to the notification list
+   * Used for messaging system integration
+   */
+  function addMessageNotification(notification) {
+    // Generate a unique ID if not provided
+    if (!notification.id) {
+      notification.id = 'msg-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+    }
+
+    // Add to state
+    state.notifications.unshift(notification);
+
+    // Update UI
+    updateUI();
+
+    // Show in-app toast notification
+    showToastNotification(notification);
+
+    // Emit event for other components
+    window.dispatchEvent(
+      new CustomEvent('notification:added', {
+        detail: notification,
+      })
+    );
+  }
+
+  /**
+   * Update the unread badge count
+   */
+  function updateUnreadBadge() {
+    updateBellBadge();
   }
 
   // ==========================================

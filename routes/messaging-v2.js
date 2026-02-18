@@ -944,6 +944,33 @@ router.post(
         subscriptionTier
       );
 
+      // Create notifications for recipients
+      // Note: NotificationService.notifyNewMessage() automatically handles WebSocket
+      // emission via the websocketServer it was initialized with, so no need to
+      // emit notification:new events here
+      if (notificationService && recipientIds && recipientIds.length > 0) {
+        const senderName = req.user.name || req.user.username || 'Someone';
+        const messagePreview = content ? content.substring(0, 100) : 'Sent an attachment';
+
+        for (const recipientId of recipientIds) {
+          try {
+            await notificationService.notifyNewMessage(
+              recipientId,
+              senderName,
+              threadId,
+              messagePreview
+            );
+          } catch (notifError) {
+            // Log but don't fail the message send if notification fails
+            logger.error('Failed to create notification for message', {
+              error: notifError.message,
+              recipientId,
+              threadId,
+            });
+          }
+        }
+      }
+
       res.status(201).json({
         success: true,
         message: {
