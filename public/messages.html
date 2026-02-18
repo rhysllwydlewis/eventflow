@@ -404,6 +404,7 @@
       }
 
       // CDN fallback detection for JadeAssist widget
+      const JADEASSIST_LOAD_TIMEOUT = 3000; // 3 seconds
       window.addEventListener('load', () => {
         setTimeout(() => {
           if (typeof window.JadeAssist === 'undefined') {
@@ -413,7 +414,7 @@
               el.style.display = 'none';
             });
           }
-        }, 3000);
+        }, JADEASSIST_LOAD_TIMEOUT);
       });
     </script>
 
@@ -2283,78 +2284,72 @@
 
 <!-- Phase 2 Initialization -->
 <script>
-window.addEventListener('DOMContentLoaded', () => {
-  // Wait for all Phase 2 scripts to load
-  const initPhase2 = () => {
-    // Initialize Folders
-    if (typeof window.EF_Folders !== 'undefined') {
-      try {
-        window.EF_Folders.init();
-      } catch (error) {
-        console.warn('Folders.js initialization failed:', error);
-      }
-    } else {
-      console.warn('Folders.js not loaded - feature unavailable');
+// Use 'load' event instead of DOMContentLoaded + timeout
+// Scripts with defer are guaranteed to execute before 'load' fires
+window.addEventListener('load', () => {
+  // Initialize Folders
+  if (typeof window.EF_Folders !== 'undefined') {
+    try {
+      window.EF_Folders.init();
+    } catch (error) {
+      console.warn('Folders.js initialization failed:', error);
     }
-    
-    // Initialize Labels
-    if (typeof window.EF_Labels !== 'undefined') {
-      try {
-        window.EF_Labels.init();
-      } catch (error) {
-        console.warn('Labels.js initialization failed:', error);
-      }
-    } else {
-      console.warn('Labels.js not loaded - feature unavailable');
+  } else {
+    console.warn('Folders.js not loaded - feature unavailable');
+  }
+  
+  // Initialize Labels
+  if (typeof window.EF_Labels !== 'undefined') {
+    try {
+      window.EF_Labels.init();
+    } catch (error) {
+      console.warn('Labels.js initialization failed:', error);
     }
-    
-    // Initialize Advanced Search
-    if (typeof window.EF_Search !== 'undefined') {
-      try {
-        window.EF_Search.init();
-        // Wire advanced search button
-        const searchBtn = document.getElementById('advanced-search-btn');
-        const searchInput = document.getElementById('advanced-search-input');
-        if (searchBtn && searchInput) {
-          searchBtn.addEventListener('click', () => {
+  } else {
+    console.warn('Labels.js not loaded - feature unavailable');
+  }
+  
+  // Initialize Advanced Search
+  if (typeof window.EF_Search !== 'undefined') {
+    try {
+      window.EF_Search.init();
+      // Wire advanced search button
+      const searchBtn = document.getElementById('advanced-search-btn');
+      const searchInput = document.getElementById('advanced-search-input');
+      if (searchBtn && searchInput) {
+        searchBtn.addEventListener('click', () => {
+          const query = searchInput.value.trim();
+          if (query) {
+            window.EF_Search.executeSearch(query);
+          }
+        });
+        // Also trigger search on Enter key
+        searchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
             const query = searchInput.value.trim();
             if (query) {
               window.EF_Search.executeSearch(query);
             }
-          });
-          // Also trigger search on Enter key
-          searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-              const query = searchInput.value.trim();
-              if (query) {
-                window.EF_Search.executeSearch(query);
-              }
-            }
-          });
-        }
-      } catch (error) {
-        console.warn('Advanced-search.js initialization failed:', error);
+          }
+        });
       }
-    } else {
-      console.warn('Advanced-search.js not loaded - feature unavailable');
+    } catch (error) {
+      console.warn('Advanced-search.js initialization failed:', error);
     }
-    
-    // Initialize Grouping
-    if (typeof window.EF_Grouping !== 'undefined') {
-      try {
-        window.EF_Grouping.init();
-      } catch (error) {
-        console.warn('Grouping.js initialization failed:', error);
-      }
-    } else {
-      console.warn('Grouping.js not loaded - feature unavailable');
+  } else {
+    console.warn('Advanced-search.js not loaded - feature unavailable');
+  }
+  
+  // Initialize Grouping
+  if (typeof window.EF_Grouping !== 'undefined') {
+    try {
+      window.EF_Grouping.init();
+    } catch (error) {
+      console.warn('Grouping.js initialization failed:', error);
     }
-  };
-
-  // Delay initialization slightly to ensure scripts have loaded
-  // Scripts are loaded with defer, so they'll execute after DOMContentLoaded
-  // but we add a small delay to be safe
-  setTimeout(initPhase2, 100);
+  } else {
+    console.warn('Grouping.js not loaded - feature unavailable');
+  }
 });
 </script>
 
