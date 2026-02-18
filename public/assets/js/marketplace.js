@@ -696,7 +696,7 @@
       sendBtn.textContent = 'Go to Conversation';
       sendBtn.disabled = false;
       sendBtn.onclick = () => {
-        window.location.href = isV3 ? `/messenger/?conversation=${conversationId}` : `/conversation.html?id=${conversationId}`;
+        window.location.href = `/messenger/?conversation=${conversationId}`;
       };
     } catch (error) {
       console.error('Error messaging seller:', error);

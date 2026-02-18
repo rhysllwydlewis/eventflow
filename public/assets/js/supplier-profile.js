@@ -242,13 +242,14 @@
           }
           return;
         }
+        const supplierName = supplier.name || 'Supplier';
         const params = new URLSearchParams({
           new: 'true',
           recipientId: recipientId,
           contextType: 'supplier',
           contextId: supplier.id,
           contextTitle: supplier.name,
-          prefill: `Hi ${supplier.name}! I'd like to enquire about your services.`
+          prefill: `Hi ${supplierName}! I'd like to enquire about your services.`
         });
         window.location.href = `/messenger/?${params.toString()}`;
       };
