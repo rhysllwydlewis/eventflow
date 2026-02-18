@@ -99,12 +99,12 @@ describe('Dashboard Widget Enhancements - Customer', () => {
     );
 
     it('includes setupSearchAndFilter function', () => {
-      expect(customerMessagesJs).toContain('function setupSearchAndFilter(allConversations, user)');
+      expect(customerMessagesJs).toContain('function setupSearchAndFilter(getConversations, user)');
     });
 
     it('attaches input event to search box', () => {
       const setupFn = customerMessagesJs
-        .split('function setupSearchAndFilter(allConversations, user)')[1]
+        .split('function setupSearchAndFilter(getConversations, user)')[1]
         .split('function ')[0];
 
       expect(setupFn).toContain("getElementById('widget-search-input')");
@@ -113,7 +113,7 @@ describe('Dashboard Widget Enhancements - Customer', () => {
 
     it('attaches change event to filter dropdown', () => {
       const setupFn = customerMessagesJs
-        .split('function setupSearchAndFilter(allConversations, user)')[1]
+        .split('function setupSearchAndFilter(getConversations, user)')[1]
         .split('function ')[0];
 
       expect(setupFn).toContain("getElementById('widget-filter-select')");
@@ -218,12 +218,12 @@ describe('Dashboard Widget Enhancements - Supplier', () => {
     );
 
     it('includes setupSearchAndFilterSupplier function', () => {
-      expect(supplierMessagesJs).toContain('function setupSearchAndFilterSupplier(allConversations, supplierProfile, user)');
+      expect(supplierMessagesJs).toContain('function setupSearchAndFilterSupplier(getConversations, supplierProfile, user)');
     });
 
     it('attaches input event to supplier search box', () => {
       const setupFn = supplierMessagesJs
-        .split('function setupSearchAndFilterSupplier(allConversations, supplierProfile, user)')[1]
+        .split('function setupSearchAndFilterSupplier(getConversations, supplierProfile, user)')[1]
         .split('function ')[0];
 
       expect(setupFn).toContain("getElementById('widget-search-input-supplier')");
@@ -232,7 +232,7 @@ describe('Dashboard Widget Enhancements - Supplier', () => {
 
     it('attaches change event to supplier filter dropdown', () => {
       const setupFn = supplierMessagesJs
-        .split('function setupSearchAndFilterSupplier(allConversations, supplierProfile, user)')[1]
+        .split('function setupSearchAndFilterSupplier(getConversations, supplierProfile, user)')[1]
         .split('function ')[0];
 
       expect(setupFn).toContain("getElementById('widget-filter-select-supplier')");
