@@ -144,6 +144,14 @@ function formatTimeAgo(timestamp) {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
+// Truncate text to maximum length (utility function for future use)
+function truncate(text, maxLength) {
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+  return `${text.substring(0, maxLength)}...`;
+}
+
 // Sanitize and validate attachment URL
 function sanitizeAttachmentUrl(url) {
   if (!url || typeof url !== 'string') {
