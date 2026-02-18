@@ -282,15 +282,24 @@ class NotificationService {
   /**
    * Create notification for new message
    */
-  async notifyNewMessage(recipientUserId, senderName, threadId) {
+  async notifyNewMessage(recipientUserId, senderName, threadId, messagePreview = null) {
+    const messageText = messagePreview 
+      ? `${senderName}: ${messagePreview}`
+      : `${senderName} sent you a message`;
+    
     return await this.create({
       userId: recipientUserId,
       type: 'message',
       title: 'New Message',
-      message: `${senderName} sent you a message`,
-      actionUrl: `/messages?thread=${threadId}`,
+      message: messageText,
+      actionUrl: `/messages.html?conversation=${threadId}`,
       actionText: 'View Message',
       priority: 'high',
+      metadata: {
+        threadId,
+        senderName,
+        messagePreview: messagePreview || '',
+      },
     });
   }
 

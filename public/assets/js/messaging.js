@@ -278,7 +278,7 @@ class MessagingSystem {
    * Handle new message from WebSocket
    */
   handleNewMessage(data) {
-    const { conversationId } = data;
+    const { conversationId, message, senderName } = data;
 
     // Call the message callback if registered
     const callback = this.messageCallbacks.get(conversationId);
@@ -296,9 +296,47 @@ class MessagingSystem {
       }
     }
 
-    // Play notification sound if enabled
+    // Trigger notification system integration
+    this.triggerMessageNotification({
+      conversationId,
+      senderName: senderName || 'Someone',
+      messagePreview: message?.content?.substring(0, 50) || 'New message',
+      timestamp: new Date(),
+    });
+
+    // Play notification sound if enabled (keep existing)
     if (typeof EFToast !== 'undefined') {
       EFToast.info('New message received', { duration: 3000 });
+    }
+  }
+
+  /**
+   * Trigger notification system for new messages
+   * Integrates with notifications.js notification bell
+   */
+  triggerMessageNotification(data) {
+    const { conversationId, senderName, messagePreview, timestamp } = data;
+
+    // Dispatch custom event for notification system to catch
+    const event = new CustomEvent('messaging:notification', {
+      detail: {
+        type: 'message',
+        title: 'New Message',
+        message: `${senderName}: ${messagePreview}`,
+        actionUrl: `/messages.html?conversation=${conversationId}`,
+        timestamp: timestamp,
+        metadata: {
+          conversationId,
+          senderName,
+          messagePreview,
+        },
+      },
+    });
+    window.dispatchEvent(event);
+
+    // Also manually trigger notification system if available
+    if (window.EventFlowNotifications) {
+      window.EventFlowNotifications.info(`${senderName}: ${messagePreview}`, 5000);
     }
   }
 
@@ -596,6 +634,13 @@ class MessagingSystem {
     if (this.isConnected && this.socket) {
       this.socket.emit('conversation:read', { conversationId });
     }
+
+    // Notify notification system to mark related notifications as read
+    window.dispatchEvent(
+      new CustomEvent('messaging:marked-read', {
+        detail: { conversationId },
+      })
+    );
   }
 
   /**
