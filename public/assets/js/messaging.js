@@ -300,7 +300,7 @@ class MessagingSystem {
     this.triggerMessageNotification({
       conversationId,
       senderName: senderName || 'Someone',
-      messagePreview: message?.content?.substring(0, 50) || 'New message',
+      messagePreview: message?.content?.substring(0, 100) || 'New message',
       timestamp: new Date(),
     });
 
@@ -327,6 +327,7 @@ class MessagingSystem {
         timestamp: timestamp,
         metadata: {
           conversationId,
+          threadId: conversationId, // Include threadId for compatibility
           senderName,
           messagePreview,
         },

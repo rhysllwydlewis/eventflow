@@ -204,10 +204,11 @@
     const { conversationId } = event.detail;
 
     // Find and mark related notifications as read
+    // Check both conversationId and threadId for compatibility
     const messageNotifications = state.notifications.filter(
       n =>
         n.type === 'message' &&
-        n.metadata?.conversationId === conversationId &&
+        (n.metadata?.conversationId === conversationId || n.metadata?.threadId === conversationId) &&
         !n.isRead
     );
 
@@ -397,7 +398,7 @@
   function addMessageNotification(notification) {
     // Generate a unique ID if not provided
     if (!notification.id) {
-      notification.id = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      notification.id = 'msg-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
     }
 
     // Add to state
