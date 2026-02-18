@@ -335,6 +335,49 @@
       </div>
     </div>
 
+    <!-- CSRF Handler - MUST load first for token management -->
+    <script src="/assets/js/utils/csrf-handler.js"></script>
+    <script>
+      // Initialize CSRF token immediately
+      (async function initializeCsrf() {
+        try {
+          if (window.csrfHandler) {
+            await window.csrfHandler.ensureToken();
+          }
+        } catch (error) {
+          console.error('CSRF initialization failed:', error);
+        }
+      })();
+
+      // Global error handler for unhandled promise rejections
+      window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason);
+        
+        // Check for CSRF-related errors
+        const errorMessage = event.reason?.message || String(event.reason || '');
+        if (typeof errorMessage === 'string' && 
+            (errorMessage.toLowerCase().includes('csrf') || 
+             errorMessage.toLowerCase().includes('token'))) {
+          
+          // Show user-friendly notification
+          if (typeof EFToast !== 'undefined') {
+            EFToast.warning('Session expired. Refreshing page...');
+          }
+          
+          // Refresh page after short delay
+          setTimeout(() => location.reload(), 2000);
+        } else if (errorMessage) {
+          // Show generic error notification
+          if (typeof EFToast !== 'undefined') {
+            EFToast.error('An error occurred. Please try again.');
+          }
+        }
+        
+        // Prevent console spam
+        event.preventDefault();
+      });
+    </script>
+
     <script src="/assets/js/utils/auth-state.js" defer></script>
     <script src="/assets/js/burger-menu.js" defer></script>
     <script src="/assets/js/navbar.js" defer></script>

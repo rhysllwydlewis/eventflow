@@ -1,7 +1,7 @@
 /**
  * EventFlow Labels - Phase 2
  * Message label/tag management UI
- * 
+ *
  * Features:
  * - Label picker dropdown
  * - Create/edit/delete labels
@@ -46,19 +46,30 @@
   // ==========================================
 
   async function apiFetch(url, options = {}) {
+    // Check if CSRF handler is available
+    if (!window.csrfHandler) {
+      console.error('CSRF handler not initialized');
+      throw new Error('CSRF handler not available');
+    }
+
     try {
-      const response = await fetch(url, {
+      // Add Content-Type header if not present
+      const fetchOptions = {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          ...options.headers,
+          ...(options.headers || {}),
         },
-        credentials: 'include',
-      });
+      };
+
+      // Use CSRF handler's fetch method (includes automatic token handling and retry)
+      const response = await window.csrfHandler.fetch(url, fetchOptions);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(error.error || error.message || 'Request failed');
+        const error = await response.json().catch(() => ({
+          error: `HTTP ${response.status}`,
+        }));
+        throw new Error(error.error || error.message || `Request failed: ${response.status}`);
       }
 
       return await response.json();
@@ -68,23 +79,42 @@
     }
   }
 
-  async function loadLabels() {
-    try {
-      state.isLoading = true;
-      renderLabelList();
-
-      const data = await apiFetch(API_BASE);
-      
-      if (data.success && Array.isArray(data.labels)) {
-        state.labels = data.labels;
+  async function loadLabels(retries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        state.isLoading = true;
         renderLabelList();
-        renderLabelPicker();
+
+        // Ensure CSRF token before API call
+        if (window.csrfHandler) {
+          await window.csrfHandler.ensureToken();
+        }
+
+        const data = await apiFetch(API_BASE);
+
+        if (data.success && Array.isArray(data.labels)) {
+          state.labels = data.labels;
+          renderLabelList();
+          renderLabelPicker();
+        }
+
+        // Success - break out of retry loop
+        state.isLoading = false;
+        return;
+      } catch (error) {
+        if (attempt < retries) {
+          // Exponential backoff: delay * 2^(attempt-1)
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
+        } else {
+          // All retries exhausted
+          showError('Could not load labels. Please refresh the page.');
+        }
+      } finally {
+        if (attempt === retries) {
+          state.isLoading = false;
+          renderLabelList();
+        }
       }
-    } catch (error) {
-      showError('Failed to load labels: ' + error.message);
-    } finally {
-      state.isLoading = false;
-      renderLabelList();
     }
   }
 
@@ -103,7 +133,7 @@
         return data.label;
       }
     } catch (error) {
-      showError('Failed to create label: ' + error.message);
+      showError(`Failed to create label: ${error.message}`);
       throw error;
     }
   }
@@ -126,7 +156,7 @@
         return data.label;
       }
     } catch (error) {
-      showError('Failed to update label: ' + error.message);
+      showError(`Failed to update label: ${error.message}`);
       throw error;
     }
   }
@@ -144,7 +174,7 @@
         showSuccess('Label deleted successfully');
       }
     } catch (error) {
-      showError('Failed to delete label: ' + error.message);
+      showError(`Failed to delete label: ${error.message}`);
       throw error;
     }
   }
@@ -163,7 +193,7 @@
         }
       }
     } catch (error) {
-      showError('Failed to apply label: ' + error.message);
+      showError(`Failed to apply label: ${error.message}`);
       throw error;
     }
   }
@@ -182,7 +212,7 @@
         }
       }
     } catch (error) {
-      showError('Failed to remove label: ' + error.message);
+      showError(`Failed to remove label: ${error.message}`);
       throw error;
     }
   }
@@ -203,7 +233,7 @@
         await loadLabels(); // Refresh label stats
       }
     } catch (error) {
-      showError('Failed to apply labels: ' + error.message);
+      showError(`Failed to apply labels: ${error.message}`);
       throw error;
     }
   }
@@ -224,7 +254,7 @@
         await loadLabels(); // Refresh label stats
       }
     } catch (error) {
-      showError('Failed to remove labels: ' + error.message);
+      showError(`Failed to remove labels: ${error.message}`);
       throw error;
     }
   }
@@ -250,7 +280,9 @@
 
   function renderLabelList() {
     const container = document.getElementById('label-list');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     if (state.isLoading) {
       container.innerHTML = `
@@ -308,7 +340,7 @@
         oncontextmenu="window.EF_Labels.showLabelContextMenu(event, '${label._id}'); return false;"
       >
         <span class="label-filter-badge" style="background: ${bgColor}; color: ${textColor};">
-          ${label.icon ? label.icon + ' ' : ''}${escapeHtml(label.name)}
+          ${label.icon ? `${label.icon} ` : ''}${escapeHtml(label.name)}
         </span>
         ${label.messageCount > 0 ? `<span class="label-filter-count">${label.messageCount}</span>` : ''}
         <button class="label-menu-btn" onclick="event.stopPropagation(); window.EF_Labels.showLabelContextMenu(event, '${label._id}')">
@@ -320,7 +352,9 @@
 
   function renderLabelPicker() {
     const picker = document.getElementById('label-picker-dropdown');
-    if (!picker) return;
+    if (!picker) {
+      return;
+    }
 
     const html = `
       <div class="label-picker-search">
@@ -352,7 +386,7 @@
             onchange="window.EF_Labels.toggleLabel('${label._id}', this.checked)"
           >
           <span class="label-badge" style="background: ${bgColor}; color: ${textColor};">
-            ${label.icon ? label.icon + ' ' : ''}${escapeHtml(label.name)}
+            ${label.icon ? `${label.icon} ` : ''}${escapeHtml(label.name)}
           </span>
         </label>
       </div>
@@ -360,18 +394,23 @@
   }
 
   function renderMessageLabels(labels, messageId) {
-    if (!labels || labels.length === 0) return '';
+    if (!labels || labels.length === 0) {
+      return '';
+    }
 
     return `
       <div class="message-labels">
-        ${labels.map(labelId => {
-          const label = state.labels.find(l => l._id === labelId);
-          if (!label) return '';
-          const bgColor = label.backgroundColor || '#E5E7EB';
-          const textColor = label.color || '#1F2937';
-          return `
+        ${labels
+          .map(labelId => {
+            const label = state.labels.find(l => l._id === labelId);
+            if (!label) {
+              return '';
+            }
+            const bgColor = label.backgroundColor || '#E5E7EB';
+            const textColor = label.color || '#1F2937';
+            return `
             <span class="message-label" style="background: ${bgColor}; color: ${textColor};">
-              ${label.icon ? label.icon + ' ' : ''}${escapeHtml(label.name)}
+              ${label.icon ? `${label.icon} ` : ''}${escapeHtml(label.name)}
               <button 
                 class="message-label-remove" 
                 onclick="event.stopPropagation(); window.EF_Labels.removeLabelFromMessage('${labelId}', '${messageId}')"
@@ -381,7 +420,8 @@
               </button>
             </span>
           `;
-        }).join('')}
+          })
+          .join('')}
       </div>
     `;
   }
@@ -427,7 +467,9 @@
   }
 
   function toggleLabel(labelId, checked) {
-    if (state.selectedMessageIds.length === 0) return;
+    if (state.selectedMessageIds.length === 0) {
+      return;
+    }
 
     if (checked) {
       applyLabelToMessages(labelId, state.selectedMessageIds);
@@ -441,7 +483,9 @@
   // ==========================================
 
   function showCreateLabelModal() {
-    const modal = createModal('Create Label', `
+    const modal = createModal(
+      'Create Label',
+      `
       <form id="create-label-form" class="label-form">
         <div class="form-group">
           <label for="label-name">Label Name *</label>
@@ -476,7 +520,8 @@
           <button type="submit" class="btn-primary">Create Label</button>
         </div>
       </form>
-    `);
+    `
+    );
 
     // Live preview
     const form = document.getElementById('create-label-form');
@@ -484,7 +529,7 @@
     const previewIcon = document.getElementById('preview-icon');
     const previewName = document.getElementById('preview-name');
 
-    form.addEventListener('input', (e) => {
+    form.addEventListener('input', e => {
       const name = document.getElementById('label-name').value || 'Preview';
       const icon = document.getElementById('label-icon').value;
       const bgColor = document.getElementById('label-bg-color').value;
@@ -492,11 +537,11 @@
 
       previewBadge.style.background = bgColor;
       previewBadge.style.color = textColor;
-      previewIcon.textContent = icon ? icon + ' ' : '';
+      previewIcon.textContent = icon ? `${icon} ` : '';
       previewName.textContent = name;
     });
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const labelData = {
@@ -517,9 +562,13 @@
 
   function showEditLabelModal(labelId) {
     const label = state.labels.find(l => l._id === labelId);
-    if (!label) return;
+    if (!label) {
+      return;
+    }
 
-    const modal = createModal('Edit Label', `
+    const modal = createModal(
+      'Edit Label',
+      `
       <form id="edit-label-form" class="label-form">
         <div class="form-group">
           <label for="edit-label-name">Label Name *</label>
@@ -545,7 +594,7 @@
         
         <div class="label-preview">
           <span id="edit-label-preview-badge" class="label-badge" style="background: ${label.backgroundColor || '#E5E7EB'}; color: ${label.color || '#1F2937'};">
-            <span id="edit-preview-icon">${label.icon ? label.icon + ' ' : ''}</span><span id="edit-preview-name">${escapeHtml(label.name)}</span>
+            <span id="edit-preview-icon">${label.icon ? `${label.icon} ` : ''}</span><span id="edit-preview-name">${escapeHtml(label.name)}</span>
           </span>
         </div>
         
@@ -554,7 +603,8 @@
           <button type="submit" class="btn-primary">Update Label</button>
         </div>
       </form>
-    `);
+    `
+    );
 
     // Live preview
     const form = document.getElementById('edit-label-form');
@@ -562,7 +612,7 @@
     const previewIcon = document.getElementById('edit-preview-icon');
     const previewName = document.getElementById('edit-preview-name');
 
-    form.addEventListener('input', (e) => {
+    form.addEventListener('input', e => {
       const name = document.getElementById('edit-label-name').value;
       const icon = document.getElementById('edit-label-icon').value;
       const bgColor = document.getElementById('edit-label-bg-color').value;
@@ -570,11 +620,11 @@
 
       previewBadge.style.background = bgColor;
       previewBadge.style.color = textColor;
-      previewIcon.textContent = icon ? icon + ' ' : '';
+      previewIcon.textContent = icon ? `${icon} ` : '';
       previewName.textContent = name;
     });
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const updates = {
@@ -595,9 +645,13 @@
 
   function showDeleteLabelModal(labelId) {
     const label = state.labels.find(l => l._id === labelId);
-    if (!label) return;
+    if (!label) {
+      return;
+    }
 
-    const modal = createModal('Delete Label', `
+    const modal = createModal(
+      'Delete Label',
+      `
       <div class="label-delete-warning">
         <p>Are you sure you want to delete the label "${escapeHtml(label.name)}"?</p>
         <p class="warning-text">This label will be removed from all messages.</p>
@@ -606,7 +660,8 @@
         <button type="button" onclick="window.EF_Labels.closeModal()" class="btn-secondary">Cancel</button>
         <button type="button" onclick="window.EF_Labels.confirmDelete('${labelId}')" class="btn-danger">Delete Label</button>
       </div>
-    `);
+    `
+    );
   }
 
   async function confirmDelete(labelId) {
@@ -627,17 +682,21 @@
     event.stopPropagation();
 
     const label = state.labels.find(l => l._id === labelId);
-    if (!label) return;
+    if (!label) {
+      return;
+    }
 
     // Remove existing context menu
     const existing = document.querySelector('.label-context-menu');
-    if (existing) existing.remove();
+    if (existing) {
+      existing.remove();
+    }
 
     const menu = document.createElement('div');
     menu.className = 'label-context-menu';
     menu.style.position = 'fixed';
-    menu.style.left = event.pageX + 'px';
-    menu.style.top = event.pageY + 'px';
+    menu.style.left = `${event.pageX}px`;
+    menu.style.top = `${event.pageY}px`;
 
     menu.innerHTML = `
       <div class="context-menu-item" onclick="window.EF_Labels.showEditLabelModal('${labelId}')">✏️ Edit</div>
@@ -648,7 +707,7 @@
     document.body.appendChild(menu);
 
     // Close menu on click outside
-    const closeMenu = (e) => {
+    const closeMenu = e => {
       if (!menu.contains(e.target)) {
         menu.remove();
         document.removeEventListener('click', closeMenu);
@@ -681,7 +740,9 @@
 
   function createModal(title, content) {
     const existingModal = document.querySelector('.modal-overlay');
-    if (existingModal) existingModal.remove();
+    if (existingModal) {
+      existingModal.remove();
+    }
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -699,14 +760,14 @@
     document.body.appendChild(modal);
 
     // Close on overlay click
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', e => {
       if (e.target === modal) {
         closeModal();
       }
     });
 
     // Close on Escape key
-    const escapeHandler = (e) => {
+    const escapeHandler = e => {
       if (e.key === 'Escape') {
         closeModal();
         document.removeEventListener('keydown', escapeHandler);
@@ -719,7 +780,9 @@
 
   function closeModal() {
     const modal = document.querySelector('.modal-overlay');
-    if (modal) modal.remove();
+    if (modal) {
+      modal.remove();
+    }
   }
 
   function escapeHtml(text) {
@@ -783,11 +846,16 @@
     }
 
     // Close label picker when clicking outside
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', e => {
       const picker = document.getElementById('label-picker');
       const pickerBtn = document.querySelector('[data-label-picker-trigger]');
-      
-      if (state.isPickerOpen && picker && !picker.contains(e.target) && !pickerBtn?.contains(e.target)) {
+
+      if (
+        state.isPickerOpen &&
+        picker &&
+        !picker.contains(e.target) &&
+        !pickerBtn?.contains(e.target)
+      ) {
         closeLabelPicker();
       }
     });
@@ -823,5 +891,4 @@
   } else {
     init();
   }
-
 })();
