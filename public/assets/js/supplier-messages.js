@@ -1062,37 +1062,54 @@ function openConversation(conversationId) {
 }
 
 // Initialize
+/**
+ * Wait for messaging system to be ready with exponential backoff
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @returns {Promise<boolean>} - true if system is ready, false otherwise
+ */
+async function waitForMessagingSystem(maxRetries = 5) {
+  for (let i = 0; i < maxRetries; i++) {
+    if (messagingSystem && typeof messagingSystem.listenToMessages === 'function') {
+      return true;
+    }
+    // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
+    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 100));
+  }
+  return false;
+}
+
 async function init() {
   const container = document.getElementById('threads-sup');
   if (!container) {
     return;
   }
 
-  // Validate MessagingSystem is ready (check module-scoped import, not window)
-  if (!messagingSystem || typeof messagingSystem.listenToMessages !== 'function') {
-    logMessageState('SYSTEM_NOT_READY', {
+  // Show skeleton loader immediately
+  container.innerHTML = getListItemSkeletons(3);
+
+  // Wait for messaging system with retry
+  const isReady = await waitForMessagingSystem();
+  if (!isReady) {
+    logMessageState('SYSTEM_NOT_READY_AFTER_RETRIES', {
       hasMessagingSystem: !!messagingSystem,
       hasListenToMessages: typeof messagingSystem?.listenToMessages === 'function',
     });
     showErrorState(container, {
       icon: '⚠️',
-      title: 'System not ready',
-      description: 'Messaging system initialization failed. Please refresh the page.',
+      title: 'System Not Ready',
+      description: 'Messaging system is initializing. Please wait a moment and try again.',
       actionText: 'Refresh',
       actionHref: window.location.href,
     });
     return;
   }
 
-  // Show skeleton loader
-  container.innerHTML = getListItemSkeletons(3);
-
   const user = await getCurrentUser();
   if (!user) {
     showEmptyState(container, {
       icon: '🔒',
-      title: 'Sign in to view messages',
-      description: 'Log in to see your customer conversations.',
+      title: 'Sign In Required',
+      description: 'Please sign in to view your customer conversations.',
       actionText: 'Sign In',
       actionHref: '/auth.html',
     });
@@ -1154,10 +1171,11 @@ async function init() {
     const container = document.getElementById('threads-sup');
     if (container) {
       showErrorState(container, {
-        title: 'Unable to load messages',
-        description: 'Please try refreshing the page.',
-        actionText: 'Refresh',
-        onAction: () => window.location.reload(),
+        icon: '📡',
+        title: 'Connection Problem',
+        description: 'Unable to connect to messaging server. Check your internet connection.',
+        actionText: 'Retry',
+        actionHref: null, // null triggers reload
       });
     }
   }
@@ -1165,13 +1183,19 @@ async function init() {
 
 // Update unread badge
 function updateUnreadBadge(count) {
-  const badge = document.getElementById('unreadMessageBadge');
-  if (badge) {
-    if (count > 0) {
-      badge.textContent = `${count} unread`;
-      badge.style.display = 'inline-block';
-    } else {
-      badge.style.display = 'none';
+  // Use centralized badge manager if available
+  if (window.unreadBadgeManager) {
+    window.unreadBadgeManager.updateAll(count);
+  } else {
+    // Fallback for backward compatibility
+    const badge = document.getElementById('unreadMessageBadge');
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = `${count} unread`;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
     }
   }
 }
