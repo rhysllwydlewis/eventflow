@@ -411,7 +411,6 @@ function renderConversations(conversations, currentUser) {
   container.innerHTML = html;
 
   // Log success for debugging
-  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   if (isDevelopment) {
     console.log('✅ Conversations rendered successfully:', conversations.length);
   }
