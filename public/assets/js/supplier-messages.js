@@ -323,7 +323,7 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
     const customerName = conversation.customerName || 'Customer';
 
     // Format preview with "You:" prefix if current user sent last message
-    const lastMessageText = conversation.lastMessage || conversation.lastMessageText || '';
+    const lastMessageText = conversation.lastMessagePreview || conversation.lastMessage || conversation.lastMessageText || '';
     const lastMessageSenderId = conversation.lastMessageSenderId || '';
     const currentUserId = currentUser?.id || '';
     const lastMessage = formatMessagePreview(
@@ -1310,7 +1310,7 @@ function applyFiltersSupplier(conversations, supplierProfile, user) {
   if (searchQuery) {
     filtered = filtered.filter(conv => {
       const name = (conv.customerName || '').toLowerCase();
-      const lastMessage = (conv.lastMessage || conv.lastMessageText || '').toLowerCase();
+      const lastMessage = (conv.lastMessagePreview || conv.lastMessage || conv.lastMessageText || '').toLowerCase();
       return name.includes(searchQuery) || lastMessage.includes(searchQuery);
     });
   }

@@ -244,7 +244,8 @@ function renderConversations(conversations, currentUser) {
     const displayName = conversation.supplierName || conversation.recipientName || 'User';
 
     // Format preview with "You:" prefix if current user sent last message
-    const lastMessageText = conversation.lastMessage || conversation.lastMessageText || '';
+    // Backend now standardizes on lastMessagePreview field (Issue #17)
+    const lastMessageText = conversation.lastMessagePreview || conversation.lastMessage || conversation.lastMessageText || '';
     const lastMessageSenderId = conversation.lastMessageSenderId || '';
     const currentUserId = currentUser?.id || '';
     const lastMessage = formatMessagePreview(
@@ -1314,7 +1315,7 @@ function applyFilters(conversations, user) {
   if (searchQuery) {
     filtered = filtered.filter(conv => {
       const name = (conv.supplierName || conv.recipientName || '').toLowerCase();
-      const lastMessage = (conv.lastMessage || conv.lastMessageText || '').toLowerCase();
+      const lastMessage = (conv.lastMessagePreview || conv.lastMessage || conv.lastMessageText || '').toLowerCase();
       return name.includes(searchQuery) || lastMessage.includes(searchQuery);
     });
   }

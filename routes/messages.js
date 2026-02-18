@@ -1069,8 +1069,8 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
         supplierName,
         customerName,
         recipientName,
-        lastMessage: t.lastMessagePreview || t.lastMessageText || '',
-        lastMessageText: t.lastMessageText || t.lastMessagePreview || '',
+        // Standardize on single preview field for consistency (Issue #17)
+        lastMessagePreview: t.lastMessagePreview || t.lastMessageText || '',
         lastMessageSenderId: t.lastMessageSenderId || '',
         lastMessageTime: t.lastMessageAt || t.updatedAt || t.createdAt,
         unreadCount: (t.unreadCount && t.unreadCount[userId]) || 0,
