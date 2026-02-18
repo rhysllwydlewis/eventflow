@@ -152,57 +152,40 @@ function escapeHtml(text) {
 
 // Format timestamp to relative time (e.g., "5m ago", "2h ago", "3d ago")
 function formatTimeAgo(timestamp) {
-  if (!timestamp) return '';
-  
+  if (!timestamp) {
+    return '';
+  }
+
   const date = new Date(timestamp);
   const now = new Date();
   const diffMs = now - date;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  
+
+  if (diffMins < 1) {
+    return 'Just now';
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+
   // Format as date if older than a week
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 // Truncate text to maximum length
 function truncate(text, maxLength) {
-  if (!text || text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
-}
-
-// Sanitize and validate attachment URL
-function sanitizeAttachmentUrl(url) {
-  if (!url || typeof url !== 'string') {
-    return '#';
+  if (!text || text.length <= maxLength) {
+    return text;
   }
-
-  // Only allow URLs that start with /uploads/ or are relative paths
-  // This prevents javascript: or data: URL injection
-  if (
-    url.startsWith('/uploads/') ||
-    url.startsWith('./uploads/') ||
-    url.startsWith('../uploads/')
-  ) {
-    return url;
-  }
-
-  // If it's an absolute URL, only allow http/https
-  try {
-    const urlObj = new URL(url, window.location.origin);
-    if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
-      return urlObj.href;
-    }
-  } catch (e) {
-    // Invalid URL, return safe default
-  }
-
-  return '#';
+  return `${text.substring(0, maxLength)}...`;
 }
 
 // Sanitize and validate attachment URL
@@ -354,13 +337,13 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
     const lastMessageTime = conversation.lastMessageTime
       ? formatTimeAgo(conversation.lastMessageTime)
       : '';
-    
+
     const unreadCount = conversation.unreadCount || 0;
     const isUnread = unreadCount > 0;
-    
+
     // Get attachment count
     const attachmentCount = conversation.attachmentCount || 0;
-    
+
     // Use new quality badge
     const leadQualityBadge = getLeadQualityBadge(conversation.qualityScore);
 
@@ -708,6 +691,19 @@ function openConversation(conversationId) {
     const maxRetries = 2;
     let timeoutId = null;
 
+    // Validate messaging system is ready
+    if (!messagingSystem || typeof messagingSystem.listenToMessages !== 'function') {
+      logMessageState('SYSTEM_NOT_READY', { conversationId });
+      showErrorState(document.getElementById('conversationMessages'), {
+        icon: '⚠️',
+        title: 'System not ready',
+        description: 'Messaging system initialization failed. Please refresh the page.',
+        actionText: 'Refresh',
+        actionHref: window.location.href,
+      });
+      return;
+    }
+
     // Listen to messages with error handling
     try {
       logMessageState('LISTENER_SETUP', { conversationId });
@@ -738,7 +734,11 @@ function openConversation(conversationId) {
             attempt: retryCount,
           });
           if (window.dashboardLogger) {
-            window.dashboardLogger.log('MESSAGE_LISTENER', `Real-time timeout (attempt ${retryCount}), trying HTTP fallback`, { conversationId, retryCount });
+            window.dashboardLogger.log(
+              'MESSAGE_LISTENER',
+              `Real-time timeout (attempt ${retryCount}), trying HTTP fallback`,
+              { conversationId, retryCount }
+            );
           }
 
           const httpMessages = await loadMessagesHTTPFallback(conversationId);
@@ -1235,7 +1235,7 @@ function setupSearchAndFilterSupplier(getConversations, supplierProfile, user) {
   // Search handler
   const searchInput = document.getElementById('widget-search-input-supplier');
   if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input', e => {
       applyFiltersSupplier(getConversations(), supplierProfile, user);
     });
   }
@@ -1243,7 +1243,7 @@ function setupSearchAndFilterSupplier(getConversations, supplierProfile, user) {
   // Filter handler
   const filterSelect = document.getElementById('widget-filter-select-supplier');
   if (filterSelect) {
-    filterSelect.addEventListener('change', (e) => {
+    filterSelect.addEventListener('change', e => {
       applyFiltersSupplier(getConversations(), supplierProfile, user);
     });
   }
@@ -1253,12 +1253,12 @@ function setupSearchAndFilterSupplier(getConversations, supplierProfile, user) {
 function applyFiltersSupplier(conversations, supplierProfile, user) {
   const searchInput = document.getElementById('widget-search-input-supplier');
   const filterSelect = document.getElementById('widget-filter-select-supplier');
-  
+
   const searchQuery = searchInput?.value.toLowerCase() || '';
   const filterValue = filterSelect?.value || 'all';
-  
+
   let filtered = [...conversations];
-  
+
   // Apply search filter
   if (searchQuery) {
     filtered = filtered.filter(conv => {
@@ -1267,14 +1267,14 @@ function applyFiltersSupplier(conversations, supplierProfile, user) {
       return name.includes(searchQuery) || lastMessage.includes(searchQuery);
     });
   }
-  
+
   // Apply status filter
   if (filterValue === 'unread') {
     filtered = filtered.filter(conv => (conv.unreadCount || 0) > 0);
   } else if (filterValue === 'starred') {
     filtered = filtered.filter(conv => conv.isStarred === true);
   }
-  
+
   // Render filtered conversations
   renderConversations(filtered, supplierProfile, user);
 }
