@@ -28,6 +28,11 @@ class MessagingSystem {
     this._socketInitialized = false;
     this._hasDisconnected = false; // Track if we've ever disconnected (to show reconnect toast)
     this._typingDebounceTimers = new Map(); // Debounce typing status sends
+    
+    // Conversation list cache (Issue #16 - State persistence)
+    this.conversationListCache = null;
+    this.conversationListCacheTime = 0;
+    this.CACHE_TTL = 30000; // Cache for 30 seconds
   }
 
   /**
@@ -534,15 +539,38 @@ class MessagingSystem {
   // MongoDB API fallback methods
   async fetchConversationsFromAPI(userId, userType, callback) {
     try {
+      // Check cache first (Issue #16 - State persistence)
+      const now = Date.now();
+      if (this.conversationListCache && (now - this.conversationListCacheTime) < this.CACHE_TTL) {
+        if (isDevelopment) {
+          console.log('Using cached conversation list');
+        }
+        callback(this.conversationListCache);
+        return;
+      }
+
       // Use API utility for timeout and retry handling
       const data = await window.api.get(
         `/messages/conversations?userId=${userId}&userType=${userType}`
       );
-      callback(data.conversations || []);
+      const conversations = data.conversations || [];
+      
+      // Update cache
+      this.conversationListCache = conversations;
+      this.conversationListCacheTime = now;
+      
+      callback(conversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      callback([]);
+      // On error, return cached data if available, otherwise empty array
+      callback(this.conversationListCache || []);
     }
+  }
+
+  // Invalidate conversation list cache (call this when a new message is sent/received)
+  invalidateConversationCache() {
+    this.conversationListCache = null;
+    this.conversationListCacheTime = 0;
   }
 
   async fetchMessagesFromAPI(conversationId, callback) {
@@ -568,6 +596,10 @@ class MessagingSystem {
 
       // Use API utility for timeout and retry handling
       const data = await window.api.post(`/v2/messages/${conversationId}`, payload);
+      
+      // Invalidate conversation cache after sending message (Issue #16)
+      this.invalidateConversationCache();
+      
       return data.messageId || (data.message && data.message.id);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -579,6 +611,9 @@ class MessagingSystem {
     try {
       // Use correct v2 endpoint with API utility for timeout and retry
       await window.api.post(`/v2/messages/threads/${conversationId}/read`, {});
+      
+      // Invalidate conversation cache after marking as read (Issue #16)
+      this.invalidateConversationCache();
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
