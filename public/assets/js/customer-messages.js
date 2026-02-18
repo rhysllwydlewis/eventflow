@@ -3,12 +3,9 @@
  * Handles displaying conversations for customers
  */
 
-import messagingSystem, { MessagingManager, messagingManager } from './messaging.js';
+import messagingSystem, { messagingManager } from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 import { logMessageState } from './utils/dashboard-logger.js';
-
-// Initialize messaging manager
-const messagingManager = new MessagingManager();
 
 // Constants
 const MESSAGE_PREVIEW_MAX_LENGTH = 100;

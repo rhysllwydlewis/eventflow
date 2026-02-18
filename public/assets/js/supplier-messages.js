@@ -3,7 +3,7 @@
  * Handles displaying conversations for suppliers
  */
 
-import messagingSystem, { MessagingManager, messagingManager } from './messaging.js';
+import messagingSystem, { messagingManager } from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 import {
   getLeadQualityBadge,
@@ -91,9 +91,6 @@ async function loadMessagesHTTPFallback(conversationId) {
     return null;
   }
 }
-
-// Initialize messaging manager
-const messagingManager = new MessagingManager();
 
 // Get current user
 async function getCurrentUser() {
