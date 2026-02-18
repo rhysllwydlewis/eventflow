@@ -1,7 +1,7 @@
 /**
  * Enhanced CSRF Handler for EventFlow
  * Centralized CSRF token management with retry logic
- * 
+ *
  * Features:
  * - Automatic token fetching with retry
  * - Cookie-first fallback strategy
@@ -25,7 +25,16 @@ class CSRFHandler {
   getTokenFromCookie() {
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
+      const trimmed = cookie.trim();
+      // Handle cookies with '=' in their values by only splitting on first '='
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex === -1) {
+        continue;
+      }
+
+      const name = trimmed.substring(0, eqIndex);
+      const value = trimmed.substring(eqIndex + 1);
+
       if (name === 'csrf') {
         const token = decodeURIComponent(value || '');
         if (token) {
@@ -95,7 +104,7 @@ class CSRFHandler {
         const response = await fetch('/api/v1/csrf-token', {
           credentials: 'include',
           headers: {
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
         });
 
@@ -121,7 +130,7 @@ class CSRFHandler {
         return token;
       } catch (error) {
         lastError = error;
-        
+
         if (attempt < this.retryAttempts) {
           // Exponential backoff: wait longer each attempt
           const delay = this.retryDelay * Math.pow(2, attempt - 1);
@@ -132,7 +141,9 @@ class CSRFHandler {
 
     // All retries failed
     this.tokenPromise = null;
-    throw new Error(`Failed to fetch CSRF token after ${this.retryAttempts} attempts: ${lastError?.message}`);
+    throw new Error(
+      `Failed to fetch CSRF token after ${this.retryAttempts} attempts: ${lastError?.message}`
+    );
   }
 
   /**
@@ -142,7 +153,7 @@ class CSRFHandler {
    */
   addTokenToOptions(options = {}) {
     const method = (options.method || 'GET').toUpperCase();
-    
+
     // Only add CSRF for state-changing methods
     if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       return options;
@@ -172,7 +183,7 @@ class CSRFHandler {
    */
   async fetch(url, options = {}) {
     const method = (options.method || 'GET').toUpperCase();
-    
+
     // Ensure token is available for state-changing methods
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       await this.ensureToken();
@@ -195,12 +206,13 @@ class CSRFHandler {
         try {
           const errorData = await responseClone.json();
           const errorMessage = errorData?.error || errorData?.message || '';
-          
+
           // Check if it's a CSRF error
-          if (typeof errorMessage === 'string' && 
-              (errorMessage.toLowerCase().includes('csrf') || 
-               errorMessage.toLowerCase().includes('token'))) {
-            
+          if (
+            typeof errorMessage === 'string' &&
+            (errorMessage.toLowerCase().includes('csrf') ||
+              errorMessage.toLowerCase().includes('token'))
+          ) {
             // Refresh token and retry once
             await this.ensureToken(true);
             const retryOptions = this.addTokenToOptions(options);
@@ -225,9 +237,9 @@ class CSRFHandler {
 // Create global singleton instance
 if (typeof window !== 'undefined') {
   window.csrfHandler = new CSRFHandler();
-  
+
   // Provide backward-compatible global function
-  window.ensureCsrfToken = (forceRefresh) => window.csrfHandler.ensureToken(forceRefresh);
+  window.ensureCsrfToken = forceRefresh => window.csrfHandler.ensureToken(forceRefresh);
 }
 
 // Export for module usage

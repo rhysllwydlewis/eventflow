@@ -1,7 +1,7 @@
 /**
  * EventFlow Folders - Phase 2
  * Custom message folder management UI
- * 
+ *
  * Features:
  * - Folder tree with nesting (up to 5 levels)
  * - Create/edit/delete folders
@@ -68,8 +68,8 @@
       const response = await window.csrfHandler.fetch(url, fetchOptions);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ 
-          error: `HTTP ${response.status}` 
+        const error = await response.json().catch(() => ({
+          error: `HTTP ${response.status}`,
         }));
         throw new Error(error.error || error.message || `Request failed: ${response.status}`);
       }
@@ -93,21 +93,21 @@
         }
 
         const data = await apiFetch(API_BASE);
-        
+
         if (data.success && Array.isArray(data.folders)) {
           state.folders = data.folders;
           state.systemFolders = data.folders.filter(f => f.isSystemFolder);
           state.customFolders = data.folders.filter(f => !f.isSystemFolder);
           renderFolderList();
         }
-        
+
         // Success - break out of retry loop
         state.isLoading = false;
         return;
       } catch (error) {
         if (attempt < retries) {
-          // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, delay * attempt));
+          // Exponential backoff: delay * 2^(attempt-1)
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
         } else {
           // All retries exhausted
           showError('Could not load folders. Please refresh the page.');
@@ -136,7 +136,7 @@
         return data.folder;
       }
     } catch (error) {
-      showError('Failed to create folder: ' + error.message);
+      showError(`Failed to create folder: ${error.message}`);
       throw error;
     }
   }
@@ -158,7 +158,7 @@
         return data.folder;
       }
     } catch (error) {
-      showError('Failed to update folder: ' + error.message);
+      showError(`Failed to update folder: ${error.message}`);
       throw error;
     }
   }
@@ -176,7 +176,7 @@
         showSuccess('Folder deleted successfully');
       }
     } catch (error) {
-      showError('Failed to delete folder: ' + error.message);
+      showError(`Failed to delete folder: ${error.message}`);
       throw error;
     }
   }
@@ -198,7 +198,7 @@
         await loadFolders();
       }
     } catch (error) {
-      showError('Failed to move messages: ' + error.message);
+      showError(`Failed to move messages: ${error.message}`);
       throw error;
     }
   }
@@ -222,8 +222,8 @@
         }
       } catch (error) {
         if (attempt < retries) {
-          // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, delay * attempt));
+          // Exponential backoff: delay * 2^(attempt-1)
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
         } else {
           console.error('Failed to initialize system folders after all retries:', error);
         }
@@ -237,7 +237,9 @@
 
   function renderFolderList() {
     const container = document.getElementById('folder-list');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     if (state.isLoading) {
       container.innerHTML = `
@@ -266,7 +268,9 @@
         <div class="folder-section-header">System Folders</div>
         ${state.systemFolders.map(folder => renderFolder(folder)).join('')}
       </div>
-      ${state.customFolders.length > 0 ? `
+      ${
+        state.customFolders.length > 0
+          ? `
         <div class="folder-section">
           <div class="folder-section-header">
             Custom Folders
@@ -276,34 +280,43 @@
           </div>
           ${renderFolderTree(state.customFolders.filter(f => !f.parentId))}
         </div>
-      ` : `
+      `
+          : `
         <div class="folder-section">
           <div class="folder-section-header">Custom Folders</div>
           <button onclick="window.EF_Folders.showCreateFolderModal()" class="folder-create-first">
             + Create your first folder
           </button>
         </div>
-      `}
+      `
+      }
     `;
 
     container.innerHTML = html;
   }
 
   function renderFolderTree(folders, level = 0) {
-    if (!folders || folders.length === 0) return '';
+    if (!folders || folders.length === 0) {
+      return '';
+    }
 
-    return folders.map(folder => {
-      const children = state.customFolders.filter(f => f.parentId === folder._id);
-      const hasChildren = children.length > 0;
-      const isExpanded = state.expandedFolders.has(folder._id);
+    return folders
+      .map(folder => {
+        const children = state.customFolders.filter(f => f.parentId === folder._id);
+        const hasChildren = children.length > 0;
+        const isExpanded = state.expandedFolders.has(folder._id);
 
-      return `
+        return `
         <div class="folder-item" data-folder-id="${folder._id}" style="padding-left: ${level * 20}px">
-          ${hasChildren ? `
+          ${
+            hasChildren
+              ? `
             <button class="folder-expand-btn" onclick="window.EF_Folders.toggleFolder('${folder._id}')">
               ${isExpanded ? '▼' : '▶'}
             </button>
-          ` : '<span class="folder-no-expand"></span>'}
+          `
+              : '<span class="folder-no-expand"></span>'
+          }
           <div 
             class="folder-item-content ${state.activeFolderId === folder._id ? 'active' : ''}"
             onclick="window.EF_Folders.selectFolder('${folder._id}')"
@@ -321,12 +334,15 @@
         </div>
         ${hasChildren && isExpanded ? renderFolderTree(children, level + 1) : ''}
       `;
-    }).join('');
+      })
+      .join('');
   }
 
   function renderFolder(folder) {
     const isActive = state.activeFolderId === folder._id;
-    const icon = folder.isSystemFolder ? (SYSTEM_FOLDER_ICONS[folder.systemType] || folder.icon) : folder.icon;
+    const icon = folder.isSystemFolder
+      ? SYSTEM_FOLDER_ICONS[folder.systemType] || folder.icon
+      : folder.icon;
 
     return `
       <div 
@@ -348,24 +364,35 @@
   // ==========================================
 
   function showCreateFolderModal(parentId = null) {
-    const modal = createModal('Create Folder', `
+    const modal = createModal(
+      'Create Folder',
+      `
       <form id="create-folder-form" class="folder-form">
         <div class="form-group">
           <label for="folder-name">Folder Name *</label>
           <input type="text" id="folder-name" name="name" required maxlength="100" placeholder="e.g., Work, Personal">
         </div>
         
-        ${parentId ? '' : `
+        ${
+          parentId
+            ? ''
+            : `
           <div class="form-group">
             <label for="folder-parent">Parent Folder (optional)</label>
             <select id="folder-parent" name="parentId">
               <option value="">None (top level)</option>
-              ${state.customFolders.filter(f => !f.parentId).map(f => `
+              ${state.customFolders
+                .filter(f => !f.parentId)
+                .map(
+                  f => `
                 <option value="${f._id}">${escapeHtml(f.name)}</option>
-              `).join('')}
+              `
+                )
+                .join('')}
             </select>
           </div>
-        `}
+        `
+        }
         
         <div class="form-group">
           <label for="folder-icon">Icon (emoji)</label>
@@ -382,9 +409,10 @@
           <button type="submit" class="btn-primary">Create Folder</button>
         </div>
       </form>
-    `);
+    `
+    );
 
-    document.getElementById('create-folder-form').addEventListener('submit', async (e) => {
+    document.getElementById('create-folder-form').addEventListener('submit', async e => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const folderData = {
@@ -405,9 +433,13 @@
 
   function showEditFolderModal(folderId) {
     const folder = state.folders.find(f => f._id === folderId);
-    if (!folder || folder.isSystemFolder) return;
+    if (!folder || folder.isSystemFolder) {
+      return;
+    }
 
-    const modal = createModal('Edit Folder', `
+    const modal = createModal(
+      'Edit Folder',
+      `
       <form id="edit-folder-form" class="folder-form">
         <div class="form-group">
           <label for="edit-folder-name">Folder Name *</label>
@@ -429,9 +461,10 @@
           <button type="submit" class="btn-primary">Update Folder</button>
         </div>
       </form>
-    `);
+    `
+    );
 
-    document.getElementById('edit-folder-form').addEventListener('submit', async (e) => {
+    document.getElementById('edit-folder-form').addEventListener('submit', async e => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const updates = {
@@ -451,9 +484,13 @@
 
   function showDeleteFolderModal(folderId) {
     const folder = state.folders.find(f => f._id === folderId);
-    if (!folder || folder.isSystemFolder) return;
+    if (!folder || folder.isSystemFolder) {
+      return;
+    }
 
-    const modal = createModal('Delete Folder', `
+    const modal = createModal(
+      'Delete Folder',
+      `
       <div class="folder-delete-warning">
         <p>Are you sure you want to delete "${escapeHtml(folder.name)}"?</p>
         <p class="warning-text">Messages in this folder will be moved to Inbox.</p>
@@ -462,7 +499,8 @@
         <button type="button" onclick="window.EF_Folders.closeModal()" class="btn-secondary">Cancel</button>
         <button type="button" onclick="window.EF_Folders.confirmDelete('${folderId}')" class="btn-danger">Delete Folder</button>
       </div>
-    `);
+    `
+    );
   }
 
   async function confirmDelete(folderId) {
@@ -483,25 +521,35 @@
     event.stopPropagation();
 
     const folder = state.folders.find(f => f._id === folderId);
-    if (!folder) return;
+    if (!folder) {
+      return;
+    }
 
     // Remove existing context menu
     const existing = document.querySelector('.folder-context-menu');
-    if (existing) existing.remove();
+    if (existing) {
+      existing.remove();
+    }
 
     const menu = document.createElement('div');
     menu.className = 'folder-context-menu';
     menu.style.position = 'fixed';
-    menu.style.left = event.pageX + 'px';
-    menu.style.top = event.pageY + 'px';
+    menu.style.left = `${event.pageX}px`;
+    menu.style.top = `${event.pageY}px`;
 
     const menuItems = [];
 
     if (!folder.isSystemFolder) {
-      menuItems.push(`<div class="context-menu-item" onclick="window.EF_Folders.showEditFolderModal('${folderId}')">✏️ Edit</div>`);
-      menuItems.push(`<div class="context-menu-item" onclick="window.EF_Folders.showCreateFolderModal('${folderId}')">➕ Add Subfolder</div>`);
+      menuItems.push(
+        `<div class="context-menu-item" onclick="window.EF_Folders.showEditFolderModal('${folderId}')">✏️ Edit</div>`
+      );
+      menuItems.push(
+        `<div class="context-menu-item" onclick="window.EF_Folders.showCreateFolderModal('${folderId}')">➕ Add Subfolder</div>`
+      );
       menuItems.push(`<div class="context-menu-item context-menu-separator"></div>`);
-      menuItems.push(`<div class="context-menu-item danger" onclick="window.EF_Folders.showDeleteFolderModal('${folderId}')">🗑️ Delete</div>`);
+      menuItems.push(
+        `<div class="context-menu-item danger" onclick="window.EF_Folders.showDeleteFolderModal('${folderId}')">🗑️ Delete</div>`
+      );
     } else {
       menuItems.push(`<div class="context-menu-item disabled">System folder</div>`);
     }
@@ -510,7 +558,7 @@
     document.body.appendChild(menu);
 
     // Close menu on click outside
-    const closeMenu = (e) => {
+    const closeMenu = e => {
       if (!menu.contains(e.target)) {
         menu.remove();
         document.removeEventListener('click', closeMenu);
@@ -543,10 +591,10 @@
     } else {
       state.expandedFolders.add(folderId);
     }
-    
+
     // Save to localStorage
     localStorage.setItem('ef_expanded_folders', JSON.stringify([...state.expandedFolders]));
-    
+
     renderFolderList();
   }
 
@@ -556,11 +604,11 @@
 
   function initDragAndDrop() {
     // Message items become draggable
-    document.addEventListener('dragstart', (e) => {
+    document.addEventListener('dragstart', e => {
       if (e.target.closest('.message-item')) {
         const messageItem = e.target.closest('.message-item');
         const messageId = messageItem.dataset.messageId;
-        
+
         // Check if multiple messages are selected
         const selectedMessages = document.querySelectorAll('.message-item.selected');
         if (selectedMessages.length > 1 && messageItem.classList.contains('selected')) {
@@ -575,7 +623,7 @@
     });
 
     // Folder items as drop targets
-    document.addEventListener('dragover', (e) => {
+    document.addEventListener('dragover', e => {
       const dropTarget = e.target.closest('[data-folder-drop-target]');
       if (dropTarget && state.draggedMessageIds.length > 0) {
         e.preventDefault();
@@ -584,27 +632,27 @@
       }
     });
 
-    document.addEventListener('dragleave', (e) => {
+    document.addEventListener('dragleave', e => {
       const dropTarget = e.target.closest('[data-folder-drop-target]');
       if (dropTarget) {
         dropTarget.classList.remove('folder-drop-hover');
       }
     });
 
-    document.addEventListener('drop', async (e) => {
+    document.addEventListener('drop', async e => {
       e.preventDefault();
       const dropTarget = e.target.closest('[data-folder-drop-target]');
-      
+
       if (dropTarget && state.draggedMessageIds.length > 0) {
         dropTarget.classList.remove('folder-drop-hover');
         const folderId = dropTarget.dataset.folderDropTarget;
-        
+
         try {
           await moveMessagesToFolder(folderId, state.draggedMessageIds);
         } catch (error) {
           // Error already shown
         }
-        
+
         state.draggedMessageIds = [];
       }
     });
@@ -623,7 +671,9 @@
 
   function createModal(title, content) {
     const existingModal = document.querySelector('.modal-overlay');
-    if (existingModal) existingModal.remove();
+    if (existingModal) {
+      existingModal.remove();
+    }
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -641,14 +691,14 @@
     document.body.appendChild(modal);
 
     // Close on overlay click
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', e => {
       if (e.target === modal) {
         closeModal();
       }
     });
 
     // Close on Escape key
-    const escapeHandler = (e) => {
+    const escapeHandler = e => {
       if (e.key === 'Escape') {
         closeModal();
         document.removeEventListener('keydown', escapeHandler);
@@ -661,7 +711,9 @@
 
   function closeModal() {
     const modal = document.querySelector('.modal-overlay');
-    if (modal) modal.remove();
+    if (modal) {
+      modal.remove();
+    }
   }
 
   function escapeHtml(text) {
@@ -753,5 +805,4 @@
   } else {
     init();
   }
-
 })();
