@@ -596,11 +596,12 @@
         skip: append ? state.skip : 0,
       });
 
+      // Note: Backend only supports unreadOnly filter, not readOnly.
+      // For 'read' and 'all' filters, we fetch all notifications and filter client-side for 'read'.
+      // This is acceptable as most users have a manageable number of read notifications.
       if (state.currentFilter === 'unread') {
         params.set('unreadOnly', 'true');
       }
-      // For 'read' filter, we'll fetch all and filter client-side
-      // For 'all' filter, we fetch all notifications (default)
 
       const response = await fetch(`/api/v1/notifications?${params}`, {
         credentials: 'include',
@@ -805,8 +806,11 @@
     });
 
     // Show/hide load more button
+    // Note: For 'read' filter, pagination is disabled because we do client-side filtering.
+    // The backend doesn't support a readOnly parameter, so we fetch all notifications
+    // and filter them here. This means "load more" would fetch duplicates.
+    // This is an acceptable tradeoff for the current implementation.
     if (state.hasMore && state.currentFilter !== 'read') {
-      // Don't show load more for client-side filtered 'read' view
       loadMoreContainer.style.display = 'block';
     } else {
       loadMoreContainer.style.display = 'none';
