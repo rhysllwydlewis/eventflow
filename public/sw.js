@@ -140,8 +140,13 @@ self.addEventListener('fetch', event => {
             // Clone response and cache it
             const responseClone = response.clone();
             caches.open(DYNAMIC_CACHE).then(cache => {
-              cache.put(request, responseClone);
+              cache.put(request, responseClone).catch(err => {
+                // Gracefully handle cache write failures (extensions, quota, etc.)
+                console.warn('[SW] Cache write failed (may be blocked):', err.message);
+              });
               limitCacheSize(DYNAMIC_CACHE, MAX_DYNAMIC_CACHE_SIZE);
+            }).catch(err => {
+              console.warn('[SW] Cache open failed:', err.message);
             });
           }
 
@@ -192,8 +197,12 @@ self.addEventListener('fetch', event => {
           fetch(request).then(fetchResponse => {
             const responseClone = fetchResponse.clone();
             caches.open(IMAGE_CACHE).then(cache => {
-              cache.put(request, responseClone);
+              cache.put(request, responseClone).catch(err => {
+                console.warn('[SW] Cache write failed:', err.message);
+              });
               limitCacheSize(IMAGE_CACHE, MAX_IMAGE_CACHE_SIZE);
+            }).catch(err => {
+              console.warn('[SW] Cache open failed:', err.message);
             });
             return fetchResponse;
           })
@@ -220,7 +229,11 @@ self.addEventListener('fetch', event => {
           // Cache the fresh response for offline access
           const responseClone = response.clone();
           caches.open(STATIC_CACHE).then(cache => {
-            cache.put(request, responseClone);
+            cache.put(request, responseClone).catch(err => {
+              console.warn('[SW] Cache write failed:', err.message);
+            });
+          }).catch(err => {
+            console.warn('[SW] Cache open failed:', err.message);
           });
           return response;
         })
@@ -239,8 +252,12 @@ self.addEventListener('fetch', event => {
         // Clone response and cache it
         const responseClone = response.clone();
         caches.open(DYNAMIC_CACHE).then(cache => {
-          cache.put(request, responseClone);
+          cache.put(request, responseClone).catch(err => {
+            console.warn('[SW] Cache write failed:', err.message);
+          });
           limitCacheSize(DYNAMIC_CACHE, MAX_DYNAMIC_CACHE_SIZE);
+        }).catch(err => {
+          console.warn('[SW] Cache open failed:', err.message);
         });
         return response;
       })

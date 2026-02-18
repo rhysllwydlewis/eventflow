@@ -376,6 +376,46 @@
         // Prevent console spam
         event.preventDefault();
       });
+
+      // Browser extension conflict handling
+      window.addEventListener('error', (event) => {
+        const errorMessage = event.message || '';
+        
+        // Detect chrome extension errors
+        if (errorMessage.includes('Extension context invalidated') || 
+            errorMessage.includes('extensions::') ||
+            errorMessage.includes('runtime.lastError')) {
+          console.warn('Browser extension interference detected - some features may be unavailable');
+          event.preventDefault(); // Suppress error
+          return true;
+        }
+      });
+
+      // Detect ContentScript.js conflicts
+      if (window.location.href.includes('messages.html')) {
+        const observer = new MutationObserver(() => {
+          // Check for injected extension scripts
+          const extensionScripts = document.querySelectorAll('script[src*="extension://"]');
+          if (extensionScripts.length > 0) {
+            console.warn('Browser extensions detected on page - may cause console warnings');
+          }
+        });
+        observer.observe(document.head, { childList: true, subtree: true });
+      }
+
+      // CDN fallback detection for JadeAssist widget
+      const JADEASSIST_LOAD_TIMEOUT = 3000; // 3 seconds
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (typeof window.JadeAssist === 'undefined') {
+            console.warn('JadeAssist failed to load - tracking prevention likely active');
+            // Hide chat-related UI elements if widget didn't load
+            document.querySelectorAll('[data-requires="jadeassist"]').forEach(el => {
+              el.style.display = 'none';
+            });
+          }
+        }, JADEASSIST_LOAD_TIMEOUT);
+      });
     </script>
 
     <script src="/assets/js/utils/auth-state.js" defer></script>
@@ -2241,6 +2281,77 @@
 <script src="/assets/js/labels.js?v=18.0.0" defer></script>
 <script src="/assets/js/advanced-search.js?v=18.0.0" defer></script>
 <script src="/assets/js/grouping.js?v=18.0.0" defer></script>
+
+<!-- Phase 2 Initialization -->
+<script>
+// Use 'load' event instead of DOMContentLoaded + timeout
+// Scripts with defer are guaranteed to execute before 'load' fires
+window.addEventListener('load', () => {
+  // Initialize Folders
+  if (typeof window.EF_Folders !== 'undefined') {
+    try {
+      window.EF_Folders.init();
+    } catch (error) {
+      console.warn('Folders.js initialization failed:', error);
+    }
+  } else {
+    console.warn('Folders.js not loaded - feature unavailable');
+  }
+  
+  // Initialize Labels
+  if (typeof window.EF_Labels !== 'undefined') {
+    try {
+      window.EF_Labels.init();
+    } catch (error) {
+      console.warn('Labels.js initialization failed:', error);
+    }
+  } else {
+    console.warn('Labels.js not loaded - feature unavailable');
+  }
+  
+  // Initialize Advanced Search
+  if (typeof window.EF_Search !== 'undefined') {
+    try {
+      window.EF_Search.init();
+      // Wire advanced search button
+      const searchBtn = document.getElementById('advanced-search-btn');
+      const searchInput = document.getElementById('advanced-search-input');
+      if (searchBtn && searchInput) {
+        searchBtn.addEventListener('click', () => {
+          const query = searchInput.value.trim();
+          if (query) {
+            window.EF_Search.executeSearch(query);
+          }
+        });
+        // Also trigger search on Enter key
+        searchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (query) {
+              window.EF_Search.executeSearch(query);
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('Advanced-search.js initialization failed:', error);
+    }
+  } else {
+    console.warn('Advanced-search.js not loaded - feature unavailable');
+  }
+  
+  // Initialize Grouping
+  if (typeof window.EF_Grouping !== 'undefined') {
+    try {
+      window.EF_Grouping.init();
+    } catch (error) {
+      console.warn('Grouping.js initialization failed:', error);
+    }
+  } else {
+    console.warn('Grouping.js not loaded - feature unavailable');
+  }
+});
+</script>
 
 <!-- JadeAssist Chat Widget -->
 <script 
