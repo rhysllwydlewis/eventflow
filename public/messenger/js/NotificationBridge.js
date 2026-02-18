@@ -147,6 +147,19 @@
             handleNewMessage(data);
           }
         });
+
+        // Handle connection errors
+        socket.on('error', (error) => {
+          console.error('WebSocket error:', error);
+        });
+
+        socket.on('disconnect', () => {
+          console.log('WebSocket disconnected, notifications will use polling');
+        });
+
+        socket.on('connect', () => {
+          console.log('WebSocket connected');
+        });
       } catch (error) {
         console.error('Error setting up Socket.IO:', error);
       }

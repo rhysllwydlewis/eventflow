@@ -115,12 +115,17 @@
     button.addEventListener('click', async (e) => {
       e.preventDefault();
       
-      if (action === 'new-conversation') {
-        await handleNewConversation(button);
-      } else if (action === 'open-conversation') {
-        await handleOpenConversation(button);
-      } else {
-        console.warn('Unknown messenger action:', action);
+      try {
+        if (action === 'new-conversation') {
+          await handleNewConversation(button);
+        } else if (action === 'open-conversation') {
+          await handleOpenConversation(button);
+        } else {
+          console.warn('Unknown messenger action:', action);
+        }
+      } catch (error) {
+        console.error('Error handling messenger action:', error);
+        // Silently fail - navigation errors shouldn't break the page
       }
     });
   }

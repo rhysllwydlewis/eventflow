@@ -82,6 +82,7 @@
       this.unreadCount = 0;
       this.refreshTimer = null;
       this.wsConnected = false;
+      this.isLoading = false;
 
       this.init();
     }
@@ -260,36 +261,51 @@
      * Render widget HTML
      */
     render() {
-      const unreadBadge = this.options.showUnreadBadge && this.unreadCount > 0
-        ? `<span class="messenger-widget-badge">${this.unreadCount}</span>`
-        : '';
+      try {
+        const unreadBadge = this.options.showUnreadBadge && this.unreadCount > 0
+          ? `<span class="messenger-widget-badge">${this.unreadCount}</span>`
+          : '';
 
-      const conversationsHtml = this.conversations.length > 0
-        ? this.conversations.map(conv => this.renderConversationItem(conv)).join('')
-        : '';
+        const conversationsHtml = this.conversations.length > 0
+          ? this.conversations.map(conv => this.renderConversationItem(conv)).join('')
+          : '';
 
-      const emptyState = this.conversations.length === 0 ? `
-        <div class="messenger-widget-empty">
-          <div class="messenger-widget-empty-icon">💬</div>
-          <p class="messenger-widget-empty-text">No conversations yet</p>
-        </div>
-      ` : '';
-
-      this.container.innerHTML = `
-        <div class="messenger-widget">
-          <div class="messenger-widget-header">
-            <h3 class="messenger-widget-title">
-              💬 Messages
-              ${unreadBadge}
-            </h3>
-            <a href="/messenger/" class="messenger-widget-view-all">View All →</a>
+        const emptyState = this.conversations.length === 0 ? `
+          <div class="messenger-widget-empty">
+            <div class="messenger-widget-empty-icon">💬</div>
+            <p class="messenger-widget-empty-text">No conversations yet</p>
           </div>
-          ${conversationsHtml ? `<ul class="messenger-widget-list">${conversationsHtml}</ul>` : emptyState}
-        </div>
-      `;
+        ` : '';
 
-      // Attach click handlers
-      this.attachClickHandlers();
+        this.container.innerHTML = `
+          <div class="messenger-widget" role="region" aria-label="Recent messages">
+            <div class="messenger-widget-header">
+              <h3 class="messenger-widget-title">
+                💬 Messages
+                ${unreadBadge}
+              </h3>
+              <a href="/messenger/" class="messenger-widget-view-all" aria-label="View all messages">View All →</a>
+            </div>
+            ${conversationsHtml ? `<ul class="messenger-widget-list" role="list" aria-live="polite">${conversationsHtml}</ul>` : emptyState}
+          </div>
+        `;
+
+        // Attach click handlers
+        this.attachClickHandlers();
+      } catch (error) {
+        console.error('Error rendering MessengerWidget:', error);
+        // Render error state
+        this.container.innerHTML = `
+          <div class="messenger-widget">
+            <div class="messenger-widget-header">
+              <h3 class="messenger-widget-title">💬 Messages</h3>
+            </div>
+            <div class="messenger-widget-empty">
+              <p class="messenger-widget-empty-text">Unable to load conversations</p>
+            </div>
+          </div>
+        `;
+      }
     }
 
     /**
@@ -341,6 +357,13 @@
      * Fetch conversations from API
      */
     async fetchConversations() {
+      // Prevent duplicate requests
+      if (this.isLoading) {
+        return;
+      }
+
+      this.isLoading = true;
+
       try {
         const response = await fetch(`/api/v3/messenger/conversations?limit=${this.options.maxItems}`, {
           credentials: 'include',
@@ -359,6 +382,8 @@
         this.render();
       } catch (error) {
         console.error('Error fetching conversations:', error);
+      } finally {
+        this.isLoading = false;
       }
     }
 
@@ -370,12 +395,28 @@
       if (window.io && typeof window.io === 'function') {
         try {
           const socket = window.io();
+          
           socket.on('messenger:new-message', () => {
             this.fetchConversations();
           });
+
+          socket.on('connect', () => {
+            this.wsConnected = true;
+          });
+
+          socket.on('disconnect', () => {
+            this.wsConnected = false;
+          });
+
+          socket.on('error', (error) => {
+            console.error('WebSocket error:', error);
+            this.wsConnected = false;
+          });
+
           this.wsConnected = true;
         } catch (error) {
           console.log('Socket.IO not available, using polling instead');
+          this.wsConnected = false;
         }
       }
 
