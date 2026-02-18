@@ -433,7 +433,7 @@ class MessageSupplierPanel {
 
       // Redirect to messages after a short delay
       setTimeout(() => {
-        window.location.href = '/dashboard-customer.html?tab=messages';
+        window.location.href = '/messenger/';
       }, 2000);
     } catch (error) {
       console.error('Error sending message:', error);

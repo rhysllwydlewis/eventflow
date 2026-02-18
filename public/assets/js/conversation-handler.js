@@ -1056,7 +1056,7 @@
       }
 
       setTimeout(() => {
-        window.location.href = '/messages.html';
+        window.location.href = '/messenger/';
       }, 1000);
     } catch (error) {
       console.error(`Error ${action}ing conversation:`, error);

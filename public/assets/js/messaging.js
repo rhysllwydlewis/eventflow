@@ -323,7 +323,7 @@ class MessagingSystem {
         type: 'message',
         title: 'New Message',
         message: `${senderName}: ${messagePreview}`,
-        actionUrl: `/messages.html?conversation=${conversationId}`,
+        actionUrl: `/messenger/?conversation=${conversationId}`,
         timestamp: timestamp,
         metadata: {
           conversationId,

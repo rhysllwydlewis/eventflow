@@ -155,7 +155,7 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/marketplace',
       '/marketplace.html',
       '/conversation.html',
-      '/messages.html',
+      '/messenger/',
     ],
     customer: [
       '/dashboard-customer.html',
@@ -167,7 +167,7 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/marketplace',
       '/marketplace.html',
       '/conversation.html',
-      '/messages.html',
+      '/messenger/',
     ],
   };
 

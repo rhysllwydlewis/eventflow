@@ -254,11 +254,13 @@
         </select>
         
         <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:0.85rem;background:#DBEAFE;color:#1E40AF;padding:6px 12px;border-radius:12px;">0 unread</span>
-        <a href="/messages.html" class="cta" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;text-decoration:none;display:inline-block;">
+        <a href="/messenger/" class="cta" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;text-decoration:none;display:inline-block;">
           📧 View Inbox
         </a>
       </div>
     </div>
+    <!-- Messenger Dashboard Widget -->
+    <div id="messenger-dashboard-widget" style="margin-bottom: 1.5rem;"></div>
     <div id="threads-cust" class="section">
       <div class="skeleton skeleton-text skeleton-text-long"></div>
       <div class="skeleton skeleton-text skeleton-text-medium"></div>
@@ -1079,4 +1081,16 @@ if (document.readyState === 'loading') {
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
 <script src="/assets/js/jadeassist-init.v2.js" defer></script>
+
+<!-- Messenger Components -->
+<script src="/messenger/js/MessengerWidget.js" defer></script>
+<script src="/messenger/js/MessengerTrigger.js" defer></script>
+<script src="/messenger/js/NotificationBridge.js" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof MessengerWidget !== 'undefined') {
+      new MessengerWidget('messenger-dashboard-widget', { maxItems: 5 });
+    }
+  });
+</script>
 </body></html>
