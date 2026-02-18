@@ -444,19 +444,66 @@ function openConversation(conversationId) {
         <div id="typingIndicatorContainer" style="min-height:24px;padding:0.5rem 0;"></div>
       </div>
       <div class="modal-footer" style="padding:1rem 1.5rem;">
-        <form id="sendMessageForm" style="display:flex;gap:0.5rem;width:100%;flex-wrap:wrap;align-items:flex-end;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;resize:none;min-width:0;padding:0.75rem;border:1px solid #e5e7eb;border-radius:6px;font-family:inherit;font-size:0.875rem;"></textarea>
+        <form id="sendMessageForm" style="display:flex;flex-direction:column;gap:0.75rem;width:100%;">
+          <!-- Message input -->
+          <textarea 
+            id="messageInput" 
+            placeholder="Type your message..." 
+            rows="3" 
+            style="
+              width:100%;
+              resize:vertical;
+              min-height:60px;
+              max-height:200px;
+              padding:0.75rem;
+              border:1px solid #e5e7eb;
+              border-radius:6px;
+              font-family:inherit;
+              font-size:0.875rem;
+            "></textarea>
           
           <!-- File input (hidden) -->
           <input type="file" id="attachmentInput" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"/>
           
-          <!-- Attachment button -->
-          <button type="button" id="attachmentBtn" class="btn btn-secondary" style="padding:0.75rem;border:none;background:#f3f4f6;color:#6b7280;cursor:pointer;transition:background-color 0.2s,color 0.2s;border-radius:6px;min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;" title="Attach files" aria-label="Attach files">
-            📎
-          </button>
-          
-          <!-- Send button -->
-          <button type="submit" class="btn btn-primary" style="padding:0.75rem 1.5rem;border-radius:6px;min-height:44px;white-space:nowrap;">Send</button>
+          <!-- Button container (vertical stack) -->
+          <div style="display:flex;flex-direction:column;gap:0.5rem;align-self:flex-end;">
+            <!-- Attachment button -->
+            <button 
+              type="button" 
+              id="attachmentBtn" 
+              class="btn btn-secondary" 
+              style="
+                padding:0.5rem 1rem;
+                border:none;
+                background:#f3f4f6;
+                color:#6b7280;
+                cursor:pointer;
+                transition:background-color 0.2s,color 0.2s;
+                border-radius:6px;
+                min-width:100px;
+                height:36px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                gap:0.5rem;
+              " 
+              title="Attach files" 
+              aria-label="Attach files">
+              📎 <span>Attach</span>
+            </button>
+            
+            <!-- Send button -->
+            <button 
+              type="submit" 
+              class="btn btn-primary" 
+              style="
+                padding:0.75rem 1.5rem;
+                border-radius:6px;
+                min-height:44px;
+                min-width:100px;
+                white-space:nowrap;
+              ">Send</button>
+          </div>
         </form>
         
         <!-- Selected attachments preview -->
@@ -911,7 +958,7 @@ function openConversation(conversationId) {
       .map(
         (file, idx) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:white;border-radius:6px;margin-bottom:0.5rem;border:1px solid #e5e7eb;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);">
-        <span style="font-size:0.875rem;color:#374151;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:0.5rem;">${escapeHtml(file.name)}</span>
+        <span style="font-size:0.875rem;color:#374151;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:0.5rem;max-width:300px;" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
         <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
           <span style="font-size:0.75rem;color:#6b7280;white-space:nowrap;">${(file.size / 1024 / 1024).toFixed(1)}MB</span>
           <button type="button" class="remove-attachment-btn" data-index="${idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.25rem;line-height:1;padding:0.25rem;transition:color 0.2s;" title="Remove file" aria-label="Remove ${escapeHtml(file.name)}">✕</button>
