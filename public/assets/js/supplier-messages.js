@@ -544,7 +544,7 @@ function openConversation(conversationId) {
     // Refresh conversation list after closing (Issue #10)
     // This ensures unread counts and last message previews are up-to-date
     // Use MessagingManager which has the refreshUnreadCount method
-    if (typeof window.messagingManager !== 'undefined' && messagingManager.refreshUnreadCount) {
+    if (messagingManager && messagingManager.refreshUnreadCount) {
       try {
         messagingManager.refreshUnreadCount();
       } catch (error) {

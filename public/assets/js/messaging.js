@@ -567,7 +567,12 @@ class MessagingSystem {
     }
   }
 
-  // Invalidate conversation list cache (call this when a new message is sent/received)
+  /**
+   * Invalidate conversation list cache
+   * Call this method after state-changing operations like sending messages or marking as read
+   * to ensure the next fetch retrieves fresh data from the server
+   * @returns {void}
+   */
   invalidateConversationCache() {
     this.conversationListCache = null;
     this.conversationListCacheTime = 0;
