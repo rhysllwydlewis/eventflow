@@ -15,6 +15,10 @@
 (function () {
   'use strict';
 
+  // Check if running in development environment
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   // ==========================================
   // STATE
   // ==========================================
@@ -103,7 +107,9 @@
 
       state.socket.on('connect', () => {
         state.isConnected = true;
-        console.log('WebSocket connected');
+        if (isDevelopment) {
+          console.log('WebSocket connected');
+        }
         hideWebSocketError();
 
         // Authenticate with user ID if available
@@ -115,7 +121,9 @@
 
       state.socket.on('disconnect', () => {
         state.isConnected = false;
-        console.log('WebSocket disconnected');
+        if (isDevelopment) {
+          console.log('WebSocket disconnected');
+        }
       });
 
       state.socket.on('connect_error', error => {
@@ -124,7 +132,9 @@
       });
 
       state.socket.on('auth:success', data => {
-        console.log('WebSocket authenticated:', data.userId);
+        if (isDevelopment) {
+          console.log('WebSocket authenticated:', data.userId);
+        }
       });
 
       // Listen for real-time notifications

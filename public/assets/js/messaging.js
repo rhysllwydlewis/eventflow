@@ -7,6 +7,10 @@
  * All operations now use the EventFlow REST API backed by MongoDB.
  */
 
+// Check if running in development environment
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 class MessagingSystem {
   constructor() {
     this.pollingIntervals = [];
@@ -74,7 +78,9 @@ class MessagingSystem {
 
     this.socket.on('connect', () => {
       this.isConnected = true;
-      console.log('Messaging WebSocket connected');
+      if (isDevelopment) {
+        console.log('Messaging WebSocket connected');
+      }
 
       // Emit connection status event
       this.emitConnectionStatus('online');
@@ -91,7 +97,9 @@ class MessagingSystem {
     this.socket.on('disconnect', () => {
       this.isConnected = false;
       this._hasDisconnected = true; // Mark that we've disconnected
-      console.log('Messaging WebSocket disconnected');
+      if (isDevelopment) {
+        console.log('Messaging WebSocket disconnected');
+      }
 
       // Emit connection status event
       this.emitConnectionStatus('offline');
@@ -1354,7 +1362,7 @@ class BulkOperationManager {
   async bulkDelete(messageIds, threadId, reason = '') {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1395,7 +1403,7 @@ class BulkOperationManager {
   async bulkMarkRead(messageIds, isRead) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1426,7 +1434,7 @@ class BulkOperationManager {
   async flagMessage(messageId, isFlagged) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1457,7 +1465,7 @@ class BulkOperationManager {
   async archiveMessage(messageId, action) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1488,7 +1496,7 @@ class BulkOperationManager {
   async undo(operationId, undoToken) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
