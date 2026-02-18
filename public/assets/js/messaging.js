@@ -34,8 +34,14 @@ function getCsrfToken() {
     
     // Check both cookie names (csrf is canonical, csrfToken is legacy)
     if (name === 'csrf' || name === 'csrfToken') {
-      const token = decodeURIComponent(value || '');
-      if (token) return token;
+      try {
+        const token = decodeURIComponent(value || '');
+        if (token) return token;
+      } catch (e) {
+        // Skip malformed cookie value
+        console.warn('Malformed CSRF cookie value:', e);
+        continue;
+      }
     }
   }
   
