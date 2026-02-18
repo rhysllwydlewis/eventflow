@@ -598,10 +598,9 @@
 
       if (state.currentFilter === 'unread') {
         params.set('unreadOnly', 'true');
-      } else if (state.currentFilter === 'read') {
-        params.set('unreadOnly', 'false');
-        params.set('readOnly', 'true');
       }
+      // For 'read' filter, we'll fetch all and filter client-side
+      // For 'all' filter, we fetch all notifications (default)
 
       const response = await fetch(`/api/v1/notifications?${params}`, {
         credentials: 'include',
@@ -786,20 +785,28 @@
     const existingItems = container.querySelectorAll('.notification-item');
     existingItems.forEach(item => item.remove());
 
-    if (state.notifications.length === 0) {
+    // Filter notifications based on current filter
+    let filteredNotifications = state.notifications;
+    if (state.currentFilter === 'read') {
+      filteredNotifications = state.notifications.filter(n => n.isRead);
+    }
+    // 'unread' is handled by backend, 'all' shows everything
+
+    if (filteredNotifications.length === 0) {
       empty.style.display = 'block';
       loadMoreContainer.style.display = 'none';
       return;
     }
 
     // Render notification items
-    state.notifications.forEach(notification => {
+    filteredNotifications.forEach(notification => {
       const item = createNotificationElement(notification);
       container.appendChild(item);
     });
 
     // Show/hide load more button
-    if (state.hasMore) {
+    if (state.hasMore && state.currentFilter !== 'read') {
+      // Don't show load more for client-side filtered 'read' view
       loadMoreContainer.style.display = 'block';
     } else {
       loadMoreContainer.style.display = 'none';
