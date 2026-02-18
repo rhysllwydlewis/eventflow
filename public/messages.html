@@ -940,8 +940,8 @@
             window.sortFilterManager.setSortMethod(sortMethod);
             console.log('Sort changed to:', sortMethod);
             showToast('Sort preference saved: ' + sortMethod, 'success');
-            // Re-render threads with new sort order
-            renderThreads();
+            // Re-load threads with new sort order
+            loadThreads();
           });
         }
         
@@ -1037,13 +1037,16 @@
           if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
             e.preventDefault();
             const checkboxes = document.querySelectorAll('.message-checkbox');
+            const allIds = [];
             checkboxes.forEach(checkbox => {
-              checkbox.checked = true;
               const threadId = checkbox.dataset.threadId;
               if (threadId) {
-                window.selectionManager.toggle(threadId);
+                allIds.push(threadId);
+                checkbox.checked = true;
               }
             });
+            // Select all IDs at once
+            window.selectionManager.selectAll(allIds);
             updateSelectionUI();
           }
           

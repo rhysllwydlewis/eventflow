@@ -1175,7 +1175,7 @@ async function init() {
         title: 'Connection Problem',
         description: 'Unable to connect to messaging server. Check your internet connection.',
         actionText: 'Retry',
-        actionHref: null, // null triggers reload
+        actionHref: window.location.href, // Refresh page on retry
       });
     }
   }
