@@ -139,6 +139,44 @@ class WebSocketServer {
         });
       });
 
+      // ===== V3 Messenger Events =====
+      
+      // Join messenger conversation room
+      socket.on('messenger:join', ({ conversationId }) => {
+        if (conversationId) {
+          socket.join(`messenger:${conversationId}`);
+          console.log(`Socket ${socket.id} joined messenger conversation: ${conversationId}`);
+        }
+      });
+
+      // Leave messenger conversation room
+      socket.on('messenger:leave', ({ conversationId }) => {
+        if (conversationId) {
+          socket.leave(`messenger:${conversationId}`);
+          console.log(`Socket ${socket.id} left messenger conversation: ${conversationId}`);
+        }
+      });
+
+      // Messenger typing indicator
+      socket.on('messenger:typing', ({ conversationId, isTyping }) => {
+        if (conversationId && socket.userId) {
+          socket.to(`messenger:${conversationId}`).emit('messenger:typing', {
+            conversationId,
+            userId: socket.userId,
+            isTyping,
+          });
+        }
+      });
+
+      // Messenger message sent (broadcast to conversation room)
+      socket.on('messenger:message', ({ conversationId }) => {
+        if (conversationId) {
+          socket.to(`messenger:${conversationId}`).emit('messenger:new-message', {
+            conversationId,
+          });
+        }
+      });
+
       // Handle disconnection
       socket.on('disconnect', () => {
         if (socket.userId) {
@@ -178,6 +216,26 @@ class WebSocketServer {
   // Get online users count
   getOnlineUsersCount() {
     return this.userSockets.size;
+  }
+
+  /**
+   * Emit event to a specific user (all their sockets)
+   * @param {string} userId - Target user ID
+   * @param {string} event - Event name
+   * @param {Object} data - Event data
+   */
+  emitToUser(userId, event, data) {
+    this.io.to(`user:${userId}`).emit(event, data);
+  }
+
+  /**
+   * Emit event to a room
+   * @param {string} room - Room name
+   * @param {string} event - Event name
+   * @param {Object} data - Event data
+   */
+  emitToRoom(room, event, data) {
+    this.io.to(room).emit(event, data);
   }
 }
 
