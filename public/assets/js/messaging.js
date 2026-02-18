@@ -12,6 +12,41 @@ const isDevelopment =
   window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 /**
+ * Get CSRF token from meta tag or cookie
+ * @returns {string|null} CSRF token
+ */
+function getCsrfToken() {
+  // Try meta tag first (if present)
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta) {
+    return meta.getAttribute('content');
+  }
+  
+  // Fallback to cookie (primary method in EventFlow)
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) continue;
+    
+    const name = trimmed.substring(0, eqIndex);
+    const value = trimmed.substring(eqIndex + 1);
+    
+    // Check both cookie names (csrf is canonical, csrfToken is legacy)
+    if (name === 'csrf' || name === 'csrfToken') {
+      const token = decodeURIComponent(value || '');
+      if (token) return token;
+    }
+  }
+  
+  // Fallback to global variables if set by csrf-handler.js
+  if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
+  if (window.csrfToken) return window.csrfToken;
+  
+  return null;
+}
+
+/**
  * Retry helper with exponential backoff
  * @param {Function} fn - Async function to retry
  * @param {Object} options - Retry options
@@ -1376,7 +1411,7 @@ class BulkOperationManager {
   async bulkDelete(messageIds, threadId, reason = '') {
     return retryWithBackoff(async (attempt) => {
       try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const csrfToken = getCsrfToken();
 
         if (!csrfToken) {
           throw new Error('CSRF token not found');
@@ -1430,7 +1465,7 @@ class BulkOperationManager {
   async bulkMarkRead(messageIds, isRead) {
     return retryWithBackoff(async (attempt) => {
       try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const csrfToken = getCsrfToken();
 
         if (!csrfToken) {
           throw new Error('CSRF token not found');
@@ -1474,7 +1509,7 @@ class BulkOperationManager {
 
   async flagMessage(messageId, isFlagged) {
     try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const csrfToken = getCsrfToken();
 
       if (!csrfToken) {
         throw new Error('CSRF token not found');
@@ -1505,7 +1540,7 @@ class BulkOperationManager {
 
   async archiveMessage(messageId, action) {
     try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const csrfToken = getCsrfToken();
 
       if (!csrfToken) {
         throw new Error('CSRF token not found');
@@ -1536,7 +1571,7 @@ class BulkOperationManager {
 
   async undo(operationId, undoToken) {
     try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const csrfToken = getCsrfToken();
 
       if (!csrfToken) {
         throw new Error('CSRF token not found');
