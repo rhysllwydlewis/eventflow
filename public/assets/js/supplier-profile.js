@@ -243,7 +243,10 @@
           return;
         }
         // Sanitize supplier name for safe use in prefill message
-        const supplierName = (supplier.name || 'Supplier').replace(/[<>]/g, '');
+        // Remove potentially harmful characters while preserving readability
+        const supplierName = (supplier.name || 'Supplier')
+          .replace(/[<>'"&]/g, '')
+          .trim() || 'Supplier';
         const params = new URLSearchParams({
           new: 'true',
           recipientId: recipientId,
