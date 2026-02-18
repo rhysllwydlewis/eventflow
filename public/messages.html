@@ -768,6 +768,41 @@
     (function () {
       'use strict';
 
+      /**
+       * Debounce utility - prevents function from being called too frequently
+       * @param {Function} func - Function to debounce
+       * @param {number} wait - Milliseconds to wait
+       * @returns {Function} Debounced function
+       */
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      /**
+       * Throttle utility - ensures function runs at most once per interval
+       * @param {Function} func - Function to throttle
+       * @param {number} limit - Milliseconds between calls
+       * @returns {Function} Throttled function
+       */
+      function throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+          if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+          }
+        };
+      }
+
       let currentTab = 'inbox';
       let threads = [];
       let drafts = [];
@@ -1065,7 +1100,8 @@
         
         // Wire bulk mark read button
         if (bulkMarkReadBtn) {
-          bulkMarkReadBtn.addEventListener('click', async () => {
+          // Debounce to prevent rapid clicks
+          const handleBulkMarkRead = debounce(async () => {
             const selectedIds = window.selectionManager.getSelectedIds();
             if (selectedIds.length === 0) {
               showToast('No messages selected', 'error');
@@ -1082,12 +1118,15 @@
               console.error('Bulk mark read error:', error);
               showToast('Failed to mark messages as read: ' + error.message, 'error');
             }
-          });
+          }, 300); // 300ms debounce
+          
+          bulkMarkReadBtn.addEventListener('click', handleBulkMarkRead);
         }
         
         // Wire bulk mark unread button
         if (bulkMarkUnreadBtn) {
-          bulkMarkUnreadBtn.addEventListener('click', async () => {
+          // Debounce to prevent rapid clicks
+          const handleBulkMarkUnread = debounce(async () => {
             const selectedIds = window.selectionManager.getSelectedIds();
             if (selectedIds.length === 0) {
               showToast('No messages selected', 'error');
@@ -1104,7 +1143,9 @@
               console.error('Bulk mark unread error:', error);
               showToast('Failed to mark messages as unread: ' + error.message, 'error');
             }
-          });
+          }, 300); // 300ms debounce
+          
+          bulkMarkUnreadBtn.addEventListener('click', handleBulkMarkUnread);
         }
         
         // Wire sort dropdown
@@ -1133,7 +1174,8 @@
         
         // Wire bulk delete button
         if (bulkDeleteBtn) {
-          bulkDeleteBtn.addEventListener('click', async () => {
+          // Debounce to prevent rapid clicks
+          const handleBulkDelete = debounce(async () => {
             const selectedIds = window.selectionManager.getSelectedIds();
             if (selectedIds.length === 0) {
               showToast('No messages selected', 'error');
@@ -1179,7 +1221,9 @@
               console.error('Bulk delete error:', error);
               showToast('Failed to delete messages: ' + error.message, 'error');
             }
-          });
+          }, 300); // 300ms debounce
+          
+          bulkDeleteBtn.addEventListener('click', handleBulkDelete);
         }
         
         // Keyboard shortcuts
