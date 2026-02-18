@@ -410,7 +410,7 @@ function renderConversations(conversations, currentUser) {
 
   container.innerHTML = html;
 
-  // Log success for debugging
+  // Log success for debugging (uses isDevelopment from line 210)
   if (isDevelopment) {
     console.log('✅ Conversations rendered successfully:', conversations.length);
   }

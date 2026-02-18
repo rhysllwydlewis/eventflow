@@ -392,7 +392,7 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
   html += '</div>';
   container.innerHTML = html;
 
-  // Log success for debugging
+  // Log success for debugging (uses isDevelopment from line 246)
   if (isDevelopment) {
     console.log('✅ Conversations rendered successfully:', conversations.length);
   }
