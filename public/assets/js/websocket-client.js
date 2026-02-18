@@ -3,6 +3,10 @@
  * Real-time notifications and messaging client
  */
 
+// Check if running in development environment
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 class WebSocketClient {
   constructor(options = {}) {
     this.socket = null;
@@ -97,7 +101,9 @@ class WebSocketClient {
 
   setupEventHandlers() {
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      if (isDevelopment) {
+        console.log('WebSocket connected');
+      }
       this.connected = true;
       this.reconnectAttempts = 0; // Reset on successful connection
       this.userNotified = false; // Reset notification flag on successful connection
@@ -116,7 +122,7 @@ class WebSocketClient {
 
     this.socket.on('disconnect', reason => {
       // Reduce console noise - only log in development or first disconnect
-      if (this.reconnectAttempts === 0) {
+      if (isDevelopment && this.reconnectAttempts === 0) {
         console.log('WebSocket disconnected:', reason);
       }
       this.connected = false;
@@ -130,7 +136,9 @@ class WebSocketClient {
     });
 
     this.socket.on('auth:success', data => {
-      console.log('WebSocket authenticated:', data);
+      if (isDevelopment) {
+        console.log('WebSocket authenticated:', data);
+      }
       this.userId = data.userId;
     });
 

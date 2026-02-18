@@ -7,6 +7,10 @@
  * All operations now use the EventFlow REST API backed by MongoDB.
  */
 
+// Check if running in development environment
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 class MessagingSystem {
   constructor() {
     this.pollingIntervals = [];
@@ -24,6 +28,11 @@ class MessagingSystem {
     this._socketInitialized = false;
     this._hasDisconnected = false; // Track if we've ever disconnected (to show reconnect toast)
     this._typingDebounceTimers = new Map(); // Debounce typing status sends
+    
+    // Conversation list cache (Issue #16 - State persistence)
+    this.conversationListCache = null;
+    this.conversationListCacheTime = 0;
+    this.CACHE_TTL = 30000; // Cache for 30 seconds
   }
 
   /**
@@ -74,7 +83,9 @@ class MessagingSystem {
 
     this.socket.on('connect', () => {
       this.isConnected = true;
-      console.log('Messaging WebSocket connected');
+      if (isDevelopment) {
+        console.log('Messaging WebSocket connected');
+      }
 
       // Emit connection status event
       this.emitConnectionStatus('online');
@@ -91,7 +102,9 @@ class MessagingSystem {
     this.socket.on('disconnect', () => {
       this.isConnected = false;
       this._hasDisconnected = true; // Mark that we've disconnected
-      console.log('Messaging WebSocket disconnected');
+      if (isDevelopment) {
+        console.log('Messaging WebSocket disconnected');
+      }
 
       // Emit connection status event
       this.emitConnectionStatus('offline');
@@ -526,37 +539,50 @@ class MessagingSystem {
   // MongoDB API fallback methods
   async fetchConversationsFromAPI(userId, userType, callback) {
     try {
-      const response = await fetch(
-        `/api/messages/conversations?userId=${userId}&userType=${userType}`,
-        {
-          credentials: 'include',
+      // Check cache first (Issue #16 - State persistence)
+      const now = Date.now();
+      if (this.conversationListCache && (now - this.conversationListCacheTime) < this.CACHE_TTL) {
+        if (isDevelopment) {
+          console.log('Using cached conversation list');
         }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        callback(data.conversations || []);
-      } else {
-        console.error('Failed to fetch conversations');
-        callback([]);
+        callback(this.conversationListCache);
+        return;
       }
+
+      // Use API utility for timeout and retry handling
+      const data = await window.api.get(
+        `/messages/conversations?userId=${userId}&userType=${userType}`
+      );
+      const conversations = data.conversations || [];
+      
+      // Update cache
+      this.conversationListCache = conversations;
+      this.conversationListCacheTime = now;
+      
+      callback(conversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      callback([]);
+      // On error, return cached data if available, otherwise empty array
+      callback(this.conversationListCache || []);
     }
+  }
+
+  /**
+   * Invalidate conversation list cache
+   * Call this method after state-changing operations like sending messages or marking as read
+   * to ensure the next fetch retrieves fresh data from the server
+   * @returns {void}
+   */
+  invalidateConversationCache() {
+    this.conversationListCache = null;
+    this.conversationListCacheTime = 0;
   }
 
   async fetchMessagesFromAPI(conversationId, callback) {
     try {
-      const response = await fetch(`/api/v2/messages/${conversationId}`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        callback(data.messages || []);
-      } else {
-        console.error('Failed to fetch messages');
-        callback([]);
-      }
+      // Use API utility for timeout and retry handling
+      const data = await window.api.get(`/v2/messages/${conversationId}`);
+      callback(data.messages || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
       callback([]);
@@ -573,25 +599,13 @@ class MessagingSystem {
         delete payload.message;
       }
 
-      const response = await fetch(`/api/v2/messages/${conversationId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.messageId || (data.message && data.message.id);
-      } else {
-        // Extract error message from response for better error reporting
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
-        throw new Error(errorMessage);
-      }
+      // Use API utility for timeout and retry handling
+      const data = await window.api.post(`/v2/messages/${conversationId}`, payload);
+      
+      // Invalidate conversation cache after sending message (Issue #16)
+      this.invalidateConversationCache();
+      
+      return data.messageId || (data.message && data.message.id);
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
@@ -600,22 +614,11 @@ class MessagingSystem {
 
   async markMessagesAsReadViaAPI(conversationId) {
     try {
-      // Use correct v2 endpoint: /api/v2/messages/threads/:threadId/read
-      // Note: v2 API uses req.user.id from session, no need to send userId in body
-      const response = await fetch(`/api/v2/messages/threads/${conversationId}/read`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
-        console.error('Error marking messages as read:', errorMessage);
-      }
+      // Use correct v2 endpoint with API utility for timeout and retry
+      await window.api.post(`/v2/messages/threads/${conversationId}/read`, {});
+      
+      // Invalidate conversation cache after marking as read (Issue #16)
+      this.invalidateConversationCache();
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
@@ -623,21 +626,9 @@ class MessagingSystem {
 
   async fetchUnreadCountFromAPI(userId, userType, callback) {
     try {
-      // Use the authenticated endpoint - no need for userId/userType params
-      const response = await fetch('/api/v2/messages/unread', {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        callback(data.count || 0);
-      } else {
-        // Gracefully handle non-200 responses without console spam
-        if (!this._unreadErrorLogged) {
-          this._unreadErrorLogged = true;
-          console.warn('Unable to fetch unread count, showing zero');
-        }
-        callback(0);
-      }
+      // Use the authenticated endpoint with API utility for timeout and retry
+      const data = await window.api.get('/v2/messages/unread');
+      callback(data.count || 0);
     } catch (error) {
       // Gracefully handle errors without console spam
       if (!this._unreadErrorLogged) {
@@ -1003,26 +994,10 @@ class MessagingManager {
    */
   async markMessagesAsRead(threadId) {
     try {
-      // Use correct v2 endpoint: /api/v2/messages/threads/:threadId/read
-      const response = await fetch(`/api/v2/messages/threads/${threadId}/read`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
-        },
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        await this.refreshUnreadCount();
-        return true;
-      }
-
-      // Extract and log error message for better debugging
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
-      console.error('Failed to mark messages as read:', errorMessage);
-      return false;
+      // Use API utility for timeout and retry
+      await window.api.post(`/v2/messages/threads/${threadId}/read`, {});
+      await this.refreshUnreadCount();
+      return true;
     } catch (error) {
       console.error('Error marking messages as read:', error);
       return false;
@@ -1035,21 +1010,8 @@ class MessagingManager {
    */
   async refreshUnreadCount() {
     try {
-      const response = await fetch('/api/v2/messages/unread', {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        // Silently handle 404 and other errors - just return 0
-        if (response.status === 404) {
-          // Endpoint not available, use fallback
-          this.updateBadge(0);
-          return 0;
-        }
-        throw new Error('Failed to fetch unread count');
-      }
-
-      const data = await response.json();
+      // Use API utility for timeout and retry
+      const data = await window.api.get('/v2/messages/unread');
       const count = data.count || data.unreadCount || 0;
 
       this.updateBadge(count);
@@ -1354,7 +1316,7 @@ class BulkOperationManager {
   async bulkDelete(messageIds, threadId, reason = '') {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1395,7 +1357,7 @@ class BulkOperationManager {
   async bulkMarkRead(messageIds, isRead) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1426,7 +1388,7 @@ class BulkOperationManager {
   async flagMessage(messageId, isFlagged) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1457,7 +1419,7 @@ class BulkOperationManager {
   async archiveMessage(messageId, action) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
@@ -1488,7 +1450,7 @@ class BulkOperationManager {
   async undo(operationId, undoToken) {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      
+
       if (!csrfToken) {
         throw new Error('CSRF token not found');
       }
