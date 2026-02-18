@@ -48,6 +48,9 @@ async notifyNewMessage(recipientUserId, senderName, threadId, messagePreview = n
   
 ```javascript
 // Create notifications for recipients
+// Note: NotificationService.notifyNewMessage() automatically handles WebSocket
+// emission via the websocketServer it was initialized with, so no need to
+// emit notification:new events here
 if (notificationService && recipientIds && recipientIds.length > 0) {
   const senderName = req.user.name || req.user.username || 'Someone';
   const messagePreview = content ? content.substring(0, 100) : 'Sent an attachment';
@@ -69,25 +72,10 @@ if (notificationService && recipientIds && recipientIds.length > 0) {
       });
     }
   }
-
-  // Emit WebSocket notification events for real-time updates
-  if (wsServerV2) {
-    for (const recipientId of recipientIds) {
-      wsServerV2.to(`user:${recipientId}`).emit('notification:new', {
-        type: 'message',
-        title: 'New Message',
-        message: `${senderName}: ${messagePreview}`,
-        actionUrl: `/messages.html?conversation=${threadId}`,
-        metadata: {
-          threadId,
-          senderName,
-          messagePreview,
-        },
-      });
-    }
-  }
 }
 ```
+
+**Important Note:** The `NotificationService.create()` method automatically emits WebSocket notifications when it creates a notification in the database. This is handled by the service's `websocketServer` instance (initialized as `wsServerV2`), so there's **no need** to manually emit `notification:new` events in the messaging endpoint. This prevents duplicate notifications and maintains the single responsibility principle.
 
 ### Frontend Changes
 

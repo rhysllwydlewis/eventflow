@@ -31,16 +31,16 @@ describe('Messaging-Notification Integration', () => {
       expect(sendMessageEndpoint).toContain('messagePreview');
     });
 
-    it('emits WebSocket notification events', () => {
+    it('relies on NotificationService for WebSocket emission', () => {
       const sendMessageEndpoint = messagingV2Js.substring(
         messagingV2Js.indexOf('POST /api/v2/messages/:threadId'),
         messagingV2Js.indexOf('PUT /api/v2/messages/:messageId')
       );
 
-      // Should emit notification:new via WebSocket
-      expect(sendMessageEndpoint).toContain('wsServerV2');
-      expect(sendMessageEndpoint).toContain("emit('notification:new'");
-      expect(sendMessageEndpoint).toContain('threadId');
+      // Should NOT manually emit notification:new (NotificationService handles it)
+      // This prevents duplicate notifications
+      const manualEmitCount = (sendMessageEndpoint.match(/emit\('notification:new'/g) || []).length;
+      expect(manualEmitCount).toBe(0);
     });
 
     it('handles notification errors gracefully', () => {

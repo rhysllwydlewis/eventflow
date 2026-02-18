@@ -945,6 +945,9 @@ router.post(
       );
 
       // Create notifications for recipients
+      // Note: NotificationService.notifyNewMessage() automatically handles WebSocket
+      // emission via the websocketServer it was initialized with, so no need to
+      // emit notification:new events here
       if (notificationService && recipientIds && recipientIds.length > 0) {
         const senderName = req.user.name || req.user.username || 'Someone';
         const messagePreview = content ? content.substring(0, 100) : 'Sent an attachment';
@@ -963,23 +966,6 @@ router.post(
               error: notifError.message,
               recipientId,
               threadId,
-            });
-          }
-        }
-
-        // Emit WebSocket notification events for real-time updates
-        if (wsServerV2) {
-          for (const recipientId of recipientIds) {
-            wsServerV2.to(`user:${recipientId}`).emit('notification:new', {
-              type: 'message',
-              title: 'New Message',
-              message: `${senderName}: ${messagePreview}`,
-              actionUrl: `/messages.html?conversation=${threadId}`,
-              metadata: {
-                threadId,
-                senderName,
-                messagePreview,
-              },
             });
           }
         }
