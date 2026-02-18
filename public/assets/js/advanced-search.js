@@ -57,48 +57,77 @@
   // ==========================================
 
   async function apiFetch(url, options = {}) {
+    // Check if CSRF handler is available
+    if (!window.csrfHandler) {
+      throw new Error('CSRF handler not available');
+    }
+
     try {
-      const response = await fetch(url, {
+      // Add Content-Type header if not present
+      const fetchOptions = {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          ...options.headers,
+          ...(options.headers || {}),
         },
-        credentials: 'include',
-      });
+      };
+
+      // Use CSRF handler's fetch method (includes automatic token handling and retry)
+      const response = await window.csrfHandler.fetch(url, fetchOptions);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(error.error || error.message || 'Request failed');
+        const error = await response.json().catch(() => ({ 
+          error: `HTTP ${response.status}` 
+        }));
+        throw new Error(error.error || error.message || `Request failed: ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   }
 
-  async function executeSearch(query) {
-    try {
-      state.isSearching = true;
-      state.currentQuery = query;
-      updateSearchUI();
+  async function executeSearch(query, retries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        state.isSearching = true;
+        state.currentQuery = query;
+        updateSearchUI();
 
-      const encodedQuery = encodeURIComponent(query);
-      const data = await apiFetch(`${API_BASE}?q=${encodedQuery}`);
-      
-      if (data.success && Array.isArray(data.results)) {
-        state.searchResults = data.results;
-        displaySearchResults(data.results, data.totalCount);
-        showSuccess(`Found ${data.totalCount} message(s)`);
+        // Ensure CSRF token before search
+        if (window.csrfHandler) {
+          await window.csrfHandler.ensureToken();
+        }
+
+        const encodedQuery = encodeURIComponent(query);
+        const data = await apiFetch(`${API_BASE}?q=${encodedQuery}`);
+        
+        if (data.success && Array.isArray(data.results)) {
+          state.searchResults = data.results;
+          displaySearchResults(data.results, data.totalCount);
+          showSuccess(`Found ${data.totalCount} message(s)`);
+        }
+        
+        // Success - break out of retry loop
+        state.isSearching = false;
+        updateSearchUI();
+        return;
+      } catch (error) {
+        if (attempt < retries) {
+          // Exponential backoff: delay * 2^(attempt-1)
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
+        } else {
+          // All retries exhausted
+          showError('Search failed. Please try again.');
+          displaySearchResults([], 0);
+        }
+      } finally {
+        if (attempt === retries) {
+          state.isSearching = false;
+          updateSearchUI();
+        }
       }
-    } catch (error) {
-      showError('Search failed: ' + error.message);
-      displaySearchResults([], 0);
-    } finally {
-      state.isSearching = false;
-      updateSearchUI();
     }
   }
 
@@ -111,7 +140,6 @@
 
       return data.valid || false;
     } catch (error) {
-      console.error('Query validation failed:', error);
       return false;
     }
   }
@@ -127,7 +155,6 @@
         showAutocompleteSuggestions(data.suggestions);
       }
     } catch (error) {
-      console.error('Autocomplete failed:', error);
       state.autocompleteSuggestions = [];
     }
   }
@@ -140,7 +167,6 @@
         state.operators = data.operators;
       }
     } catch (error) {
-      console.error('Failed to load operators:', error);
       // Use fallback operators
       state.operators = Object.entries(SEARCH_OPERATORS).map(([op, desc]) => ({
         operator: op,
