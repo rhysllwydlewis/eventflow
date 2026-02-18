@@ -427,6 +427,17 @@
       </div>
     </div>
 
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status" style="display: none;">
+      <div class="connection-indicator">
+        <span class="connection-dot"></span>
+        <span class="connection-text">Connected</span>
+      </div>
+      <button id="manual-reconnect-btn" class="connection-reconnect-btn" style="display: none;">
+        🔄 Reconnect
+      </button>
+    </div>
+
     <div class="messages-tabs">
       <button class="messages-tab active" data-tab="inbox">
         Inbox
@@ -736,77 +747,198 @@
         setupRealtimeUpdates();
       }
 
-      function setupRealtimeUpdates() {
-        // Wait for messaging system to be available with retry mechanism
+      async function setupRealtimeUpdates() {
         let retries = 0;
-        const maxRetries = 10;
-        const retryDelay = 100; // 100ms between retries
+        const maxRetries = 30; // Increased from 10
+        const baseDelay = 100; // Base delay in ms
+        const maxDelay = 5000; // Cap at 5 seconds
         
-        const trySetup = () => {
+        const trySetup = async () => {
           if (window.messagingSystem) {
             // Initialize WebSocket
-            window.messagingSystem.initWebSocket();
-
-            // Listen for new messages - reload threads when received
-            window.addEventListener('messaging:connection', (event) => {
-              const { status } = event.detail;
-              if (status === 'online' && currentTab === 'inbox') {
-                // Refresh threads when connection is established
-                loadThreads();
-              }
-            });
-
-            // Get current user and listen for conversation updates
-            fetch('/api/auth/me', { credentials: 'include' })
-              .then(response => response.json())
-              .then(data => {
-                const user = data.user;
-                if (user && user.id) {
-                  // Listen to user's conversations for real-time updates
-                  window.messagingSystem.listenToUserConversations(
-                    user.id,
-                    user.type || 'customer',
-                    (conversations) => {
-                      // Update threads array with new data
-                      if (currentTab === 'inbox') {
-                        threads = conversations || [];
-                        renderThreads();
-                        updateCounts();
-                      }
-                    }
-                  );
-
-                  // Listen for unread count updates
-                  window.messagingSystem.listenToUnreadCount(
-                    user.id,
-                    user.type || 'customer',
-                    (count) => {
-                      updateInboxBadge(count);
-                    }
-                  );
-                }
-              })
-              .catch(error => {
-                console.error('Error getting user for real-time updates:', error);
-              });
-          } else if (retries < maxRetries) {
-            // Retry if messaging system not available yet
+            const connected = await window.messagingSystem.initWebSocket();
+            
+            if (connected) {
+              showConnectionStatus('connected');
+              setupRealtimeListeners();
+              return true;
+            }
+          }
+          
+          if (retries < maxRetries) {
             retries++;
-            setTimeout(trySetup, retryDelay);
+            // Exponential backoff with cap
+            const delay = Math.min(baseDelay * Math.pow(1.5, retries), maxDelay);
+            
+            showConnectionStatus('connecting', `Attempt ${retries}/${maxRetries}`);
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return trySetup();
           } else {
-            // Fall back to polling after max retries
-            console.warn('Messaging system not available after retries, using polling only');
-            setInterval(() => {
-              if (currentTab === 'inbox') {
-                loadThreads();
-              }
-            }, 30000); // Poll every 30 seconds
+            // Fall back to polling
+            showConnectionStatus('polling');
+            startPollingFallback();
+            return false;
           }
         };
         
-        // Start setup attempt
-        trySetup();
+        await trySetup();
       }
+
+      function setupRealtimeListeners() {
+        // Listen for new messages - reload threads when received
+        window.addEventListener('messaging:connection', (event) => {
+          const { status } = event.detail;
+          if (status === 'online' && currentTab === 'inbox') {
+            // Refresh threads when connection is established
+            loadThreads();
+          }
+        });
+
+        // Get current user and listen for conversation updates
+        fetch('/api/auth/me', { credentials: 'include' })
+          .then(response => response.json())
+          .then(data => {
+            const user = data.user;
+            if (user && user.id) {
+              // Listen to user's conversations for real-time updates
+              window.messagingSystem.listenToUserConversations(
+                user.id,
+                user.type || 'customer',
+                (conversations) => {
+                  // Update threads array with new data
+                  if (currentTab === 'inbox') {
+                    threads = conversations || [];
+                    renderThreads();
+                    updateCounts();
+                  }
+                }
+              );
+
+              // Listen for unread count updates
+              window.messagingSystem.listenToUnreadCount(
+                user.id,
+                user.type || 'customer',
+                (count) => {
+                  updateInboxBadge(count);
+                }
+              );
+            }
+          })
+          .catch(error => {
+            console.error('Error getting user for real-time updates:', error);
+          });
+
+        // WebSocket connection event handlers
+        if (window.messagingSystem.socket) {
+          window.messagingSystem.socket.on('connect', () => {
+            showConnectionStatus('connected');
+            
+            // Show success toast
+            if (typeof EFToast !== 'undefined') {
+              EFToast.success('Real-time messaging reconnected!', { duration: 3000 });
+            }
+            
+            // Refresh messages
+            loadThreads();
+          });
+
+          window.messagingSystem.socket.on('disconnect', () => {
+            showConnectionStatus('polling');
+            
+            if (typeof EFToast !== 'undefined') {
+              EFToast.warning('Connection lost. Falling back to 10-second updates.', { duration: 5000 });
+            }
+            
+            startPollingFallback();
+          });
+        }
+      }
+
+      function startPollingFallback() {
+        // Poll every 10 seconds instead of 30
+        const pollInterval = 10000; // 10 seconds
+        
+        const pollMessages = async () => {
+          if (window.messagingSystem && window.messagingSystem.isConnected) {
+            // WebSocket reconnected, stop polling
+            if (window.messagingPollTimer) {
+              clearInterval(window.messagingPollTimer);
+              window.messagingPollTimer = null;
+            }
+            showConnectionStatus('connected');
+            return;
+          }
+          
+          if (currentTab === 'inbox') {
+            await loadThreads();
+          }
+        };
+        
+        // Clear existing timer if any
+        if (window.messagingPollTimer) {
+          clearInterval(window.messagingPollTimer);
+        }
+        
+        const pollTimer = setInterval(pollMessages, pollInterval);
+        
+        // Store timer for cleanup
+        window.messagingPollTimer = pollTimer;
+      }
+
+      function showConnectionStatus(status, message = '') {
+        const statusEl = document.getElementById('connection-status');
+        const textEl = statusEl?.querySelector('.connection-text');
+        const reconnectBtn = document.getElementById('manual-reconnect-btn');
+        
+        if (!statusEl) return;
+        
+        // Remove all status classes
+        statusEl.classList.remove('connected', 'connecting', 'polling', 'error');
+        
+        // Add current status class
+        statusEl.classList.add(status);
+        statusEl.style.display = 'flex';
+        
+        const statusMessages = {
+          connected: '🟢 Connected - Real-time updates active',
+          connecting: `🟡 Connecting... ${message}`,
+          polling: '🔴 Connection Lost - Using 10-second updates',
+          error: '🔴 Connection Error - Click Reconnect to retry'
+        };
+        
+        if (textEl) {
+          textEl.textContent = statusMessages[status] || status;
+        }
+        
+        // Show reconnect button for polling and error states
+        if (reconnectBtn) {
+          reconnectBtn.style.display = (status === 'polling' || status === 'error') ? 'inline-block' : 'none';
+        }
+        
+        // Auto-hide after 5 seconds if connected
+        if (status === 'connected') {
+          setTimeout(() => {
+            statusEl.style.display = 'none';
+          }, 5000);
+        }
+      }
+
+      // Manual reconnect handler - attach once DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('manual-reconnect-btn')?.addEventListener('click', async () => {
+          showConnectionStatus('connecting', 'Manual retry');
+          
+          // Stop polling
+          if (window.messagingPollTimer) {
+            clearInterval(window.messagingPollTimer);
+            window.messagingPollTimer = null;
+          }
+          
+          // Retry WebSocket connection
+          await setupRealtimeUpdates();
+        });
+      });
 
       function updateInboxBadge(count) {
         const badge = document.getElementById('inboxCount');
