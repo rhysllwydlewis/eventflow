@@ -1457,3 +1457,70 @@ html {
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
+
+/* ============================================
+   CONNECTION STATUS INDICATOR
+   ============================================ */
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.connection-status.connected .connection-dot {
+  background: #10B981;
+}
+
+.connection-status.connecting .connection-dot {
+  background: #F59E0B;
+}
+
+.connection-status.polling .connection-dot {
+  background: #EF4444;
+  animation: none;
+}
+
+.connection-status.error .connection-dot {
+  background: #DC2626;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.connection-reconnect-btn {
+  background: transparent;
+  border: 1px solid #D1D5DB;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.connection-reconnect-btn:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+}
