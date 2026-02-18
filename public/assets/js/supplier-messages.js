@@ -1179,6 +1179,9 @@ async function init() {
   const allConversations = [];
   let loadedCount = 0;
 
+  // Setup search and filter handlers first (they'll use closure to access allConversations)
+  setupSearchAndFilterSupplier(() => allConversations, supplierProfile, user);
+
   try {
     suppliers.forEach(supplier => {
       messagingSystem.listenToUserConversations(supplier.id, 'supplier', conversations => {
@@ -1212,9 +1215,6 @@ async function init() {
         updateUnreadBadge(unreadCount);
       });
     });
-    
-    // Setup search and filter handlers
-    setupSearchAndFilterSupplier(allConversations, supplierProfile, user);
   } catch (error) {
     console.error('Error listening to conversations:', error);
     const container = document.getElementById('threads-sup');
@@ -1231,12 +1231,12 @@ async function init() {
 }
 
 // Setup search and filter event handlers for supplier
-function setupSearchAndFilterSupplier(allConversations, supplierProfile, user) {
+function setupSearchAndFilterSupplier(getConversations, supplierProfile, user) {
   // Search handler
   const searchInput = document.getElementById('widget-search-input-supplier');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      applyFiltersSupplier(allConversations, supplierProfile, user);
+      applyFiltersSupplier(getConversations(), supplierProfile, user);
     });
   }
 
@@ -1244,7 +1244,7 @@ function setupSearchAndFilterSupplier(allConversations, supplierProfile, user) {
   const filterSelect = document.getElementById('widget-filter-select-supplier');
   if (filterSelect) {
     filterSelect.addEventListener('change', (e) => {
-      applyFiltersSupplier(allConversations, supplierProfile, user);
+      applyFiltersSupplier(getConversations(), supplierProfile, user);
     });
   }
 }

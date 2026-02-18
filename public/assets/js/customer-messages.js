@@ -1166,6 +1166,9 @@ async function init() {
   // Store all conversations for filtering
   let allConversations = [];
 
+  // Setup search and filter handlers first (they'll use closure to access allConversations)
+  setupSearchAndFilter(() => allConversations, user);
+
   // Listen to conversations for this customer
   try {
     messagingSystem.listenToUserConversations(user.id, 'customer', conversations => {
@@ -1200,18 +1203,15 @@ async function init() {
       });
     }
   }
-
-  // Setup search and filter handlers
-  setupSearchAndFilter(allConversations, user);
 }
 
 // Setup search and filter event handlers
-function setupSearchAndFilter(allConversations, user) {
+function setupSearchAndFilter(getConversations, user) {
   // Search handler
   const searchInput = document.getElementById('widget-search-input');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      applyFilters(allConversations, user);
+      applyFilters(getConversations(), user);
     });
   }
 
@@ -1219,7 +1219,7 @@ function setupSearchAndFilter(allConversations, user) {
   const filterSelect = document.getElementById('widget-filter-select');
   if (filterSelect) {
     filterSelect.addEventListener('change', (e) => {
-      applyFilters(allConversations, user);
+      applyFilters(getConversations(), user);
     });
   }
 }
