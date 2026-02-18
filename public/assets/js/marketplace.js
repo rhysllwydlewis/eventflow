@@ -632,7 +632,9 @@
       }
 
       const csrfToken = await fetchCsrfToken();
-      const threadRes = await fetch('/api/v1/threads/start', {
+      
+      // Try v3 API first
+      let threadRes = await fetch('/api/v3/messenger/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -640,20 +642,51 @@
         },
         credentials: 'include',
         body: JSON.stringify({
-          supplierId: sellerSupplierId,
           recipientId: sellerUserId,
-          marketplaceListingId: listing.id,
-          marketplaceListingTitle: listingTitle,
-          message,
+          context: {
+            type: 'listing',
+            referenceId: listing.id,
+            referenceTitle: listingTitle,
+          },
+          initialMessage: message,
         }),
       });
 
-      if (!threadRes.ok) {
-        const data = await threadRes.json().catch(() => ({}));
-        throw new Error(data.error || data.message || 'Failed to start conversation');
-      }
+      let conversationId = null;
+      let isV3 = false;
 
-      const { thread } = await threadRes.json();
+      if (threadRes.ok) {
+        // v3 API succeeded
+        const data = await threadRes.json();
+        conversationId = data.conversation?._id || data.conversation?.id;
+        isV3 = true;
+      } else {
+        // Fall back to v1 API for backward compatibility
+        threadRes = await fetch('/api/v1/threads/start', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            supplierId: sellerSupplierId,
+            recipientId: sellerUserId,
+            marketplaceListingId: listing.id,
+            marketplaceListingTitle: listingTitle,
+            message,
+          }),
+        });
+
+        if (!threadRes.ok) {
+          const data = await threadRes.json().catch(() => ({}));
+          throw new Error(data.error || data.message || 'Failed to start conversation');
+        }
+
+        const { thread } = await threadRes.json();
+        conversationId = thread.id;
+        isV3 = false;
+      }
 
       // Show success message instead of redirecting
       statusEl.textContent = '✓ Message sent!';
@@ -663,7 +696,7 @@
       sendBtn.textContent = 'Go to Conversation';
       sendBtn.disabled = false;
       sendBtn.onclick = () => {
-        window.location.href = `/conversation.html?id=${thread.id}`;
+        window.location.href = isV3 ? `/messenger/?conversation=${conversationId}` : `/conversation.html?id=${conversationId}`;
       };
     } catch (error) {
       console.error('Error messaging seller:', error);

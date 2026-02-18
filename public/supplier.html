@@ -177,6 +177,12 @@
           <button class="btn btn-primary" id="btn-enquiry" aria-label="Send enquiry to supplier">
             📧 Send Enquiry
           </button>
+          <button class="btn btn-secondary" id="btn-message-supplier"
+                  data-messenger-action="new-conversation"
+                  data-context-type="supplier"
+                  aria-label="Message this supplier">
+            💬 Message
+          </button>
           <a class="btn btn-secondary" id="btn-call" href="#" aria-label="Call supplier">
             📞 Call Now
           </a>
@@ -229,4 +235,7 @@
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
 <script src="/assets/js/jadeassist-init.v2.js" defer></script>
+
+<!-- Messenger Trigger -->
+<script src="/messenger/js/MessengerTrigger.js" defer></script>
 </body></html>

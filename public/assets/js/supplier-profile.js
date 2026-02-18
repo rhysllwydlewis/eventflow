@@ -235,11 +235,33 @@
     const btnEnquiry = document.getElementById('btn-enquiry');
     if (btnEnquiry) {
       btnEnquiry.onclick = () => {
-        // TODO: Open enquiry modal
-        if (window.EventFlowNotifications) {
-          window.EventFlowNotifications.info('Enquiry form coming soon!');
+        const recipientId = supplier.ownerUserId;
+        if (!recipientId) {
+          if (window.EventFlowNotifications) {
+            window.EventFlowNotifications.info('This supplier cannot receive messages at this time.');
+          }
+          return;
         }
+        const params = new URLSearchParams({
+          new: 'true',
+          recipientId: recipientId,
+          contextType: 'supplier',
+          contextId: supplier.id,
+          contextTitle: supplier.name,
+          prefill: `Hi ${supplier.name}! I'd like to enquire about your services.`
+        });
+        window.location.href = `/messenger/?${params.toString()}`;
       };
+    }
+
+    // Setup message button
+    const btnMessage = document.getElementById('btn-message-supplier');
+    if (btnMessage && supplier.ownerUserId) {
+      btnMessage.setAttribute('data-recipient-id', supplier.ownerUserId);
+      btnMessage.setAttribute('data-context-id', supplier.id);
+      btnMessage.setAttribute('data-context-title', supplier.name);
+    } else if (btnMessage) {
+      btnMessage.style.display = 'none'; // Hide if no owner user ID
     }
 
     const btnCall = document.getElementById('btn-call');
