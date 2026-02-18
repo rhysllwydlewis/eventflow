@@ -48,19 +48,30 @@
   // ==========================================
 
   async function apiFetch(url, options = {}) {
+    // Check if CSRF handler is available
+    if (!window.csrfHandler) {
+      console.error('CSRF handler not initialized');
+      throw new Error('CSRF handler not available');
+    }
+
     try {
-      const response = await fetch(url, {
+      // Add Content-Type header if not present
+      const fetchOptions = {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          ...options.headers,
+          ...(options.headers || {}),
         },
-        credentials: 'include',
-      });
+      };
+
+      // Use CSRF handler's fetch method (includes automatic token handling and retry)
+      const response = await window.csrfHandler.fetch(url, fetchOptions);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(error.error || error.message || 'Request failed');
+        const error = await response.json().catch(() => ({ 
+          error: `HTTP ${response.status}` 
+        }));
+        throw new Error(error.error || error.message || `Request failed: ${response.status}`);
       }
 
       return await response.json();
@@ -70,24 +81,43 @@
     }
   }
 
-  async function loadFolders() {
-    try {
-      state.isLoading = true;
-      renderFolderList();
-
-      const data = await apiFetch(API_BASE);
-      
-      if (data.success && Array.isArray(data.folders)) {
-        state.folders = data.folders;
-        state.systemFolders = data.folders.filter(f => f.isSystemFolder);
-        state.customFolders = data.folders.filter(f => !f.isSystemFolder);
+  async function loadFolders(retries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        state.isLoading = true;
         renderFolderList();
+
+        // Ensure CSRF token before API call
+        if (window.csrfHandler) {
+          await window.csrfHandler.ensureToken();
+        }
+
+        const data = await apiFetch(API_BASE);
+        
+        if (data.success && Array.isArray(data.folders)) {
+          state.folders = data.folders;
+          state.systemFolders = data.folders.filter(f => f.isSystemFolder);
+          state.customFolders = data.folders.filter(f => !f.isSystemFolder);
+          renderFolderList();
+        }
+        
+        // Success - break out of retry loop
+        state.isLoading = false;
+        return;
+      } catch (error) {
+        if (attempt < retries) {
+          // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay * attempt));
+        } else {
+          // All retries exhausted
+          showError('Could not load folders. Please refresh the page.');
+        }
+      } finally {
+        if (attempt === retries) {
+          state.isLoading = false;
+          renderFolderList();
+        }
       }
-    } catch (error) {
-      showError('Failed to load folders: ' + error.message);
-    } finally {
-      state.isLoading = false;
-      renderFolderList();
     }
   }
 
@@ -173,18 +203,31 @@
     }
   }
 
-  async function initializeSystemFolders() {
-    try {
-      const data = await apiFetch(`${API_BASE}/initialize`, {
-        method: 'POST',
-      });
+  async function initializeSystemFolders(retries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        // Ensure CSRF token before API call
+        if (window.csrfHandler) {
+          await window.csrfHandler.ensureToken();
+        }
 
-      if (data.success) {
-        await loadFolders();
-        showSuccess('System folders initialized');
+        const data = await apiFetch(`${API_BASE}/initialize`, {
+          method: 'POST',
+        });
+
+        if (data.success) {
+          await loadFolders();
+          showSuccess('System folders initialized');
+          return;
+        }
+      } catch (error) {
+        if (attempt < retries) {
+          // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay * attempt));
+        } else {
+          console.error('Failed to initialize system folders after all retries:', error);
+        }
       }
-    } catch (error) {
-      console.error('Failed to initialize system folders:', error);
     }
   }
 

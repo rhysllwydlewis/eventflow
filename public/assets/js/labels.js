@@ -46,19 +46,30 @@
   // ==========================================
 
   async function apiFetch(url, options = {}) {
+    // Check if CSRF handler is available
+    if (!window.csrfHandler) {
+      console.error('CSRF handler not initialized');
+      throw new Error('CSRF handler not available');
+    }
+
     try {
-      const response = await fetch(url, {
+      // Add Content-Type header if not present
+      const fetchOptions = {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          ...options.headers,
+          ...(options.headers || {}),
         },
-        credentials: 'include',
-      });
+      };
+
+      // Use CSRF handler's fetch method (includes automatic token handling and retry)
+      const response = await window.csrfHandler.fetch(url, fetchOptions);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(error.error || error.message || 'Request failed');
+        const error = await response.json().catch(() => ({ 
+          error: `HTTP ${response.status}` 
+        }));
+        throw new Error(error.error || error.message || `Request failed: ${response.status}`);
       }
 
       return await response.json();
@@ -68,23 +79,42 @@
     }
   }
 
-  async function loadLabels() {
-    try {
-      state.isLoading = true;
-      renderLabelList();
-
-      const data = await apiFetch(API_BASE);
-      
-      if (data.success && Array.isArray(data.labels)) {
-        state.labels = data.labels;
+  async function loadLabels(retries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        state.isLoading = true;
         renderLabelList();
-        renderLabelPicker();
+
+        // Ensure CSRF token before API call
+        if (window.csrfHandler) {
+          await window.csrfHandler.ensureToken();
+        }
+
+        const data = await apiFetch(API_BASE);
+        
+        if (data.success && Array.isArray(data.labels)) {
+          state.labels = data.labels;
+          renderLabelList();
+          renderLabelPicker();
+        }
+        
+        // Success - break out of retry loop
+        state.isLoading = false;
+        return;
+      } catch (error) {
+        if (attempt < retries) {
+          // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay * attempt));
+        } else {
+          // All retries exhausted
+          showError('Could not load labels. Please refresh the page.');
+        }
+      } finally {
+        if (attempt === retries) {
+          state.isLoading = false;
+          renderLabelList();
+        }
       }
-    } catch (error) {
-      showError('Failed to load labels: ' + error.message);
-    } finally {
-      state.isLoading = false;
-      renderLabelList();
     }
   }
 
