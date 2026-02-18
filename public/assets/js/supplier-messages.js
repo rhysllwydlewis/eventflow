@@ -3,7 +3,7 @@
  * Handles displaying conversations for suppliers
  */
 
-import messagingSystem, { MessagingManager } from './messaging.js';
+import messagingSystem, { MessagingManager, messagingManager } from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 import {
   getLeadQualityBadge,
@@ -540,6 +540,17 @@ function openConversation(conversationId) {
 
     // Remove modal from DOM
     modal.remove();
+
+    // Refresh conversation list after closing (Issue #10)
+    // This ensures unread counts and last message previews are up-to-date
+    // Use MessagingManager which has the refreshUnreadCount method
+    if (typeof window.messagingManager !== 'undefined' && messagingManager.refreshUnreadCount) {
+      try {
+        messagingManager.refreshUnreadCount();
+      } catch (error) {
+        console.error('Error refreshing unread count after modal close:', error);
+      }
+    }
 
     // Restore focus to the element that opened the modal
     if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
