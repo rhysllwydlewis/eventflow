@@ -138,12 +138,13 @@
       });
 
       // Listen for real-time notifications
+      // v1 WebSocket server emits 'notification'
       state.socket.on('notification', notification => {
         handleRealtimeNotification(notification);
       });
 
-      // NEW: Listen for WebSocket notification:new events
-      state.socket.on('notification:new', notification => {
+      // v2 WebSocket server emits 'notification:received'
+      state.socket.on('notification:received', notification => {
         handleRealtimeNotification(notification);
       });
 

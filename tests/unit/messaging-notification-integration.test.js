@@ -145,8 +145,10 @@ describe('Messaging-Notification Integration', () => {
       expect(notificationsJs).toContain('function addMessageNotification(notification)');
     });
 
-    it('listens for WebSocket notification:new events', () => {
-      expect(notificationsJs).toContain("state.socket.on('notification:new'");
+    it('listens for WebSocket notification events', () => {
+      // Should listen for both v1 (notification) and v2 (notification:received) events
+      expect(notificationsJs).toContain("state.socket.on('notification'");
+      expect(notificationsJs).toContain("state.socket.on('notification:received'");
     });
 
     it('handles both threadId and conversationId in mark-as-read', () => {

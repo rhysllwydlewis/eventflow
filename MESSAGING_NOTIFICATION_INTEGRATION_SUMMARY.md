@@ -44,7 +44,7 @@ async notifyNewMessage(recipientUserId, senderName, threadId, messagePreview = n
   - Added notification creation for each recipient after successful message send
   - Truncates message preview to 100 characters
   - Handles notification errors gracefully without failing message send
-  - Emits WebSocket `notification:new` events for real-time delivery
+  - WebSocket notifications handled automatically by NotificationService
   
 ```javascript
 // Create notifications for recipients
@@ -75,7 +75,7 @@ if (notificationService && recipientIds && recipientIds.length > 0) {
 }
 ```
 
-**Important Note:** The `NotificationService.create()` method automatically emits WebSocket notifications when it creates a notification in the database. This is handled by the service's `websocketServer` instance (initialized as `wsServerV2`), so there's **no need** to manually emit `notification:new` events in the messaging endpoint. This prevents duplicate notifications and maintains the single responsibility principle.
+**Important Note:** The `NotificationService.create()` method automatically emits WebSocket notifications when it creates a notification in the database. This is handled by the service's `websocketServer` instance (initialized as `wsServerV2`). The v2 WebSocket server emits `notification:received` events, while v1 emits `notification` events. The frontend listens for both to ensure compatibility. This prevents duplicate notifications and maintains the single responsibility principle.
 
 ### Frontend Changes
 
@@ -130,7 +130,7 @@ triggerMessageNotification(data) {
 **New event listeners:**
 1. `messaging:notification` - Handles new message notifications from messaging system
 2. `messaging:marked-read` - Marks notifications as read when messages are read
-3. `notification:new` - WebSocket event for real-time notifications
+3. WebSocket events - Listens for both v1 (`notification`) and v2 (`notification:received`) events
 
 **New `addMessageNotification()` helper:**
 - Generates unique IDs for notifications
