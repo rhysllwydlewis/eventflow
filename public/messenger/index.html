@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="">
+  <title>Messenger | EventFlow</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.2.1">
+  <link rel="stylesheet" href="/assets/css/design-system.css?v=18.2.1">
+  <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.2.1">
+  <link rel="stylesheet" href="/assets/css/navbar.css?v=18.2.1">
+  <link rel="stylesheet" href="/assets/css/components.css?v=18.2.1">
+  <link rel="stylesheet" href="/messenger/css/messenger.css?v=1.0.0">
+  <link rel="stylesheet" href="/messenger/css/messenger-animations.css?v=1.0.0">
+  
+  <!-- Socket.IO (loaded with defer for performance) -->
+  <script src="/socket.io/socket.io.js" defer></script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="ef-header" role="navigation" aria-label="Main navigation">
+    <div class="container">
+      <div class="ef-header__content">
+        <!-- Logo -->
+        <a href="/" class="ef-header__logo" aria-label="EventFlow Home">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2L4 9V23L16 30L28 23V9L16 2Z" fill="#0B8073"/>
+            <path d="M16 8L10 11.5V18.5L16 22L22 18.5V11.5L16 8Z" fill="#fff"/>
+          </svg>
+          <span>EventFlow</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <div class="ef-header__nav" id="mainNav">
+          <a href="/dashboard" class="ef-header__link">Dashboard</a>
+          <a href="/messenger/" class="ef-header__link ef-header__link--active">Messages</a>
+          <a href="/notifications.html" class="ef-header__link">
+            <span>Notifications</span>
+            <span class="badge" id="notificationBadge" style="display: none;"></span>
+          </a>
+        </div>
+
+        <!-- Right Actions -->
+        <div class="ef-header__actions">
+          <!-- Notification Bell -->
+          <button class="ef-header__icon-btn" id="notificationButton" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span class="badge" id="headerNotificationBadge" style="display: none;"></span>
+          </button>
+
+          <!-- User Menu -->
+          <div class="ef-header__user" id="userMenu">
+            <button class="ef-header__user-btn" id="userMenuButton" aria-haspopup="true" aria-expanded="false">
+              <div class="ef-header__avatar" id="userAvatar">U</div>
+              <span id="userName">User</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="ef-header__dropdown" id="userDropdown" role="menu" aria-hidden="true">
+              <a href="/settings.html" role="menuitem">Settings</a>
+              <a href="/help.html" role="menuitem">Help</a>
+              <hr>
+              <button id="logoutButton" role="menuitem">Sign Out</button>
+            </div>
+          </div>
+
+          <!-- Mobile Menu Toggle -->
+          <button class="ef-header__mobile-toggle" id="mobileMenuToggle" aria-label="Menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Messenger Container -->
+  <div class="messenger" role="main">
+    <!-- Sidebar - Conversation List -->
+    <aside class="messenger-sidebar" role="complementary" aria-label="Conversations">
+      <!-- Sidebar Header -->
+      <div class="messenger-sidebar__header">
+        <h1 class="messenger-sidebar__title">Messages</h1>
+        <button class="messenger-new-btn" id="newConversationBtn" aria-label="Start new conversation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="messenger-search">
+        <div class="messenger-search__input-wrapper">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input 
+            type="text" 
+            id="conversationSearch" 
+            class="messenger-search__input" 
+            placeholder="Search conversations..."
+            aria-label="Search conversations"
+          >
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="messenger-tabs" role="tablist">
+        <button class="messenger-tab messenger-tab--active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button class="messenger-tab" data-filter="unread" role="tab" aria-selected="false">Unread</button>
+        <button class="messenger-tab" data-filter="pinned" role="tab" aria-selected="false">Pinned</button>
+        <button class="messenger-tab" data-filter="archived" role="tab" aria-selected="false">Archived</button>
+      </div>
+
+      <!-- Conversation List -->
+      <div class="messenger-conversations" id="conversationList" role="list" aria-live="polite">
+        <!-- Loading state -->
+        <div class="messenger-loading" id="conversationsLoading">
+          <div class="messenger-spinner"></div>
+          <p>Loading conversations...</p>
+        </div>
+        
+        <!-- Empty state -->
+        <div class="messenger-empty" id="conversationsEmpty" style="display: none;">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" opacity="0.3">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          <p>No conversations yet</p>
+          <button class="messenger-btn-secondary" id="startConversationBtn">Start a conversation</button>
+        </div>
+
+        <!-- Conversations will be inserted here -->
+      </div>
+    </aside>
+
+    <!-- Main - Conversation View -->
+    <main class="messenger-main" id="messengerMain">
+      <!-- Empty State (no conversation selected) -->
+      <div class="messenger-main-empty" id="mainEmptyState">
+        <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" opacity="0.2">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <h2>Select a conversation</h2>
+        <p>Choose a conversation from the list or start a new one</p>
+      </div>
+
+      <!-- Conversation View (hidden by default) -->
+      <div class="messenger-conversation" id="conversationView" style="display: none;">
+        <!-- Conversation Header -->
+        <header class="messenger-conversation__header">
+          <button class="messenger-back-btn" id="backButton" aria-label="Back to conversations">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          
+          <div class="messenger-conversation__info">
+            <div class="messenger-avatar" id="conversationAvatar">U</div>
+            <div>
+              <h2 class="messenger-conversation__name" id="conversationName">User</h2>
+              <p class="messenger-conversation__status" id="conversationStatus">Offline</p>
+            </div>
+          </div>
+
+          <div class="messenger-conversation__actions">
+            <button class="messenger-icon-btn" id="pinButton" aria-label="Pin conversation" title="Pin">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+            </button>
+            <button class="messenger-icon-btn" id="archiveButton" aria-label="Archive conversation" title="Archive">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </button>
+            <button class="messenger-icon-btn" id="refreshButton" aria-label="Refresh" title="Refresh">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Context Banner (for package/listing conversations) -->
+        <div class="messenger-context" id="contextBanner" style="display: none;">
+          <img src="" alt="" class="messenger-context__image" id="contextImage">
+          <div class="messenger-context__info">
+            <p class="messenger-context__type" id="contextType">Package</p>
+            <h3 class="messenger-context__title" id="contextTitle">Wedding Photography Premium</h3>
+          </div>
+          <a href="#" class="messenger-context__link" id="contextLink" target="_blank">View</a>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="messenger-messages" id="messagesArea" role="log" aria-live="polite" aria-atomic="false">
+          <!-- Loading -->
+          <div class="messenger-messages-loading" id="messagesLoading">
+            <div class="messenger-spinner"></div>
+          </div>
+
+          <!-- Messages will be inserted here -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="messenger-typing" id="typingIndicator" style="display: none;">
+          <span class="messenger-typing__dot"></span>
+          <span class="messenger-typing__dot"></span>
+          <span class="messenger-typing__dot"></span>
+          <span class="messenger-typing__text" id="typingText">User is typing...</span>
+        </div>
+
+        <!-- Message Composer -->
+        <div class="messenger-composer">
+          <button class="messenger-composer__btn" id="attachButton" aria-label="Attach file">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+          </button>
+          
+          <button class="messenger-composer__btn" id="emojiButton" aria-label="Add emoji">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+          </button>
+
+          <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display: none;">
+          
+          <textarea 
+            id="messageInput" 
+            class="messenger-composer__input" 
+            placeholder="Type a message..."
+            rows="1"
+            aria-label="Message input"
+          ></textarea>
+
+          <button class="messenger-send-btn" id="sendButton" aria-label="Send message" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Attachment Preview -->
+        <div class="messenger-attachments" id="attachmentPreview" style="display: none;"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Contact Picker Modal -->
+  <div class="messenger-modal" id="contactPickerModal" role="dialog" aria-modal="true" aria-labelledby="contactPickerTitle" style="display: none;">
+    <div class="messenger-modal__overlay"></div>
+    <div class="messenger-modal__content">
+      <header class="messenger-modal__header">
+        <h2 id="contactPickerTitle">New Conversation</h2>
+        <button class="messenger-modal__close" id="closeContactPicker" aria-label="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+      
+      <div class="messenger-modal__body">
+        <div class="messenger-search">
+          <div class="messenger-search__input-wrapper">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input 
+              type="text" 
+              id="contactSearch" 
+              class="messenger-search__input" 
+              placeholder="Search users..."
+              aria-label="Search users"
+            >
+          </div>
+        </div>
+
+        <div class="messenger-contacts" id="contactList" role="list">
+          <!-- Contacts will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/assets/js/auth-state.js" defer></script>
+  <script src="/assets/js/navbar.js" defer></script>
+  <script src="/messenger/js/MessengerState.js" defer></script>
+  <script src="/messenger/js/MessengerAPI.js" defer></script>
+  <script src="/messenger/js/MessengerSocket.js" defer></script>
+  <script src="/messenger/js/ConversationList.js" defer></script>
+  <script src="/messenger/js/ConversationView.js" defer></script>
+  <script src="/messenger/js/MessageComposer.js" defer></script>
+  <script src="/messenger/js/ContactPicker.js" defer></script>
+  <script src="/messenger/js/NotificationBridge.js" defer></script>
+  <script src="/messenger/js/MessengerApp.js" defer></script>
+</body>
+</html>

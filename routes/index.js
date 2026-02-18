@@ -328,6 +328,14 @@ function mountRoutes(app, deps) {
   }
   app.use('/api/v1/admin', adminConfigRoutes);
   app.use('/api/admin', adminConfigRoutes); // Backward compatibility
+
+  // ===== MESSENGER V3 ROUTES (Gold Standard Messaging System) =====
+  // Unified messenger API - replaces fragmented messaging across v1/v2
+  const messengerRoutes = require('./messenger');
+  if (deps && messengerRoutes.initializeDependencies) {
+    messengerRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/v3/messenger', messengerRoutes);
 }
 
 module.exports = {
