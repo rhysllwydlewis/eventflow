@@ -470,7 +470,7 @@
     </div>
 
     <!-- Connection Status Indicator -->
-    <div id="connection-status" class="connection-status" style="display: none;">
+    <div id="connection-status" class="connection-status" style="display: none;" role="status" aria-live="polite" aria-atomic="true">
       <div class="connection-indicator">
         <span class="connection-dot"></span>
         <span class="connection-text" title="Real-time messaging is active. Your messages will sync instantly.">Connected</span>
@@ -1545,9 +1545,12 @@
                   </div>
                   <div class="form-group">
                     <label for="messageText">Message *</label>
-                    <textarea id="messageText" name="message" rows="6" placeholder="Type your message here..." required aria-required="true" aria-label="Message content" maxlength="10000"></textarea>
+                    <textarea id="messageText" name="message" rows="6" placeholder="Type your message here..." required aria-required="true" aria-label="Message content" aria-describedby="char-limit-text char-counter" maxlength="10000"></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                      <small id="char-limit-text" style="color: #6b7280; font-size: 12px;">Maximum 10,000 characters</small>
+                      <small id="char-counter" aria-live="polite" style="color: #6b7280; font-size: 12px;">10,000 remaining</small>
+                    </div>
                     <div id="draft-indicator" class="draft-indicator" aria-live="polite"></div>
-                    <small style="color: #6b7280; font-size: 12px;">Maximum 10,000 characters</small>
                   </div>
                 </div>
                 <div class="form-actions">
@@ -1757,6 +1760,24 @@
           const messageTextarea = document.getElementById('messageText');
           const subjectInput = document.getElementById('messageSubject');
           const supplierSelect = document.getElementById('supplierSelect');
+          const charCounter = document.getElementById('char-counter');
+          
+          // Character counter
+          function updateCharCounter() {
+            const remaining = 10000 - messageTextarea.value.length;
+            charCounter.textContent = `${remaining.toLocaleString()} remaining`;
+            
+            // Change color when getting close to limit
+            if (remaining < 100) {
+              charCounter.style.color = '#dc2626'; // Red
+            } else if (remaining < 500) {
+              charCounter.style.color = '#f59e0b'; // Orange
+            } else {
+              charCounter.style.color = '#6b7280'; // Gray
+            }
+          }
+          
+          messageTextarea.addEventListener('input', updateCharCounter);
           
           // Restore draft when supplier is selected
           supplierSelect.addEventListener('change', () => {
