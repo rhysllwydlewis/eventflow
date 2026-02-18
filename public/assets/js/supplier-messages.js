@@ -242,8 +242,24 @@ function formatMessagePreview(
 
 // Render conversations with quality badges, sorting, and filtering
 function renderConversations(conversations, supplierProfile = null, currentUser = null) {
+  // Debug logging for troubleshooting empty conversation lists
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDevelopment) {
+    console.group('🔍 Conversation List Debug (Supplier)');
+    console.log('Container element:', document.getElementById('threads-sup'));
+    console.log('Conversations to render:', conversations?.length || 0);
+    console.log('First conversation sample:', conversations?.[0]);
+    console.log('CSS loaded:', !!document.querySelector('link[href*="messaging-glass-enhancements"]'));
+    console.groupEnd();
+  }
+
   const container = document.getElementById('threads-sup');
   if (!container) {
+    console.error('CRITICAL: Conversations container "threads-sup" not found in DOM');
+    logMessageState('RENDER_ERROR', { 
+      reason: 'container_not_found',
+      attempted_selector: 'threads-sup'
+    });
     return;
   }
 
@@ -375,6 +391,16 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
 
   html += '</div>';
   container.innerHTML = html;
+
+  // Log success for debugging
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDevelopment) {
+    console.log('✅ Conversations rendered successfully:', conversations.length);
+  }
+  logMessageState('RENDER_SUCCESS', { 
+    conversationCount: conversations.length,
+    containerFound: true 
+  });
 
   // Add filter handler
   const filterSelect = document.getElementById('quality-filter');
@@ -596,6 +622,17 @@ function openConversation(conversationId) {
 
   const renderMessages = messages => {
     try {
+      // Debug logging for troubleshooting message rendering
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isDevelopment) {
+        console.group('🔍 Message Rendering Debug (Supplier)');
+        console.log('Container element:', document.getElementById('conversationMessages'));
+        console.log('Messages to render:', messages?.length || 0);
+        console.log('First message sample:', messages?.[0]);
+        console.log('CSS loaded:', !!document.querySelector('link[href*="messaging-glass-enhancements"]'));
+        console.groupEnd();
+      }
+
       const container = document.getElementById('conversationMessages');
       if (!container) {
         console.warn('conversationMessages container not found');

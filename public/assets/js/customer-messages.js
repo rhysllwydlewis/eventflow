@@ -206,8 +206,24 @@ function formatMessagePreview(
 
 // Render conversations
 function renderConversations(conversations, currentUser) {
+  // Debug logging for troubleshooting empty conversation lists
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDevelopment) {
+    console.group('🔍 Conversation List Debug (Customer)');
+    console.log('Container element:', document.getElementById('threads-cust'));
+    console.log('Conversations to render:', conversations?.length || 0);
+    console.log('First conversation sample:', conversations?.[0]);
+    console.log('CSS loaded:', !!document.querySelector('link[href*="messaging-glass-enhancements"]'));
+    console.groupEnd();
+  }
+
   const container = document.getElementById('threads-cust');
   if (!container) {
+    console.error('CRITICAL: Conversations container "threads-cust" not found in DOM');
+    logMessageState('RENDER_ERROR', { 
+      reason: 'container_not_found',
+      attempted_selector: 'threads-cust'
+    });
     return;
   }
 
@@ -393,6 +409,16 @@ function renderConversations(conversations, currentUser) {
   `;
 
   container.innerHTML = html;
+
+  // Log success for debugging
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDevelopment) {
+    console.log('✅ Conversations rendered successfully:', conversations.length);
+  }
+  logMessageState('RENDER_SUCCESS', { 
+    conversationCount: conversations.length,
+    containerFound: true 
+  });
 
   // Add shimmer animation for avatars
   const style = document.createElement('style');
@@ -627,6 +653,17 @@ function openConversation(conversationId) {
 
   const renderMessages = messages => {
     try {
+      // Debug logging for troubleshooting message rendering
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isDevelopment) {
+        console.group('🔍 Message Rendering Debug (Customer)');
+        console.log('Container element:', document.getElementById('conversationMessages'));
+        console.log('Messages to render:', messages?.length || 0);
+        console.log('First message sample:', messages?.[0]);
+        console.log('CSS loaded:', !!document.querySelector('link[href*="messaging-glass-enhancements"]'));
+        console.groupEnd();
+      }
+
       const container = document.getElementById('conversationMessages');
       if (!container) {
         console.warn('conversationMessages container not found');
