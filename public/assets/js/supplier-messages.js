@@ -150,6 +150,32 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Format timestamp to relative time (e.g., "5m ago", "2h ago", "3d ago")
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return '';
+  
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  // Format as date if older than a week
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// Truncate text to maximum length
+function truncate(text, maxLength) {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
 // Sanitize and validate attachment URL
 function sanitizeAttachmentUrl(url) {
   if (!url || typeof url !== 'string') {
@@ -324,11 +350,17 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
       MESSAGE_PREVIEW_MAX_LENGTH
     );
 
+    // Format timestamp using relative time
     const lastMessageTime = conversation.lastMessageTime
-      ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
+      ? formatTimeAgo(conversation.lastMessageTime)
       : '';
+    
     const unreadCount = conversation.unreadCount || 0;
     const isUnread = unreadCount > 0;
+    
+    // Get attachment count
+    const attachmentCount = conversation.attachmentCount || 0;
+    
     // Use new quality badge
     const leadQualityBadge = getLeadQualityBadge(conversation.qualityScore);
 
@@ -340,9 +372,23 @@ function renderConversations(conversations, supplierProfile = null, currentUser 
             ${leadQualityBadge}
             ${isUnread && unreadCount > 0 ? `<span class="glass-badge" style="display:inline-flex;align-items:center;background:rgba(11, 128, 115, 0.15);backdrop-filter:blur(4px);border:1px solid rgba(11, 128, 115, 0.25);border-radius:9999px;padding:0.25rem 0.5rem;font-size:0.75rem;font-weight:600;color:#0B8073;">${unreadCount}</span>` : ''}
           </div>
-          <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
+          <span class="small" style="color:#9ca3af;white-space:nowrap;">${lastMessageTime}</span>
         </div>
         <p class="small" style="margin:0;color:${isUnread ? '#1f2937' : '#6b7280'};font-weight:${isUnread ? '500' : '400'};">${escapeHtml(lastMessage)}</p>
+        ${
+          attachmentCount > 0
+            ? `
+          <div style="margin-top:0.25rem;">
+            <span class="small" style="display:inline-flex;align-items:center;gap:0.25rem;color:#9ca3af;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+              </svg>
+              ${attachmentCount} ${attachmentCount === 1 ? 'file' : 'files'}
+            </span>
+          </div>
+        `
+            : ''
+        }
       </div>
     `;
   });
@@ -1157,7 +1203,7 @@ async function init() {
             return timeB - timeA;
           });
 
-          renderConversations(allConversations, supplierProfile, user);
+          applyFiltersSupplier(allConversations, supplierProfile, user);
         }
       });
 
@@ -1166,6 +1212,9 @@ async function init() {
         updateUnreadBadge(unreadCount);
       });
     });
+    
+    // Setup search and filter handlers
+    setupSearchAndFilterSupplier(allConversations, supplierProfile, user);
   } catch (error) {
     console.error('Error listening to conversations:', error);
     const container = document.getElementById('threads-sup');
@@ -1179,6 +1228,55 @@ async function init() {
       });
     }
   }
+}
+
+// Setup search and filter event handlers for supplier
+function setupSearchAndFilterSupplier(allConversations, supplierProfile, user) {
+  // Search handler
+  const searchInput = document.getElementById('widget-search-input-supplier');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      applyFiltersSupplier(allConversations, supplierProfile, user);
+    });
+  }
+
+  // Filter handler
+  const filterSelect = document.getElementById('widget-filter-select-supplier');
+  if (filterSelect) {
+    filterSelect.addEventListener('change', (e) => {
+      applyFiltersSupplier(allConversations, supplierProfile, user);
+    });
+  }
+}
+
+// Apply search and filter to conversations for supplier
+function applyFiltersSupplier(conversations, supplierProfile, user) {
+  const searchInput = document.getElementById('widget-search-input-supplier');
+  const filterSelect = document.getElementById('widget-filter-select-supplier');
+  
+  const searchQuery = searchInput?.value.toLowerCase() || '';
+  const filterValue = filterSelect?.value || 'all';
+  
+  let filtered = [...conversations];
+  
+  // Apply search filter
+  if (searchQuery) {
+    filtered = filtered.filter(conv => {
+      const name = (conv.customerName || '').toLowerCase();
+      const lastMessage = (conv.lastMessage || conv.lastMessageText || '').toLowerCase();
+      return name.includes(searchQuery) || lastMessage.includes(searchQuery);
+    });
+  }
+  
+  // Apply status filter
+  if (filterValue === 'unread') {
+    filtered = filtered.filter(conv => (conv.unreadCount || 0) > 0);
+  } else if (filterValue === 'starred') {
+    filtered = filtered.filter(conv => conv.isStarred === true);
+  }
+  
+  // Render filtered conversations
+  renderConversations(filtered, supplierProfile, user);
 }
 
 // Update unread badge

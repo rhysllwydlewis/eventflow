@@ -1655,31 +1655,62 @@
                   >
                 </div>
               </div>
-              <button
-                id="export-enquiries-btn"
-                class="glass-btn"
-                style="
-                  padding: 0.5rem 1rem;
-                  font-size: 0.875rem;
-                  display: flex;
-                  align-items: center;
-                  gap: 0.5rem;
-                "
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
+              
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; flex: 1;">
+                <!-- Mini search bar -->
+                <input 
+                  type="search" 
+                  id="widget-search-input-supplier"
+                  placeholder="Search conversations..." 
+                  style="
+                    flex: 1;
+                    min-width: 150px;
+                    padding: 6px 12px;
+                    border: 1px solid #E5E7EB;
+                    border-radius: 8px;
+                    font-size: 14px;
+                  "
+                />
+                
+                <!-- Filter dropdown -->
+                <select id="widget-filter-select-supplier" style="
+                  padding: 6px 12px;
+                  border: 1px solid #E5E7EB;
+                  border-radius: 8px;
+                  font-size: 14px;
+                  background: white;
+                ">
+                  <option value="all">All</option>
+                  <option value="unread">Unread</option>
+                  <option value="starred">Starred</option>
+                </select>
+                
+                <button
+                  id="export-enquiries-btn"
+                  class="glass-btn"
+                  style="
+                    padding: 0.5rem 1rem;
+                    font-size: 0.875rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                  "
                 >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <span>Export CSV</span>
-              </button>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>Export CSV</span>
+                </button>
+              </div>
             </div>
           </div>
           <div id="threads-sup" class="section">
