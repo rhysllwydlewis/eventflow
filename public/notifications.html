@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes'>
+  <meta name='theme-color' content='#0B8073'>
+  <title>Notifications — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" />
+  <link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'>
+  <link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'>
+  <link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'>
+  <link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'>
+  <link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.0.0'>
+  <link rel='icon' href='/favicon.svg'>
+  <style>
+    /* Page-specific notification list styles */
+    .notifications-page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .notifications-header {
+      margin-bottom: 2rem;
+    }
+
+    .notifications-header h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: var(--ef-text-dark);
+    }
+
+    .notifications-subtitle {
+      color: var(--ef-text-gray);
+      font-size: 0.95rem;
+    }
+
+    .notifications-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: var(--ef-bg-gray);
+      border-radius: var(--ef-radius);
+      margin-bottom: 1.5rem;
+    }
+
+    .notifications-filters {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .notifications-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ef-text-gray);
+      background: white;
+      border: 1px solid var(--ef-border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      background: rgba(11, 128, 115, 0.05);
+      border-color: var(--ef-primary);
+      color: var(--ef-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--ef-primary);
+      border-color: var(--ef-primary);
+      color: white;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid;
+    }
+
+    .action-btn-primary {
+      color: var(--ef-primary);
+      background: white;
+      border-color: var(--ef-primary);
+    }
+
+    .action-btn-primary:hover {
+      background: rgba(11, 128, 115, 0.1);
+    }
+
+    .action-btn-danger {
+      color: #ef4444;
+      background: white;
+      border-color: #ef4444;
+    }
+
+    .action-btn-danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .notifications-full-list {
+      background: white;
+      border: 1px solid var(--ef-border);
+      border-radius: var(--ef-radius);
+      overflow: hidden;
+    }
+
+    /* Full-page notification items - reuse dropdown styles but with some modifications */
+    .notifications-full-list .notification-item {
+      border-bottom: 1px solid var(--ef-border);
+    }
+
+    .notifications-full-list .notification-item:last-child {
+      border-bottom: none;
+    }
+
+    .notification-item-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .notifications-empty {
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    .notifications-empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .notifications-empty-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--ef-text-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .notifications-empty-text {
+      color: var(--ef-text-gray);
+      font-size: 0.95rem;
+    }
+
+    .notifications-loading {
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--ef-text-gray);
+    }
+
+    .notifications-loading-spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--ef-bg-gray);
+      border-top-color: var(--ef-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .notifications-error {
+      padding: 2rem;
+      text-align: center;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+      border-radius: var(--ef-radius);
+      margin-bottom: 1rem;
+    }
+
+    .load-more {
+      padding: 1rem;
+      text-align: center;
+      border-top: 1px solid var(--ef-border);
+    }
+
+    .load-more-btn {
+      padding: 0.75rem 2rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ef-primary);
+      background: white;
+      border: 1px solid var(--ef-primary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .load-more-btn:hover {
+      background: rgba(11, 128, 115, 0.1);
+    }
+
+    .load-more-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .notifications-page {
+        padding: 1rem 0.5rem;
+      }
+
+      .notifications-header h1 {
+        font-size: 1.5rem;
+      }
+
+      .notifications-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .notifications-filters,
+      .notifications-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .filter-btn,
+      .action-btn {
+        flex: 1;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
+<header class="ef-header" role="banner">
+  <div class="ef-container">
+    <div class="ef-header-content">
+      <!-- Brand Logo - Enhanced Animated -->
+      <a href="/" class="ef-brand" aria-label="EventFlow - Return to homepage">
+        <div class="ef-logo" aria-hidden="true">
+          <div class="ef-logo-inner"></div>
+        </div>
+        <span class="ef-brand-text">EventFlow</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="ef-nav-desktop" aria-label="Main navigation">
+        <a href="/start" class="ef-nav-link">Plan</a>
+        <a href="/suppliers" class="ef-nav-link">Suppliers</a>
+        <a href="/marketplace" class="ef-nav-link">Marketplace</a>
+        <a href="/blog" class="ef-nav-link">Guides</a>
+        <a href="/pricing" class="ef-nav-link">Pricing</a>
+      </nav>
+
+      <!-- Actions -->
+      <div class="ef-header-actions">
+        <!-- Notification Bell (hidden by default, shown when logged in) -->
+        <button 
+          id="ef-notification-btn" 
+          class="ef-icon-btn" 
+          type="button" 
+          aria-label="View notifications"
+          style="display: none;"
+        >
+          <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span id="ef-notification-badge" class="ef-badge" style="display: none;">0</span>
+        </button>
+
+        <!-- Auth Button (Desktop) -->
+        <a href="/auth" id="ef-auth-link" class="ef-btn ef-btn-primary">
+          Log in
+        </a>
+
+        <!-- Dashboard Link (Desktop, hidden by default) -->
+        <a href="#" id="ef-dashboard-link" class="ef-nav-link" style="display: none;">
+          Dashboard
+        </a>
+
+        <!-- Mobile Menu Toggle -->
+        <button 
+          id="ef-mobile-toggle" 
+          class="ef-mobile-toggle" 
+          type="button"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+          aria-controls="ef-mobile-menu"
+        >
+          <span class="ef-toggle-line"></span>
+          <span class="ef-toggle-line"></span>
+          <span class="ef-toggle-line"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="ef-mobile-menu" class="ef-mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+    <nav class="ef-mobile-nav" aria-label="Primary navigation">
+      <a href="/start" class="ef-mobile-link">Plan an Event</a>
+      <a href="/suppliers" class="ef-mobile-link">Browse Suppliers</a>
+      <a href="/marketplace" class="ef-mobile-link">Marketplace</a>
+      <a href="/pricing" class="ef-mobile-link">Pricing</a>
+      <a href="/blog" class="ef-mobile-link">Guides</a>
+      <a href="/for-suppliers" class="ef-mobile-link">For Suppliers</a>
+      <a href="/faq" class="ef-mobile-link">FAQ</a>
+      <div class="ef-mobile-divider"></div>
+      <a href="/auth" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
+      <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
+      <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Notification Dropdown (Pre-rendered, shown/hidden by JS) -->
+<div id="notification-dropdown" class="notification-dropdown" style="display: none;">
+  <div class="notification-header">
+    <h3>Notifications</h3>
+    <button class="notification-mark-all" id="notification-mark-all-read">
+      Mark all as read
+    </button>
+  </div>
+  <div class="notification-list"></div>
+  <div class="notification-footer">
+    <a href="/notifications.html" class="notification-view-all">View all</a>
+  </div>
+</div>
+
+<script src="/assets/js/utils/auth-state.js" defer></script>
+<!-- Global error handler - catches all unhandled errors and API failures -->
+<script src="/assets/js/utils/global-error-handler.js" defer></script>
+<script src="/assets/js/burger-menu.js" defer></script>
+<script src="/assets/js/navbar.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/animations.js" defer></script>
+<script src="/assets/js/notifications.js" defer></script>
+<script src="/assets/js/search.js" defer></script>
+<script src="/assets/js/websocket-client.js" defer></script>
+
+<main id="main-content" class='section'>
+  <div class='notifications-page'>
+    <div class="notifications-header">
+      <h1>Notifications</h1>
+      <p class="notifications-subtitle">Manage all your notifications in one place</p>
+    </div>
+
+    <!-- Toolbar with filters and actions -->
+    <div class="notifications-toolbar">
+      <div class="notifications-filters">
+        <button class="filter-btn active" data-filter="all" aria-label="Show all notifications">
+          All
+        </button>
+        <button class="filter-btn" data-filter="unread" aria-label="Show unread notifications">
+          Unread
+        </button>
+        <button class="filter-btn" data-filter="read" aria-label="Show read notifications">
+          Read
+        </button>
+      </div>
+      <div class="notifications-actions">
+        <button class="action-btn action-btn-primary" id="mark-all-read-btn" aria-label="Mark all notifications as read">
+          Mark all as read
+        </button>
+        <button class="action-btn action-btn-danger" id="delete-all-btn" aria-label="Delete all notifications">
+          Delete all
+        </button>
+      </div>
+    </div>
+
+    <!-- Error message (hidden by default) -->
+    <div id="notifications-error" class="notifications-error" style="display: none;" role="alert">
+      <strong>Error loading notifications.</strong> Please try refreshing the page.
+    </div>
+
+    <!-- Full notification list -->
+    <div id="notifications-container" class="notifications-full-list">
+      <!-- Loading state -->
+      <div id="notifications-loading" class="notifications-loading" role="status" aria-live="polite">
+        <div class="notifications-loading-spinner"></div>
+        <p>Loading notifications...</p>
+      </div>
+
+      <!-- Empty state (hidden by default) -->
+      <div id="notifications-empty" class="notifications-empty" style="display: none;">
+        <div class="notifications-empty-icon">🔔</div>
+        <h2 class="notifications-empty-title">No notifications yet</h2>
+        <p class="notifications-empty-text">You're all caught up! New notifications will appear here.</p>
+      </div>
+
+      <!-- Notification items will be inserted here -->
+    </div>
+
+    <!-- Load more button -->
+    <div id="load-more-container" class="load-more" style="display: none;">
+      <button class="load-more-btn" id="load-more-btn">
+        Load more
+      </button>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: v17.0.0</div>
+    <div class="small"><a href="/blog">Blog</a> ·
+      <a href="/credits">Credits</a> · <a href="/contact">Contact</a> · <a href="/legal">Legal Hub</a></div>
+  </div>
+</footer>
+
+<!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
+<nav class="ef-bottom-nav" role="navigation" aria-label="Mobile bottom navigation">
+  <a href="/start" class="ef-bottom-link" aria-label="Plan your event">
+    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 20h9"/>
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+    <span class="ef-bottom-label">Plan</span>
+  </a>
+  
+  <a href="/suppliers" class="ef-bottom-link" aria-label="Browse suppliers">
+    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
+    <span class="ef-bottom-label">Suppliers</span>
+  </a>
+  
+  <a href="/blog" class="ef-bottom-link" aria-label="View guides">
+    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+    <span class="ef-bottom-label">Guides</span>
+  </a>
+  
+  <!-- Dashboard with notification badge (shown when logged in, replaces Alerts) -->
+  <a href="#" id="ef-bottom-dashboard" class="ef-bottom-link" style="display: none;" aria-label="Go to dashboard">
+    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    <span class="ef-bottom-label">Dashboard</span>
+    <span id="ef-bottom-dashboard-badge" class="ef-badge" style="display: none;">0</span>
+  </a>
+  
+  <!-- Alerts button (shown when logged out) -->
+  <a href="/blog" id="ef-bottom-alerts" class="ef-bottom-link" aria-label="View guides and alerts">
+    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    <span class="ef-bottom-label">Alerts</span>
+  </a>
+  
+  <button 
+    id="ef-bottom-menu" 
+    class="ef-bottom-link" 
+    type="button"
+    aria-label="Open menu"
+    aria-expanded="false"
+    aria-controls="ef-mobile-menu"
+  >
+    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+    <span class="ef-bottom-label">Menu</span>
+  </button>
+</nav>
+
+<!-- Page-specific JavaScript -->
+<script>
+(function() {
+  'use strict';
+
+  // ==========================================
+  // STATE
+  // ==========================================
+  const state = {
+    notifications: [],
+    currentFilter: 'all',
+    limit: 50,
+    skip: 0,
+    hasMore: false,
+    isLoading: false,
+    unreadCount: 0,
+  };
+
+  // ==========================================
+  // AUTHENTICATION CHECK
+  // ==========================================
+  async function checkAuthentication() {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        // User not authenticated, redirect to auth page
+        window.location.href = `/auth.html?redirect=${encodeURIComponent('/notifications.html')}`;
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      window.location.href = `/auth.html?redirect=${encodeURIComponent('/notifications.html')}`;
+      return false;
+    }
+  }
+
+  // ==========================================
+  // UTILITY FUNCTIONS
+  // ==========================================
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) {
+      return 'Just now';
+    }
+    if (seconds < 3600) {
+      return `${Math.floor(seconds / 60)}m ago`;
+    }
+    if (seconds < 86400) {
+      return `${Math.floor(seconds / 3600)}h ago`;
+    }
+    if (seconds < 604800) {
+      return `${Math.floor(seconds / 86400)}d ago`;
+    }
+    return date.toLocaleDateString();
+  }
+
+  function getNotificationIcon(type) {
+    const icons = {
+      message: '💬',
+      enquiry: '📧',
+      system: '⚙️',
+      alert: '⚠️',
+      success: '✅',
+      info: 'ℹ️',
+      warning: '⚠️',
+      error: '❌',
+    };
+    return icons[type] || '🔔';
+  }
+
+  // ==========================================
+  // API FUNCTIONS
+  // ==========================================
+  async function fetchNotifications(append = false) {
+    if (state.isLoading) return;
+    
+    state.isLoading = true;
+    showLoading(!append);
+
+    try {
+      // Build query params based on current filter
+      const params = new URLSearchParams({
+        limit: state.limit,
+        skip: append ? state.skip : 0,
+      });
+
+      if (state.currentFilter === 'unread') {
+        params.set('unreadOnly', 'true');
+      } else if (state.currentFilter === 'read') {
+        params.set('unreadOnly', 'false');
+        params.set('readOnly', 'true');
+      }
+
+      const response = await fetch(`/api/v1/notifications?${params}`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications');
+      }
+
+      const data = await response.json();
+      
+      if (append) {
+        state.notifications = [...state.notifications, ...data.notifications];
+        state.skip += data.notifications.length;
+      } else {
+        state.notifications = data.notifications;
+        state.skip = data.notifications.length;
+      }
+
+      state.unreadCount = data.unreadCount || 0;
+      state.hasMore = data.notifications.length === state.limit;
+
+      renderNotifications();
+      hideLoading();
+      hideError();
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      showError();
+      hideLoading();
+    } finally {
+      state.isLoading = false;
+    }
+  }
+
+  async function markAsRead(notificationId) {
+    try {
+      const response = await fetch(`/api/v1/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark notification as read');
+      }
+
+      // Update local state
+      const notification = state.notifications.find(n => n._id === notificationId || n.id === notificationId);
+      if (notification) {
+        notification.isRead = true;
+        state.unreadCount = Math.max(0, state.unreadCount - 1);
+        renderNotifications();
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      alert('Failed to mark notification as read. Please try again.');
+    }
+  }
+
+  async function markAllAsRead() {
+    if (state.unreadCount === 0) {
+      alert('All notifications are already read.');
+      return;
+    }
+
+    if (!confirm('Mark all notifications as read?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/v1/notifications/mark-all-read', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark all as read');
+      }
+
+      // Update local state
+      state.notifications.forEach(n => {
+        n.isRead = true;
+      });
+      state.unreadCount = 0;
+      renderNotifications();
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      alert('Failed to mark all as read. Please try again.');
+    }
+  }
+
+  async function deleteNotification(notificationId) {
+    if (!confirm('Delete this notification?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete notification');
+      }
+
+      // Remove from local state
+      const notification = state.notifications.find(n => n._id === notificationId || n.id === notificationId);
+      if (notification && !notification.isRead) {
+        state.unreadCount = Math.max(0, state.unreadCount - 1);
+      }
+      state.notifications = state.notifications.filter(n => n._id !== notificationId && n.id !== notificationId);
+      state.skip = Math.max(0, state.skip - 1);
+      renderNotifications();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      alert('Failed to delete notification. Please try again.');
+    }
+  }
+
+  async function deleteAllNotifications() {
+    if (state.notifications.length === 0) {
+      alert('No notifications to delete.');
+      return;
+    }
+
+    if (!confirm('Delete all notifications? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/v1/notifications', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete all notifications');
+      }
+
+      // Clear local state
+      state.notifications = [];
+      state.unreadCount = 0;
+      state.skip = 0;
+      state.hasMore = false;
+      renderNotifications();
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+      alert('Failed to delete all notifications. Please try again.');
+    }
+  }
+
+  // ==========================================
+  // RENDERING FUNCTIONS
+  // ==========================================
+  function renderNotifications() {
+    const container = document.getElementById('notifications-container');
+    const loading = document.getElementById('notifications-loading');
+    const empty = document.getElementById('notifications-empty');
+    const loadMoreContainer = document.getElementById('load-more-container');
+
+    // Hide loading and empty states
+    loading.style.display = 'none';
+    empty.style.display = 'none';
+
+    // Remove existing notification items (keep loading and empty states)
+    const existingItems = container.querySelectorAll('.notification-item');
+    existingItems.forEach(item => item.remove());
+
+    if (state.notifications.length === 0) {
+      empty.style.display = 'block';
+      loadMoreContainer.style.display = 'none';
+      return;
+    }
+
+    // Render notification items
+    state.notifications.forEach(notification => {
+      const item = createNotificationElement(notification);
+      container.appendChild(item);
+    });
+
+    // Show/hide load more button
+    if (state.hasMore) {
+      loadMoreContainer.style.display = 'block';
+    } else {
+      loadMoreContainer.style.display = 'none';
+    }
+  }
+
+  function createNotificationElement(notification) {
+    const item = document.createElement('div');
+    item.className = `notification-item${!notification.isRead ? ' notification-item--unread' : ''}`;
+    item.setAttribute('data-id', notification._id || notification.id);
+    
+    const icon = getNotificationIcon(notification.type);
+    const title = escapeHtml(notification.title);
+    const message = escapeHtml(notification.message);
+    const time = formatTimeAgo(notification.createdAt);
+
+    item.innerHTML = `
+      <div class="notification-item-icon">${icon}</div>
+      <div class="notification-item-content">
+        <div class="notification-item-title">${title}</div>
+        <div class="notification-item-message">${message}</div>
+        <div class="notification-item-time">${time}</div>
+      </div>
+      <div class="notification-item-actions">
+        ${!notification.isRead ? `
+          <button 
+            class="notification-item-mark-read" 
+            title="Mark as read"
+            aria-label="Mark as read"
+          >✓</button>
+        ` : ''}
+        <button 
+          class="notification-item-dismiss" 
+          title="Delete"
+          aria-label="Delete notification"
+        >×</button>
+      </div>
+    `;
+
+    // Click handler for notification item (if has actionUrl)
+    if (notification.actionUrl) {
+      item.style.cursor = 'pointer';
+      item.addEventListener('click', (e) => {
+        // Don't navigate if clicking on action buttons
+        if (e.target.closest('.notification-item-actions')) {
+          return;
+        }
+        
+        // Mark as read and navigate
+        if (!notification.isRead) {
+          markAsRead(notification._id || notification.id);
+        }
+        window.location.href = notification.actionUrl;
+      });
+    }
+
+    // Mark as read button
+    const markReadBtn = item.querySelector('.notification-item-mark-read');
+    if (markReadBtn) {
+      markReadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        markAsRead(notification._id || notification.id);
+      });
+    }
+
+    // Delete button
+    const dismissBtn = item.querySelector('.notification-item-dismiss');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteNotification(notification._id || notification.id);
+      });
+    }
+
+    return item;
+  }
+
+  function showLoading(fullPage = true) {
+    if (fullPage) {
+      const loading = document.getElementById('notifications-loading');
+      loading.style.display = 'block';
+    }
+  }
+
+  function hideLoading() {
+    const loading = document.getElementById('notifications-loading');
+    loading.style.display = 'none';
+  }
+
+  function showError() {
+    const error = document.getElementById('notifications-error');
+    error.style.display = 'block';
+  }
+
+  function hideError() {
+    const error = document.getElementById('notifications-error');
+    error.style.display = 'none';
+  }
+
+  // ==========================================
+  // EVENT HANDLERS
+  // ==========================================
+  function setupEventListeners() {
+    // Filter buttons
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+        
+        // Update active state
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Update state and fetch
+        state.currentFilter = filter;
+        state.skip = 0;
+        fetchNotifications(false);
+      });
+    });
+
+    // Mark all as read button
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+    markAllReadBtn.addEventListener('click', markAllAsRead);
+
+    // Delete all button
+    const deleteAllBtn = document.getElementById('delete-all-btn');
+    deleteAllBtn.addEventListener('click', deleteAllNotifications);
+
+    // Load more button
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    loadMoreBtn.addEventListener('click', () => {
+      fetchNotifications(true);
+    });
+
+    // Listen for real-time notification events
+    window.addEventListener('notification:added', (e) => {
+      // Prepend new notification to the list
+      const notification = e.detail;
+      state.notifications.unshift(notification);
+      if (!notification.isRead) {
+        state.unreadCount++;
+      }
+      renderNotifications();
+    });
+  }
+
+  // ==========================================
+  // INITIALIZATION
+  // ==========================================
+  async function init() {
+    // Check authentication first
+    const isAuthenticated = await checkAuthentication();
+    if (!isAuthenticated) {
+      return;
+    }
+
+    // Setup event listeners
+    setupEventListeners();
+
+    // Fetch initial notifications
+    await fetchNotifications(false);
+  }
+
+  // Start initialization when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+<script src="/assets/js/components/footer-nav.js" defer></script>
+<script src="/assets/js/cookie-consent.js" defer></script>
+
+<!-- JadeAssist Chat Widget -->
+<script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
+<script src="/assets/js/jadeassist-init.v2.js" defer></script>
+</body>
+</html>
