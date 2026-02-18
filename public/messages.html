@@ -452,16 +452,16 @@
         <p style="color: #6b7280; margin-top: 4px;">Communicate with suppliers about your event</p>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-secondary" id="exportAllBtn" title="Export all conversations">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+        <button class="btn btn-secondary" id="exportAllBtn" title="Export all conversations to CSV file">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
           Export
         </button>
-        <button class="btn btn-primary" id="newMessageBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+        <button class="btn btn-primary" id="newMessageBtn" title="Start a new conversation with a supplier">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;" aria-hidden="true">
             <path d="M12 5v14M5 12h14"/>
           </svg>
           New Message
@@ -473,9 +473,9 @@
     <div id="connection-status" class="connection-status" style="display: none;">
       <div class="connection-indicator">
         <span class="connection-dot"></span>
-        <span class="connection-text">Connected</span>
+        <span class="connection-text" title="Real-time messaging is active. Your messages will sync instantly.">Connected</span>
       </div>
-      <button id="manual-reconnect-btn" class="connection-reconnect-btn" style="display: none;">
+      <button id="manual-reconnect-btn" class="connection-reconnect-btn" style="display: none;" title="Manually reconnect to messaging server" aria-label="Reconnect to server">
         🔄 Reconnect
       </button>
     </div>
@@ -523,7 +523,7 @@
       <!-- Phase 1: Sort dropdown -->
       <div style="display: flex; align-items: center; gap: 8px;">
         <label for="sortDropdown" style="font-size: 14px; color: #6b7280; white-space: nowrap;">Sort by:</label>
-        <select id="sortDropdown" class="sort-dropdown" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 150px;">
+        <select id="sortDropdown" class="sort-dropdown" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 150px;" title="Choose how to sort your messages" aria-label="Sort messages by">
           <option value="date-desc">Newest first</option>
           <option value="date-asc">Oldest first</option>
           <option value="sender-asc">Sender (A-Z)</option>
@@ -547,21 +547,21 @@
       </div>
       <div style="display: flex; gap: 8px;">
         <!-- Phase 1: Filter button -->
-        <button id="filterToggleBtn" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap; position: relative;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+        <button id="filterToggleBtn" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap; position: relative;" title="Show or hide message filters" aria-label="Toggle filters" aria-expanded="false" aria-controls="filterSidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;" aria-hidden="true">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
           </svg>
           Filters
-          <span id="filterBadge" class="filter-badge" style="display: none; margin-left: 6px; background: #0B8073; color: white; border-radius: 10px; padding: 2px 8px; font-size: 12px; font-weight: 600;">0</span>
+          <span id="filterBadge" class="filter-badge" style="display: none; margin-left: 6px; background: #0B8073; color: white; border-radius: 10px; padding: 2px 8px; font-size: 12px; font-weight: 600;" aria-live="polite">0</span>
         </button>
-        <select id="dateFilter" style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;">
+        <select id="dateFilter" style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;" title="Filter messages by date range" aria-label="Date filter">
           <option value="all">All time</option>
           <option value="today">Today</option>
           <option value="week">This week</option>
           <option value="month">This month</option>
           <option value="custom">Custom range...</option>
         </select>
-        <button id="clearFilters" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;">
+        <button id="clearFilters" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;" title="Remove all active filters" aria-label="Clear all filters">
           Clear Filters
         </button>
       </div>
@@ -1223,6 +1223,7 @@
             if (filterSidebar) {
               const isVisible = filterSidebar.style.display !== 'none';
               filterSidebar.style.display = isVisible ? 'none' : 'block';
+              filterToggleBtn.setAttribute('aria-expanded', !isVisible);
               console.log('Filter sidebar toggled:', !isVisible);
             }
           });
