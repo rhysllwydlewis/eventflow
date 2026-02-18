@@ -144,15 +144,6 @@ function formatTimeAgo(timestamp) {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-// Truncate text to maximum length
-// eslint-disable-next-line no-unused-vars
-function truncate(text, maxLength) {
-  if (!text || text.length <= maxLength) {
-    return text;
-  }
-  return `${text.substring(0, maxLength)}...`;
-}
-
 // Sanitize and validate attachment URL
 function sanitizeAttachmentUrl(url) {
   if (!url || typeof url !== 'string') {
@@ -1287,7 +1278,7 @@ function setupSearchAndFilter(getConversations, user) {
   // Search handler
   const searchInput = document.getElementById('widget-search-input');
   if (searchInput) {
-    searchInput.addEventListener('input', _e => {
+    searchInput.addEventListener('input', () => {
       applyFilters(getConversations(), user);
     });
   }
@@ -1295,7 +1286,7 @@ function setupSearchAndFilter(getConversations, user) {
   // Filter handler
   const filterSelect = document.getElementById('widget-filter-select');
   if (filterSelect) {
-    filterSelect.addEventListener('change', _e => {
+    filterSelect.addEventListener('change', () => {
       applyFilters(getConversations(), user);
     });
   }

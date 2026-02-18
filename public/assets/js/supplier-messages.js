@@ -1282,7 +1282,7 @@ function setupSearchAndFilterSupplier(getConversations, supplierProfile, user) {
   // Search handler
   const searchInput = document.getElementById('widget-search-input-supplier');
   if (searchInput) {
-    searchInput.addEventListener('input', e => {
+    searchInput.addEventListener('input', () => {
       applyFiltersSupplier(getConversations(), supplierProfile, user);
     });
   }
@@ -1290,7 +1290,7 @@ function setupSearchAndFilterSupplier(getConversations, supplierProfile, user) {
   // Filter handler
   const filterSelect = document.getElementById('widget-filter-select-supplier');
   if (filterSelect) {
-    filterSelect.addEventListener('change', e => {
+    filterSelect.addEventListener('change', () => {
       applyFiltersSupplier(getConversations(), supplierProfile, user);
     });
   }
