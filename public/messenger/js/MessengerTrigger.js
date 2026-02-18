@@ -96,7 +96,7 @@
     }
 
     // Navigate to specific conversation
-    window.location.href = `/messenger/?conversation=${conversationId}`;
+    window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
   }
 
   /**

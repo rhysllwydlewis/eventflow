@@ -83,7 +83,7 @@
 
     notification.onclick = function() {
       window.focus();
-      window.location.href = `/messenger/?conversation=${conversationId}`;
+      window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
       notification.close();
     };
 

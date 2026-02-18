@@ -327,7 +327,7 @@
         item.addEventListener('click', () => {
           const conversationId = item.getAttribute('data-conversation-id');
           if (conversationId) {
-            window.location.href = `/messenger/?conversation=${conversationId}`;
+            window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
           }
         });
       });

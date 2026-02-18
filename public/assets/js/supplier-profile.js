@@ -242,7 +242,8 @@
           }
           return;
         }
-        const supplierName = supplier.name || 'Supplier';
+        // Sanitize supplier name for safe use in prefill message
+        const supplierName = (supplier.name || 'Supplier').replace(/[<>]/g, '');
         const params = new URLSearchParams({
           new: 'true',
           recipientId: recipientId,
