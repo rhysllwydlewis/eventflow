@@ -113,8 +113,10 @@ class MessengerSocket {
       this.reconnectAttempts++;
       
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.warn('Max reconnection attempts reached, falling back to polling');
-        // Could implement polling fallback here
+        console.warn('Max reconnection attempts reached');
+        // Socket.IO will continue trying with exponential backoff
+        // For additional resilience, implement HTTP polling in MessengerApp
+        window.dispatchEvent(new CustomEvent('messenger:connection-failed'));
       }
     });
   }

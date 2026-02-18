@@ -266,6 +266,14 @@ class MessengerService {
       throw new Error('Sender not a participant in conversation');
     }
 
+    // Determine message type based on content and attachments
+    let messageType = 'text';
+    if (attachments.length > 0) {
+      // Check if all attachments are images
+      const allImages = attachments.every(a => a.type === 'image');
+      messageType = allImages ? 'image' : 'file';
+    }
+
     // Build message object
     const now = new Date();
     const message = {
@@ -274,7 +282,7 @@ class MessengerService {
       senderName: sender.displayName,
       senderAvatar: sender.avatar,
       content: content || '',
-      type: attachments.length > 0 && attachments[0].type === 'image' ? 'image' : 'text',
+      type: messageType,
       attachments: attachments || [],
       reactions: [],
       readBy: [
@@ -660,36 +668,28 @@ class MessengerService {
   async _updateConversationAfterMessage(conversationId, message, senderId) {
     const now = new Date();
     
-    // Prepare update for all participants except sender
-    const updateOps = {
-      $set: {
-        lastMessage: {
-          content: message.content.substring(0, 100),
-          senderId: message.senderId,
-          senderName: message.senderName,
-          sentAt: message.createdAt,
-          type: message.type,
-        },
-        messageCount: { $inc: 1 },
-        updatedAt: now,
-      },
-      $inc: {
-        'participants.$[other].unreadCount': 1,
-      },
-    };
-
+    // Update conversation with new message and increment counters
     await this.db.collection('conversations').updateOne(
       { _id: new ObjectId(conversationId) },
-      updateOps,
+      {
+        $set: {
+          lastMessage: {
+            content: message.content.substring(0, 100),
+            senderId: message.senderId,
+            senderName: message.senderName,
+            sentAt: message.createdAt,
+            type: message.type,
+          },
+          updatedAt: now,
+        },
+        $inc: {
+          messageCount: 1,
+          'participants.$[other].unreadCount': 1,
+        },
+      },
       {
         arrayFilters: [{ 'other.userId': { $ne: senderId } }],
       }
-    );
-
-    // Also increment messageCount
-    await this.db.collection('conversations').updateOne(
-      { _id: new ObjectId(conversationId) },
-      { $inc: { messageCount: 1 } }
     );
   }
 }

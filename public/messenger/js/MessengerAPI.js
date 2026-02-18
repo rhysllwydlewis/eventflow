@@ -133,14 +133,34 @@ class MessengerAPI {
         formData.append('attachments', file);
       });
 
-      return this.request(`/conversations/${conversationId}/messages`, {
+      // For FormData, don't set headers - let browser set Content-Type with boundary
+      const url = `${this.baseUrl}/conversations/${conversationId}/messages`;
+      const config = {
         method: 'POST',
-        headers: {
-          'X-CSRF-Token': this.csrfToken,
-          // Don't set Content-Type - let browser set it with boundary for FormData
-        },
+        credentials: 'include',
         body: formData,
-      });
+        // Note: Don't set Content-Type header for FormData
+        // Browser will automatically set it with correct boundary
+      };
+      
+      // Add CSRF token as custom header
+      config.headers = {
+        'X-CSRF-Token': this.csrfToken,
+      };
+
+      try {
+        const response = await fetch(url, config);
+        
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ error: 'Request failed' }));
+          throw new Error(error.error || error.message || 'Request failed');
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+      }
     }
 
     // Otherwise use JSON

@@ -104,8 +104,12 @@
         div.classList.add('active');
       }
       
+      // Check presence status from state
+      const presence = state.getPresence(otherParticipant?.userId);
+      const isOnline = presence.state === 'online';
+      
       div.innerHTML = `
-        <div class="messenger-avatar ${otherParticipant?.role === 'online' ? 'messenger-avatar--online' : ''}">
+        <div class="messenger-avatar ${isOnline ? 'messenger-avatar--online' : ''}">
           ${otherParticipant?.avatar || 'U'}
         </div>
         <div class="conversation-item__content">

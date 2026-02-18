@@ -632,6 +632,23 @@ router.delete(
       const { id: messageId } = req.params;
       const userId = req.user.id;
 
+      // Get message first to retrieve conversationId for WebSocket
+      const message = await db.collection('chat_messages').findOne({
+        _id: new ObjectId(messageId),
+        senderId: userId,
+        isDeleted: false,
+      });
+
+      if (!message) {
+        return res.status(404).json({
+          error: 'Message not found or access denied',
+          code: 'NOT_FOUND',
+        });
+      }
+
+      const conversationId = message.conversationId;
+
+      // Delete the message
       const success = await messengerService.deleteMessage(messageId, userId);
 
       if (!success) {
@@ -641,14 +658,11 @@ router.delete(
         });
       }
 
-      // Emit WebSocket event
+      // Emit WebSocket event using conversationId we retrieved earlier
       if (wsServer && wsServer.emitToRoom) {
-        const message = await db.collection('chat_messages').findOne({ _id: new ObjectId(messageId) });
-        if (message) {
-          wsServer.emitToRoom(`messenger:${message.conversationId}`, 'messenger:message-deleted', {
-            messageId,
-          });
-        }
+        wsServer.emitToRoom(`messenger:${conversationId}`, 'messenger:message-deleted', {
+          messageId,
+        });
       }
 
       res.json({
