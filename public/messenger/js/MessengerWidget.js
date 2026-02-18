@@ -11,7 +11,9 @@
   const DEFAULT_REFRESH_INTERVAL = 60000; // 1 minute
 
   /**
-   * HTML escape utility
+   * HTML escape utility to prevent XSS
+   * @param {string} unsafe - The unsafe string to escape
+   * @returns {string} HTML-escaped string
    */
   function escapeHtml(unsafe) {
     if (typeof unsafe !== 'string') return '';
@@ -21,7 +23,9 @@
   }
 
   /**
-   * Format relative timestamp
+   * Format timestamp as relative time (e.g., "2m ago", "Yesterday")
+   * @param {string|Date} timestamp - ISO timestamp or Date object
+   * @returns {string} Human-readable relative time
    */
   function formatRelativeTime(timestamp) {
     if (!timestamp) return '';
@@ -44,7 +48,9 @@
   }
 
   /**
-   * Get avatar color based on name
+   * Get avatar background color based on user name hash
+   * @param {string} name - User's display name
+   * @returns {string} Hex color code
    */
   function getAvatarColor(name) {
     if (!name) return '#0B8073';
@@ -54,7 +60,10 @@
   }
 
   /**
-   * Truncate text to max length
+   * Truncate text to max length with ellipsis
+   * @param {string} text - Text to truncate
+   * @param {number} maxLength - Maximum length before truncation
+   * @returns {string} Truncated text with '...' if needed
    */
   function truncate(text, maxLength) {
     if (!text || text.length <= maxLength) return text || '';
@@ -62,7 +71,13 @@
   }
 
   /**
-   * MessengerWidget class
+   * MessengerWidget - Dashboard widget for displaying recent conversations
+   * @class
+   * @param {string} containerId - DOM element ID where widget will be rendered
+   * @param {Object} options - Configuration options
+   * @param {number} [options.maxItems=5] - Maximum conversations to display
+   * @param {boolean} [options.showUnreadBadge=true] - Show unread count badge
+   * @param {number} [options.refreshInterval=60000] - Auto-refresh interval in ms
    */
   class MessengerWidget {
     constructor(containerId, options = {}) {
@@ -96,6 +111,21 @@
       await this.fetchConversations();
       this.setupWebSocket();
       this.setupAutoRefresh();
+      this.setupOnlineOfflineHandlers();
+    }
+
+    /**
+     * Setup online/offline event handlers
+     */
+    setupOnlineOfflineHandlers() {
+      window.addEventListener('online', () => {
+        console.log('Connection restored, refreshing conversations');
+        this.fetchConversations();
+      });
+
+      window.addEventListener('offline', () => {
+        console.log('Connection lost, conversations will refresh when back online');
+      });
     }
 
     /**
@@ -365,6 +395,12 @@
       this.isLoading = true;
 
       try {
+        // Check if browser is online before fetching
+        if (!navigator.onLine) {
+          console.log('Browser is offline, skipping fetch');
+          return;
+        }
+
         const response = await fetch(`/api/v3/messenger/conversations?limit=${this.options.maxItems}`, {
           credentials: 'include',
           headers: {
@@ -373,7 +409,7 @@
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch conversations');
+          throw new Error(`Failed to fetch conversations: ${response.status}`);
         }
 
         const data = await response.json();
@@ -382,9 +418,33 @@
         this.render();
       } catch (error) {
         console.error('Error fetching conversations:', error);
+        // Don't clear existing conversations on error - show stale data is better than no data
+        if (this.conversations.length === 0) {
+          // Only render error state if we have no conversations to show
+          this.renderErrorState();
+        }
       } finally {
         this.isLoading = false;
       }
+    }
+
+    /**
+     * Render error state when fetch fails and no data is available
+     */
+    renderErrorState() {
+      if (!this.container) return;
+      
+      this.container.innerHTML = `
+        <div class="messenger-widget">
+          <div class="messenger-widget-header">
+            <h3 class="messenger-widget-title">💬 Messages</h3>
+            <a href="/messenger/" class="messenger-widget-view-all" aria-label="View all messages">View All →</a>
+          </div>
+          <div class="messenger-widget-empty">
+            <p class="messenger-widget-empty-text">Unable to load conversations. <a href="/messenger/" style="color: #0B8073">Try refreshing</a></p>
+          </div>
+        </div>
+      `;
     }
 
     /**

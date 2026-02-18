@@ -170,12 +170,25 @@
     return observer;
   }
 
+  // Store observer reference for cleanup
+  let mutationObserver = null;
+
   /**
    * Initialize MessengerTrigger on DOMContentLoaded
    */
   function init() {
     initializeButtons();
-    setupMutationObserver();
+    mutationObserver = setupMutationObserver();
+  }
+
+  /**
+   * Cleanup and disconnect observer
+   */
+  function destroy() {
+    if (mutationObserver) {
+      mutationObserver.disconnect();
+      mutationObserver = null;
+    }
   }
 
   // Auto-initialize when DOM is ready
@@ -190,6 +203,7 @@
   window.MessengerTrigger = {
     init,
     initializeButtons,
-    attachHandler
+    attachHandler,
+    destroy
   };
 })();
