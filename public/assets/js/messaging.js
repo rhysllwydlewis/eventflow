@@ -1076,6 +1076,14 @@ class MessagingManager {
    * @param {number} count - Unread message count
    */
   updateBadge(count) {
+    // Delegate to centralized badge manager if available
+    if (window.unreadBadgeManager) {
+      window.unreadBadgeManager.updateAll(count);
+      this.lastUnreadCount = count;
+      return;
+    }
+
+    // Fallback for backward compatibility
     if (!this.badgeElement) {
       this.badgeElement =
         document.getElementById('unread-badge') ||

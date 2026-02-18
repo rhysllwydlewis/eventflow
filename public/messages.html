@@ -871,8 +871,67 @@
         const bulkToolbar = document.getElementById('bulkActionsToolbar');
         const selectionCount = document.getElementById('selectionCount');
         const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const bulkMarkReadBtn = document.getElementById('bulkMarkReadBtn');
+        const bulkMarkUnreadBtn = document.getElementById('bulkMarkUnreadBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
         const sortDropdown = document.getElementById('sortDropdown');
         const filterToggleBtn = document.getElementById('filterToggleBtn');
+        
+        // Wire "Deselect All" button
+        if (deselectAllBtn) {
+          deselectAllBtn.addEventListener('click', () => {
+            window.selectionManager.deselectAll();
+            updateSelectionUI();
+            // Also update visual state of checkboxes
+            document.querySelectorAll('.message-checkbox').forEach(checkbox => {
+              checkbox.checked = false;
+            });
+          });
+        }
+        
+        // Wire bulk mark read button
+        if (bulkMarkReadBtn) {
+          bulkMarkReadBtn.addEventListener('click', async () => {
+            const selectedIds = window.selectionManager.getSelectedIds();
+            if (selectedIds.length === 0) {
+              showToast('No messages selected', 'error');
+              return;
+            }
+            
+            try {
+              await window.bulkOperationManager.bulkMarkRead(selectedIds, true);
+              showToast(`Marked ${selectedIds.length} message(s) as read`, 'success');
+              window.selectionManager.deselectAll();
+              updateSelectionUI();
+              loadThreads(); // Refresh
+            } catch (error) {
+              console.error('Bulk mark read error:', error);
+              showToast('Failed to mark messages as read: ' + error.message, 'error');
+            }
+          });
+        }
+        
+        // Wire bulk mark unread button
+        if (bulkMarkUnreadBtn) {
+          bulkMarkUnreadBtn.addEventListener('click', async () => {
+            const selectedIds = window.selectionManager.getSelectedIds();
+            if (selectedIds.length === 0) {
+              showToast('No messages selected', 'error');
+              return;
+            }
+            
+            try {
+              await window.bulkOperationManager.bulkMarkRead(selectedIds, false);
+              showToast(`Marked ${selectedIds.length} message(s) as unread`, 'success');
+              window.selectionManager.deselectAll();
+              updateSelectionUI();
+              loadThreads(); // Refresh
+            } catch (error) {
+              console.error('Bulk mark unread error:', error);
+              showToast('Failed to mark messages as unread: ' + error.message, 'error');
+            }
+          });
+        }
         
         // Wire sort dropdown
         if (sortDropdown) {
@@ -880,8 +939,9 @@
             const sortMethod = e.target.value;
             window.sortFilterManager.setSortMethod(sortMethod);
             console.log('Sort changed to:', sortMethod);
-            // In a real implementation, this would re-render the message list
             showToast('Sort preference saved: ' + sortMethod, 'success');
+            // Re-load threads with new sort order
+            loadThreads();
           });
         }
         
@@ -938,6 +998,9 @@
               );
               
               console.log('Bulk delete successful:', result);
+              
+              // Refresh the thread list
+              loadThreads();
             } catch (error) {
               console.error('Bulk delete error:', error);
               showToast('Failed to delete messages: ' + error.message, 'error');
@@ -960,22 +1023,31 @@
             }
           }
           
-          // F key - Flag/unflag selected
+          // F key - Flag/unflag selected (future feature)
           if (e.key === 'f' || e.key === 'F') {
             e.preventDefault();
             const selectedIds = window.selectionManager.getSelectedIds();
             if (selectedIds.length > 0) {
               console.log('Flag shortcut pressed for:', selectedIds);
-              showToast('Flag feature activated (demo)', 'info');
+              showToast('Flag feature coming soon', 'info');
             }
           }
           
-          // Ctrl+A / Cmd+A - Select all
+          // Ctrl+A / Cmd+A - Select all visible threads
           if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
             e.preventDefault();
-            // In real implementation, would select all messages in current view
-            console.log('Select all shortcut pressed');
-            showToast('Select all activated (would select all visible messages)', 'info');
+            const checkboxes = document.querySelectorAll('.message-checkbox');
+            const allIds = [];
+            checkboxes.forEach(checkbox => {
+              const threadId = checkbox.dataset.threadId;
+              if (threadId) {
+                allIds.push(threadId);
+                checkbox.checked = true;
+              }
+            });
+            // Select all IDs at once
+            window.selectionManager.selectAll(allIds);
+            updateSelectionUI();
           }
           
           // Esc - Deselect all
@@ -983,6 +1055,10 @@
             if (window.selectionManager.hasSelection()) {
               window.selectionManager.deselectAll();
               updateSelectionUI();
+              // Also update visual state of checkboxes
+              document.querySelectorAll('.message-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+              });
               console.log('Deselected all via Esc key');
             }
           }
@@ -994,6 +1070,9 @@
           sortFilterManager: typeof window.sortFilterManager !== 'undefined',
           sortDropdown: !!sortDropdown,
           bulkDeleteBtn: !!bulkDeleteBtn,
+          bulkMarkReadBtn: !!bulkMarkReadBtn,
+          bulkMarkUnreadBtn: !!bulkMarkUnreadBtn,
+          deselectAllBtn: !!deselectAllBtn,
           filterToggleBtn: !!filterToggleBtn
         });
       }
@@ -1109,6 +1188,12 @@
 
       function switchTab(tabName) {
         currentTab = tabName;
+        
+        // Clear selection when switching tabs
+        if (window.selectionManager) {
+          window.selectionManager.deselectAll();
+          updateSelectionUI();
+        }
         
         // Update tab styling
         document.querySelectorAll('.messages-tab').forEach(tab => {
@@ -1570,6 +1655,7 @@
           container.innerHTML = filteredThreads.map(thread => {
             const unreadCount = thread.unreadCount?.[userId] || 0;
             const isUnread = unreadCount > 0;
+            const isSelected = window.selectionManager?.isSelected(thread.id) || false;
             const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
             const initial = otherPartyName.charAt(0).toUpperCase();
             const timeAgo = formatTimeAgo(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
@@ -1585,8 +1671,18 @@
             const actionType = isUnread ? 'mark-read' : 'mark-unread';
 
             return `
-              <div class="thread-item-wrapper" style="position: relative;">
-                <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
+              <div class="thread-item-wrapper" style="position: relative; ${isSelected ? 'background: rgba(11, 128, 115, 0.05);' : ''}">
+                <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); z-index: 1;">
+                  <input 
+                    type="checkbox" 
+                    class="message-checkbox" 
+                    data-thread-id="${thread.id}"
+                    ${isSelected ? 'checked' : ''}
+                    style="width: 18px; height: 18px; cursor: pointer;"
+                    aria-label="Select message"
+                  />
+                </div>
+                <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}" style="padding-left: 48px;">
                   <div class="thread-avatar">${initial}</div>
                   <div class="thread-content">
                     <div class="thread-header">
@@ -1609,6 +1705,24 @@
               </div>
             `;
           }).join('');
+          
+          // Wire checkbox clicks to selectionManager
+          container.querySelectorAll('.message-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', (e) => {
+              e.stopPropagation(); // Prevent navigation
+              const threadId = checkbox.dataset.threadId;
+              const isNowSelected = window.selectionManager.toggle(threadId);
+              checkbox.checked = isNowSelected;
+              
+              // Update visual feedback
+              const wrapper = checkbox.closest('.thread-item-wrapper');
+              if (wrapper) {
+                wrapper.style.background = isNowSelected ? 'rgba(11, 128, 115, 0.05)' : '';
+              }
+              
+              updateSelectionUI();
+            });
+          });
           
           // Add hover handlers for action buttons
           container.querySelectorAll('.thread-item-wrapper').forEach(wrapper => {
