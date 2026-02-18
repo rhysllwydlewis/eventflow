@@ -11,6 +11,66 @@
 const isDevelopment =
   window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
+/**
+ * Retry helper with exponential backoff
+ * @param {Function} fn - Async function to retry
+ * @param {Object} options - Retry options
+ * @returns {Promise} Result of successful attempt
+ */
+async function retryWithBackoff(fn, options = {}) {
+  const {
+    maxAttempts = 3,
+    baseDelay = 1000,
+    maxDelay = 10000,
+    shouldRetry = (error, response) => {
+      // Retry on network errors or 5xx errors
+      if (!response) return true;
+      if (response.retriable === true) return true;
+      if (response.status >= 500) return true;
+      if (response.status === 408 || response.status === 429 || response.status === 504) return true;
+      return false;
+    }
+  } = options;
+
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await fn(attempt);
+      return result;
+    } catch (error) {
+      lastError = error;
+      
+      // Parse error response if available
+      const errorResponse = error.response || error.data || {};
+      
+      // Don't retry if explicitly marked as non-retriable
+      if (errorResponse.retriable === false) {
+        throw error;
+      }
+      
+      // Check if we should retry
+      if (attempt < maxAttempts && shouldRetry(error, errorResponse)) {
+        // Calculate delay with exponential backoff and jitter
+        const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
+        const jitter = Math.random() * 0.3 * delay; // Add up to 30% jitter
+        const actualDelay = delay + jitter;
+        
+        if (isDevelopment) {
+          console.log(`Retry attempt ${attempt}/${maxAttempts} after ${Math.round(actualDelay)}ms`);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, actualDelay));
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+  
+  throw lastError;
+}
+
 class MessagingSystem {
   constructor() {
     this.pollingIntervals = [];
@@ -1314,75 +1374,102 @@ class BulkOperationManager {
   }
 
   async bulkDelete(messageIds, threadId, reason = '') {
-    try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    return retryWithBackoff(async (attempt) => {
+      try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-      if (!csrfToken) {
-        throw new Error('CSRF token not found');
-      }
+        if (!csrfToken) {
+          throw new Error('CSRF token not found');
+        }
 
-      const response = await fetch('/api/v2/messages/bulk-delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'CSRF-Token': csrfToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify({ messageIds, threadId, reason }),
-      });
+        if (isDevelopment && attempt > 1) {
+          console.log(`Bulk delete attempt ${attempt}`);
+        }
 
-      if (!response.ok) {
+        const response = await fetch('/api/v2/messages/bulk-delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify({ messageIds, threadId, reason }),
+        });
+
         const result = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(result.error || `Request failed with status ${response.status}`);
+
+        if (!response.ok) {
+          const error = new Error(result.error || `Request failed with status ${response.status}`);
+          error.response = result;
+          error.status = response.status;
+          throw error;
+        }
+
+        // Store undo information
+        this.undoQueue.push({
+          operationId: result.operationId,
+          undoToken: result.undoToken,
+          type: 'delete',
+          count: result.deletedCount,
+          expiresAt: Date.now() + 30000, // 30 seconds
+        });
+
+        return result;
+      } catch (error) {
+        if (isDevelopment) {
+          console.error('Bulk delete error:', error);
+        }
+        throw error;
       }
-
-      const result = await response.json();
-
-      // Store undo information
-      this.undoQueue.push({
-        operationId: result.operationId,
-        undoToken: result.undoToken,
-        type: 'delete',
-        count: result.deletedCount,
-        expiresAt: Date.now() + 30000, // 30 seconds
-      });
-
-      return result;
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      throw error;
-    }
+    }, {
+      maxAttempts: 3,
+      baseDelay: 1000
+    });
   }
 
   async bulkMarkRead(messageIds, isRead) {
-    try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    return retryWithBackoff(async (attempt) => {
+      try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-      if (!csrfToken) {
-        throw new Error('CSRF token not found');
-      }
+        if (!csrfToken) {
+          throw new Error('CSRF token not found');
+        }
 
-      const response = await fetch('/api/v2/messages/bulk-mark-read', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'CSRF-Token': csrfToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify({ messageIds, isRead }),
-      });
+        if (isDevelopment && attempt > 1) {
+          console.log(`Bulk mark read attempt ${attempt}`);
+        }
 
-      if (!response.ok) {
+        const response = await fetch('/api/v2/messages/bulk-mark-read', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify({ messageIds, isRead }),
+        });
+
         const result = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(result.error || `Request failed with status ${response.status}`);
-      }
 
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('Bulk mark read error:', error);
-      throw error;
-    }
+        if (!response.ok) {
+          const error = new Error(result.error || `Request failed with status ${response.status}`);
+          error.response = result;
+          error.status = response.status;
+          throw error;
+        }
+
+        return result;
+      } catch (error) {
+        if (isDevelopment) {
+          console.error('Bulk mark read error:', error);
+        }
+        throw error;
+      }
+    }, {
+      maxAttempts: 3,
+      baseDelay: 1000
+    });
   }
 
   async flagMessage(messageId, isFlagged) {
