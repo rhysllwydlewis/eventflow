@@ -57,18 +57,10 @@ async function loadMessagesHTTPFallback(conversationId) {
   try {
     logMessageState('HTTP_FALLBACK_ATTEMPT', { conversationId });
 
-    // Try v2 API first
-    let response = await fetch(`/api/v2/messages/${conversationId}`, {
+    // Use v4 API
+    const response = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
       credentials: 'include',
     });
-
-    // Try v1 API for legacy thread IDs
-    if (!response.ok && conversationId.startsWith('thd_')) {
-      logMessageState('HTTP_FALLBACK_V1_ATTEMPT', { conversationId });
-      response = await fetch(`/api/v1/threads/${conversationId}/messages`, {
-        credentials: 'include',
-      });
-    }
 
     if (!response.ok) {
       logMessageState('HTTP_FALLBACK_FAILED', {
@@ -79,7 +71,7 @@ async function loadMessagesHTTPFallback(conversationId) {
     }
 
     const data = await response.json();
-    const messages = data.messages || data.items || [];
+    const messages = data.messages || [];
     logMessageState('HTTP_FALLBACK_SUCCESS', {
       conversationId,
       messageCount: messages.length,
@@ -1098,7 +1090,7 @@ function openConversation(conversationId) {
           formData.append('attachments', file);
         });
 
-        const response = await fetch(`/api/v2/messages/${conversationId}`, {
+        const response = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
           method: 'POST',
           headers: {
             'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
