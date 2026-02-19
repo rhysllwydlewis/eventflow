@@ -145,12 +145,10 @@ router.use((req, res, next) => {
     'This API is deprecated. Please migrate to /api/v4/messenger. See documentation at https://docs.eventflow.com/api/messenger-v4'
   );
   
-  // Log deprecation usage (optional - only if logger is available)
-  if (typeof console !== 'undefined') {
-    console.warn(
-      `[DEPRECATED API] v1 Messages API called: ${req.method} ${req.originalUrl} - Migrate to /api/v4/messenger`
-    );
-  }
+  // Log deprecation usage (logger not available in this route, use console)
+  console.warn(
+    `[DEPRECATED API] v1 Messages API called: ${req.method} ${req.originalUrl} - Migrate to /api/v4/messenger`
+  );
   
   next();
 });
