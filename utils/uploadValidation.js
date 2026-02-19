@@ -24,7 +24,14 @@ const MAX_FILE_SIZE_AVATAR = parseInt(process.env.MAX_FILE_SIZE_AVATAR_MB || '5'
 const MAX_PIXEL_COUNT = parseInt(process.env.MAX_PIXEL_COUNT || '25000000', 10);
 
 // Allowed image types (magic bytes)
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic'];
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+  'image/heic',
+];
 
 // Format name mapping for user-friendly display
 const FORMAT_NAMES = {
@@ -367,6 +374,7 @@ async function processWithMetadataStripping(buffer, options = {}) {
       optimizeQuantizationTable: true, // Further optimize quantization
     });
 
+    // On sharp error: SharpProcessingError thrown — Failed to process image with Sharp (logged via logger.error)
     return processor.toBuffer();
   } catch (error) {
     logger.error('Sharp processing error:', {

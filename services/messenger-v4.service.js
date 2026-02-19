@@ -9,7 +9,8 @@ const { ObjectId } = require('mongodb');
 const { validateConversation, validateMessage } = require('../models/ConversationV4');
 const contentSanitizer = require('./contentSanitizer');
 const spamDetection = require('./spamDetection');
-const messagingLimits = require('../config/messagingLimits');
+const messagingLimits =
+  require('../config/messagingLimits').MESSAGE_LIMITS || require('../config/messagingLimits');
 
 class MessengerV4Service {
   constructor(db, logger) {
@@ -40,7 +41,7 @@ class MessengerV4Service {
     }
 
     // Deduplicate: Check if conversation already exists between same participants
-    const participantIds = data.participants.map((p) => p.userId).sort();
+    const participantIds = data.participants.map(p => p.userId).sort();
 
     // For direct conversations, check if one already exists
     if (data.type === 'direct' && participantIds.length === 2) {
@@ -81,7 +82,7 @@ class MessengerV4Service {
     const now = new Date();
     const conversation = {
       type: data.type,
-      participants: data.participants.map((p) => ({
+      participants: data.participants.map(p => ({
         userId: p.userId,
         displayName: p.displayName,
         avatar: p.avatar || null,
@@ -138,7 +139,7 @@ class MessengerV4Service {
 
     if (filters.unread) {
       participantFilters.push({
-        'participants': {
+        participants: {
           $elemMatch: {
             userId: userId,
             unreadCount: { $gt: 0 },
@@ -149,7 +150,7 @@ class MessengerV4Service {
 
     if (filters.pinned) {
       participantFilters.push({
-        'participants': {
+        participants: {
           $elemMatch: {
             userId: userId,
             isPinned: true,
@@ -160,7 +161,7 @@ class MessengerV4Service {
 
     if (filters.archived !== undefined) {
       participantFilters.push({
-        'participants': {
+        participants: {
           $elemMatch: {
             userId: userId,
             isArchived: filters.archived,
@@ -170,7 +171,7 @@ class MessengerV4Service {
     } else {
       // Default: exclude archived
       participantFilters.push({
-        'participants': {
+        participants: {
           $elemMatch: {
             userId: userId,
             isArchived: { $ne: true },
@@ -236,7 +237,7 @@ class MessengerV4Service {
     const now = new Date();
 
     // Update participant-specific settings
-    const participantIndex = conversation.participants.findIndex((p) => p.userId === userId);
+    const participantIndex = conversation.participants.findIndex(p => p.userId === userId);
 
     if (participantIndex === -1) {
       throw new Error('User not a participant in this conversation');
@@ -368,17 +369,19 @@ class MessengerV4Service {
     };
 
     // Increment unread count for all participants except sender
-    const bulkOps = conversation.participants.map((participant, index) => {
-      if (participant.userId !== messageData.senderId) {
-        return {
-          updateOne: {
-            filter: { _id: new ObjectId(conversationId) },
-            update: { $inc: { [`participants.${index}.unreadCount`]: 1 } },
-          },
-        };
-      }
-      return null;
-    }).filter(Boolean);
+    const bulkOps = conversation.participants
+      .map((participant, index) => {
+        if (participant.userId !== messageData.senderId) {
+          return {
+            updateOne: {
+              filter: { _id: new ObjectId(conversationId) },
+              update: { $inc: { [`participants.${index}.unreadCount`]: 1 } },
+            },
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
 
     await this.conversationsCollection.updateOne(
       { _id: new ObjectId(conversationId) },
@@ -553,9 +556,7 @@ class MessengerV4Service {
     }
 
     // Check if user already reacted with this emoji
-    const existingReaction = message.reactions.find(
-      (r) => r.userId === userId && r.emoji === emoji
-    );
+    const existingReaction = message.reactions.find(r => r.userId === userId && r.emoji === emoji);
 
     if (existingReaction) {
       // Remove reaction
@@ -590,7 +591,7 @@ class MessengerV4Service {
    */
   async markAsRead(conversationId, userId) {
     const conversation = await this.getConversation(conversationId, userId);
-    const participantIndex = conversation.participants.findIndex((p) => p.userId === userId);
+    const participantIndex = conversation.participants.findIndex(p => p.userId === userId);
 
     if (participantIndex === -1) {
       throw new Error('User not a participant');
@@ -638,8 +639,8 @@ class MessengerV4Service {
       .toArray();
 
     let totalUnread = 0;
-    conversations.forEach((conv) => {
-      const participant = conv.participants.find((p) => p.userId === userId);
+    conversations.forEach(conv => {
+      const participant = conv.participants.find(p => p.userId === userId);
       if (participant && !participant.isArchived && !participant.isMuted) {
         totalUnread += participant.unreadCount || 0;
       }
@@ -688,7 +689,7 @@ class MessengerV4Service {
       })
       .toArray();
 
-    return users.map((user) => ({
+    return users.map(user => ({
       userId: user._id,
       displayName: user.displayName || user.businessName || user.email,
       role: user.role || 'customer',
@@ -712,7 +713,7 @@ class MessengerV4Service {
       .project({ _id: 1 })
       .toArray();
 
-    const conversationIds = conversations.map((c) => c._id);
+    const conversationIds = conversations.map(c => c._id);
 
     // Full-text search
     const messages = await this.messagesCollection
@@ -726,7 +727,7 @@ class MessengerV4Service {
 
     // Enrich with conversation data
     const enrichedMessages = await Promise.all(
-      messages.map(async (msg) => {
+      messages.map(async msg => {
         const conv = await this.conversationsCollection.findOne({
           _id: msg.conversationId,
         });

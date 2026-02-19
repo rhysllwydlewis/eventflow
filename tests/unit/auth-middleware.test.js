@@ -3,6 +3,12 @@
  */
 
 const jwt = require('jsonwebtoken');
+
+// Mock db-unified so authRequired can verify user without a real database
+jest.mock('../../db-unified', () => ({
+  findOne: jest.fn().mockResolvedValue({ id: '123', email: 'test@example.com', role: 'customer' }),
+}));
+
 const {
   setAuthCookie,
   clearAuthCookie,
@@ -236,7 +242,7 @@ describe('Auth Middleware', () => {
   });
 
   describe('authRequired', () => {
-    it('should attach user to request and call next for valid auth', () => {
+    it('should attach user to request and call next for valid auth', async () => {
       const payload = { id: '123', email: 'test@example.com', role: 'customer' };
       const token = jwt.sign(payload, JWT_SECRET);
 
@@ -249,7 +255,7 @@ describe('Auth Middleware', () => {
       };
       const next = jest.fn();
 
-      authRequired(req, res, next);
+      await authRequired(req, res, next);
 
       expect(req.user).toBeDefined();
       expect(req.user.id).toBe('123');

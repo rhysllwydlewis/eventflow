@@ -48,6 +48,12 @@ function buildDeps() {
       large: '/uploads/large/test.jpg',
       original: '/uploads/original/test.jpg',
     })),
+    processAndSaveMarketplaceImage: jest.fn(async () => ({
+      optimized: '/uploads/optimized/test.jpg',
+      thumbnail: '/uploads/thumbnails/test.jpg',
+      large: '/uploads/large/test.jpg',
+      original: '/uploads/original/test.jpg',
+    })),
     getImageMetadata: jest.fn(async () => ({ width: 100, height: 100 })),
   };
 

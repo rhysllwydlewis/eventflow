@@ -171,7 +171,7 @@
 
   function updateBadgeCounts() {
     // Fetch badge counts from dedicated endpoint
-    fetch('/api/v1/admin/badge-counts', {
+    fetch('/api/admin/badge-counts', {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',

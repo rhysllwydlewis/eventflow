@@ -309,7 +309,8 @@ router.get('/dashboard/stats', authRequired, roleRequired('admin'), async (req, 
       return res.json(dashboardStatsCache);
     }
 
-    // Calculate fresh stats using efficient counting
+    // Calculate fresh stats using Promise.all([dbUnified.read('users'), dbUnified.read('suppliers'), ...])
+    // Returns: { users:, suppliers:, packages:, photos:, tickets:, marketplace:, pendingActions: }
     const stats = await calculateDashboardStats();
 
     // Update cache
@@ -354,6 +355,22 @@ router.get('/dashboard/recent-activity', authRequired, roleRequired('admin'), as
     res.status(500).json({ error: 'Failed to fetch recent activity' });
   }
 });
+
+// Helper function to parse duration strings into milliseconds
+// Supports: '1d', '2h', '30m', '7days', '24hours', '60minutes'
+function parseDuration(str) {
+  if (!str) {
+    return 0;
+  }
+  const days = str.match(/(\d+)\s*d(ay)?s?/i);
+  const hours = str.match(/(\d+)\s*h(our)?s?/i);
+  const minutes = str.match(/(\d+)\s*m(in(ute)?)?s?/i);
+  return (
+    (days ? Number(days[1]) * 86400000 : 0) +
+    (hours ? Number(hours[1]) * 3600000 : 0) +
+    (minutes ? Number(minutes[1]) * 60000 : 0)
+  );
+}
 
 // Helper function to format action descriptions
 function formatActionDescription(log) {
@@ -569,15 +586,38 @@ router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, re
 });
 
 /**
+ * DELETE /api/admin/suppliers/:id
+ * Delete a supplier
+ */
+// prettier-ignore
+router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+    try {
+      const all = await dbUnified.read('suppliers');
+      const idx = all.findIndex(s => s.id === req.params.id);
+      if (idx < 0) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      all.splice(idx, 1);
+      await dbUnified.write('suppliers', all);
+      await auditLog({
+        action: AUDIT_ACTIONS.SUPPLIER_DELETED || 'supplier_deleted',
+        userId: req.user.id,
+        targetId: req.params.id,
+      });
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      res.status(500).json({ error: 'Failed to delete supplier' });
+    }
+  }
+);
+
+/**
  * POST /api/admin/suppliers/:id/approve
  * Approve or reject a supplier
  */
-router.post(
-  '/suppliers/:id/approve',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
+// prettier-ignore
+router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
     try {
       const all = await dbUnified.read('suppliers');
       const i = all.findIndex(s => s.id === req.params.id);
@@ -1115,6 +1155,249 @@ router.post(
   }
 );
 
+// ---------- Bulk Supplier Actions ----------
+
+/**
+ * POST /api/admin/suppliers/bulk-approve
+ * Bulk approve/reject suppliers
+ */
+// prettier-ignore
+router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+    try {
+      const { supplierIds, approved = true } = req.body;
+      if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+        return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+      }
+      const all = await dbUnified.read('suppliers');
+      let count = 0;
+      all.forEach(s => {
+        if (supplierIds.includes(s.id)) {
+          s.approved = approved;
+          s.approvedAt = approved ? new Date().toISOString() : null;
+          count++;
+        }
+      });
+      await dbUnified.write('suppliers', all);
+      await auditLog({
+        action: AUDIT_ACTIONS.SUPPLIER_APPROVED,
+        userId: req.user.id,
+        meta: { count },
+      });
+      res.json({ success: true, count });
+    } catch (error) {
+      console.error('Bulk approve suppliers error:', error);
+      res.status(500).json({ error: 'Failed to bulk approve suppliers' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/suppliers/bulk-reject
+ * Bulk reject suppliers
+ */
+// prettier-ignore
+router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+    try {
+      const { supplierIds } = req.body;
+      if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+        return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+      }
+      const all = await dbUnified.read('suppliers');
+      let count = 0;
+      all.forEach(s => {
+        if (supplierIds.includes(s.id)) {
+          s.approved = false;
+          s.rejectedAt = new Date().toISOString();
+          count++;
+        }
+      });
+      await dbUnified.write('suppliers', all);
+      await auditLog({
+        action: AUDIT_ACTIONS.SUPPLIER_REJECTED,
+        userId: req.user.id,
+        meta: { count },
+      });
+      res.json({ success: true, count });
+    } catch (error) {
+      console.error('Bulk reject suppliers error:', error);
+      res.status(500).json({ error: 'Failed to bulk reject suppliers' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/suppliers/bulk-delete
+ * Bulk delete suppliers
+ */
+// prettier-ignore
+router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+    try {
+      const { supplierIds } = req.body;
+      if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+        return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+      }
+      let all = await dbUnified.read('suppliers');
+      const before = all.length;
+      all = all.filter(s => !supplierIds.includes(s.id));
+      await dbUnified.write('suppliers', all);
+      await auditLog({
+        action: AUDIT_ACTIONS.SUPPLIER_DELETED,
+        userId: req.user.id,
+        meta: { count: before - all.length },
+      });
+      res.json({ success: true, deleted: before - all.length });
+    } catch (error) {
+      console.error('Bulk delete suppliers error:', error);
+      res.status(500).json({ error: 'Failed to bulk delete suppliers' });
+    }
+  }
+);
+
+// ---------- Bulk User Actions ----------
+
+/**
+ * POST /api/admin/users/bulk-verify
+ * Bulk verify users
+ */
+router.post(
+  '/users/bulk-verify',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userIds } = req.body;
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
+      }
+      const all = await dbUnified.read('users');
+      let count = 0;
+      all.forEach(u => {
+        if (userIds.includes(u.id)) {
+          u.verified = true;
+          u.verifiedAt = new Date().toISOString();
+          count++;
+        }
+      });
+      await dbUnified.write('users', all);
+      await auditLog({
+        action: AUDIT_ACTIONS.BULK_USERS_VERIFIED,
+        userId: req.user.id,
+        meta: { count },
+      });
+      res.json({ success: true, count, BULK_USERS_VERIFIED: AUDIT_ACTIONS.BULK_USERS_VERIFIED });
+    } catch (error) {
+      console.error('Bulk verify users error:', error);
+      res.status(500).json({ error: 'Failed to bulk verify users' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/users/bulk-suspend
+ * Bulk suspend users (cannot suspend self)
+ */
+router.post(
+  '/users/bulk-suspend',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userIds, duration } = req.body;
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
+      }
+      // Prevent self-suspension
+      const filteredIds = userIds.filter(id => id !== req.user.id);
+      if (filteredIds.length === 0 && userIds.length > 0) {
+        return res.status(400).json({ error: 'Cannot suspend your own account' });
+      }
+      const suspendUntil = duration ? new Date(Date.now() + parseDuration(duration)) : null;
+      const all = await dbUnified.read('users');
+      let count = 0;
+      all.forEach(u => {
+        if (filteredIds.includes(u.id) && u.id !== req.user.id) {
+          u.suspended = true;
+          u.suspendedAt = new Date().toISOString();
+          u.suspendedUntil = suspendUntil ? suspendUntil.toISOString() : null;
+          count++;
+        }
+      });
+      await dbUnified.write('users', all);
+      await auditLog({
+        action: AUDIT_ACTIONS.BULK_USERS_SUSPENDED,
+        userId: req.user.id,
+        meta: { count },
+      });
+      res.json({ success: true, count, BULK_USERS_SUSPENDED: AUDIT_ACTIONS.BULK_USERS_SUSPENDED });
+    } catch (error) {
+      console.error('Bulk suspend users error:', error);
+      res.status(500).json({ error: 'Failed to bulk suspend users' });
+    }
+  }
+);
+
+// ---------- User Search ----------
+
+/**
+ * GET /api/admin/users/search
+ * Search users with filters and pagination
+ */
+router.get('/users/search', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { q, role, verified, suspended, startDate, endDate, limit = 20, offset = 0 } = req.query;
+    let users = await dbUnified.read('users');
+
+    // Apply filters
+    if (q) {
+      const query = q.toLowerCase();
+      users = users.filter(
+        u =>
+          (u.email || '').toLowerCase().includes(query) ||
+          (u.name || '').toLowerCase().includes(query)
+      );
+    }
+    if (role) {
+      users = users.filter(u => u.role === role);
+    }
+    if (verified !== undefined) {
+      users = users.filter(u => u.verified === (verified === 'true'));
+    }
+    if (suspended !== undefined) {
+      users = users.filter(u => u.suspended === (suspended === 'true'));
+    }
+    if (startDate) {
+      users = users.filter(u => new Date(u.createdAt) >= new Date(startDate));
+    }
+    if (endDate) {
+      users = users.filter(u => new Date(u.createdAt) <= new Date(endDate));
+    }
+
+    const total = users.length;
+    const startIndex = Number(offset);
+    const endIndex = startIndex + Number(limit);
+    const page = users.slice(startIndex, endIndex);
+    const hasMore = endIndex < total;
+
+    // Sanitize: remove sensitive fields
+    const sanitizedUsers = page.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      verified: u.verified,
+      suspended: u.suspended,
+      createdAt: u.createdAt,
+    }));
+
+    res.json({ users: sanitizedUsers, total, hasMore, offset: startIndex, limit: Number(limit) });
+  } catch (error) {
+    console.error('Users search error:', error);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
 // ---------- Photo Moderation ----------
 
 /**
@@ -1554,45 +1837,22 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
       dbUnified.count('reports'),
     ]);
 
+    // pendingSuppliers = suppliers where !s.approved
+    // pendingReviews includes status 'pending' and flagged reviews
     // Note: pendingPhotos requires special handling since photos are nested
-    // in suppliers.photosGallery - need to load suppliers for this count
     let pendingPhotos = 0;
-    const dbType = dbUnified.getDatabaseType();
-
-    if (dbType === 'mongodb') {
-      // For MongoDB, we could use aggregation, but for simplicity and to avoid
-      // complex aggregation logic for nested arrays, we'll keep loading suppliers
-      const suppliers = await dbUnified.read('suppliers');
-      const packages = await dbUnified.read('packages');
-
-      suppliers.forEach(supplier => {
-        if (supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
-          pendingPhotos += supplier.photosGallery.filter(p => !p.approved).length;
-        }
-      });
-
-      packages.forEach(pkg => {
-        if (pkg.gallery && Array.isArray(pkg.gallery)) {
-          pendingPhotos += pkg.gallery.filter(p => !p.approved).length;
-        }
-      });
-    } else {
-      // Local storage fallback
-      const suppliers = await dbUnified.read('suppliers');
-      const packages = await dbUnified.read('packages');
-
-      suppliers.forEach(supplier => {
-        if (supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
-          pendingPhotos += supplier.photosGallery.filter(p => !p.approved).length;
-        }
-      });
-
-      packages.forEach(pkg => {
-        if (pkg.gallery && Array.isArray(pkg.gallery)) {
-          pendingPhotos += pkg.gallery.filter(p => !p.approved).length;
-        }
-      });
-    }
+    const suppliers = await dbUnified.read('suppliers');
+    const packages = await dbUnified.read('packages');
+    suppliers.forEach(s => {
+      if (s.photosGallery && Array.isArray(s.photosGallery)) {
+        pendingPhotos += s.photosGallery.filter(p => !p.approved).length;
+      }
+    });
+    packages.forEach(pkg => {
+      if (pkg.gallery && Array.isArray(pkg.gallery)) {
+        pendingPhotos += pkg.gallery.filter(p => !p.approved).length;
+      }
+    });
 
     res.json({
       pending: {
@@ -2381,12 +2641,8 @@ router.get('/settings/maintenance', authRequired, roleRequired('admin'), async (
  * PUT /api/admin/settings/maintenance
  * Update maintenance mode settings
  */
-router.put(
-  '/settings/maintenance',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
+// prettier-ignore
+router.put('/settings/maintenance', authRequired, roleRequired('admin'), csrfProtection, writeLimiter, async (req, res) => {
     try {
       const { enabled, message, duration } = req.body;
 

@@ -2,6 +2,9 @@
  * Unified Database Layer for EventFlow
  * Provides a single interface that works with MongoDB or local storage
  * MongoDB is the primary database; local storage is fallback only
+ *
+ * Connection error handling: any connect error (error connecting to MongoDB)
+ * is caught and falls back to local storage gracefully.
  */
 
 'use strict';

@@ -1,6 +1,10 @@
 /**
  * Phase 2 Initialization Tests - PR #563
  * Tests for proper initialization of folders, labels, advanced search, and grouping features
+ *
+ * Note: public/messages.html was replaced with a redirect stub as part of the
+ * legacy frontend cleanup.  The ServiceWorker tests remain unchanged.
+ * The messages.html tests now verify the redirect behaviour.
  */
 
 const fs = require('fs');
@@ -33,112 +37,26 @@ describe('Phase 2 Initialization', () => {
     });
   });
 
-  describe('Browser Extension Conflict Handling', () => {
-    test('should have error handler for extension conflicts', () => {
-      // Check for extension error detection
-      expect(messagesContent).toContain('Extension context invalidated');
-      expect(messagesContent).toContain('runtime.lastError');
-      expect(messagesContent).toContain('Browser extension interference detected');
+  describe('messages.html legacy redirect', () => {
+    // messages.html was replaced with a redirect stub as part of legacy cleanup.
+    // These tests verify that the redirect page is in place.
+
+    test('should redirect to /messenger/ via meta refresh', () => {
+      expect(messagesContent).toContain('url=/messenger/');
     });
 
-    test('should suppress extension errors', () => {
-      expect(messagesContent).toContain('event.preventDefault()');
-      expect(messagesContent).toContain("console.warn('Browser extension interference");
-    });
-  });
-
-  describe('CDN Fallback Detection', () => {
-    test('should detect JadeAssist loading failure', () => {
-      expect(messagesContent).toContain("typeof window.JadeAssist === 'undefined'");
-      expect(messagesContent).toContain('JadeAssist failed to load');
-      expect(messagesContent).toContain('tracking prevention likely active');
+    test('should redirect to /messenger/ via script', () => {
+      expect(messagesContent).toContain("window.location.replace('/messenger/')");
     });
 
-    test('should hide JadeAssist UI elements on failure', () => {
-      expect(messagesContent).toContain('[data-requires="jadeassist"]');
-      expect(messagesContent).toContain("el.style.display = 'none'");
+    test('should include a fallback link to /messenger/', () => {
+      expect(messagesContent).toContain('href="/messenger/"');
     });
 
-    test('should use named constant for timeout', () => {
-      expect(messagesContent).toContain('JADEASSIST_LOAD_TIMEOUT');
-      expect(messagesContent).toContain('JADEASSIST_LOAD_TIMEOUT = 3000');
-    });
-  });
-
-  describe('Phase 2 Feature Initialization', () => {
-    test('should initialize folders feature', () => {
-      expect(messagesContent).toContain('window.EF_Folders');
-      expect(messagesContent).toContain('EF_Folders.init()');
-    });
-
-    test('should initialize labels feature', () => {
-      expect(messagesContent).toContain('window.EF_Labels');
-      expect(messagesContent).toContain('EF_Labels.init()');
-    });
-
-    test('should initialize advanced search feature', () => {
-      expect(messagesContent).toContain('window.EF_Search');
-      expect(messagesContent).toContain('EF_Search.init()');
-      expect(messagesContent).toContain('EF_Search.executeSearch');
-    });
-
-    test('should initialize grouping feature', () => {
-      expect(messagesContent).toContain('window.EF_Grouping');
-      expect(messagesContent).toContain('EF_Grouping.init()');
-    });
-
-    test('should wire advanced search button', () => {
-      expect(messagesContent).toContain('advanced-search-btn');
-      expect(messagesContent).toContain("addEventListener('click'");
-    });
-
-    test('should wire Enter key for search', () => {
-      expect(messagesContent).toContain('keypress');
-      expect(messagesContent).toContain("e.key === 'Enter'");
-    });
-
-    test('should have error handling for initialization', () => {
-      expect(messagesContent).toContain('try {');
-      expect(messagesContent).toContain('catch (error)');
-      expect(messagesContent).toContain('initialization failed');
-    });
-
-    test('should warn if features not loaded', () => {
-      expect(messagesContent).toContain('not loaded - feature unavailable');
-    });
-
-    test('should use load event instead of timeout', () => {
-      // Should use 'load' event which fires after defer scripts
-      expect(messagesContent).toContain("window.addEventListener('load'");
-      // Should NOT use DOMContentLoaded with setTimeout for Phase 2 init
-      const phase2InitSection = messagesContent.substring(
-        messagesContent.indexOf('Phase 2 Initialization'),
-        messagesContent.indexOf('JadeAssist Chat Widget')
-      );
-      expect(phase2InitSection).not.toContain('setTimeout');
-    });
-  });
-
-  describe('Script Loading', () => {
-    test('should load Phase 2 scripts with defer', () => {
-      expect(messagesContent).toContain(
-        '<script src="/assets/js/folders.js?v=18.0.0" defer></script>'
-      );
-      expect(messagesContent).toContain(
-        '<script src="/assets/js/labels.js?v=18.0.0" defer></script>'
-      );
-      expect(messagesContent).toContain(
-        '<script src="/assets/js/advanced-search.js?v=18.0.0" defer></script>'
-      );
-      expect(messagesContent).toContain(
-        '<script src="/assets/js/grouping.js?v=18.0.0" defer></script>'
-      );
-    });
-
-    test('should have JadeAssist error handler', () => {
-      expect(messagesContent).toContain(
-        'onerror="console.warn(\'JadeAssist widget could not be loaded'
-      );
+    test('should be a valid HTML document', () => {
+      expect(messagesContent).toContain('<!DOCTYPE html>');
+      expect(messagesContent).toContain('<html');
+      expect(messagesContent).toContain('</html>');
     });
   });
 });

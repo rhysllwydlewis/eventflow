@@ -2,9 +2,25 @@
  * NotificationBridgeV4 Component
  * Syncs messenger unread count to site bell badges and the browser tab title.
  * Also manages desktop (Web Notifications API) notifications.
+ *
+ * User preferences are persisted in localStorage under the key
+ * "eventflow_notification_prefs" and include:
+ *   desktopEnabled  {boolean}  – show desktop notifications (default: true)
+ *   soundEnabled    {boolean}  – play notification sounds (default: true)
+ *   quietStart      {string}   – quiet hours start time "HH:MM" (default: null)
+ *   quietEnd        {string}   – quiet hours end time "HH:MM" (default: null)
  */
 
 'use strict';
+
+const PREFS_KEY = 'eventflow_notification_prefs';
+
+const DEFAULT_PREFS = {
+  desktopEnabled: true,
+  soundEnabled: true,
+  quietStart: null,
+  quietEnd: null,
+};
 
 class NotificationBridgeV4 {
   constructor(options = {}) {
@@ -37,6 +53,74 @@ class NotificationBridgeV4 {
   }
 
   // ---------------------------------------------------------------------------
+  // Notification preference helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Read current user preferences from localStorage.
+   * @returns {{ desktopEnabled: boolean, soundEnabled: boolean, quietStart: string|null, quietEnd: string|null }}
+   */
+  getPreferences() {
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (raw) {
+        return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+      }
+    } catch (_) {
+      // malformed JSON – return defaults
+    }
+    return { ...DEFAULT_PREFS };
+  }
+
+  /**
+   * Persist one or more preference keys.
+   * @param {Partial<typeof DEFAULT_PREFS>} updates
+   */
+  setPreferences(updates) {
+    const current = this.getPreferences();
+    const next = { ...current, ...updates };
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(next));
+    } catch (_) {
+      // storage quota exceeded or private-mode restriction
+    }
+    return next;
+  }
+
+  /**
+   * Return true if the current time falls within the configured quiet hours.
+   * @returns {boolean}
+   */
+  isQuietHours() {
+    const { quietStart, quietEnd } = this.getPreferences();
+    if (!quietStart || !quietEnd) {
+      return false;
+    }
+
+    const TIME_RE = /^\d{2}:\d{2}$/;
+    if (!TIME_RE.test(quietStart) || !TIME_RE.test(quietEnd)) {
+      return false;
+    }
+
+    const now = new Date();
+    const [sh, sm] = quietStart.split(':').map(Number);
+    const [eh, em] = quietEnd.split(':').map(Number);
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const startMins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+
+    if (isNaN(startMins) || isNaN(endMins)) {
+      return false;
+    }
+
+    // Handle overnight quiet hours (e.g. 22:00 – 07:00)
+    if (startMins <= endMins) {
+      return nowMins >= startMins && nowMins < endMins;
+    }
+    return nowMins >= startMins || nowMins < endMins;
+  }
+
+  // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
 
@@ -55,8 +139,12 @@ class NotificationBridgeV4 {
    * @returns {Promise<string>} Permission state: 'granted' | 'denied' | 'default'
    */
   async requestPermission() {
-    if (!('Notification' in window)) return 'denied';
-    if (Notification.permission === 'granted') return 'granted';
+    if (!('Notification' in window)) {
+      return 'denied';
+    }
+    if (Notification.permission === 'granted') {
+      return 'granted';
+    }
 
     try {
       const result = await Notification.requestPermission();
@@ -70,6 +158,7 @@ class NotificationBridgeV4 {
 
   /**
    * Show a desktop notification.
+   * Respects desktopEnabled preference and quiet hours.
    * Silently skips if permission is not granted or Notifications are unsupported.
    * @param {string} title
    * @param {string} body
@@ -77,7 +166,17 @@ class NotificationBridgeV4 {
    * @returns {Notification|null}
    */
   notify(title, body, opts = {}) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return null;
+    if (!('Notification' in window) || Notification.permission !== 'granted') {
+      return null;
+    }
+
+    const prefs = this.getPreferences();
+    if (!prefs.desktopEnabled) {
+      return null;
+    }
+    if (this.isQuietHours()) {
+      return null;
+    }
 
     try {
       const notification = new Notification(title, {
@@ -91,9 +190,11 @@ class NotificationBridgeV4 {
         window.focus();
         notification.close();
         if (opts.conversationId) {
-          window.dispatchEvent(new CustomEvent('messenger:conversation-selected', {
-            detail: { id: opts.conversationId },
-          }));
+          window.dispatchEvent(
+            new CustomEvent('messenger:conversation-selected', {
+              detail: { id: opts.conversationId },
+            })
+          );
         }
       });
 
@@ -130,7 +231,9 @@ class NotificationBridgeV4 {
     const seen = new Set();
     this._badgeSelectors.forEach(selector => {
       document.querySelectorAll(selector).forEach(el => {
-        if (seen.has(el)) return;
+        if (seen.has(el)) {
+          return;
+        }
         seen.add(el);
         if (count > 0) {
           el.textContent = count > 99 ? '99+' : String(count);

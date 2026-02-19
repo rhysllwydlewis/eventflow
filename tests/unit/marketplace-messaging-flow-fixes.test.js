@@ -30,7 +30,7 @@ describe('Marketplace messaging flow fixes', () => {
     it('button click handler navigates to conversation', () => {
       expect(marketplaceJs).toContain('sendBtn.onclick = () => {');
       expect(marketplaceJs).toContain(
-        'window.location.href = `/conversation.html?id=${thread.id}`;'
+        'window.location.href = `/messenger/?conversation=${conversationId}`'
       );
     });
   });

@@ -1585,13 +1585,13 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
         const qualityPreference = heroVideoConfig.quality || 'hd';
 
         // Filter and sort video files based on quality preference
-        const videoFiles = (video.video_files || []).filter(
-          f => f.quality === 'hd' || f.quality === 'sd'
-        );
+        // prettier-ignore
+        const videoFiles = (video.video_files || []).filter(f => f.quality === 'hd' || f.quality === 'sd');
 
         if (qualityPreference === 'sd') {
           // Prefer SD quality first, then HD as fallback
-          videoFiles.sort((a, b) => (a.quality === 'sd' ? -1 : b.quality === 'sd' ? 1 : 0));
+          // prettier-ignore
+          videoFiles.sort((a, b) => (a.quality === 'sd') ? -1 : (b.quality === 'sd') ? 1 : 0);
         }
         // For 'hd' and 'auto', HD is preferred first (default order)
 
