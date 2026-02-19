@@ -146,12 +146,12 @@ class MessengerSocket {
   /**
    * Send typing indicator
    */
-  sendTyping(conversationId, isTyping) {
+  sendTyping(conversationId, isTyping, userName) {
     if (!this.isConnected || !this.socket) {
       return;
     }
 
-    this.socket.emit('messenger:typing', { conversationId, isTyping });
+    this.socket.emit('messenger:typing', { conversationId, isTyping, userName: userName || '' });
   }
 
   /**

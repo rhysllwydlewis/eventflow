@@ -765,6 +765,8 @@ router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => 
     const { id: conversationId } = req.params;
     const userId = req.user.id;
     const userName = req.user.displayName || req.user.businessName || req.user.email;
+    // isTyping defaults to true — clients may send false to indicate they stopped typing
+    const isTyping = req.body.isTyping !== false;
 
     // Fetch conversation once — verifies participant access and provides participant list
     const conversation = await (
@@ -776,6 +778,7 @@ router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => 
           conversationId,
           userId,
           userName,
+          isTyping,
         });
       }
     });

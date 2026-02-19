@@ -150,6 +150,18 @@ class ConversationListV4 {
       });
     }
 
+    // Sort by most recently updated (mirrors the API sort order; required because
+    // state.updateConversation() updates in-place without re-sorting the array)
+    filtered = filtered.slice().sort((a, b) => {
+      // Pinned conversations always float above non-pinned within the same tab
+      const meA = this._myParticipant(a, currentUser);
+      const meB = this._myParticipant(b, currentUser);
+      if (meA?.isPinned !== meB?.isPinned) return meA?.isPinned ? -1 : 1;
+      const ta = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const tb = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return tb - ta;
+    });
+
     if (!filtered.length) {
       this.renderEmpty();
       return;
@@ -244,6 +256,8 @@ class ConversationListV4 {
       el.classList.toggle('messenger-v4__filter-tab--active', active);
       el.setAttribute('aria-selected', active ? 'true' : 'false');
     });
+    // Keep MessengerState.filters in sync so arrow-key navigation mirrors the visible list
+    this.state.setFilter('active', tab);
     this.renderConversations(this.state.conversations || []);
   }
 

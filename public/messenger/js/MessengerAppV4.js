@@ -772,8 +772,10 @@ class MessengerAppV4 {
       return;
     }
     try {
+      // Pass the current user's display name so recipients can show it in the typing indicator
+      const userName = this.currentUser?.displayName || this.currentUser?.businessName || '';
       // MessengerSocket.sendTyping() emits the correct v4 socket event
-      this.socket.sendTyping(this._activeConversationId, isTyping);
+      this.socket.sendTyping(this._activeConversationId, isTyping, userName);
     } catch {
       // Socket may not be connected
     }
