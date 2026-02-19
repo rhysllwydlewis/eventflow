@@ -15,6 +15,23 @@ const { writeLimiter } = require('../middleware/rateLimits');
 const MessengerV4Service = require('../services/messenger-v4.service');
 const messengerMetrics = require('../services/messengerMetrics');
 
+// Returns true if a string looks like an email address — used to prevent
+// email addresses from being stored as participant display names.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function looksLikeEmail(str) {
+  return typeof str === 'string' && EMAIL_PATTERN.test(str);
+}
+
+// Picks the first value from candidates that is non-empty and not an email.
+function safeDisplayName(...candidates) {
+  for (const c of candidates) {
+    if (c && !looksLikeEmail(c)) {
+      return c;
+    }
+  }
+  return 'Unknown';
+}
+
 const router = express.Router();
 
 // Dependencies injected by server.js
@@ -208,7 +225,12 @@ router.post(
       // the string user IDs that auth middleware provides.
       const participants = participantUsers.map(user => ({
         userId: user.id,
-        displayName: user.displayName || user.businessName || user.name || user.firstName || 'User',
+        displayName: safeDisplayName(
+          user.displayName,
+          user.businessName,
+          user.name,
+          user.firstName
+        ),
         avatar: user.avatar || null,
         role: user.role || 'customer',
       }));
@@ -402,12 +424,12 @@ router.post(
       const { id: conversationId } = req.params;
       const { content, type = 'text', replyTo } = req.body;
       const userId = req.user.id;
-      const userName =
-        req.user.displayName ||
-        req.user.businessName ||
-        req.user.name ||
-        req.user.firstName ||
-        'User';
+      const userName = safeDisplayName(
+        req.user.displayName,
+        req.user.businessName,
+        req.user.name,
+        req.user.firstName
+      );
       const hasAttachments = req.files && req.files.length > 0;
       if ((!content || content.trim().length === 0) && !hasAttachments) {
         return res.status(400).json({
@@ -645,12 +667,12 @@ router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, a
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const userName =
-      req.user.displayName ||
-      req.user.businessName ||
-      req.user.name ||
-      req.user.firstName ||
-      'User';
+    const userName = safeDisplayName(
+      req.user.displayName,
+      req.user.businessName,
+      req.user.name,
+      req.user.firstName
+    );
     const { emoji } = req.body;
 
     if (!emoji) {
@@ -772,12 +794,12 @@ router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => 
   try {
     const { id: conversationId } = req.params;
     const userId = req.user.id;
-    const userName =
-      req.user.displayName ||
-      req.user.businessName ||
-      req.user.name ||
-      req.user.firstName ||
-      'User';
+    const userName = safeDisplayName(
+      req.user.displayName,
+      req.user.businessName,
+      req.user.name,
+      req.user.firstName
+    );
     // isTyping defaults to true — clients may send false to indicate they stopped typing
     const isTyping = req.body.isTyping !== false;
 

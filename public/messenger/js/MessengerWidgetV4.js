@@ -10,37 +10,70 @@
   // ─── Utility helpers ────────────────────────────────────────────────────────
 
   function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = unsafe;
     return div.innerHTML;
   }
 
   function formatRelativeTime(timestamp) {
-    if (!timestamp) return '';
+    if (!timestamp) {
+      return '';
+    }
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) {
+      return 'Just now';
+    }
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    }
+    if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    }
+    if (diffDays === 1) {
+      return 'Yesterday';
+    }
+    if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    }
     return date.toLocaleDateString();
   }
 
   function getAvatarColor(name) {
-    if (!name) return '#0B8073';
+    if (!name) {
+      return '#0B8073';
+    }
     const colors = ['#0B8073', '#0D9488', '#10B981', '#059669', '#14B8A6', '#0891B2'];
     return colors[name.charCodeAt(0) % colors.length];
   }
 
   function truncate(text, maxLength) {
-    if (!text || text.length <= maxLength) return text || '';
-    return text.substring(0, maxLength) + '…';
+    if (!text || text.length <= maxLength) {
+      return text || '';
+    }
+    return `${text.substring(0, maxLength)}…`;
+  }
+
+  // Returns true if the string looks like an email address (should not be shown as a name)
+  function looksLikeEmail(str) {
+    return typeof str === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+  }
+
+  // Returns the first safe (non-email) display name from the arguments, or fallback
+  function safeDisplayName(...candidates) {
+    for (const candidate of candidates) {
+      if (candidate && !looksLikeEmail(candidate)) {
+        return candidate;
+      }
+    }
+    return 'Unknown';
   }
 
   function getCsrfToken() {
@@ -49,20 +82,28 @@
     for (const cookie of cookies) {
       const trimmed = cookie.trim();
       const eqIndex = trimmed.indexOf('=');
-      if (eqIndex === -1) continue;
+      if (eqIndex === -1) {
+        continue;
+      }
       const name = trimmed.substring(0, eqIndex);
       if (name === 'csrf' || name === 'csrfToken') {
         try {
           const val = decodeURIComponent(trimmed.substring(eqIndex + 1));
-          if (val) return val;
+          if (val) {
+            return val;
+          }
         } catch (_) {
           continue;
         }
       }
     }
     // Fallback to globals set by csrf-handler.js
-    if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
-    if (window.csrfToken) return window.csrfToken;
+    if (window.__CSRF_TOKEN__) {
+      return window.__CSRF_TOKEN__;
+    }
+    if (window.csrfToken) {
+      return window.csrfToken;
+    }
     return '';
   }
 
@@ -109,7 +150,9 @@
 
       // Bound handlers kept for cleanup
       this._onOnline = () => {
-        if (!this.wsConnected) this._fetchConversations();
+        if (!this.wsConnected) {
+          this._fetchConversations();
+        }
       };
       this._onOffline = () => {};
       this._onMessengerNotification = () => this._fetchConversations();
@@ -135,7 +178,9 @@
      * Returns null if no user ID can be determined.
      */
     _resolveCurrentUserId() {
-      if (this._currentUserId) return this._currentUserId;
+      if (this._currentUserId) {
+        return this._currentUserId;
+      }
       // AuthStateManager (primary global in EventFlow)
       if (window.AuthStateManager && typeof window.AuthStateManager.getUser === 'function') {
         const u = window.AuthStateManager.getUser();
@@ -146,7 +191,9 @@
       }
       // AuthState (legacy global used by some modules)
       if (window.AuthState) {
-        const uid = window.AuthState.userId || (window.AuthState.user && (window.AuthState.user.id || window.AuthState.user._id));
+        const uid =
+          window.AuthState.userId ||
+          (window.AuthState.user && (window.AuthState.user.id || window.AuthState.user._id));
         if (uid) {
           this._currentUserId = String(uid);
           return this._currentUserId;
@@ -168,21 +215,29 @@
       window.removeEventListener('online', this._onOnline);
       window.removeEventListener('offline', this._onOffline);
       window.removeEventListener('messenger:notification', this._onMessengerNotification);
-      if (this.container) this.container.innerHTML = '';
+      if (this.container) {
+        this.container.innerHTML = '';
+      }
     }
 
     // ── Data ──────────────────────────────────────────────────────────────────
 
     async _fetchConversations() {
-      if (this.isLoading) return;
-      if (!navigator.onLine) return;
+      if (this.isLoading) {
+        return;
+      }
+      if (!navigator.onLine) {
+        return;
+      }
       this.isLoading = true;
       try {
-        const res = await fetch(
-          `/api/v4/messenger/conversations?limit=${this.options.maxItems}`,
-          { credentials: 'include', headers: { Accept: 'application/json' } }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(`/api/v4/messenger/conversations?limit=${this.options.maxItems}`, {
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         const data = await res.json();
         this.conversations = data.conversations || [];
         this._prevUnreadCount = this.unreadCount;
@@ -202,7 +257,9 @@
         this._render();
       } catch (err) {
         console.error('MessengerWidgetV4: fetch failed', err);
-        if (this.conversations.length === 0) this._renderError();
+        if (this.conversations.length === 0) {
+          this._renderError();
+        }
       } finally {
         this.isLoading = false;
       }
@@ -223,7 +280,9 @@
           body: JSON.stringify({ content: message }),
         }
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       return res.json();
     }
 
@@ -254,7 +313,9 @@
     _setupPolling() {
       // Poll only when WebSocket is not connected
       this.refreshTimer = setInterval(() => {
-        if (!this.wsConnected) this._fetchConversations();
+        if (!this.wsConnected) {
+          this._fetchConversations();
+        }
       }, this.options.refreshIntervalMs);
     }
 
@@ -283,15 +344,14 @@
     }
 
     _render() {
-      const pulseBadge =
-        this.unreadCount > this._prevUnreadCount ? ' mwv4__badge--pulse' : '';
+      const pulseBadge = this.unreadCount > this._prevUnreadCount ? ' mwv4__badge--pulse' : '';
       const badgeHtml =
         this.unreadCount > 0
           ? `<span class="mwv4__badge${pulseBadge}" aria-label="${this.unreadCount} unread messages">${this.unreadCount}</span>`
           : '';
 
       const listHtml = this.conversations.length
-        ? this.conversations.map((c) => this._renderItem(c)).join('')
+        ? this.conversations.map(c => this._renderItem(c)).join('')
         : `<li class="mwv4__empty">
              <span class="mwv4__empty-icon">💬</span>
              <p class="mwv4__empty-text">No conversations yet</p>
@@ -320,18 +380,15 @@
       const participants = Array.isArray(conv.participants) ? conv.participants : [];
 
       // Current user's participant entry (for unreadCount)
-      const me = currentUserId
-        ? participants.find(p => String(p.userId) === currentUserId)
-        : null;
+      const me = currentUserId ? participants.find(p => String(p.userId) === currentUserId) : null;
 
       // Other participant (for avatar/name display)
-      const other = participants.find(
-        p => String(p.userId) !== String(currentUserId || '')
-      ) || participants[0] || {};
+      const other =
+        participants.find(p => String(p.userId) !== String(currentUserId || '')) ||
+        participants[0] ||
+        {};
 
-      const name = escapeHtml(
-        other.displayName || other.businessName || other.name || 'Unknown'
-      );
+      const name = escapeHtml(safeDisplayName(other.displayName, other.businessName, other.name));
       const initial = name.charAt(0).toUpperCase() || '?';
       const avatarColor = getAvatarColor(name);
       const avatarImg = other.avatar
@@ -347,7 +404,8 @@
       const unread = (me && me.unreadCount) || 0;
       const convId = escapeHtml(conv._id || conv.id || '');
 
-      const unreadDot = unread > 0 ? '<span class="mwv4__unread-dot" aria-hidden="true"></span>' : '';
+      const unreadDot =
+        unread > 0 ? '<span class="mwv4__unread-dot" aria-hidden="true"></span>' : '';
       const unreadCount =
         unread > 0
           ? `<span class="mwv4__item-badge" aria-label="${unread} unread">${unread > 99 ? '99+' : unread}</span>`
@@ -417,8 +475,8 @@
 
     _attachHandlers() {
       // Open conversation / toggle quick-reply
-      this.container.querySelectorAll('[data-action="open"]').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
+      this.container.querySelectorAll('[data-action="open"]').forEach(btn => {
+        btn.addEventListener('click', e => {
           e.stopPropagation();
           const convId = btn.dataset.conversationId;
           if (!this.options.showQuickReply) {
@@ -430,39 +488,49 @@
       });
 
       // Textarea expand-to-multiline & enable/disable send
-      this.container.querySelectorAll('.mwv4__reply-textarea').forEach((ta) => {
+      this.container.querySelectorAll('.mwv4__reply-textarea').forEach(ta => {
         ta.addEventListener('input', () => {
           ta.style.height = 'auto';
           ta.style.height = `${ta.scrollHeight}px`;
           const sendBtn = ta.closest('.mwv4__reply-panel').querySelector('[data-action="send"]');
           sendBtn.disabled = ta.value.trim().length === 0;
         });
-        ta.addEventListener('keydown', (e) => {
+        ta.addEventListener('keydown', e => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const sendBtn = ta.closest('.mwv4__reply-panel').querySelector('[data-action="send"]');
-            if (!sendBtn.disabled) sendBtn.click();
+            if (!sendBtn.disabled) {
+              sendBtn.click();
+            }
           }
         });
       });
 
       // Send reply
-      this.container.querySelectorAll('[data-action="send"]').forEach((btn) => {
+      this.container.querySelectorAll('[data-action="send"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           const convId = btn.dataset.conversationId;
-          const panel = this.container.querySelector(`.mwv4__reply-panel[data-reply-for="${convId}"]`);
+          const panel = this.container.querySelector(
+            `.mwv4__reply-panel[data-reply-for="${convId}"]`
+          );
           const ta = panel ? panel.querySelector('.mwv4__reply-textarea') : null;
-          if (!ta || !ta.value.trim()) return;
+          if (!ta || !ta.value.trim()) {
+            return;
+          }
 
           const message = ta.value.trim();
           btn.disabled = true;
           btn.textContent = 'Sending…';
 
           // Optimistic UI update
-          const item = this.container.querySelector(`.mwv4__item[data-conversation-id="${convId}"]`);
+          const item = this.container.querySelector(
+            `.mwv4__item[data-conversation-id="${convId}"]`
+          );
           const previewEl = item ? item.querySelector('.mwv4__preview') : null;
           const oldPreview = previewEl ? previewEl.textContent : '';
-          if (previewEl) previewEl.textContent = truncate(message, 60);
+          if (previewEl) {
+            previewEl.textContent = truncate(message, 60);
+          }
 
           try {
             await this._sendReply(convId, message);
@@ -473,10 +541,14 @@
             this._fetchConversations();
           } catch (err) {
             console.error('MessengerWidgetV4: send failed', err);
-            if (previewEl) previewEl.textContent = oldPreview;
+            if (previewEl) {
+              previewEl.textContent = oldPreview;
+            }
             btn.disabled = false;
             btn.textContent = 'Send';
-            const panel2 = this.container.querySelector(`.mwv4__reply-panel[data-reply-for="${convId}"]`);
+            const panel2 = this.container.querySelector(
+              `.mwv4__reply-panel[data-reply-for="${convId}"]`
+            );
             if (panel2) {
               let errEl = panel2.querySelector('.mwv4__reply-error');
               if (!errEl) {
@@ -491,7 +563,7 @@
       });
 
       // Cancel reply
-      this.container.querySelectorAll('[data-action="cancel"]').forEach((btn) => {
+      this.container.querySelectorAll('[data-action="cancel"]').forEach(btn => {
         btn.addEventListener('click', () => this._hideQuickReply(btn.dataset.conversationId));
       });
     }
@@ -507,19 +579,27 @@
         return;
       }
       if (panel.hidden) {
+        // First click: open quick reply
         panel.hidden = false;
         this.activeConversationId = convId;
         const ta = panel.querySelector('.mwv4__reply-textarea');
-        if (ta) ta.focus();
+        if (ta) {
+          ta.focus();
+        }
       } else {
-        this._hideQuickReply(convId);
+        // Second click on already-open panel: navigate to full conversation
+        window.location.href = this.options.conversationUrlBuilder(convId);
       }
     }
 
     _hideQuickReply(convId) {
       const panel = this.container.querySelector(`.mwv4__reply-panel[data-reply-for="${convId}"]`);
-      if (panel) panel.hidden = true;
-      if (this.activeConversationId === convId) this.activeConversationId = null;
+      if (panel) {
+        panel.hidden = true;
+      }
+      if (this.activeConversationId === convId) {
+        this.activeConversationId = null;
+      }
     }
   }
 
