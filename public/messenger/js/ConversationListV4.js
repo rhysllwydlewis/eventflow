@@ -188,6 +188,7 @@ class ConversationListV4 {
       clearTimeout(this.searchDebounceTimer);
       this.searchDebounceTimer = setTimeout(() => {
         this.searchQuery = e.target.value.trim();
+        this.state.setFilter('search', this.searchQuery);
         this.renderConversations(this.state.conversations || []);
       }, 300);
     });
