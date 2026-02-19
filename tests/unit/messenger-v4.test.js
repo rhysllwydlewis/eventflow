@@ -433,6 +433,7 @@ describe('MessengerV4Service', () => {
     await db.collection('users').insertMany([
       {
         _id: 'user1',
+        id: 'user1',
         displayName: 'Alice Johnson',
         email: 'alice@example.com',
         role: 'customer',
@@ -440,6 +441,7 @@ describe('MessengerV4Service', () => {
       },
       {
         _id: 'user2',
+        id: 'user2',
         displayName: 'Bob Smith',
         email: 'bob@example.com',
         role: 'supplier',
@@ -447,6 +449,7 @@ describe('MessengerV4Service', () => {
       },
       {
         _id: 'user3',
+        id: 'user3',
         displayName: 'Charlie Brown',
         email: 'charlie@example.com',
         role: 'customer',
