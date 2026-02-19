@@ -69,7 +69,6 @@ class MessengerAppV4 {
 
       // 8. Request notification permission (non-blocking)
       this.notificationBridge?.requestPermission();
-
     } catch (err) {
       console.error('[MessengerAppV4] init failed:', err);
       this._showGlobalError('Failed to load messenger. Please refresh the page.');
@@ -139,13 +138,17 @@ class MessengerAppV4 {
     // Conversation selected (from list or deep link)
     window.addEventListener('messenger:conversation-selected', e => {
       const { id } = e.detail || {};
-      if (id) this.selectConversation(id);
+      if (id) {
+        this.selectConversation(id);
+      }
     });
 
     // New message from socket
     window.addEventListener('messenger:new-message', e => {
       const { message, conversationId } = e.detail || {};
-      if (!message) return;
+      if (!message) {
+        return;
+      }
 
       // Update state
       this.state.addMessage(conversationId, message);
@@ -166,7 +169,9 @@ class MessengerAppV4 {
           return sum + (me?.unreadCount || 0);
         }, 0);
         this.state.setUnreadCount(unread);
-        window.dispatchEvent(new CustomEvent('messenger:unread-count', { detail: { count: unread } }));
+        window.dispatchEvent(
+          new CustomEvent('messenger:unread-count', { detail: { count: unread } })
+        );
 
         this.notificationBridge?.notify(
           message.senderName || 'New message',
@@ -179,19 +184,28 @@ class MessengerAppV4 {
     // Composer send
     window.addEventListener('composer:send', async e => {
       const { message, files, replyTo, conversationId } = e.detail || {};
-      await this._sendMessage({ message, files, replyTo, conversationId: conversationId || this._activeConversationId });
+      await this._sendMessage({
+        message,
+        files,
+        replyTo,
+        conversationId: conversationId || this._activeConversationId,
+      });
     });
 
     // Contact picker selected → create conversation
     window.addEventListener('contactpicker:selected', async e => {
       const { contact, context } = e.detail || {};
-      if (contact) await this.createConversation([contact._id || contact.id], context);
+      if (contact) {
+        await this.createConversation([contact._id || contact.id], context);
+      }
     });
 
     // Typing events
     window.addEventListener('messenger:typing', e => {
       const { conversationId, isTyping, userName } = e.detail || {};
-      if (conversationId !== this._activeConversationId) return;
+      if (conversationId !== this._activeConversationId) {
+        return;
+      }
       if (isTyping) {
         this.typingIndicator?.show(userName || '');
         this.chatView?.showTyping(userName || '');
@@ -204,11 +218,15 @@ class MessengerAppV4 {
     // Pin/archive from list or chat header
     window.addEventListener('messenger:pin-conversation', async e => {
       const { id } = e.detail || {};
-      if (id) await this._togglePin(id);
+      if (id) {
+        await this._togglePin(id);
+      }
     });
     window.addEventListener('messenger:archive-conversation', async e => {
       const { id } = e.detail || {};
-      if (id) await this._toggleArchive(id);
+      if (id) {
+        await this._toggleArchive(id);
+      }
     });
 
     // Open contact picker
@@ -233,15 +251,21 @@ class MessengerAppV4 {
    * @param {string} id - Conversation ID
    */
   async selectConversation(id) {
-    if (this._activeConversationId === id) return;
+    if (this._activeConversationId === id) {
+      return;
+    }
     this._activeConversationId = id;
     this.state.setActiveConversation(id);
 
     // Update composer's conversationId
-    if (this.composer) this.composer.options.conversationId = id;
+    if (this.composer) {
+      this.composer.options.conversationId = id;
+    }
 
     // Load chat
-    if (this.chatView) await this.chatView.loadConversation(id);
+    if (this.chatView) {
+      await this.chatView.loadConversation(id);
+    }
 
     // Show context banner if applicable
     const conv = this.state.conversations.find(c => c._id === id);
@@ -252,27 +276,34 @@ class MessengerAppV4 {
     }
 
     // On mobile, switch to chat panel
-    if (window.innerWidth <= 768) this.handleMobilePanel('chat');
+    if (window.innerWidth <= 768) {
+      this.handleMobilePanel('chat');
+    }
 
     // Focus composer
     this.composer?.focus();
 
     // Mark as read via API (non-blocking)
-    this.api.request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' })
+    this.api
+      .request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' })
       .catch(err => console.warn('[MessengerAppV4] mark-read failed:', err));
   }
 
   /**
    * Create a new conversation with given participant IDs.
    * @param {string[]} participantIds
-   * @param {string} context - 'direct' | 'package' | 'marketplace'
+   * @param {string|Object} contextOrType - conversation type string ('direct'|'marketplace'|...)
+   *   or a context object with a .type property. Backend requires `type` to be set.
    */
-  async createConversation(participantIds, context = 'direct') {
+  async createConversation(participantIds, contextOrType = 'direct') {
     try {
-      const data = await this.api.request('/conversations', {
-        method: 'POST',
-        body: JSON.stringify({ participantIds, context }),
-      });
+      // Normalise: accept either a plain type string or a context object
+      const type =
+        typeof contextOrType === 'string' ? contextOrType : contextOrType?.type || 'direct';
+      const context = typeof contextOrType === 'object' ? contextOrType : null;
+
+      // Use MessengerAPI.createConversation which constructs the correct request body
+      const data = await this.api.createConversation({ type, participantIds, context });
       const conv = data.conversation || data;
       if (conv?._id) {
         this.state.updateConversation(conv);
@@ -290,7 +321,9 @@ class MessengerAppV4 {
   handleMobilePanel(panel) {
     const sidebar = document.querySelector('[data-v4="sidebar"]');
     const chat = document.querySelector('[data-v4="chat-panel"]');
-    if (!sidebar || !chat) return;
+    if (!sidebar || !chat) {
+      return;
+    }
 
     // Use CSS slide animations unless the user prefers reduced motion.
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -366,7 +399,9 @@ class MessengerAppV4 {
     // Try existing AuthState first (already logged in)
     if (window.AuthState?.getUser) {
       const user = AuthState.getUser();
-      if (user) return user;
+      if (user) {
+        return user;
+      }
     }
 
     // Fallback to API
@@ -391,36 +426,38 @@ class MessengerAppV4 {
         return sum + (me?.unreadCount || 0);
       }, 0);
       this.state.setUnreadCount(unread);
-      window.dispatchEvent(new CustomEvent('messenger:unread-count', { detail: { count: unread } }));
+      window.dispatchEvent(
+        new CustomEvent('messenger:unread-count', { detail: { count: unread } })
+      );
     } catch (err) {
       console.error('[MessengerAppV4] Failed to load conversations:', err);
     }
   }
 
   async _sendMessage({ message, files, replyTo, conversationId }) {
-    if (!conversationId) return;
+    if (!conversationId) {
+      return;
+    }
     try {
       let sentMsg;
       if (files?.length) {
-        // Multipart upload (use fetch directly with FormData; api.baseUrl for the URL)
-        const baseUrl = this.api.baseUrl || '/api/v4/messenger';
-        const form = new FormData();
-        if (message) form.append('content', message);
-        if (replyTo?._id) form.append('replyToId', replyTo._id);
-        files.forEach(f => form.append('files', f));
-        const res = await fetch(`${baseUrl}/conversations/${encodeURIComponent(conversationId)}/messages`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'X-CSRF-Token': this.api.csrfToken },
-          body: form,
-        });
-        const data = await res.json();
+        // Multipart upload – delegate entirely to MessengerAPI.sendMessage so field
+        // names stay consistent.  api.sendMessage(id, content, attachments, replyToId)
+        const data = await this.api.sendMessage(
+          conversationId,
+          message || '',
+          files,
+          replyTo?._id || null
+        );
         sentMsg = data.message || data;
       } else {
-        const data = await this.api.sendMessage(conversationId, {
-          content: message,
-          replyToId: replyTo?._id,
-        });
+        // Text-only – pass content string and optional replyToId
+        const data = await this.api.sendMessage(
+          conversationId,
+          message || '',
+          [],
+          replyTo?._id || null
+        );
         sentMsg = data.message || data;
       }
 
@@ -435,7 +472,15 @@ class MessengerAppV4 {
 
   async _togglePin(conversationId) {
     try {
-      await this.api.request(`/conversations/${encodeURIComponent(conversationId)}/pin`, { method: 'POST' });
+      // No dedicated /pin endpoint; backend uses PATCH /conversations/:id with body
+      const uid = this._getCurrentUserId();
+      if (!uid) {
+        return;
+      }
+      const conv = this.state.conversations.find(c => c._id === conversationId);
+      const me = conv?.participants?.find(p => p.userId === uid);
+      const newPinned = !(me?.isPinned || false);
+      await this.api.updateConversation(conversationId, { isPinned: newPinned });
       await this._loadConversations();
     } catch (err) {
       console.error('[MessengerAppV4] Pin failed:', err);
@@ -444,7 +489,15 @@ class MessengerAppV4 {
 
   async _toggleArchive(conversationId) {
     try {
-      await this.api.request(`/conversations/${encodeURIComponent(conversationId)}/archive`, { method: 'POST' });
+      // No dedicated /archive endpoint; backend uses PATCH /conversations/:id with body
+      const uid = this._getCurrentUserId();
+      if (!uid) {
+        return;
+      }
+      const conv = this.state.conversations.find(c => c._id === conversationId);
+      const me = conv?.participants?.find(p => p.userId === uid);
+      const newArchived = !(me?.isArchived || false);
+      await this.api.updateConversation(conversationId, { isArchived: newArchived });
       await this._loadConversations();
     } catch (err) {
       console.error('[MessengerAppV4] Archive failed:', err);
@@ -452,7 +505,9 @@ class MessengerAppV4 {
   }
 
   _broadcastTyping(isTyping) {
-    if (!this._activeConversationId || !this.socket) return;
+    if (!this._activeConversationId || !this.socket) {
+      return;
+    }
     try {
       this.socket.emit?.('typing', { conversationId: this._activeConversationId, isTyping });
     } catch {
@@ -475,7 +530,9 @@ class MessengerAppV4 {
       }
 
       // Ignore shortcuts when typing in an input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+        return;
+      }
 
       // ArrowDown / ArrowUp: navigate conversations
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -487,7 +544,9 @@ class MessengerAppV4 {
 
   _navigateConversations(direction) {
     const convs = this.state.getFilteredConversations();
-    if (!convs.length) return;
+    if (!convs.length) {
+      return;
+    }
     const idx = convs.findIndex(c => c._id === this._activeConversationId);
     const next = idx + direction;
     if (next >= 0 && next < convs.length) {
@@ -502,8 +561,12 @@ class MessengerAppV4 {
         // Restore both panels on desktop
         const sidebar = document.querySelector('[data-v4="sidebar"]');
         const chat = document.querySelector('[data-v4="chat-panel"]');
-        if (sidebar) sidebar.style.display = '';
-        if (chat) chat.style.display = '';
+        if (sidebar) {
+          sidebar.style.display = '';
+        }
+        if (chat) {
+          chat.style.display = '';
+        }
       }
     };
     mq.addEventListener('change', handler);
@@ -511,8 +574,12 @@ class MessengerAppV4 {
 
   _showGlobalError(msg) {
     const el = document.querySelector('[data-v4="global-error"]');
-    if (el) { el.textContent = msg; el.style.display = 'block'; }
-    else console.error('[MessengerAppV4]', msg);
+    if (el) {
+      el.textContent = msg;
+      el.style.display = 'block';
+    } else {
+      console.error('[MessengerAppV4]', msg);
+    }
   }
 }
 

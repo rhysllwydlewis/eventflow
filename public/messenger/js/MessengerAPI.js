@@ -17,7 +17,7 @@ class MessengerAPI {
   getCsrfToken() {
     // Try cookie first (EventFlow pattern)
     const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
+    for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'csrf' || name === 'csrfToken') {
         return decodeURIComponent(value);
@@ -54,7 +54,7 @@ class MessengerAPI {
 
     try {
       const response = await fetch(url, config);
-      
+
       // Retry on 5xx errors (server issues) if not a write operation
       if (response.status >= 500 && response.status < 600 && retryCount < 2) {
         const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
@@ -64,7 +64,7 @@ class MessengerAPI {
           return this.request(endpoint, options, retryCount + 1);
         }
       }
-      
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Request failed' }));
         throw new Error(error.error || error.message || 'Request failed');
@@ -80,7 +80,7 @@ class MessengerAPI {
           return this.request(endpoint, options, retryCount + 1);
         }
       }
-      
+
       console.error('API request failed:', error);
       throw error;
     }
@@ -119,14 +119,24 @@ class MessengerAPI {
    */
   async getConversations(filters = {}) {
     const params = new URLSearchParams();
-    if (filters.status) params.append('status', filters.status);
-    if (filters.unreadOnly) params.append('unreadOnly', 'true');
-    if (filters.pinned) params.append('pinned', 'true');
-    if (filters.archived) params.append('archived', 'true');
-    if (filters.search) params.append('search', filters.search);
+    if (filters.status) {
+      params.append('status', filters.status);
+    }
+    if (filters.unreadOnly) {
+      params.append('unreadOnly', 'true');
+    }
+    if (filters.pinned) {
+      params.append('pinned', 'true');
+    }
+    if (filters.archived) {
+      params.append('archived', 'true');
+    }
+    if (filters.search) {
+      params.append('search', filters.search);
+    }
 
     const queryString = params.toString();
-    return this.request(`/conversations${queryString ? '?' + queryString : ''}`);
+    return this.request(`/conversations${queryString ? `?${queryString}` : ''}`);
   }
 
   /**
@@ -162,10 +172,15 @@ class MessengerAPI {
     // If we have attachments, use FormData
     if (attachments.length > 0) {
       const formData = new FormData();
-      formData.append('message', content || '');
-      if (replyToId) formData.append('replyToId', replyToId);
-      
-      attachments.forEach((file, index) => {
+      // Backend expects field named 'content' (not 'message')
+      formData.append('content', content || '');
+      // Backend expects 'replyTo' as a JSON string (parsed by multer/body-parser)
+      if (replyToId) {
+        formData.append('replyTo', JSON.stringify({ _id: replyToId }));
+      }
+
+      // Multer is configured as upload.array('attachments', 10)
+      attachments.forEach(file => {
         formData.append('attachments', file);
       });
 
@@ -178,7 +193,7 @@ class MessengerAPI {
         // Note: Don't set Content-Type header for FormData
         // Browser will automatically set it with correct boundary
       };
-      
+
       // Add CSRF token as custom header
       config.headers = {
         'X-CSRF-Token': this.csrfToken,
@@ -186,7 +201,7 @@ class MessengerAPI {
 
       try {
         const response = await fetch(url, config);
-        
+
         if (!response.ok) {
           const error = await response.json().catch(() => ({ error: 'Request failed' }));
           throw new Error(error.error || error.message || 'Request failed');
@@ -200,25 +215,41 @@ class MessengerAPI {
     }
 
     // Otherwise use JSON
+    // Backend expects 'content' (not 'message') and 'replyTo' (not 'replyToId')
     return this.request(`/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: JSON.stringify({
-        message: content,
-        replyToId,
+        content,
+        replyTo: replyToId ? { _id: replyToId } : undefined,
       }),
     });
   }
 
   /**
    * Get messages for a conversation
+   * Accepts either positional args (conversationId, before, limit)
+   * or an options object as the second argument (conversationId, {before, limit})
+   * to match both call patterns in the codebase.
    */
-  async getMessages(conversationId, before = null, limit = 50) {
+  async getMessages(conversationId, beforeOrOptions = null, limit = 50) {
+    let before = beforeOrOptions;
+    if (beforeOrOptions !== null && typeof beforeOrOptions === 'object') {
+      before = beforeOrOptions.before || null;
+      limit = beforeOrOptions.limit || limit;
+    }
+
     const params = new URLSearchParams();
-    if (before) params.append('before', before);
-    if (limit) params.append('limit', limit);
+    if (before) {
+      params.append('before', before);
+    }
+    if (limit) {
+      params.append('limit', limit);
+    }
 
     const queryString = params.toString();
-    return this.request(`/conversations/${conversationId}/messages${queryString ? '?' + queryString : ''}`);
+    return this.request(
+      `/conversations/${conversationId}/messages${queryString ? `?${queryString}` : ''}`
+    );
   }
 
   /**
@@ -267,7 +298,9 @@ class MessengerAPI {
   async searchMessages(query, conversationId = null) {
     const params = new URLSearchParams();
     params.append('q', query);
-    if (conversationId) params.append('conversationId', conversationId);
+    if (conversationId) {
+      params.append('conversationId', conversationId);
+    }
 
     return this.request(`/search?${params.toString()}`);
   }
