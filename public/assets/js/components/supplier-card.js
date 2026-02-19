@@ -392,7 +392,6 @@ class SupplierCard {
         ${this.supplier.category ? `<div class="supplier-card-meta-item"><span class="supplier-card-meta-icon">📂</span> ${this.supplier.category}</div>` : ''}
         ${this.supplier.location ? `<div class="supplier-card-meta-item"><span class="supplier-card-meta-icon">📍</span> ${this.supplier.location}</div>` : ''}
         ${this.supplier.price_display ? `<div class="supplier-card-meta-item"><span class="supplier-card-meta-icon">💰</span> ${this.supplier.price_display}</div>` : ''}
-        ${this.supplier.email ? `<div class="supplier-card-meta-item"><span class="supplier-card-meta-icon">✉️</span> ${this.supplier.email}</div>` : ''}
         ${this.supplier.phone ? `<div class="supplier-card-meta-item"><span class="supplier-card-meta-icon">📞</span> ${this.supplier.phone}</div>` : ''}
         ${this.supplier.website ? `<div class="supplier-card-meta-item"><span class="supplier-card-meta-icon">🌐</span> <a href="${this.supplier.website}" target="_blank" rel="noopener">Website</a></div>` : ''}
       </div>

@@ -154,13 +154,13 @@ async function authRequired(req, res, next) {
 
   // Verify user still exists in database - prevents stale JWT issues
   // Uses indexed query for O(1) performance instead of loading all users
-  // 
+  //
   // Note: Redis caching could be added if auth request volume exceeds 1000 req/sec
   // For most use cases, the indexed MongoDB query provides sufficient performance
   try {
     const dbUnified = require('../db-unified');
     const dbUser = await dbUnified.findOne('users', { id: u.id });
-    
+
     if (!dbUser) {
       return res.status(401).json({
         error: 'Unauthenticated',
@@ -173,6 +173,10 @@ async function authRequired(req, res, next) {
       id: u.id,
       email: u.email,
       role: u.role,
+      name: dbUser.name || null,
+      firstName: dbUser.firstName || null,
+      displayName: dbUser.displayName || null,
+      businessName: dbUser.businessName || dbUser.company || null,
     };
     // Also expose userId for routes that rely on it
     req.userId = u.id;
@@ -200,7 +204,7 @@ function roleRequired(role) {
         message: 'Please log in to access this resource.',
       });
     }
-    
+
     // Handle array of roles
     if (Array.isArray(role)) {
       if (!role.includes(req.user.role)) {
