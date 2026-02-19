@@ -59,6 +59,14 @@ app.get('/messenger/', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'messenger', 'index.html'));
 });
 
+app.get('/chat', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'chat', 'index.html'));
+});
+
+app.get('/chat/', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'chat', 'index.html'));
+});
+
 // Canonical routes for other pages (matching server.js behavior)
 const canonicalPages = [
   'start',

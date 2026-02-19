@@ -353,6 +353,18 @@ function mountRoutes(app, deps) {
     app.use('/api/v4/messenger', messengerV4Router);
   }
 
+  // ===== CHAT V5 ROUTES (Complete Chat System Rebuild) =====
+  // Next-generation unified chat platform with gold standard real-time messaging
+  const chatV5 = require('./chat-v5');
+  if (deps && chatV5.initialize) {
+    // Pass mongoDb module for lazy db initialization in routes
+    const chatV5Deps = { ...deps };
+    chatV5Deps.db = deps.mongoDb; // Pass module, routes will call getDb() when needed
+    chatV5Deps.wsServer = deps.getWebSocketServer ? deps.getWebSocketServer() : null;
+    const chatV5Router = chatV5.initialize(chatV5Deps);
+    app.use('/api/v5/chat', chatV5Router);
+  }
+
   // ===== LEGACY REDIRECTS =====
   // Redirect old messages page to new messenger
   app.get('/messages', (req, res) => res.redirect(301, '/messenger/'));

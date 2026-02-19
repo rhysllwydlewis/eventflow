@@ -167,6 +167,55 @@ class WebSocketServerV2 {
         }
       });
 
+      // ===== CHAT V5 EVENT HANDLERS =====
+      // Join a conversation room
+      socket.on('chat:v5:join-conversation', data => {
+        if (data && data.conversationId) {
+          socket.join(`chat:v5:${data.conversationId}`);
+          logger.debug('Joined v5 conversation', {
+            socketId: socket.id,
+            conversationId: data.conversationId,
+          });
+        }
+      });
+
+      // Leave a conversation room
+      socket.on('chat:v5:leave-conversation', data => {
+        if (data && data.conversationId) {
+          socket.leave(`chat:v5:${data.conversationId}`);
+          logger.debug('Left v5 conversation', {
+            socketId: socket.id,
+            conversationId: data.conversationId,
+          });
+        }
+      });
+
+      // Typing indicator start
+      socket.on('chat:v5:typing-start', data => {
+        if (!socket.userId || !data || !data.conversationId) return;
+
+        socket.to(`chat:v5:${data.conversationId}`).emit('chat:v5:user-typing', {
+          conversationId: data.conversationId,
+          userId: socket.userId,
+          userName: data.userName || 'User',
+        });
+
+        logger.debug('User typing in v5 conversation', {
+          userId: socket.userId,
+          conversationId: data.conversationId,
+        });
+      });
+
+      // Typing indicator stop
+      socket.on('chat:v5:typing-stop', data => {
+        if (!socket.userId || !data || !data.conversationId) return;
+
+        socket.to(`chat:v5:${data.conversationId}`).emit('chat:v5:user-stopped-typing', {
+          conversationId: data.conversationId,
+          userId: socket.userId,
+        });
+      });
+
       // Disconnection
       socket.on('disconnect', async () => {
         await this.handleDisconnect(socket);
@@ -674,6 +723,57 @@ class WebSocketServerV2 {
         error: error.message,
       });
     }
+  }
+
+  /**
+   * Emit event to a v5 chat conversation room
+   */
+  emitToChatConversation(conversationId, event, data) {
+    try {
+      this.io.to(`chat:v5:${conversationId}`).emit(event, data);
+      logger.debug('Event emitted to v5 chat conversation', { conversationId, event });
+    } catch (error) {
+      logger.error('Emit to v5 chat conversation error', {
+        conversationId,
+        event,
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Broadcast a new message to a v5 conversation
+   */
+  broadcastMessage(conversationId, message) {
+    this.emitToChatConversation(conversationId, 'chat:v5:message', message);
+  }
+
+  /**
+   * Broadcast message update (edit) to a v5 conversation
+   */
+  broadcastMessageUpdate(conversationId, message) {
+    this.emitToChatConversation(conversationId, 'chat:v5:message-updated', message);
+  }
+
+  /**
+   * Broadcast message deletion to a v5 conversation
+   */
+  broadcastMessageDelete(conversationId, messageId) {
+    this.emitToChatConversation(conversationId, 'chat:v5:message-deleted', { messageId });
+  }
+
+  /**
+   * Broadcast reaction toggle to a v5 conversation
+   */
+  broadcastReaction(conversationId, message) {
+    this.emitToChatConversation(conversationId, 'chat:v5:reaction', message);
+  }
+
+  /**
+   * Broadcast read receipt to a v5 conversation
+   */
+  broadcastReadReceipt(conversationId, data) {
+    this.emitToChatConversation(conversationId, 'chat:v5:read-receipt', data);
   }
 
   /**
