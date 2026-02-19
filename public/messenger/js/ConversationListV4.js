@@ -6,12 +6,22 @@
 
 'use strict';
 
+// Returns true when a string looks like an email address (should not be shown as a name).
+function _clv4LooksLikeEmail(str) {
+  return typeof str === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+}
+
+// Returns the first candidate that is non-empty and not an email, or the fallback.
+function _clv4SafeName(str, fallback) {
+  return str && !_clv4LooksLikeEmail(str) ? str : fallback || 'Unknown';
+}
+
 // Named time constants for readability
 const _CLV4_MS = {
   MINUTE: 60_000,
-  HOUR:   3_600_000,
-  DAY:    86_400_000,
-  WEEK:   604_800_000,
+  HOUR: 3_600_000,
+  DAY: 86_400_000,
+  WEEK: 604_800_000,
 };
 
 class ConversationListV4 {
@@ -131,9 +141,15 @@ class ConversationListV4 {
     // Apply tab filter
     let filtered = conversations.filter(conv => {
       const me = this._myParticipant(conv, currentUser);
-      if (this.activeTab === 'pinned') return me && me.isPinned;
-      if (this.activeTab === 'unread') return me && me.unreadCount > 0;
-      if (this.activeTab === 'archived') return me && me.isArchived;
+      if (this.activeTab === 'pinned') {
+        return me && me.isPinned;
+      }
+      if (this.activeTab === 'unread') {
+        return me && me.unreadCount > 0;
+      }
+      if (this.activeTab === 'archived') {
+        return me && me.isArchived;
+      }
       // 'all' — exclude archived
       return !me || !me.isArchived;
     });
@@ -156,7 +172,9 @@ class ConversationListV4 {
       // Pinned conversations always float above non-pinned within the same tab
       const meA = this._myParticipant(a, currentUser);
       const meB = this._myParticipant(b, currentUser);
-      if (meA?.isPinned !== meB?.isPinned) return meA?.isPinned ? -1 : 1;
+      if (meA?.isPinned !== meB?.isPinned) {
+        return meA?.isPinned ? -1 : 1;
+      }
       const ta = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
       const tb = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
       return tb - ta;
@@ -167,7 +185,9 @@ class ConversationListV4 {
       return;
     }
 
-    this.listEl.innerHTML = filtered.map(conv => this._buildConversationHTML(conv, currentUser)).join('');
+    this.listEl.innerHTML = filtered
+      .map(conv => this._buildConversationHTML(conv, currentUser))
+      .join('');
 
     // Re-attach per-item listeners after re-render
     this._attachItemListeners();
@@ -275,14 +295,18 @@ class ConversationListV4 {
     // Pulse unread badges that increased
     this.listEl.querySelectorAll('.messenger-v4__conversation-item[data-id]').forEach(el => {
       const badge = el.querySelector('.messenger-v4__unread-badge');
-      if (!badge) return;
+      if (!badge) {
+        return;
+      }
       const newCount = parseInt(badge.textContent, 10) || 0;
       if (newCount > (prevUnread[el.dataset.id] || 0)) {
         badge.classList.remove('is-pulsing'); // reset if already running
         // Force reflow so animation restarts
         void badge.offsetWidth;
         badge.classList.add('is-pulsing');
-        badge.addEventListener('animationend', () => badge.classList.remove('is-pulsing'), { once: true });
+        badge.addEventListener('animationend', () => badge.classList.remove('is-pulsing'), {
+          once: true,
+        });
       }
     });
   }
@@ -294,7 +318,9 @@ class ConversationListV4 {
 
   _onConversationSelected(e) {
     const id = e.detail?.id;
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     this.listEl.querySelectorAll('.messenger-v4__conversation-item').forEach(el => {
       el.classList.toggle('messenger-v4__conversation-item--active', el.dataset.id === id);
     });
@@ -312,13 +338,17 @@ class ConversationListV4 {
   }
 
   _onTouchEnd(e) {
-    if (!this._touchTarget) return;
+    if (!this._touchTarget) {
+      return;
+    }
     const touch = e.changedTouches[0];
     const dx = touch.clientX - this._touchStartX;
     const dy = touch.clientY - this._touchStartY;
 
     // Only treat as horizontal swipe if mostly horizontal
-    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) {
+      return;
+    }
 
     const id = this._touchTarget.dataset.id;
     if (dx < 0) {
@@ -348,8 +378,10 @@ class ConversationListV4 {
     const isActive = this.state.activeConversationId === conv._id;
     const isOnline = this.state.getPresence(other?.userId)?.state === 'online';
 
-    const avatarLetter = this.escape((other?.displayName || 'U').charAt(0).toUpperCase());
-    const name = this.escape(other?.displayName || 'Unknown');
+    const avatarLetter = this.escape(
+      _clv4SafeName(other?.displayName, 'U').charAt(0).toUpperCase()
+    );
+    const name = this.escape(_clv4SafeName(other?.displayName));
     const preview = this._buildPreview(conv, currentUser);
     const timestamp = this._formatTime(conv.updatedAt);
     const contextBadge = this._buildContextBadge(conv);
@@ -358,7 +390,9 @@ class ConversationListV4 {
       'messenger-v4__conversation-item',
       isActive ? 'messenger-v4__conversation-item--active' : '',
       unread > 0 ? 'messenger-v4__conversation-item--unread' : '',
-    ].filter(Boolean).join(' ');
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     return `
       <div class="${itemClasses}"
@@ -390,7 +424,9 @@ class ConversationListV4 {
   /** Build the preview snippet (prefix "You: " for own messages). */
   _buildPreview(conv, currentUser) {
     const msg = conv.lastMessage;
-    if (!msg) return '<span class="messenger-v4__message-preview--empty">No messages yet</span>';
+    if (!msg) {
+      return '<span class="messenger-v4__message-preview--empty">No messages yet</span>';
+    }
     const isOwn = msg.senderId === currentUser?.id || msg.senderId === currentUser?._id;
     const text = msg.content ? this.escape(msg.content.substring(0, 60)) : '📎 Attachment';
     return isOwn ? `<span class="messenger-v4__message-preview--you">You: ${text}</span>` : text;
@@ -398,35 +434,55 @@ class ConversationListV4 {
 
   /** Build context chip HTML for package/supplier/marketplace conversations. */
   _buildContextBadge(conv) {
-    if (!conv.context?.type) return '';
+    if (!conv.context?.type) {
+      return '';
+    }
     const map = { package: '📦 Package', supplier: '🏢 Supplier', marketplace: '🛒 Marketplace' };
     const label = map[conv.context.type];
-    if (!label) return '';
+    if (!label) {
+      return '';
+    }
     return `<span class="messenger-v4__context-badge" aria-label="${this.escape(conv.context.type)} context">${label}</span>`;
   }
 
   _myParticipant(conv, currentUser) {
-    if (!currentUser || !conv.participants) return null;
+    if (!currentUser || !conv.participants) {
+      return null;
+    }
     const uid = currentUser.id || currentUser._id;
     return conv.participants.find(p => p.userId === uid) || null;
   }
 
   _otherParticipant(conv, currentUser) {
-    if (!currentUser || !conv.participants) return null;
+    if (!currentUser || !conv.participants) {
+      return null;
+    }
     const uid = currentUser.id || currentUser._id;
     return conv.participants.find(p => p.userId !== uid) || null;
   }
 
   _formatTime(dateStr) {
-    if (!dateStr) return '';
+    if (!dateStr) {
+      return '';
+    }
     const d = new Date(dateStr);
     const now = new Date();
     const diff = now - d;
-    if (isNaN(diff)) return '';
-    if (diff < _CLV4_MS.MINUTE) return 'Just now';
-    if (diff < _CLV4_MS.HOUR) return `${Math.floor(diff / _CLV4_MS.MINUTE)}m`;
-    if (diff < _CLV4_MS.DAY) return `${Math.floor(diff / _CLV4_MS.HOUR)}h`;
-    if (diff < _CLV4_MS.WEEK) return d.toLocaleDateString(undefined, { weekday: 'short' });
+    if (isNaN(diff)) {
+      return '';
+    }
+    if (diff < _CLV4_MS.MINUTE) {
+      return 'Just now';
+    }
+    if (diff < _CLV4_MS.HOUR) {
+      return `${Math.floor(diff / _CLV4_MS.MINUTE)}m`;
+    }
+    if (diff < _CLV4_MS.DAY) {
+      return `${Math.floor(diff / _CLV4_MS.HOUR)}h`;
+    }
+    if (diff < _CLV4_MS.WEEK) {
+      return d.toLocaleDateString(undefined, { weekday: 'short' });
+    }
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
@@ -436,7 +492,9 @@ class ConversationListV4 {
    * @returns {string}
    */
   escape(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) {
+      return '';
+    }
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
