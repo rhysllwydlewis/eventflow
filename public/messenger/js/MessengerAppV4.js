@@ -200,9 +200,13 @@ class MessengerAppV4 {
       }
     });
 
-    // Typing events
+    // Typing events — only react to other users' typing (from WebSocket via MessengerSocket).
+    // The local composer fires 'messenger:typing' too, but without a userId field;
+    // guard against showing the current user's own typing indicator.
     window.addEventListener('messenger:typing', e => {
-      const { conversationId, isTyping, userName } = e.detail || {};
+      const { conversationId, isTyping, userName, userId } = e.detail || {};
+      // Skip events with no userId — these are local composer broadcasts, not incoming WS events
+      if (!userId) return;
       if (conversationId !== this._activeConversationId) {
         return;
       }
@@ -768,7 +772,8 @@ class MessengerAppV4 {
       return;
     }
     try {
-      this.socket.emit?.('typing', { conversationId: this._activeConversationId, isTyping });
+      // MessengerSocket.sendTyping() emits the correct v4 socket event
+      this.socket.sendTyping(this._activeConversationId, isTyping);
     } catch {
       // Socket may not be connected
     }
