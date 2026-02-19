@@ -746,4 +746,54 @@ router.post('/conversations/:id/read', authRequired, csrfProtection, async (req,
   }
 });
 
+// ============================================================================
+// ADMIN ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/v4/messenger/admin/conversations
+ * List all conversations (admin only).
+ * Query params: limit, skip, search, status
+ */
+router.get('/admin/conversations', authRequired, async (req, res) => {
+  try {
+    // Admin role check
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: admin access required' });
+    }
+
+    const { limit = 20, skip = 0, search = '', status } = req.query;
+    const dbInstance = await getDbInstance();
+    const collection = dbInstance.collection('conversations_v4');
+
+    const query = {};
+    if (search && search.trim()) {
+      query.$or = [
+        { 'lastMessage.content': { $regex: search.trim(), $options: 'i' } },
+        { 'participants.displayName': { $regex: search.trim(), $options: 'i' } },
+        { 'participants.businessName': { $regex: search.trim(), $options: 'i' } },
+        { 'context.title': { $regex: search.trim(), $options: 'i' } },
+      ];
+    }
+    if (status) {
+      query.status = status;
+    }
+
+    const [conversations, total] = await Promise.all([
+      collection
+        .find(query)
+        .sort({ updatedAt: -1 })
+        .skip(parseInt(skip, 10))
+        .limit(Math.min(parseInt(limit, 10), 100))
+        .toArray(),
+      collection.countDocuments(query),
+    ]);
+
+    res.json({ success: true, conversations, total });
+  } catch (error) {
+    logger.error('Admin: error listing conversations:', error);
+    res.status(500).json({ error: 'Failed to list conversations' });
+  }
+});
+
 module.exports = { router, initialize };

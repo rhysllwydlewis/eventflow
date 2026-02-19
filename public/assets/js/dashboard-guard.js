@@ -31,6 +31,7 @@
     '/admin-tickets.html': 'admin',
     '/admin-user-detail.html': 'admin',
     '/admin-users.html': 'admin',
+    '/admin-messenger.html': 'admin',
   };
 
   // Check if current page requires role check
