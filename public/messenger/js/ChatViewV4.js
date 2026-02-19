@@ -7,6 +7,16 @@
 
 'use strict';
 
+// Returns true when a string looks like an email address (should not be shown as a name).
+function _cv4LooksLikeEmail(str) {
+  return typeof str === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+}
+
+// Returns str if it is non-empty and not an email, otherwise the fallback.
+function _cv4SafeName(str, fallback) {
+  return str && !_cv4LooksLikeEmail(str) ? str : fallback || 'Unknown';
+}
+
 class ChatViewV4 {
   constructor(container, state, api, options = {}) {
     this.container = typeof container === 'string' ? document.querySelector(container) : container;
@@ -344,12 +354,13 @@ class ChatViewV4 {
     const other = conv.participants?.find(p => p.userId !== uid) || {};
     const isOnline = this.state.getPresence(other.userId)?.state === 'online';
 
-    this.container.querySelector('.messenger-v4__chat-header-avatar').textContent = (
-      other.displayName || 'U'
+    this.container.querySelector('.messenger-v4__chat-header-avatar').textContent = _cv4SafeName(
+      other.displayName,
+      'U'
     )
       .charAt(0)
       .toUpperCase();
-    this.container.querySelector('#v4ChatHeaderName').textContent = other.displayName || 'Unknown';
+    this.container.querySelector('#v4ChatHeaderName').textContent = _cv4SafeName(other.displayName);
     this.container.querySelector('#v4ChatHeaderStatus').textContent = isOnline
       ? 'Online'
       : 'Offline';
@@ -431,9 +442,13 @@ class ChatViewV4 {
   _buildMessageHTML(msg, currentUser) {
     const uid = currentUser?.id || currentUser?._id;
     const isSent = msg.senderId === uid;
-    const time = msg.createdAt || msg.sentAt
-      ? new Date(msg.createdAt || msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : '';
+    const time =
+      msg.createdAt || msg.sentAt
+        ? new Date(msg.createdAt || msg.sentAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '';
     return `
       <div class="messenger-v4__message ${isSent ? 'messenger-v4__message--sent' : 'messenger-v4__message--received'}" data-id="${this.escape(msg._id)}">
         <div class="messenger-v4__message-content">

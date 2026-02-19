@@ -454,9 +454,11 @@ async function calculateRealBudget(plans) {
   }
   
   // Priority 3: If spending but no budget set, use default
+  let noBudgetSet = false;
   if (totalBudget === BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET && totalSpent > 0) {
     // Show warning instead of auto-expanding
     console.warn('User is spending without a budget set. Total spent:', totalSpent);
+    noBudgetSet = true;
   }
   
   const remaining = Math.max(0, totalBudget - totalSpent);
@@ -466,6 +468,7 @@ async function calculateRealBudget(plans) {
     total: Math.round(totalBudget * 100) / 100,
     remaining: Math.round(remaining * 100) / 100,
     breakdown,
+    noBudgetSet,
   };
 }
 
@@ -576,6 +579,29 @@ async function initCustomerDashboardWidgets() {
     const budgetData = await calculateRealBudget(plans);
     
     createBudgetTracker(budgetData, 'budget-tracker-widget');
+
+    // Show warning banner when user is spending but has no explicit budget set
+    if (budgetData.noBudgetSet) {
+      const budgetWidget = document.getElementById('budget-tracker-widget');
+      if (budgetWidget) {
+        const warning = document.createElement('div');
+        warning.id = 'budget-no-budget-warning';
+        warning.style.cssText = 'margin-top:0.75rem;padding:0.75rem 1rem;background:#FFFBEB;border:1px solid #FCD34D;border-radius:6px;display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:#92400E;';
+        const icon = document.createElement('span');
+        icon.textContent = '⚠️';
+        const message = document.createElement('span');
+        const link = document.createElement('a');
+        link.href = '#budget-settings';
+        link.style.cssText = 'color:#92400E;font-weight:600;text-decoration:underline;';
+        link.textContent = 'Set a budget';
+        message.appendChild(document.createTextNode('You have spending recorded but no budget set. '));
+        message.appendChild(link);
+        message.appendChild(document.createTextNode(' to track your progress accurately.'));
+        warning.appendChild(icon);
+        warning.appendChild(message);
+        budgetWidget.appendChild(warning);
+      }
+    }
     
     // Calculate real progress based on completion criteria
     let progressPercentage = 0;
@@ -800,11 +826,18 @@ async function initDashboard() {
   await claimGuestPlanIfExists();
 
   // Load all dashboard components IN PARALLEL
-  await Promise.allSettled([
+  const componentNames = ['loadCustomerPlans', 'initCustomerDashboardWidgets', 'initCalendar'];
+  const settledResults = await Promise.allSettled([
     loadCustomerPlans(),
     initCustomerDashboardWidgets(),
     initCalendar(),
   ]);
+
+  settledResults.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.warn(`Dashboard initialization: ${componentNames[index]} failed to initialize:`, result.reason);
+    }
+  });
   
   // Setup event handlers
   setupEventHandlers();

@@ -50,17 +50,13 @@
     const main = document.querySelector('main, #main-content, body');
     if (main) {
       observer.observe(main, { childList: true, subtree: true });
-    }
-  }
 
-  /**
-   * Trigger confetti on first plan creation
-   * @note Disabled - customer dashboard has no plan creation trigger elements.
-   * Plan creation happens on a different page (/start or /plan.html).
-   * Confetti should be triggered there, not here.
-   */
-  function setupPlanCreationConfetti() {
-    return;
+      // Disconnect after 10 seconds if the target element never appears
+      setTimeout(() => {
+        observer.disconnect();
+        console.warn('addRecommendationsWidget: #customer-stats-grid not found within 10 seconds. Observer disconnected.');
+      }, 10000);
+    }
   }
 
   /**
@@ -75,7 +71,11 @@
     ) {
       // Small delay for page to load
       setTimeout(() => {
-        triggerSuccessConfetti();
+        try {
+          triggerSuccessConfetti();
+        } catch (err) {
+          console.warn('setupProfileCompletionConfetti: confetti call failed (canvas-confetti may not have loaded):', err);
+        }
         // Remove param from URL
         window.history.replaceState({}, '', window.location.pathname);
       }, 500);
@@ -86,12 +86,10 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       addRecommendationsWidget();
-      setupPlanCreationConfetti();
       setupProfileCompletionConfetti();
     });
   } else {
     addRecommendationsWidget();
-    setupPlanCreationConfetti();
     setupProfileCompletionConfetti();
   }
 })();
