@@ -33,8 +33,26 @@
   }
 
   function getCsrfToken() {
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.content : '';
+    // Try cookie (primary method – Double-Submit Cookie pattern)
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex === -1) continue;
+      const name = trimmed.substring(0, eqIndex);
+      if (name === 'csrf' || name === 'csrfToken') {
+        try {
+          const val = decodeURIComponent(trimmed.substring(eqIndex + 1));
+          if (val) return val;
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+    // Fallback to globals set by csrf-handler.js
+    if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
+    if (window.csrfToken) return window.csrfToken;
+    return '';
   }
 
   function saveDraft(payload) {
@@ -59,6 +77,11 @@
   }
 
   async function checkAuth() {
+    // AuthStateManager (primary global in EventFlow)
+    if (window.AuthStateManager && typeof window.AuthStateManager.isAuthenticated === 'function') {
+      if (window.AuthStateManager.isAuthenticated()) return true;
+    }
+    // Fallback property check
     if (window.AuthState && window.AuthState.isAuthenticated) return true;
     try {
       const res = await fetch('/api/v1/auth/me', {
@@ -434,8 +457,16 @@
     _hideError(errorEl);
 
     try {
-      const currentUserId =
-        (window.AuthState && window.AuthState.userId) || null;
+      // Resolve current user ID from available auth state
+      let currentUserId = null;
+      if (window.AuthStateManager && typeof window.AuthStateManager.getUser === 'function') {
+        const u = window.AuthStateManager.getUser();
+        currentUserId = u ? (u.id || u._id || null) : null;
+      }
+      if (!currentUserId && window.AuthState) {
+        currentUserId = window.AuthState.userId ||
+          (window.AuthState.user && (window.AuthState.user.id || window.AuthState.user._id)) || null;
+      }
 
       const participantIds = [recipientId];
       if (currentUserId && !participantIds.includes(String(currentUserId))) {
@@ -454,7 +485,7 @@
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'CSRF-Token': getCsrfToken(),
+          'X-CSRF-Token': getCsrfToken(),
         },
         body: JSON.stringify({
           type: opts.contextType === 'marketplace_listing'
@@ -497,7 +528,7 @@
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            'CSRF-Token': getCsrfToken(),
+            'X-CSRF-Token': getCsrfToken(),
           },
           body: JSON.stringify({ message: messageText }),
         }

@@ -44,8 +44,26 @@
   }
 
   function getCsrfToken() {
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.content : '';
+    // Try cookie (primary method – Double-Submit Cookie pattern)
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex === -1) continue;
+      const name = trimmed.substring(0, eqIndex);
+      if (name === 'csrf' || name === 'csrfToken') {
+        try {
+          const val = decodeURIComponent(trimmed.substring(eqIndex + 1));
+          if (val) return val;
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+    // Fallback to globals set by csrf-handler.js
+    if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
+    if (window.csrfToken) return window.csrfToken;
+    return '';
   }
 
   // ─── MessengerWidgetV4 ───────────────────────────────────────────────────────
@@ -58,6 +76,7 @@
    * @param {number}   [options.maxItems=5]              Max conversations to show.
    * @param {number}   [options.refreshIntervalMs=60000] Polling interval when WS unavailable.
    * @param {boolean}  [options.showQuickReply=true]     Enable inline quick-reply.
+   * @param {string}   [options.currentUserId]           Current user ID (auto-resolved if omitted).
    * @param {Function} [options.conversationUrlBuilder]  Build deep-link URL.
    */
   class MessengerWidgetV4 {
@@ -74,8 +93,11 @@
         showQuickReply: options.showQuickReply !== false,
         conversationUrlBuilder:
           options.conversationUrlBuilder ||
-          ((id) => `/messenger/?conversation=${encodeURIComponent(id)}`),
+          (id => `/messenger/?conversation=${encodeURIComponent(id)}`),
       };
+
+      // Resolved current user ID – used to identify self in participants array
+      this._currentUserId = options.currentUserId || null;
 
       this.conversations = [];
       this.unreadCount = 0;
@@ -107,6 +129,37 @@
       window.addEventListener('messenger:notification', this._onMessengerNotification);
     }
 
+    /**
+     * Resolve the current user ID from available sources.
+     * Tries: option passed to constructor → AuthStateManager → AuthState → container dataset.
+     * Returns null if no user ID can be determined.
+     */
+    _resolveCurrentUserId() {
+      if (this._currentUserId) return this._currentUserId;
+      // AuthStateManager (primary global in EventFlow)
+      if (window.AuthStateManager && typeof window.AuthStateManager.getUser === 'function') {
+        const u = window.AuthStateManager.getUser();
+        if (u && (u.id || u._id)) {
+          this._currentUserId = String(u.id || u._id);
+          return this._currentUserId;
+        }
+      }
+      // AuthState (legacy global used by some modules)
+      if (window.AuthState) {
+        const uid = window.AuthState.userId || (window.AuthState.user && (window.AuthState.user.id || window.AuthState.user._id));
+        if (uid) {
+          this._currentUserId = String(uid);
+          return this._currentUserId;
+        }
+      }
+      // Container data attribute fallback (set by page if needed)
+      if (this.container.dataset.currentUserId) {
+        this._currentUserId = this.container.dataset.currentUserId;
+        return this._currentUserId;
+      }
+      return null;
+    }
+
     destroy() {
       if (this.refreshTimer) {
         clearInterval(this.refreshTimer);
@@ -133,10 +186,19 @@
         const data = await res.json();
         this.conversations = data.conversations || [];
         this._prevUnreadCount = this.unreadCount;
-        this.unreadCount = this.conversations.reduce(
-          (sum, c) => sum + (c.unreadCount || 0),
-          0
-        );
+
+        // Capture current userId once for the reduction
+        const currentUserId = this._resolveCurrentUserId();
+
+        // unreadCount is stored per-participant, not at conversation level
+        this.unreadCount = this.conversations.reduce((sum, c) => {
+          const participants = Array.isArray(c.participants) ? c.participants : [];
+          const me = currentUserId
+            ? participants.find(p => String(p.userId) === currentUserId)
+            : null;
+          return sum + ((me && me.unreadCount) || 0);
+        }, 0);
+
         this._render();
       } catch (err) {
         console.error('MessengerWidgetV4: fetch failed', err);
@@ -156,7 +218,7 @@
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            'CSRF-Token': getCsrfToken(),
+            'X-CSRF-Token': getCsrfToken(),
           },
           body: JSON.stringify({ message }),
         }
@@ -252,15 +314,19 @@
     }
 
     _renderItem(conv) {
-      const currentUserId =
-        (window.AuthState && window.AuthState.userId) ||
-        this.container.dataset.currentUserId ||
-        null;
+      const currentUserId = this._resolveCurrentUserId();
 
       // Determine the other participant for display
       const participants = Array.isArray(conv.participants) ? conv.participants : [];
+
+      // Current user's participant entry (for unreadCount)
+      const me = currentUserId
+        ? participants.find(p => String(p.userId) === currentUserId)
+        : null;
+
+      // Other participant (for avatar/name display)
       const other = participants.find(
-        (p) => p.userId !== String(currentUserId || '')
+        p => String(p.userId) !== String(currentUserId || '')
       ) || participants[0] || {};
 
       const name = escapeHtml(
@@ -277,7 +343,8 @@
       const time = escapeHtml(
         formatRelativeTime(lastMsg.sentAt || lastMsg.createdAt || conv.updatedAt)
       );
-      const unread = conv.unreadCount || 0;
+      // unreadCount is per-participant, stored in the current user's participant entry
+      const unread = (me && me.unreadCount) || 0;
       const convId = escapeHtml(conv._id || conv.id || '');
 
       const unreadDot = unread > 0 ? '<span class="mwv4__unread-dot" aria-hidden="true"></span>' : '';
