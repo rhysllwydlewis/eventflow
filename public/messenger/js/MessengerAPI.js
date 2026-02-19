@@ -245,6 +245,13 @@ class MessengerAPI {
   }
 
   /**
+   * Search contacts (alias for getContacts)
+   */
+  async searchContacts(query = '') {
+    return this.getContacts(query);
+  }
+
+  /**
    * Get unread count
    */
   async getUnreadCount() {
