@@ -133,7 +133,8 @@ router.post(
         id: uid(),
         senderId: userId,
         senderType: senderType,
-        senderName: senderName || req.user.name || req.user.email,
+        senderName:
+          senderName || req.user.name || req.user.firstName || req.user.displayName || 'User',
         senderEmail: senderEmail || req.user.email,
         subject: subject.trim(),
         message: message.trim(),
@@ -359,7 +360,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
       ticket.responses.push({
         id: uid(),
         userId: userId,
-        userName: req.user.name || req.user.email,
+        userName: req.user.name || req.user.firstName || req.user.displayName || 'User',
         userRole: userRole,
         message: response.trim(),
         createdAt: now,
@@ -485,7 +486,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
     const reply = {
       id: uid('reply'),
       userId: req.user.id,
-      userName: req.user.name || req.user.email,
+      userName: req.user.name || req.user.firstName || req.user.displayName || 'User',
       userRole,
       message: trimmedMessage,
       createdAt: now,

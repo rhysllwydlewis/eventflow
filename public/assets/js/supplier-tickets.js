@@ -153,7 +153,7 @@ function showCreateTicketModal() {
       const ticketData = {
         senderId: user.id,
         senderType: 'supplier',
-        senderName: user.name || user.email,
+        senderName: user.name || user.firstName || user.displayName || user.businessName || 'User',
         senderEmail: user.email,
         subject: modal.querySelector('#ticketSubject')?.value || '',
         message: modal.querySelector('#ticketMessage')?.value || '',
