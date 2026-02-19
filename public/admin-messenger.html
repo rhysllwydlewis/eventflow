@@ -197,7 +197,9 @@
       totalConversations = data.total || 0;
       const conversations = data.conversations || [];
 
-      summary.textContent = `Showing ${currentPage * PAGE_SIZE + 1}–${Math.min((currentPage + 1) * PAGE_SIZE, totalConversations)} of ${totalConversations} conversations`;
+      summary.textContent = totalConversations === 0
+        ? 'No conversations found.'
+        : `Showing ${currentPage * PAGE_SIZE + 1}–${Math.min((currentPage + 1) * PAGE_SIZE, totalConversations)} of ${totalConversations} conversations`;
 
       if (conversations.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:#9ca3af;">No conversations found.</td></tr>';
@@ -263,8 +265,13 @@
 
   document.getElementById('navRefreshBtn').addEventListener('click', fetchConversations);
 
-  // Initial load
-  document.addEventListener('DOMContentLoaded', fetchConversations);
+  // Initial load – use readyState check since script is at bottom of body
+  // (DOMContentLoaded may have already fired by the time this script runs)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fetchConversations);
+  } else {
+    fetchConversations();
+  }
 })();
 </script>
 <script src="/assets/js/cookie-consent.js" defer></script>

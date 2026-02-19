@@ -26,7 +26,9 @@
   // ─── Utilities ───────────────────────────────────────────────────────────────
 
   function escapeHtml(s) {
-    if (typeof s !== 'string') return '';
+    if (typeof s !== 'string') {
+      return '';
+    }
     const d = document.createElement('div');
     d.textContent = s;
     return d.innerHTML;
@@ -38,27 +40,37 @@
     for (const cookie of cookies) {
       const trimmed = cookie.trim();
       const eqIndex = trimmed.indexOf('=');
-      if (eqIndex === -1) continue;
+      if (eqIndex === -1) {
+        continue;
+      }
       const name = trimmed.substring(0, eqIndex);
       if (name === 'csrf' || name === 'csrfToken') {
         try {
           const val = decodeURIComponent(trimmed.substring(eqIndex + 1));
-          if (val) return val;
+          if (val) {
+            return val;
+          }
         } catch (_) {
           continue;
         }
       }
     }
     // Fallback to globals set by csrf-handler.js
-    if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
-    if (window.csrfToken) return window.csrfToken;
+    if (window.__CSRF_TOKEN__) {
+      return window.__CSRF_TOKEN__;
+    }
+    if (window.csrfToken) {
+      return window.csrfToken;
+    }
     return '';
   }
 
   function saveDraft(payload) {
     try {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
-    } catch (_) {}
+    } catch (_) {
+      /* ignore storage errors */
+    }
   }
 
   function loadDraft() {
@@ -73,16 +85,22 @@
   function clearDraft() {
     try {
       sessionStorage.removeItem(DRAFT_KEY);
-    } catch (_) {}
+    } catch (_) {
+      /* ignore storage errors */
+    }
   }
 
   async function checkAuth() {
     // AuthStateManager (primary global in EventFlow)
     if (window.AuthStateManager && typeof window.AuthStateManager.isAuthenticated === 'function') {
-      if (window.AuthStateManager.isAuthenticated()) return true;
+      if (window.AuthStateManager.isAuthenticated()) {
+        return true;
+      }
     }
     // Fallback property check
-    if (window.AuthState && window.AuthState.isAuthenticated) return true;
+    if (window.AuthState && window.AuthState.isAuthenticated) {
+      return true;
+    }
     try {
       const res = await fetch('/api/v1/auth/me', {
         credentials: 'include',
@@ -101,7 +119,9 @@
   let _isOpen = false;
 
   function _ensurePanel() {
-    if (_panel) return;
+    if (_panel) {
+      return;
+    }
 
     // Inject styles once
     if (!document.getElementById('qcv4-styles')) {
@@ -289,29 +309,34 @@
       prefill = '',
     } = opts;
 
-    const contextEmoji = {
-      supplier_profile: '🏢',
-      package: '📦',
-      marketplace_listing: '🛒',
-    }[contextType] || '💬';
+    const contextEmoji =
+      {
+        supplier_profile: '🏢',
+        package: '📦',
+        marketplace_listing: '🛒',
+      }[contextType] || '💬';
 
-    const contextLabelText = {
-      supplier_profile: 'Supplier',
-      package: 'Package',
-      marketplace_listing: 'Listing',
-    }[contextType] || 'Context';
+    const contextLabelText =
+      {
+        supplier_profile: 'Supplier',
+        package: 'Package',
+        marketplace_listing: 'Listing',
+      }[contextType] || 'Context';
 
-    const contextCardHtml = (contextType && contextTitle)
-      ? `<div class="qcv4-context-card" aria-label="Context: ${escapeHtml(contextTitle)}">
-           ${contextImage
-             ? `<img src="${escapeHtml(contextImage)}" alt="" class="qcv4-context-img" loading="lazy">`
-             : `<div class="qcv4-context-placeholder">${contextEmoji}</div>`}
+    const contextCardHtml =
+      contextType && contextTitle
+        ? `<div class="qcv4-context-card" aria-label="Context: ${escapeHtml(contextTitle)}">
+           ${
+             contextImage
+               ? `<img src="${escapeHtml(contextImage)}" alt="" class="qcv4-context-img" loading="lazy">`
+               : `<div class="qcv4-context-placeholder">${contextEmoji}</div>`
+           }
            <div class="qcv4-context-info">
              <div class="qcv4-context-label">${escapeHtml(contextLabelText)}</div>
              <div class="qcv4-context-title">${escapeHtml(contextTitle)}</div>
            </div>
          </div>`
-      : '';
+        : '';
 
     _panel.innerHTML = `
       <div class="qcv4-drag-handle" aria-hidden="true"></div>
@@ -321,12 +346,16 @@
       </div>
       <div class="qcv4-body">
         ${contextCardHtml}
-        ${!recipientId ? `<div class="qcv4-field">
+        ${
+          !recipientId
+            ? `<div class="qcv4-field">
           <label class="qcv4-label" for="qcv4-recipient">To</label>
           <input type="text" id="qcv4-recipient" class="qcv4-recipient"
                  placeholder="Recipient name or ID" value="${escapeHtml(recipientName)}"
                  autocomplete="off">
-        </div>` : `<input type="hidden" id="qcv4-recipient" value="${escapeHtml(recipientId)}">`}
+        </div>`
+            : `<input type="hidden" id="qcv4-recipient" value="${escapeHtml(recipientId)}">`
+        }
         <div class="qcv4-field">
           <label class="qcv4-label" for="qcv4-message">Message</label>
           <textarea id="qcv4-message" class="qcv4-textarea"
@@ -355,9 +384,15 @@
     ta.addEventListener('input', () => {
       const remaining = CHAR_LIMIT - ta.value.length;
       charEl.textContent = `${remaining} characters remaining`;
-      charEl.className = 'qcv4-char-indicator' +
-        (remaining < 0 ? ' qcv4-char-indicator--over' : remaining < 100 ? ' qcv4-char-indicator--warn' : '');
-      document.getElementById('qcv4-submit-btn').disabled = ta.value.trim().length === 0 || remaining < 0;
+      charEl.className = `qcv4-char-indicator${
+        remaining < 0
+          ? ' qcv4-char-indicator--over'
+          : remaining < 100
+            ? ' qcv4-char-indicator--warn'
+            : ''
+      }`;
+      document.getElementById('qcv4-submit-btn').disabled =
+        ta.value.trim().length === 0 || remaining < 0;
     });
     // Initial state
     if (ta.value.trim().length === 0) {
@@ -368,8 +403,10 @@
     document.getElementById('qcv4-submit-btn').addEventListener('click', () => _handleSubmit(opts));
 
     // Keyboard close
-    _panel.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') _close();
+    _panel.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        _close();
+      }
     });
   }
 
@@ -412,7 +449,9 @@
     // Focus textarea
     setTimeout(() => {
       const ta = document.getElementById('qcv4-message');
-      if (ta) ta.focus();
+      if (ta) {
+        ta.focus();
+      }
     }, 320);
 
     // Trap scroll
@@ -420,13 +459,17 @@
   }
 
   function _close() {
-    if (!_isOpen) return;
+    if (!_isOpen) {
+      return;
+    }
     _backdrop.classList.remove('qcv4-backdrop--visible');
     _panel.classList.remove('qcv4-panel--visible');
     _isOpen = false;
     document.body.style.overflow = '';
     setTimeout(() => {
-      if (_panel) _panel.innerHTML = '';
+      if (_panel) {
+        _panel.innerHTML = '';
+      }
     }, 300);
   }
 
@@ -438,7 +481,9 @@
     const submitBtn = document.getElementById('qcv4-submit-btn');
 
     const messageText = ta ? ta.value.trim() : '';
-    if (!messageText) return;
+    if (!messageText) {
+      return;
+    }
 
     // Determine recipientId
     let recipientId = opts.recipientId;
@@ -457,27 +502,20 @@
     _hideError(errorEl);
 
     try {
-      // Resolve current user ID from available auth state
-      let currentUserId = null;
-      if (window.AuthStateManager && typeof window.AuthStateManager.getUser === 'function') {
-        const u = window.AuthStateManager.getUser();
-        currentUserId = u ? (u.id || u._id || null) : null;
-      }
-      if (!currentUserId && window.AuthState) {
-        currentUserId = window.AuthState.userId ||
-          (window.AuthState.user && (window.AuthState.user.id || window.AuthState.user._id)) || null;
-      }
-
+      // participantIds must only include OTHER participants - the backend adds the current user automatically
       const participantIds = [recipientId];
-      if (currentUserId && !participantIds.includes(String(currentUserId))) {
-        participantIds.push(String(currentUserId));
-      }
 
       // Build context object
       const context = {};
-      if (opts.contextType) context.type = opts.contextType;
-      if (opts.contextId) context.referenceId = opts.contextId;
-      if (opts.contextTitle) context.title = opts.contextTitle;
+      if (opts.contextType) {
+        context.type = opts.contextType;
+      }
+      if (opts.contextId) {
+        context.referenceId = opts.contextId;
+      }
+      if (opts.contextTitle) {
+        context.title = opts.contextTitle;
+      }
 
       // Step 1: Create (or find existing) conversation
       const createRes = await fetch('/api/v4/messenger/conversations', {
@@ -488,11 +526,12 @@
           'X-CSRF-Token': getCsrfToken(),
         },
         body: JSON.stringify({
-          type: opts.contextType === 'marketplace_listing'
-            ? 'marketplace'
-            : opts.contextType === 'package'
-              ? 'enquiry'
-              : 'direct',
+          type:
+            opts.contextType === 'marketplace_listing'
+              ? 'marketplace'
+              : opts.contextType === 'package'
+                ? 'enquiry'
+                : 'direct',
           participantIds,
           context: Object.keys(context).length ? context : undefined,
         }),
@@ -502,14 +541,16 @@
       if (createRes.ok) {
         const createData = await createRes.json();
         conversationId =
-          (createData.conversation && (createData.conversation._id || createData.conversation.id)) ||
+          (createData.conversation &&
+            (createData.conversation._id || createData.conversation.id)) ||
           createData._id ||
           createData.id;
       } else if (createRes.status === 409) {
         // Conversation already exists
         const conflictData = await createRes.json();
         conversationId =
-          (conflictData.conversation && (conflictData.conversation._id || conflictData.conversation.id)) ||
+          (conflictData.conversation &&
+            (conflictData.conversation._id || conflictData.conversation.id)) ||
           conflictData.conversationId;
       } else {
         const errBody = await createRes.json().catch(() => ({}));
@@ -518,7 +559,9 @@
         );
       }
 
-      if (!conversationId) throw new Error('No conversation ID returned');
+      if (!conversationId) {
+        throw new Error('No conversation ID returned');
+      }
 
       // Step 2: Send initial message
       const msgRes = await fetch(
@@ -554,13 +597,17 @@
   }
 
   function _showError(el, msg) {
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.textContent = msg;
     el.classList.add('qcv4-error--visible');
   }
 
   function _hideError(el) {
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.textContent = '';
     el.classList.remove('qcv4-error--visible');
   }
@@ -572,11 +619,13 @@
    */
   function attachAll() {
     const triggers = document.querySelectorAll('[data-quick-compose="true"]');
-    triggers.forEach((btn) => {
+    triggers.forEach(btn => {
       // Avoid double-binding
-      if (btn._qcv4Attached) return;
+      if (btn._qcv4Attached) {
+        return;
+      }
       btn._qcv4Attached = true;
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', e => {
         e.preventDefault();
         open({
           recipientId: btn.dataset.recipientId || '',
@@ -598,16 +647,18 @@
    */
   function restoreDraftIfPresent() {
     const draft = loadDraft();
-    if (!draft) return;
+    if (!draft) {
+      return;
+    }
 
     // Only restore if we just returned from a login redirect
     const returnUrl = draft.returnUrl || '';
     const currentUrl = window.location.href;
-    const onReturnPage =
-      currentUrl === returnUrl ||
-      currentUrl.startsWith(returnUrl.split('?')[0]);
+    const onReturnPage = currentUrl === returnUrl || currentUrl.startsWith(returnUrl.split('?')[0]);
 
-    if (!onReturnPage) return;
+    if (!onReturnPage) {
+      return;
+    }
 
     clearDraft();
     // Delay to let page settle
