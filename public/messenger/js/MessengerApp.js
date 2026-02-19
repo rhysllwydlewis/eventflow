@@ -39,8 +39,8 @@ class MessengerApp {
       // Setup event listeners
       this.setupEventListeners();
 
-      // Initialize components (these are loaded via separate script tags)
-      // ConversationList, ConversationView, ContactPicker, etc.
+      // Initialize components
+      this.initializeComponents();
       
       // Handle deep links (e.g., /messenger/?conversation=xxx)
       this.handleDeepLink();
@@ -54,6 +54,49 @@ class MessengerApp {
       console.error('Failed to initialize messenger:', error);
       this.showError('Failed to load messenger. Please refresh the page.');
     }
+  }
+
+  /**
+   * Initialize UI components
+   */
+  initializeComponents() {
+    // Initialize ConversationList
+    const conversationListContainer = document.querySelector('#conversationList');
+    if (conversationListContainer && window.ConversationList) {
+      this.conversationList = new ConversationList(conversationListContainer, this.state, this.api);
+    }
+
+    // Initialize ConversationView
+    const conversationViewContainer = document.querySelector('#conversationView');
+    if (conversationViewContainer && window.ConversationView) {
+      this.conversationView = new ConversationView(conversationViewContainer, this.state, this.api);
+      this.conversationView.setCurrentUser(this.currentUser);
+    }
+
+    // Initialize MessageComposer
+    const composerContainer = document.querySelector('.messenger-composer');
+    if (composerContainer && window.MessageComposer) {
+      this.messageComposer = new MessageComposer(composerContainer, this.state, this.api, this.socket);
+    }
+
+    // Initialize ContactPicker
+    const contactPickerModal = document.querySelector('#contactPickerModal');
+    if (contactPickerModal && window.ContactPicker) {
+      this.contactPicker = new ContactPicker(contactPickerModal, this.state, this.api);
+    }
+
+    // Initialize NotificationBridge
+    if (window.NotificationBridge) {
+      this.notificationBridge = new NotificationBridge(this.state);
+    }
+
+    console.log('Components initialized:', {
+      conversationList: !!this.conversationList,
+      conversationView: !!this.conversationView,
+      messageComposer: !!this.messageComposer,
+      contactPicker: !!this.contactPicker,
+      notificationBridge: !!this.notificationBridge,
+    });
   }
 
   /**
