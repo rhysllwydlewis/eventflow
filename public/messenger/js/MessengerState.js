@@ -51,6 +51,13 @@ class MessengerState {
   }
 
   /**
+   * Add a new conversation (alias for updateConversation)
+   */
+  addConversation(conversation) {
+    return this.updateConversation(conversation);
+  }
+
+  /**
    * Set active conversation
    */
   setActiveConversation(conversationId) {
@@ -89,6 +96,62 @@ class MessengerState {
    */
   getMessages(conversationId) {
     return this.messages.get(conversationId) || [];
+  }
+
+  /**
+   * Update a message (for editing)
+   */
+  updateMessage(conversationId, messageId, updates) {
+    const messages = this.messages.get(conversationId) || [];
+    const index = messages.findIndex(m => m._id === messageId);
+    
+    if (index >= 0) {
+      messages[index] = { ...messages[index], ...updates };
+      this.messages.set(conversationId, messages);
+      this.emit('messageUpdated', { conversationId, messageId, message: messages[index] });
+    }
+  }
+
+  /**
+   * Delete a message
+   */
+  deleteMessage(conversationId, messageId) {
+    const messages = this.messages.get(conversationId) || [];
+    const filteredMessages = messages.filter(m => m._id !== messageId);
+    
+    this.messages.set(conversationId, filteredMessages);
+    this.emit('messageDeleted', { conversationId, messageId });
+  }
+
+  /**
+   * Update reaction on a message
+   */
+  updateReaction(conversationId, messageId, reaction) {
+    const messages = this.messages.get(conversationId) || [];
+    const index = messages.findIndex(m => m._id === messageId);
+    
+    if (index >= 0) {
+      const message = messages[index];
+      if (!message.reactions) {
+        message.reactions = [];
+      }
+      
+      // Toggle reaction or add it
+      const existingIndex = message.reactions.findIndex(
+        r => r.emoji === reaction.emoji && r.userId === reaction.userId
+      );
+      
+      if (existingIndex >= 0) {
+        // Remove reaction
+        message.reactions.splice(existingIndex, 1);
+      } else {
+        // Add reaction
+        message.reactions.push(reaction);
+      }
+      
+      this.messages.set(conversationId, messages);
+      this.emit('messageUpdated', { conversationId, messageId, message });
+    }
   }
 
   /**
@@ -180,7 +243,7 @@ class MessengerState {
       const searchLower = this.filters.search.toLowerCase();
       filtered = filtered.filter(conv => {
         const otherParticipant = conv.participants.find(p => p.userId !== this.currentUser?.id);
-        const nameMatch = otherParticipant?.displayName.toLowerCase().includes(searchLower);
+        const nameMatch = otherParticipant?.displayName?.toLowerCase().includes(searchLower);
         const contentMatch = conv.lastMessage?.content?.toLowerCase().includes(searchLower);
         return nameMatch || contentMatch;
       });
