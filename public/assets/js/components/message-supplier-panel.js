@@ -396,19 +396,28 @@ class MessageSupplierPanel {
       });
       const csrfData = await csrfResponse.json();
 
-      // Start thread and send message
-      const response = await fetch('/api/v1/threads/start', {
+      // Create conversation with initial message using v4 API
+      const conversationData = {
+        type: this.options.packageId ? 'marketplace' : 'supplier_network',
+        participantIds: [this.options.supplierId],
+        context: {
+          type: this.options.packageId ? 'package' : 'supplier',
+          id: this.options.packageId || this.options.supplierId,
+          title: this.options.supplierName || 'Supplier',
+        },
+        metadata: {
+          source: 'message_supplier_panel',
+        },
+      };
+
+      const response = await fetch('/api/v4/messenger/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfData.csrfToken,
         },
         credentials: 'include',
-        body: JSON.stringify({
-          supplierId: this.options.supplierId,
-          packageId: this.options.packageId,
-          message: message,
-        }),
+        body: JSON.stringify(conversationData),
       });
 
       if (response.status === 401) {
@@ -421,6 +430,30 @@ class MessageSupplierPanel {
       }
 
       if (!response.ok) {
+        throw new Error('Failed to create conversation');
+      }
+
+      const result = await response.json();
+      const conversationId = result.conversation?._id || result.conversation?.id;
+
+      if (!conversationId) {
+        throw new Error('No conversation ID returned');
+      }
+
+      // Send the initial message
+      const messageResponse = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfData.csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          message: message,
+        }),
+      });
+
+      if (!messageResponse.ok) {
         throw new Error('Failed to send message');
       }
 
