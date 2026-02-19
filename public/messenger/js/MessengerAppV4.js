@@ -45,7 +45,6 @@ class MessengerAppV4 {
         return;
       }
       this.state.setCurrentUser(this.currentUser);
-      this._initHeaderNav(this.currentUser);
 
       // 2. Initialize all components
       this._initComponents();
@@ -567,71 +566,6 @@ class MessengerAppV4 {
     return this.currentUser?.id || this.currentUser?._id || null;
   }
 
-  /** Populate the messenger page header with the current user's name and avatar. */
-  _initHeaderNav(user) {
-    if (this._headerNavInitialized) {
-      return;
-    }
-    this._headerNavInitialized = true;
-
-    const displayName =
-      user.displayName || user.businessName || user.name || user.firstName || 'User';
-    const initial = displayName.charAt(0).toUpperCase() || 'U';
-
-    const userNameEl = document.getElementById('userName');
-    const userAvatarEl = document.getElementById('userAvatar');
-    const userMenuBtn = document.getElementById('userMenuButton');
-    const userDropdown = document.getElementById('userDropdown');
-    const logoutBtn = document.getElementById('logoutButton');
-
-    if (userNameEl) {
-      userNameEl.textContent = displayName;
-    }
-    if (userAvatarEl) {
-      if (user.avatarUrl) {
-        const img = document.createElement('img');
-        img.src = user.avatarUrl;
-        img.alt = displayName;
-        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-        userAvatarEl.textContent = '';
-        userAvatarEl.appendChild(img);
-      } else {
-        userAvatarEl.textContent = initial;
-      }
-    }
-
-    // Toggle user dropdown
-    if (userMenuBtn && userDropdown) {
-      userMenuBtn.addEventListener('click', () => {
-        const expanded = userMenuBtn.getAttribute('aria-expanded') === 'true';
-        userMenuBtn.setAttribute('aria-expanded', String(!expanded));
-        userDropdown.setAttribute('aria-hidden', String(expanded));
-        userDropdown.style.display = expanded ? 'none' : '';
-      });
-      document.addEventListener('click', e => {
-        if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-          userMenuBtn.setAttribute('aria-expanded', 'false');
-          userDropdown.setAttribute('aria-hidden', 'true');
-          userDropdown.style.display = 'none';
-        }
-      });
-    }
-
-    // Logout button
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        try {
-          await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-        } catch (err) {
-          console.warn('[MessengerAppV4] Logout API error:', err);
-        }
-        if (window.AuthStateManager?.logout) {
-          window.AuthStateManager.logout();
-        }
-        window.location.href = '/';
-      });
-    }
-  }
   async _loadCurrentUser() {
     // Try AuthStateManager first (primary, set by auth-state.js)
     if (window.AuthStateManager?.isAuthenticated?.()) {
