@@ -178,35 +178,56 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
         throw new Error('No conversation ID returned');
       }
 
-      // Send the initial message
-      const messageResponse = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.csrfToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          message: messageText,
-        }),
-      });
+      // Send the initial message (Step 2)
+      let messageSent = false;
+      try {
+        const messageResponse = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfData.csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            message: messageText,
+          }),
+        });
 
-      if (!messageResponse.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      closeModal();
-
-      if (typeof Toast !== 'undefined') {
-        Toast.success('Message sent! The supplier will respond soon.');
-      } else {
-        alert('Message sent! Visit your dashboard to continue the conversation.');
-      }
-
-      // Redirect to messenger with this conversation
-      setTimeout(() => {
+        if (!messageResponse.ok) {
+          // Conversation created but message failed - redirect anyway
+          closeModal();
+          if (typeof Toast !== 'undefined') {
+            Toast.warning('Conversation created but message failed. Opening conversation...');
+          }
+          window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
+          return;
+        }
+        
+        messageSent = true;
+      } catch (msgError) {
+        // If message send fails, redirect to conversation anyway
+        closeModal();
+        if (typeof Toast !== 'undefined') {
+          Toast.warning('Conversation created but message failed. Opening conversation...');
+        }
         window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
-      }, 1500);
+        return;
+      }
+
+      if (messageSent) {
+        closeModal();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Message sent! The supplier will respond soon.');
+        } else {
+          alert('Message sent! Visit your dashboard to continue the conversation.');
+        }
+
+        // Redirect to messenger with this conversation
+        setTimeout(() => {
+          window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
+        }, 1500);
+      }
     } catch (error) {
       console.error('Error starting conversation:', error);
       if (typeof Toast !== 'undefined') {
