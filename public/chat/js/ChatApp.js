@@ -112,8 +112,12 @@ class ChatApp {
    */
   initializeServices() {
     this.chatAPI = new ChatAPI();
-    this.chatState = new ChatState(this.currentUser);
-    this.chatSocket = new ChatSocket();
+    this.chatState = new ChatState();
+    // Set current user after creating state
+    if (this.currentUser) {
+      this.chatState.setCurrentUser(this.currentUser);
+    }
+    this.chatSocket = new ChatSocket(this.chatState);
   }
 
   /**
@@ -152,7 +156,7 @@ class ChatApp {
     const searchInput = document.getElementById('conversationSearch');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
-        this.chatState.setSearch(e.target.value);
+        this.chatState.setSearchQuery(e.target.value);
       });
     }
 

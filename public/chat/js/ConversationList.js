@@ -79,17 +79,32 @@ class ConversationList {
    */
   getFilteredConversations() {
     let filtered = [...this.conversations];
+    const currentUser = this.chatState.getCurrentUser();
+    const currentUserId = currentUser?.userId || currentUser?.id;
+
+    if (!currentUserId) {
+      return filtered;
+    }
 
     // Apply filter
     switch (this.currentFilter) {
       case 'unread':
-        filtered = filtered.filter(c => c.unreadCount > 0);
+        filtered = filtered.filter(c => {
+          const participant = c.participants?.find(p => p.userId === currentUserId);
+          return participant && participant.unreadCount > 0;
+        });
         break;
       case 'pinned':
-        filtered = filtered.filter(c => c.pinned);
+        filtered = filtered.filter(c => {
+          const participant = c.participants?.find(p => p.userId === currentUserId);
+          return participant && participant.isPinned;
+        });
         break;
       case 'archived':
-        filtered = filtered.filter(c => c.archived);
+        filtered = filtered.filter(c => {
+          const participant = c.participants?.find(p => p.userId === currentUserId);
+          return participant && participant.isArchived;
+        });
         break;
       case 'all':
       default:

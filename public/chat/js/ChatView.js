@@ -61,7 +61,8 @@ class ChatView {
   bindEvents() {
     // ChatState events
     this.chatState.on('messages:updated', (data) => {
-      if (data.conversationId === this.activeConversation?.id) {
+      const activeId = this.activeConversation?._id || this.activeConversation?.id;
+      if (data.conversationId === activeId) {
         this.messages = data.messages;
         this.renderMessages();
         if (this.isAtBottom) {
@@ -227,11 +228,14 @@ class ChatView {
     const content = this.messageInput.value.trim();
     if (!content || content.length > this.maxChars) return;
 
+    const currentUser = this.chatState.getCurrentUser();
+    const userId = currentUser?.userId || currentUser?.id;
+    
     const tempId = 'temp_' + Date.now();
     const tempMessage = {
       id: tempId,
-      conversationId: this.activeConversation.id,
-      senderId: this.chatState.currentUser.id,
+      conversationId: this.activeConversation._id || this.activeConversation.id,
+      senderId: userId,
       content: content,
       timestamp: new Date().toISOString(),
       status: 'sending'
@@ -247,21 +251,25 @@ class ChatView {
     this.handleInput();
 
     // Stop typing indicator
-    this.chatSocket.sendTyping(this.activeConversation.id, false);
+    this.chatSocket.stopTyping(this.activeConversation._id || this.activeConversation.id);
 
     try {
+      const conversationId = this.activeConversation._id || this.activeConversation.id;
+      
       // Send via API
-      const message = await this.chatAPI.sendMessage(this.activeConversation.id, content);
+      const result = await this.chatAPI.sendMessage(conversationId, {
+        content,
+        type: 'text',
+      });
+      
+      const message = result.message;
       
       // Replace temp message with real one
       const index = this.messages.findIndex(m => m.id === tempId);
       if (index !== -1) {
         this.messages[index] = message;
-        this.chatState.updateMessages(this.activeConversation.id, this.messages);
+        this.chatState.setMessages(conversationId, this.messages);
       }
-
-      // Update conversation last message
-      this.chatState.updateConversationLastMessage(this.activeConversation.id, message);
       
     } catch (error) {
       console.error('Failed to send message:', error);

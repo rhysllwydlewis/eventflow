@@ -194,7 +194,7 @@ class ChatState {
   setMessages(conversationId, messages) {
     this.state.messages.set(conversationId, messages);
     if (conversationId === this.state.activeConversationId) {
-      this.emit('messages:updated', messages);
+      this.emit('messages:updated', { conversationId, messages });
     }
   }
 
@@ -205,7 +205,7 @@ class ChatState {
     const existing = this.state.messages.get(conversationId) || [];
     this.state.messages.set(conversationId, [...messages, ...existing]);
     if (conversationId === this.state.activeConversationId) {
-      this.emit('messages:updated', this.state.messages.get(conversationId));
+      this.emit('messages:updated', { conversationId, messages: this.state.messages.get(conversationId) });
     }
   }
 
@@ -220,7 +220,7 @@ class ChatState {
       messages.push(message);
       this.state.messages.set(conversationId, messages);
       if (conversationId === this.state.activeConversationId) {
-        this.emit('messages:updated', messages);
+        this.emit('messages:updated', { conversationId, messages });
       }
       this.emit('message:added', { conversationId, message });
     }
@@ -237,7 +237,7 @@ class ChatState {
         messages[index] = { ...messages[index], ...updates };
         this.state.messages.set(conversationId, messages);
         if (conversationId === this.state.activeConversationId) {
-          this.emit('messages:updated', messages);
+          this.emit('messages:updated', { conversationId, messages });
         }
         this.emit('message:updated', { conversationId, message: messages[index] });
       }
@@ -253,7 +253,7 @@ class ChatState {
       const filtered = messages.filter(m => m._id !== messageId);
       this.state.messages.set(conversationId, filtered);
       if (conversationId === this.state.activeConversationId) {
-        this.emit('messages:updated', filtered);
+        this.emit('messages:updated', { conversationId, messages: filtered });
       }
       this.emit('message:removed', { conversationId, messageId });
     }

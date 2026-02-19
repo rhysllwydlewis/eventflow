@@ -85,50 +85,41 @@ class ChatSocket {
 
     // Chat v5 events
     this.socket.on('chat:v5:message', message => {
-      console.log('New message received:', message);
       this.handleNewMessage(message);
     });
 
     this.socket.on('chat:v5:message-updated', message => {
-      console.log('Message updated:', message);
       this.handleMessageUpdate(message);
     });
 
     this.socket.on('chat:v5:message-deleted', data => {
-      console.log('Message deleted:', data);
       this.handleMessageDelete(data);
     });
 
     this.socket.on('chat:v5:reaction', message => {
-      console.log('Reaction updated:', message);
       this.handleMessageUpdate(message);
     });
 
     this.socket.on('chat:v5:read-receipt', data => {
-      console.log('Read receipt:', data);
       this.handleReadReceipt(data);
     });
 
     this.socket.on('chat:v5:user-typing', data => {
-      console.log('User typing:', data);
       this.handleUserTyping(data);
     });
 
     this.socket.on('chat:v5:user-stopped-typing', data => {
-      console.log('User stopped typing:', data);
       this.handleUserStoppedTyping(data);
     });
 
     // Presence events
     this.socket.on('presence:online', data => {
-      console.log('User online:', data);
       if (data.userId) {
         this.chatState.setUserOnline(data.userId, true);
       }
     });
 
     this.socket.on('presence:offline', data => {
-      console.log('User offline:', data);
       if (data.userId) {
         this.chatState.setUserOnline(data.userId, false);
       }
