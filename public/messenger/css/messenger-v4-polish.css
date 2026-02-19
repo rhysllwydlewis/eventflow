@@ -140,7 +140,7 @@
    5. SELECTED / ACTIVE / UNREAD STATES
    ============================================================ */
 .messenger-v4__conversation-item--active {
-  background: rgba(11, 128, 115, 0.12) !important;
+  background: rgba(11, 128, 115, 0.12);
   border-left: 3px solid var(--messenger-primary, #0B8073);
   box-shadow: inset 0 0 0 1px rgba(11, 128, 115, 0.15);
 }
@@ -382,7 +382,8 @@
   transform: scale(1.08);
 }
 
-.messenger-v4__reaction-pill.is-entering {
+.messenger-v4__reaction-pill.is-entering,
+.messenger-v4__reaction.is-entering {
   animation: mvReactionPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -1818,4 +1819,80 @@ body:has(.messenger-v4) {
 .messenger-v4 {
   /* Prevent iOS overscroll bounce from showing page background */
   overscroll-behavior: contain;
+}
+
+/* ============================================================
+   64. ANIMATION CLASS-NAME ALIASES
+   messenger-v4-animations.css uses pre-BEM class names
+   (.typing-indicator__dot, .presence-dot, etc.) that don't
+   match the BEM class names used by the V4 JS components.
+   These rules apply the same animations to the correct names.
+   ============================================================ */
+
+/* Typing dots bounce animation */
+.messenger-v4__typing-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--messenger-primary, #0B8073);
+  animation: typingDot 1.1s infinite ease-in-out both;
+  flex-shrink: 0;
+}
+
+.messenger-v4__typing-dot:nth-child(1) { animation-delay: 0s;    }
+.messenger-v4__typing-dot:nth-child(2) { animation-delay: 0.16s; }
+.messenger-v4__typing-dot:nth-child(3) { animation-delay: 0.32s; }
+
+/* Presence dot – green fade-in for online; grey for offline */
+.messenger-v4__presence-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  transition: background-color 0.4s ease, opacity 0.4s ease;
+}
+
+.messenger-v4__presence-dot--online {
+  background-color: #22c55e;
+  animation: presenceFadeIn 0.3s ease-out both;
+}
+
+/* Reaction pop: section 12 covers both .messenger-v4__reaction-pill and .messenger-v4__reaction */
+
+/* Read receipt – uses teal instead of indigo to match site palette */
+.messenger-v4__read-receipt {
+  transition: color 0.3s ease, opacity 0.3s ease;
+  color: rgba(107, 114, 128, 0.70);
+  font-size: 13px;
+}
+
+.messenger-v4__read-receipt--read {
+  color: var(--messenger-primary, #0B8073);
+}
+
+/* Message entrance: section 8 (mvMsgEnter) is the canonical rule; no duplicate needed here */
+
+/* Unread badge pulse uses teal accent, not indigo */
+.messenger-v4__unread-badge.is-pulsing {
+  animation: mvUnreadPulse 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 2;
+}
+
+/* ============================================================
+   65. TYPING BUBBLE LAYOUT (dots + label on same row)
+   ============================================================ */
+.messenger-v4__typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 99px;
+}
+
+.messenger-v4__typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px 8px;
+  min-height: 36px;
 }
