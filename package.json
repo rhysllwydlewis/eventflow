@@ -10,6 +10,7 @@
     "dev": "node server.js",
     "start": "node server.js",
     "migrate": "node migrate-to-mongodb.js",
+    "migrate:messenger-v4": "node scripts/migrate-to-messenger-v4.js",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write \"**/*.{js,json,md}\"",

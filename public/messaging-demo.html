@@ -276,144 +276,38 @@
       <!-- Integration Info -->
       <div class="demo-card">
         <h2>🔧 Integration</h2>
-        <p>Easy to integrate into any messaging UI:</p>
+        <p>Messenger v4 is the canonical messaging experience. Use:</p>
         <pre style="background: #f8f9fa; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px;">
-import { messagingSystem, messagingManager } 
-  from './messaging.js';
+// Navigate to Messenger v4
+window.location.href = '/messenger/';
 
-// Create typing indicator
-const indicator = messagingManager
-  .createTypingIndicator('#container');
-
-// Listen to messages
-messagingSystem.listenToMessages(
-  conversationId, 
-  (messages) => render(messages)
-);
-
-// Send typing status
-messagingSystem.sendTypingStatus(
-  conversationId, 
-  true
-);</pre>
+// Or open a conversation programmatically via QuickComposeV4
+if (window.QuickComposeV4) {
+  window.QuickComposeV4.open({ recipientId: 'user-id' });
+}</pre>
       </div>
     </div>
   </div>
 
   <!-- Load dependencies -->
   <script src="/assets/js/toast-notifications.js"></script>
-  <script type="module">
-    import messagingSystem, { MessagingManager } from '/assets/js/messaging.js';
-    
-    window.messagingSystem = messagingSystem;
-    window.messagingManager = new MessagingManager();
+  <script>
+    // Legacy messaging.js has been removed – this demo page is superseded by Messenger v4.
+    // Navigate to /messenger/ for the current messaging experience.
+    console.info('[EventFlow] messaging-demo.html: legacy messaging.js removed. Use /messenger/ instead.');
 
-    // Test functions
+    // Stub functions so demo buttons do not throw
     window.testConnection = function() {
       const status = document.getElementById('connectionStatus');
-      const dot = document.getElementById('connectionDot');
-      const text = document.getElementById('connectionText');
-      
-      status.className = 'demo-status info';
-      status.textContent = 'Initializing WebSocket...';
-      
-      messagingSystem.initWebSocket();
-      
-      setTimeout(() => {
-        status.className = 'demo-status success';
-        status.textContent = 'WebSocket connected successfully!';
-        dot.className = 'connection-dot online';
-        text.textContent = 'Connected (Real-time active)';
-      }, 500);
-    };
-
-    window.simulateDisconnect = function() {
-      const status = document.getElementById('connectionStatus');
-      const dot = document.getElementById('connectionDot');
-      const text = document.getElementById('connectionText');
-      
-      status.className = 'demo-status warning';
-      status.textContent = 'Connection lost - switching to fallback polling';
-      dot.className = 'connection-dot offline';
-      text.textContent = 'Offline (Polling mode - 30s intervals)';
-      
-      if (typeof EFToast !== 'undefined') {
-        EFToast.warning('Connection lost - using fallback mode', { duration: 3000 });
-      }
-      
-      setTimeout(() => {
-        status.className = 'demo-status success';
-        status.textContent = 'Reconnected to WebSocket!';
-        dot.className = 'connection-dot online';
-        text.textContent = 'Connected (Real-time active)';
-        
-        if (typeof EFToast !== 'undefined') {
-          EFToast.success('Reconnected - real-time messaging active', { duration: 3000 });
-        }
-      }, 3000);
-    };
-
-    window.testTyping = function() {
-      const container = document.getElementById('typingContainer');
-      const indicator = window.messagingManager.createTypingIndicator('#typingContainer');
-      
-      if (indicator) {
-        window.messagingManager.showTypingIndicator(indicator, 'John Doe');
+      if (status) {
+        status.className = 'demo-status info';
+        status.textContent = 'Legacy demo superseded – visit /messenger/ for Messenger v4.';
       }
     };
-
-    window.stopTyping = function() {
-      const indicator = document.querySelector('#typingContainer .typing-indicator');
-      if (indicator) {
-        window.messagingManager.hideTypingIndicator(indicator);
-      }
-    };
-
-    window.sendDemoMessage = function() {
-      const input = document.getElementById('demoMessage');
-      const messageList = document.getElementById('messageList');
-      const text = input.value.trim();
-      
-      if (!text) {
-        if (typeof EFToast !== 'undefined') {
-          EFToast.warning('Please enter a message', { duration: 2000 });
-        }
-        return;
-      }
-      
-      // Create message bubble
-      const bubble = document.createElement('div');
-      bubble.className = 'message-bubble sent';
-      bubble.textContent = text;
-      messageList.appendChild(bubble);
-      
-      input.value = '';
-      
-      if (typeof EFToast !== 'undefined') {
-        EFToast.success('Message sent!', { duration: 2000 });
-      }
-      
-      // Simulate response after 2 seconds
-      setTimeout(() => {
-        const response = document.createElement('div');
-        response.className = 'message-bubble received';
-        response.textContent = 'Message received via WebSocket! Response latency: <100ms';
-        messageList.appendChild(response);
-      }, 2000);
-    };
-
-    // Listen for connection events
-    window.addEventListener('messaging:connection', (event) => {
-      console.log('Connection status:', event.detail.status);
-    });
-
-    // Listen for typing events
-    window.addEventListener('messaging:typing', (event) => {
-      console.log('Typing status:', event.detail);
-    });
-
-    console.log('✅ Messaging demo loaded successfully');
-    console.log('💡 Tip: Open browser console to see event logs');
+    window.simulateDisconnect = window.testConnection;
+    window.testTyping = window.testConnection;
+    window.stopTyping = window.testConnection;
+    window.sendDemoMessage = window.testConnection;
   </script>
 </body>
 </html>

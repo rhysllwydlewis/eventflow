@@ -70,43 +70,6 @@ const API_VERSION = {
     // Attachments
     uploadAttachment: (conversationId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/attachments`,
   },
-  
-  // Legacy v2 messaging endpoints (DEPRECATED - use messenger.* instead)
-  MESSAGING: {
-    get BASE() {
-      return `${API_VERSION.BASE}/v2/messages`;
-    },
-    THREADS: '/threads',
-    UNREAD: '/unread',
-    DRAFTS: '/drafts',
-    SENT: '/sent',
-    CONVERSATIONS: '/conversations',
-    REACTIONS: '/reactions',
-    READ: '/read',
-    MARK_READ: '/mark-read',
-    MARK_UNREAD: '/mark-unread',
-    ARCHIVE: '/archive',
-    UNARCHIVE: '/unarchive',
-    LIMITS: '/limits',
-  },
-  
-  // Legacy helper methods (DEPRECATED - use messenger.* instead)
-  messaging: {
-    threads: () => `${API_VERSION.MESSAGING.BASE}/threads`,
-    thread: (id) => `${API_VERSION.MESSAGING.BASE}/threads/${id}`,
-    threadMessages: (id) => `${API_VERSION.MESSAGING.BASE}/${id}`,
-    sendMessage: (threadId) => `${API_VERSION.MESSAGING.BASE}/${threadId}`,
-    markRead: (threadId) => `${API_VERSION.MESSAGING.BASE}/threads/${threadId}/read`,
-    markUnread: (threadId) => `${API_VERSION.MESSAGING.BASE}/threads/${threadId}/mark-unread`,
-    archive: (threadId) => `${API_VERSION.MESSAGING.BASE}/threads/${threadId}/archive`,
-    unarchive: (threadId) => `${API_VERSION.MESSAGING.BASE}/threads/${threadId}/unarchive`,
-    reactions: (messageId) => `${API_VERSION.MESSAGING.BASE}/${messageId}/reactions`,
-    unread: () => `${API_VERSION.MESSAGING.BASE}/unread`,
-    drafts: () => `${API_VERSION.MESSAGING.BASE}/drafts`,
-    sent: () => `${API_VERSION.MESSAGING.BASE}/sent`,
-    conversations: () => `${API_VERSION.MESSAGING.BASE}/conversations`,
-    limits: () => `${API_VERSION.MESSAGING.BASE}/limits`,
-  },
 };
 
 // Export for use in other modules

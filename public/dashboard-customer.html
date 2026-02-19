@@ -272,7 +272,7 @@
 <script src="/assets/js/app.js?v=18.0.0"></script>
 <script src="/assets/js/unread-badge-manager.js?v=18.0.0"></script>
 <script type="module" src="/assets/js/customer-tickets.js?v=18.3.0"></script>
-<script type="module" src="/assets/js/customer-messages.js?v=18.0.0"></script>
+
 <script type="module">
 import { createStatsGrid, createBudgetTracker, createProgressRing, createEventsTimeline } from '/assets/js/dashboard-widgets.js';
 import { initCountUp } from '/assets/js/count-up-animation.js';
@@ -528,7 +528,7 @@ async function initCustomerDashboardWidgets() {
       savedSuppliers = [];
     }
     
-    // Count messages/conversations - will be updated by customer-messages.js
+    // Count messages/conversations - updated by MessengerWidgetV4
     let unreadMessages = 0;
     const unreadBadge = document.getElementById('unreadMessageBadge');
     if (unreadBadge && unreadBadge.textContent) {
