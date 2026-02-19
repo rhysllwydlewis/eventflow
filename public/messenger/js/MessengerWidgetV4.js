@@ -260,7 +260,7 @@
       // Determine the other participant for display
       const participants = Array.isArray(conv.participants) ? conv.participants : [];
       const other = participants.find(
-        (p) => p.userId !== currentUserId && p.userId !== (currentUserId && currentUserId.toString())
+        (p) => p.userId !== String(currentUserId || '')
       ) || participants[0] || {};
 
       const name = escapeHtml(

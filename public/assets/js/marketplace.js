@@ -535,9 +535,7 @@
 
     if (messageToggleBtn && inlineComposer) {
       // If QuickComposeV4 is handling this button, skip inline composer setup
-      if (messageToggleBtn.dataset.quickCompose === 'true' && window.QuickComposeV4) {
-        // QuickComposeV4.attachAll() already bound the click handler above
-      } else {
+      if (messageToggleBtn.dataset.quickCompose !== 'true' || !window.QuickComposeV4) {
       const composerInput = inlineComposer.querySelector('.listing-inline-composer-input');
       const composerStatus = inlineComposer.querySelector('.listing-inline-composer-status');
       const composerSendBtn = inlineComposer.querySelector('.listing-inline-composer-send');
@@ -577,7 +575,7 @@
           sendBtn: composerSendBtn,
         });
       });
-      } // end else (inline composer)
+      } // end if inline composer
     }
 
     // Thumbnail clicks

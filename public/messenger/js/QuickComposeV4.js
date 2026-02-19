@@ -369,9 +369,7 @@
         contextId: opts.contextId || '',
         contextTitle: opts.contextTitle || '',
         contextImage: opts.contextImage || '',
-        prefill: document.getElementById('qcv4-message')
-          ? document.getElementById('qcv4-message').value
-          : (opts.prefill || ''),
+        prefill: opts.prefill || '',
         returnUrl: window.location.href,
       };
       saveDraft(draft);
@@ -483,7 +481,10 @@
           (conflictData.conversation && (conflictData.conversation._id || conflictData.conversation.id)) ||
           conflictData.conversationId;
       } else {
-        throw new Error(`Failed to create conversation: ${createRes.status}`);
+        const errBody = await createRes.json().catch(() => ({}));
+        throw new Error(
+          `Failed to create conversation (${createRes.status}): ${errBody.error || errBody.message || 'Unknown error'}`
+        );
       }
 
       if (!conversationId) throw new Error('No conversation ID returned');
@@ -502,7 +503,12 @@
         }
       );
 
-      if (!msgRes.ok) throw new Error(`Failed to send message: ${msgRes.status}`);
+      if (!msgRes.ok) {
+        const errBody = await msgRes.json().catch(() => ({}));
+        throw new Error(
+          `Failed to send message (${msgRes.status}): ${errBody.error || errBody.message || 'Unknown error'}`
+        );
+      }
 
       // Clear draft and redirect
       clearDraft();
