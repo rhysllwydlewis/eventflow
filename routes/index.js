@@ -337,6 +337,14 @@ function mountRoutes(app, deps) {
   }
   app.use('/api/v3/messenger', messengerRoutes);
 
+  // ===== MESSENGER V4 ROUTES (Next Generation Messaging System) =====
+  // Purpose-built, gold standard real-time chat platform with liquid glass design
+  const messengerV4 = require('./messenger-v4');
+  if (deps && messengerV4.initialize) {
+    const messengerV4Router = messengerV4.initialize(deps);
+    app.use('/api/v4/messenger', messengerV4Router);
+  }
+
   // ===== LEGACY REDIRECTS =====
   // Redirect old messages page to new messenger
   app.get('/messages', (req, res) => res.redirect(301, '/messenger/'));

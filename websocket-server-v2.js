@@ -146,6 +146,27 @@ class WebSocketServerV2 {
         logger.debug('Socket left room', { socketId: socket.id, room });
       });
 
+      // Messenger v4 event handlers
+      socket.on('messenger:v4:join-conversation', data => {
+        if (data && data.conversationId) {
+          socket.join(`conversation:v4:${data.conversationId}`);
+          logger.debug('Joined v4 conversation', {
+            socketId: socket.id,
+            conversationId: data.conversationId,
+          });
+        }
+      });
+
+      socket.on('messenger:v4:leave-conversation', data => {
+        if (data && data.conversationId) {
+          socket.leave(`conversation:v4:${data.conversationId}`);
+          logger.debug('Left v4 conversation', {
+            socketId: socket.id,
+            conversationId: data.conversationId,
+          });
+        }
+      });
+
       // Disconnection
       socket.on('disconnect', async () => {
         await this.handleDisconnect(socket);
@@ -624,6 +645,34 @@ class WebSocketServerV2 {
       logger.debug('WebSocket cleanup completed');
     } catch (error) {
       logger.error('Cleanup error', { error: error.message });
+    }
+  }
+
+  /**
+   * Emit event to a specific user (supports v4 events)
+   */
+  emitToUser(userId, event, data) {
+    try {
+      this.io.to(`user:${userId}`).emit(event, data);
+      logger.debug('Event emitted to user', { userId, event });
+    } catch (error) {
+      logger.error('Emit to user error', { userId, event, error: error.message });
+    }
+  }
+
+  /**
+   * Emit event to a conversation room (v4)
+   */
+  emitToConversation(conversationId, event, data) {
+    try {
+      this.io.to(`conversation:v4:${conversationId}`).emit(event, data);
+      logger.debug('Event emitted to conversation', { conversationId, event });
+    } catch (error) {
+      logger.error('Emit to conversation error', {
+        conversationId,
+        event,
+        error: error.message,
+      });
     }
   }
 

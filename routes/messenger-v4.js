@@ -1,0 +1,718 @@
+/**
+ * Messenger v4 Routes - Unified Messenger API
+ * Gold Standard messaging system API endpoints
+ */
+
+'use strict';
+
+const express = require('express');
+const { ObjectId } = require('mongodb');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs').promises;
+const crypto = require('crypto');
+const { writeLimiter, uploadLimiter } = require('../middleware/rateLimits');
+const MessengerV4Service = require('../services/messenger-v4.service');
+
+const router = express.Router();
+
+// Dependencies injected by server.js
+let authRequired;
+let csrfProtection;
+let db;
+let wsServer;
+let postmark;
+let logger;
+
+// Messenger service instance
+let messengerService;
+
+// Configure multer for attachments
+const attachmentStorage = multer.memoryStorage();
+
+const attachmentFileFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type'), false);
+  }
+};
+
+const upload = multer({
+  storage: attachmentStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 10, // Max 10 files per request
+  },
+  fileFilter: attachmentFileFilter,
+});
+
+/**
+ * Initialize routes with dependencies
+ */
+function initialize(dependencies) {
+  if (!dependencies) {
+    throw new Error('Messenger v4 routes: dependencies object is required');
+  }
+
+  const required = ['authRequired', 'csrfProtection', 'db', 'logger'];
+  const missing = required.filter((key) => !dependencies[key]);
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Messenger v4 routes: missing required dependencies: ${missing.join(', ')}`
+    );
+  }
+
+  authRequired = dependencies.authRequired;
+  csrfProtection = dependencies.csrfProtection;
+  db = dependencies.db;
+  wsServer = dependencies.wsServer;
+  postmark = dependencies.postmark;
+  logger = dependencies.logger;
+
+  // Initialize service
+  messengerService = new MessengerV4Service(db, logger);
+
+  logger.info('Messenger v4 routes initialized');
+
+  return router;
+}
+
+/**
+ * Helper: Emit WebSocket event to user
+ */
+function emitToUser(userId, event, data) {
+  if (wsServer && wsServer.emitToUser) {
+    wsServer.emitToUser(userId, event, data);
+  }
+}
+
+/**
+ * Helper: Emit WebSocket event to all conversation participants
+ */
+function emitToConversation(conversation, event, data) {
+  if (wsServer && wsServer.emitToUser) {
+    conversation.participants.forEach((participant) => {
+      wsServer.emitToUser(participant.userId, event, data);
+    });
+  }
+}
+
+// ============================================================================
+// CONVERSATION ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/v4/messenger/conversations
+ * Create a new conversation
+ */
+router.post('/conversations', authRequired, csrfProtection, writeLimiter, async (req, res) => {
+  try {
+    const { type, participantIds, context, metadata } = req.body;
+    const currentUserId = req.user._id;
+
+    if (!type || !Array.isArray(participantIds) || participantIds.length === 0) {
+      return res.status(400).json({
+        error: 'type and participantIds are required',
+      });
+    }
+
+    // Fetch user information for all participants
+    const usersCollection = db.collection('users');
+    const participantUsers = await usersCollection
+      .find({
+        _id: { $in: [currentUserId, ...participantIds] },
+      })
+      .toArray();
+
+    if (participantUsers.length !== participantIds.length + 1) {
+      return res.status(400).json({
+        error: 'One or more participant IDs are invalid',
+      });
+    }
+
+    // Build participants array
+    const participants = participantUsers.map((user) => ({
+      userId: user._id,
+      displayName: user.displayName || user.businessName || user.email,
+      avatar: user.avatar || null,
+      role: user.role || 'customer',
+    }));
+
+    // Create conversation
+    const conversation = await messengerService.createConversation({
+      type,
+      participants,
+      context: context || null,
+      metadata: metadata || {},
+    });
+
+    // Emit WebSocket event to all participants
+    emitToConversation(conversation, 'messenger:v4:conversation-created', {
+      conversation,
+    });
+
+    res.status(201).json({
+      success: true,
+      conversation,
+    });
+  } catch (error) {
+    logger.error('Error creating conversation:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to create conversation',
+    });
+  }
+});
+
+/**
+ * GET /api/v4/messenger/conversations
+ * List conversations for the authenticated user
+ */
+router.get('/conversations', authRequired, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const {
+      unread,
+      pinned,
+      archived,
+      search,
+      status,
+      limit = 50,
+      skip = 0,
+    } = req.query;
+
+    const filters = {};
+    if (unread === 'true') filters.unread = true;
+    if (pinned === 'true') filters.pinned = true;
+    if (archived !== undefined) filters.archived = archived === 'true';
+    if (search) filters.search = search;
+    if (status) filters.status = status;
+
+    const conversations = await messengerService.getConversations(
+      userId,
+      filters,
+      parseInt(limit, 10),
+      parseInt(skip, 10)
+    );
+
+    res.json({
+      success: true,
+      conversations,
+      count: conversations.length,
+    });
+  } catch (error) {
+    logger.error('Error fetching conversations:', error);
+    res.status(500).json({
+      error: 'Failed to fetch conversations',
+    });
+  }
+});
+
+/**
+ * GET /api/v4/messenger/conversations/:id
+ * Get a specific conversation
+ */
+router.get('/conversations/:id', authRequired, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const conversation = await messengerService.getConversation(id, userId);
+
+    res.json({
+      success: true,
+      conversation,
+    });
+  } catch (error) {
+    logger.error('Error fetching conversation:', error);
+    res.status(error.message.includes('not found') ? 404 : 500).json({
+      error: error.message || 'Failed to fetch conversation',
+    });
+  }
+});
+
+/**
+ * PATCH /api/v4/messenger/conversations/:id
+ * Update conversation settings
+ */
+router.patch('/conversations/:id', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const updates = req.body;
+
+    const conversation = await messengerService.updateConversation(id, userId, updates);
+
+    // Emit update event
+    emitToUser(userId, 'messenger:v4:conversation-updated', {
+      conversationId: id,
+      updates,
+    });
+
+    res.json({
+      success: true,
+      conversation,
+    });
+  } catch (error) {
+    logger.error('Error updating conversation:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to update conversation',
+    });
+  }
+});
+
+/**
+ * DELETE /api/v4/messenger/conversations/:id
+ * Soft delete a conversation (archive for the user)
+ */
+router.delete('/conversations/:id', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    await messengerService.deleteConversation(id, userId);
+
+    emitToUser(userId, 'messenger:v4:conversation-deleted', {
+      conversationId: id,
+    });
+
+    res.json({
+      success: true,
+      message: 'Conversation archived',
+    });
+  } catch (error) {
+    logger.error('Error deleting conversation:', error);
+    res.status(500).json({
+      error: 'Failed to delete conversation',
+    });
+  }
+});
+
+// ============================================================================
+// MESSAGE ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/v4/messenger/conversations/:id/messages
+ * Send a message in a conversation
+ */
+router.post(
+  '/conversations/:id/messages',
+  authRequired,
+  csrfProtection,
+  writeLimiter,
+  upload.array('attachments', 10),
+  async (req, res) => {
+    try {
+      const { id: conversationId } = req.params;
+      const { content, type = 'text', replyTo } = req.body;
+      const userId = req.user._id;
+      const userName = req.user.displayName || req.user.businessName || req.user.email;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Message content is required',
+        });
+      }
+
+      // Process attachments if any
+      const attachments = [];
+      if (req.files && req.files.length > 0) {
+        // Save attachments to uploads directory
+        const uploadsDir = path.join(__dirname, '..', 'uploads', 'messenger');
+        await fs.mkdir(uploadsDir, { recursive: true });
+
+        for (const file of req.files) {
+          const filename = `${crypto.randomBytes(16).toString('hex')}${path.extname(file.originalname)}`;
+          const filepath = path.join(uploadsDir, filename);
+          await fs.writeFile(filepath, file.buffer);
+
+          attachments.push({
+            url: `/uploads/messenger/${filename}`,
+            filename: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+          });
+        }
+      }
+
+      const messageData = {
+        senderId: userId,
+        senderName: userName,
+        senderAvatar: req.user.avatar || null,
+        content,
+        type,
+        attachments,
+        replyTo: replyTo ? JSON.parse(replyTo) : null,
+      };
+
+      const message = await messengerService.sendMessage(conversationId, messageData);
+
+      // Get full conversation for WebSocket emission
+      const conversation = await messengerService.getConversation(conversationId, userId);
+
+      // Emit message to all participants
+      emitToConversation(conversation, 'messenger:v4:message', {
+        conversationId,
+        message,
+      });
+
+      // Send email notifications to offline participants
+      try {
+        const recipientIds = conversation.participants
+          .filter((p) => p.userId !== userId && !p.isMuted)
+          .map((p) => p.userId);
+
+        for (const recipientId of recipientIds) {
+          // Check if recipient is online (would need presence tracking)
+          // For now, send email to all non-muted participants
+          const recipient = await db.collection('users').findOne({ _id: recipientId });
+          if (recipient && recipient.email) {
+            const contextInfo = conversation.context?.referenceTitle
+              ? ` (Re: ${conversation.context.referenceTitle})`
+              : '';
+
+            await postmark.sendMail({
+              to: recipient.email,
+              subject: `New message from ${userName}${contextInfo}`,
+              text: `${userName} sent you a message:\n\n"${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
+            }).catch((emailError) => {
+              logger.error('Failed to send email notification:', emailError);
+            });
+          }
+        }
+      } catch (notificationError) {
+        logger.error('Error sending notifications:', notificationError);
+        // Don't fail the request if notifications fail
+      }
+
+      res.status(201).json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error('Error sending message:', error);
+      res.status(error.message.includes('spam') ? 429 : 500).json({
+        error: error.message || 'Failed to send message',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/v4/messenger/conversations/:id/messages
+ * Get messages for a conversation (cursor-paginated)
+ */
+router.get('/conversations/:id/messages', authRequired, async (req, res) => {
+  try {
+    const { id: conversationId } = req.params;
+    const userId = req.user._id;
+    const { cursor, limit = 50 } = req.query;
+
+    const result = await messengerService.getMessages(conversationId, userId, {
+      cursor,
+      limit: parseInt(limit, 10),
+    });
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    logger.error('Error fetching messages:', error);
+    res.status(500).json({
+      error: 'Failed to fetch messages',
+    });
+  }
+});
+
+/**
+ * PATCH /api/v4/messenger/messages/:id
+ * Edit a message
+ */
+router.patch('/messages/:id', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const { content } = req.body;
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Message content is required',
+      });
+    }
+
+    const message = await messengerService.editMessage(id, userId, content);
+
+    // Emit update event
+    const conversation = await messengerService.getConversation(
+      message.conversationId.toString(),
+      userId
+    );
+    emitToConversation(conversation, 'messenger:v4:message-edited', {
+      messageId: id,
+      content,
+      editedAt: message.editedAt,
+    });
+
+    res.json({
+      success: true,
+      message,
+    });
+  } catch (error) {
+    logger.error('Error editing message:', error);
+    res.status(error.message.includes('window expired') ? 403 : 500).json({
+      error: error.message || 'Failed to edit message',
+    });
+  }
+});
+
+/**
+ * DELETE /api/v4/messenger/messages/:id
+ * Delete a message
+ */
+router.delete('/messages/:id', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const message = await messengerService.messagesCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+    await messengerService.deleteMessage(id, userId);
+
+    // Emit delete event
+    const conversation = await messengerService.getConversation(
+      message.conversationId.toString(),
+      userId
+    );
+    emitToConversation(conversation, 'messenger:v4:message-deleted', {
+      messageId: id,
+    });
+
+    res.json({
+      success: true,
+      message: 'Message deleted',
+    });
+  } catch (error) {
+    logger.error('Error deleting message:', error);
+    res.status(500).json({
+      error: 'Failed to delete message',
+    });
+  }
+});
+
+/**
+ * POST /api/v4/messenger/messages/:id/reactions
+ * Toggle emoji reaction on a message
+ */
+router.post('/messages/:id/reactions', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const userName = req.user.displayName || req.user.businessName || req.user.email;
+    const { emoji } = req.body;
+
+    if (!emoji) {
+      return res.status(400).json({
+        error: 'Emoji is required',
+      });
+    }
+
+    const message = await messengerService.toggleReaction(id, userId, userName, emoji);
+
+    // Emit reaction event
+    const conversation = await messengerService.getConversation(
+      message.conversationId.toString(),
+      userId
+    );
+    emitToConversation(conversation, 'messenger:v4:reaction', {
+      messageId: id,
+      reactions: message.reactions,
+    });
+
+    res.json({
+      success: true,
+      message,
+    });
+  } catch (error) {
+    logger.error('Error toggling reaction:', error);
+    res.status(500).json({
+      error: 'Failed to toggle reaction',
+    });
+  }
+});
+
+// ============================================================================
+// UTILITY ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/v4/messenger/unread-count
+ * Get total unread message count for badge
+ */
+router.get('/unread-count', authRequired, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const unreadCount = await messengerService.getUnreadCount(userId);
+
+    res.json({
+      success: true,
+      unreadCount,
+    });
+  } catch (error) {
+    logger.error('Error fetching unread count:', error);
+    res.status(500).json({
+      error: 'Failed to fetch unread count',
+    });
+  }
+});
+
+/**
+ * GET /api/v4/messenger/contacts
+ * Search for contactable users
+ */
+router.get('/contacts', authRequired, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { q: query, role, limit = 20 } = req.query;
+
+    const contacts = await messengerService.searchContacts(
+      userId,
+      query,
+      { role },
+      parseInt(limit, 10)
+    );
+
+    res.json({
+      success: true,
+      contacts,
+    });
+  } catch (error) {
+    logger.error('Error searching contacts:', error);
+    res.status(500).json({
+      error: 'Failed to search contacts',
+    });
+  }
+});
+
+/**
+ * GET /api/v4/messenger/search
+ * Full-text search across all user messages
+ */
+router.get('/search', authRequired, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { q: query, limit = 50 } = req.query;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Search query is required',
+      });
+    }
+
+    const results = await messengerService.searchMessages(
+      userId,
+      query,
+      parseInt(limit, 10)
+    );
+
+    res.json({
+      success: true,
+      results,
+      count: results.length,
+    });
+  } catch (error) {
+    logger.error('Error searching messages:', error);
+    res.status(500).json({
+      error: 'Failed to search messages',
+    });
+  }
+});
+
+/**
+ * POST /api/v4/messenger/conversations/:id/typing
+ * Send typing indicator
+ */
+router.post('/conversations/:id/typing', authRequired, async (req, res) => {
+  try {
+    const { id: conversationId } = req.params;
+    const userId = req.user._id;
+    const userName = req.user.displayName || req.user.businessName || req.user.email;
+
+    // Verify user is participant
+    await messengerService.getConversation(conversationId, userId);
+
+    // Emit typing event to other participants
+    const conversation = await messengerService.getConversation(conversationId, userId);
+    conversation.participants.forEach((participant) => {
+      if (participant.userId !== userId) {
+        emitToUser(participant.userId, 'messenger:v4:typing', {
+          conversationId,
+          userId,
+          userName,
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    logger.error('Error sending typing indicator:', error);
+    res.status(500).json({
+      error: 'Failed to send typing indicator',
+    });
+  }
+});
+
+/**
+ * POST /api/v4/messenger/conversations/:id/read
+ * Mark conversation as read
+ */
+router.post('/conversations/:id/read', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { id: conversationId } = req.params;
+    const userId = req.user._id;
+
+    await messengerService.markAsRead(conversationId, userId);
+
+    // Emit read receipt to other participants
+    const conversation = await messengerService.getConversation(conversationId, userId);
+    conversation.participants.forEach((participant) => {
+      if (participant.userId !== userId) {
+        emitToUser(participant.userId, 'messenger:v4:read', {
+          conversationId,
+          userId,
+          readAt: new Date(),
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    logger.error('Error marking as read:', error);
+    res.status(500).json({
+      error: 'Failed to mark as read',
+    });
+  }
+});
+
+module.exports = { router, initialize };
