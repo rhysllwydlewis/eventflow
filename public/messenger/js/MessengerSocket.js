@@ -66,41 +66,52 @@ class MessengerSocket {
       console.log('Messenger authenticated:', data.userId);
     });
 
-    // Messenger v3 events
-    this.socket.on('messenger:new-message', (data) => {
-      console.log('New message received:', data);
+    // Messenger v4 events (upgraded naming convention)
+    this.socket.on('messenger:v4:message', (data) => {
+      console.log('New message received (v4):', data);
       window.dispatchEvent(new CustomEvent('messenger:new-message', { detail: data }));
     });
 
-    this.socket.on('messenger:typing', (data) => {
-      console.log('Typing indicator:', data);
+    this.socket.on('messenger:v4:typing', (data) => {
+      console.log('Typing indicator (v4):', data);
       this.state.setTyping(data.conversationId, data.userId, data.isTyping);
       window.dispatchEvent(new CustomEvent('messenger:typing', { detail: data }));
     });
 
-    this.socket.on('messenger:new-conversation', (data) => {
-      console.log('New conversation:', data);
+    this.socket.on('messenger:v4:conversation-created', (data) => {
+      console.log('New conversation (v4):', data);
       window.dispatchEvent(new CustomEvent('messenger:new-conversation', { detail: data }));
     });
 
-    this.socket.on('messenger:message-edited', (data) => {
-      console.log('Message edited:', data);
+    this.socket.on('messenger:v4:conversation-updated', (data) => {
+      console.log('Conversation updated (v4):', data);
+      window.dispatchEvent(new CustomEvent('messenger:conversation-updated', { detail: data }));
+    });
+
+    this.socket.on('messenger:v4:message-edited', (data) => {
+      console.log('Message edited (v4):', data);
       window.dispatchEvent(new CustomEvent('messenger:message-edited', { detail: data }));
     });
 
-    this.socket.on('messenger:message-deleted', (data) => {
-      console.log('Message deleted:', data);
+    this.socket.on('messenger:v4:message-deleted', (data) => {
+      console.log('Message deleted (v4):', data);
       window.dispatchEvent(new CustomEvent('messenger:message-deleted', { detail: data }));
     });
 
-    this.socket.on('messenger:reaction-updated', (data) => {
-      console.log('Reaction updated:', data);
+    this.socket.on('messenger:v4:reaction', (data) => {
+      console.log('Reaction updated (v4):', data);
       window.dispatchEvent(new CustomEvent('messenger:reaction-updated', { detail: data }));
     });
 
-    this.socket.on('messenger:conversation-read', (data) => {
-      console.log('Conversation marked as read:', data);
+    this.socket.on('messenger:v4:read', (data) => {
+      console.log('Conversation marked as read (v4):', data);
       window.dispatchEvent(new CustomEvent('messenger:conversation-read', { detail: data }));
+    });
+
+    this.socket.on('messenger:v4:presence', (data) => {
+      console.log('Presence update (v4):', data);
+      this.state.setPresence(data.userId, data.status);
+      window.dispatchEvent(new CustomEvent('messenger:presence', { detail: data }));
     });
 
     // Error handling
@@ -122,7 +133,7 @@ class MessengerSocket {
   }
 
   /**
-   * Join a conversation room
+   * Join a conversation room (v4)
    */
   joinConversation(conversationId) {
     if (!this.isConnected || !this.socket) {
@@ -130,20 +141,20 @@ class MessengerSocket {
       return;
     }
 
-    this.socket.emit('messenger:join', { conversationId });
-    console.log('Joined conversation:', conversationId);
+    this.socket.emit('messenger:v4:join-conversation', { conversationId });
+    console.log('Joined v4 conversation:', conversationId);
   }
 
   /**
-   * Leave a conversation room
+   * Leave a conversation room (v4)
    */
   leaveConversation(conversationId) {
     if (!this.isConnected || !this.socket) {
       return;
     }
 
-    this.socket.emit('messenger:leave', { conversationId });
-    console.log('Left conversation:', conversationId);
+    this.socket.emit('messenger:v4:leave-conversation', { conversationId });
+    console.log('Left v4 conversation:', conversationId);
   }
 
   /**
