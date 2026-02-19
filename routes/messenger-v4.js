@@ -79,17 +79,44 @@ function initialize(dependencies) {
 
   authRequired = dependencies.authRequired;
   csrfProtection = dependencies.csrfProtection;
+  
+  // db can be either mongoDb module or db instance
+  // Store as mongoDb for lazy initialization
   db = dependencies.db;
+  
   wsServer = dependencies.wsServer;
   postmark = dependencies.postmark;
   logger = dependencies.logger;
 
-  // Initialize service
-  messengerService = new MessengerV4Service(db, logger);
+  // Service will be initialized lazily on first request
+  messengerService = null;
 
   logger.info('Messenger v4 routes initialized');
 
   return router;
+}
+
+/**
+ * Get database instance (handles both mongoDb module and db instance)
+ */
+async function getDbInstance() {
+  if (db && typeof db.getDb === 'function') {
+    // It's the mongoDb module
+    return await db.getDb();
+  }
+  // It's already a db instance
+  return db;
+}
+
+/**
+ * Get or initialize messenger service
+ */
+async function getMessengerService() {
+  if (!messengerService) {
+    const dbInstance = await getDbInstance();
+    messengerService = new MessengerV4Service(dbInstance, logger);
+  }
+  return messengerService;
 }
 
 /**
@@ -131,8 +158,11 @@ router.post('/conversations', authRequired, csrfProtection, writeLimiter, async 
       });
     }
 
+    // Get database instance
+    const dbInstance = await getDbInstance();
+
     // Fetch user information for all participants
-    const usersCollection = db.collection('users');
+    const usersCollection = dbInstance.collection('users');
     const participantUsers = await usersCollection
       .find({
         _id: { $in: [currentUserId, ...participantIds] },
@@ -154,7 +184,7 @@ router.post('/conversations', authRequired, csrfProtection, writeLimiter, async 
     }));
 
     // Create conversation
-    const conversation = await messengerService.createConversation({
+    const conversation = await (await getMessengerService()).createConversation({
       type,
       participants,
       context: context || null,
@@ -202,7 +232,7 @@ router.get('/conversations', authRequired, async (req, res) => {
     if (search) filters.search = search;
     if (status) filters.status = status;
 
-    const conversations = await messengerService.getConversations(
+    const conversations = await (await getMessengerService()).getConversations(
       userId,
       filters,
       parseInt(limit, 10),
@@ -231,7 +261,7 @@ router.get('/conversations/:id', authRequired, async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    const conversation = await messengerService.getConversation(id, userId);
+    const conversation = await (await getMessengerService()).getConversation(id, userId);
 
     res.json({
       success: true,
@@ -255,7 +285,7 @@ router.patch('/conversations/:id', authRequired, csrfProtection, async (req, res
     const userId = req.user._id;
     const updates = req.body;
 
-    const conversation = await messengerService.updateConversation(id, userId, updates);
+    const conversation = await (await getMessengerService()).updateConversation(id, userId, updates);
 
     // Emit update event
     emitToUser(userId, 'messenger:v4:conversation-updated', {
@@ -284,7 +314,7 @@ router.delete('/conversations/:id', authRequired, csrfProtection, async (req, re
     const { id } = req.params;
     const userId = req.user._id;
 
-    await messengerService.deleteConversation(id, userId);
+    await (await getMessengerService()).deleteConversation(id, userId);
 
     emitToUser(userId, 'messenger:v4:conversation-deleted', {
       conversationId: id,
@@ -360,10 +390,10 @@ router.post(
         replyTo: replyTo ? JSON.parse(replyTo) : null,
       };
 
-      const message = await messengerService.sendMessage(conversationId, messageData);
+      const message = await (await getMessengerService()).sendMessage(conversationId, messageData);
 
       // Get full conversation for WebSocket emission
-      const conversation = await messengerService.getConversation(conversationId, userId);
+      const conversation = await (await getMessengerService()).getConversation(conversationId, userId);
 
       // Emit message to all participants
       emitToConversation(conversation, 'messenger:v4:message', {
@@ -380,7 +410,8 @@ router.post(
         for (const recipientId of recipientIds) {
           // Check if recipient is online (would need presence tracking)
           // For now, send email to all non-muted participants
-          const recipient = await db.collection('users').findOne({ _id: recipientId });
+          const dbInstance = await getDbInstance();
+          const recipient = await dbInstance.collection('users').findOne({ _id: recipientId });
           if (recipient && recipient.email) {
             const contextInfo = conversation.context?.referenceTitle
               ? ` (Re: ${conversation.context.referenceTitle})`
@@ -423,7 +454,7 @@ router.get('/conversations/:id/messages', authRequired, async (req, res) => {
     const userId = req.user._id;
     const { cursor, limit = 50 } = req.query;
 
-    const result = await messengerService.getMessages(conversationId, userId, {
+    const result = await (await getMessengerService()).getMessages(conversationId, userId, {
       cursor,
       limit: parseInt(limit, 10),
     });
@@ -456,10 +487,10 @@ router.patch('/messages/:id', authRequired, csrfProtection, async (req, res) => 
       });
     }
 
-    const message = await messengerService.editMessage(id, userId, content);
+    const message = await (await getMessengerService()).editMessage(id, userId, content);
 
     // Emit update event
-    const conversation = await messengerService.getConversation(
+    const conversation = await (await getMessengerService()).getConversation(
       message.conversationId.toString(),
       userId
     );
@@ -490,14 +521,14 @@ router.delete('/messages/:id', authRequired, csrfProtection, async (req, res) =>
     const { id } = req.params;
     const userId = req.user._id;
 
-    const message = await messengerService.messagesCollection.findOne({
+    const message = await (await getMessengerService()).messagesCollection.findOne({
       _id: new ObjectId(id),
     });
 
-    await messengerService.deleteMessage(id, userId);
+    await (await getMessengerService()).deleteMessage(id, userId);
 
     // Emit delete event
-    const conversation = await messengerService.getConversation(
+    const conversation = await (await getMessengerService()).getConversation(
       message.conversationId.toString(),
       userId
     );
@@ -534,10 +565,10 @@ router.post('/messages/:id/reactions', authRequired, csrfProtection, async (req,
       });
     }
 
-    const message = await messengerService.toggleReaction(id, userId, userName, emoji);
+    const message = await (await getMessengerService()).toggleReaction(id, userId, userName, emoji);
 
     // Emit reaction event
-    const conversation = await messengerService.getConversation(
+    const conversation = await (await getMessengerService()).getConversation(
       message.conversationId.toString(),
       userId
     );
@@ -569,7 +600,7 @@ router.post('/messages/:id/reactions', authRequired, csrfProtection, async (req,
 router.get('/unread-count', authRequired, async (req, res) => {
   try {
     const userId = req.user._id;
-    const unreadCount = await messengerService.getUnreadCount(userId);
+    const unreadCount = await (await getMessengerService()).getUnreadCount(userId);
 
     res.json({
       success: true,
@@ -592,7 +623,7 @@ router.get('/contacts', authRequired, async (req, res) => {
     const userId = req.user._id;
     const { q: query, role, limit = 20 } = req.query;
 
-    const contacts = await messengerService.searchContacts(
+    const contacts = await (await getMessengerService()).searchContacts(
       userId,
       query,
       { role },
@@ -626,7 +657,7 @@ router.get('/search', authRequired, async (req, res) => {
       });
     }
 
-    const results = await messengerService.searchMessages(
+    const results = await (await getMessengerService()).searchMessages(
       userId,
       query,
       parseInt(limit, 10)
@@ -656,10 +687,10 @@ router.post('/conversations/:id/typing', authRequired, async (req, res) => {
     const userName = req.user.displayName || req.user.businessName || req.user.email;
 
     // Verify user is participant
-    await messengerService.getConversation(conversationId, userId);
+    await (await getMessengerService()).getConversation(conversationId, userId);
 
     // Emit typing event to other participants
-    const conversation = await messengerService.getConversation(conversationId, userId);
+    const conversation = await (await getMessengerService()).getConversation(conversationId, userId);
     conversation.participants.forEach((participant) => {
       if (participant.userId !== userId) {
         emitToUser(participant.userId, 'messenger:v4:typing', {
@@ -690,10 +721,10 @@ router.post('/conversations/:id/read', authRequired, csrfProtection, async (req,
     const { id: conversationId } = req.params;
     const userId = req.user._id;
 
-    await messengerService.markAsRead(conversationId, userId);
+    await (await getMessengerService()).markAsRead(conversationId, userId);
 
     // Emit read receipt to other participants
-    const conversation = await messengerService.getConversation(conversationId, userId);
+    const conversation = await (await getMessengerService()).getConversation(conversationId, userId);
     conversation.participants.forEach((participant) => {
       if (participant.userId !== userId) {
         emitToUser(participant.userId, 'messenger:v4:read', {

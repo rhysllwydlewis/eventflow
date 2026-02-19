@@ -333,7 +333,11 @@ function mountRoutes(app, deps) {
   // Unified messenger API - replaces fragmented messaging across v1/v2
   const messengerRoutes = require('./messenger');
   if (deps && messengerRoutes.initializeDependencies) {
-    messengerRoutes.initializeDependencies(deps);
+    // Pass mongoDb module for lazy db initialization in routes
+    const messengerDeps = { ...deps };
+    messengerDeps.db = deps.mongoDb; // Pass module, routes will call getDb() when needed
+    messengerDeps.wsServer = deps.getWebSocketServer ? deps.getWebSocketServer() : null;
+    messengerRoutes.initializeDependencies(messengerDeps);
   }
   app.use('/api/v3/messenger', messengerRoutes);
 
@@ -341,7 +345,11 @@ function mountRoutes(app, deps) {
   // Purpose-built, gold standard real-time chat platform with liquid glass design
   const messengerV4 = require('./messenger-v4');
   if (deps && messengerV4.initialize) {
-    const messengerV4Router = messengerV4.initialize(deps);
+    // Pass mongoDb module for lazy db initialization in routes
+    const messengerV4Deps = { ...deps };
+    messengerV4Deps.db = deps.mongoDb; // Pass module, routes will call getDb() when needed
+    messengerV4Deps.wsServer = deps.getWebSocketServer ? deps.getWebSocketServer() : null;
+    const messengerV4Router = messengerV4.initialize(messengerV4Deps);
     app.use('/api/v4/messenger', messengerV4Router);
   }
 
