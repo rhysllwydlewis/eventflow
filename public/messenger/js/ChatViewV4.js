@@ -14,7 +14,13 @@ function _cv4LooksLikeEmail(str) {
 
 // Returns str if it is non-empty and not an email, otherwise the fallback.
 function _cv4SafeName(str, fallback) {
-  return str && !_cv4LooksLikeEmail(str) ? str : fallback || 'Unknown';
+  if (str && !_cv4LooksLikeEmail(str)) {
+    return str;
+  }
+  if (str && _cv4LooksLikeEmail(str)) {
+    return str.split('@')[0] || str;
+  }
+  return fallback || 'Unknown';
 }
 
 class ChatViewV4 {

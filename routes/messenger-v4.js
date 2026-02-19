@@ -24,10 +24,17 @@ function looksLikeEmail(str) {
 
 // Picks the first value from candidates that is non-empty and not an email.
 function safeDisplayName(...candidates) {
+  let firstEmail = null;
   for (const c of candidates) {
     if (c && !looksLikeEmail(c)) {
       return c;
     }
+    if (c && looksLikeEmail(c) && !firstEmail) {
+      firstEmail = c;
+    }
+  }
+  if (firstEmail) {
+    return firstEmail.split('@')[0] || firstEmail;
   }
   return 'Unknown';
 }

@@ -13,7 +13,13 @@ function _clv4LooksLikeEmail(str) {
 
 // Returns the first candidate that is non-empty and not an email, or the fallback.
 function _clv4SafeName(str, fallback) {
-  return str && !_clv4LooksLikeEmail(str) ? str : fallback || 'Unknown';
+  if (str && !_clv4LooksLikeEmail(str)) {
+    return str;
+  }
+  if (str && _clv4LooksLikeEmail(str)) {
+    return str.split('@')[0] || str;
+  }
+  return fallback || 'Unknown';
 }
 
 // Named time constants for readability

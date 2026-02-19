@@ -114,12 +114,12 @@
 <h1>Your dashboard</h1>
 
 <!-- Welcome Section -->
-<div id="welcome-section" class="card" style="background:linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);color:white;margin-bottom:1.5rem;padding:2rem;">
-  <h2 id="welcome-heading" style="margin:0 0 0.75rem 0;color:white;font-size:1.75rem;">Welcome to EventFlow!</h2>
-  <p class="small" style="color:rgba(255,255,255,0.95);margin:0 0 1rem 0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
-  <div id="what-you-can-do" style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2);">
-    <h3 style="margin:0 0 0.5rem 0;color:white;font-size:1.1rem;">What you can do from here:</h3>
-    <ul style="margin:0;padding-left:1.25rem;color:rgba(255,255,255,0.95);font-size:0.95rem;">
+<div id="welcome-section" class="card" style="margin-bottom:1.5rem;padding:2rem;">
+  <h2 id="welcome-heading" style="margin:0 0 0.75rem 0;color:#1f2937;font-size:1.75rem;">Welcome to EventFlow!</h2>
+  <p class="small" style="color:#4b5563;margin:0 0 1rem 0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
+  <div id="what-you-can-do" style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb;">
+    <h3 style="margin:0 0 0.5rem 0;color:#1f2937;font-size:1.1rem;">What you can do from here:</h3>
+    <ul style="margin:0;padding-left:1.25rem;color:#4b5563;font-size:0.95rem;">
       <li style="margin-bottom:0.25rem;">Create and manage event plans with our wizard</li>
       <li style="margin-bottom:0.25rem;">Browse and save suppliers for your events</li>
       <li style="margin-bottom:0.25rem;">Track your budget with our calculator</li>
@@ -275,7 +275,6 @@
 
 <script type="module">
 import { createStatsGrid, createBudgetTracker, createProgressRing, createEventsTimeline } from '/assets/js/dashboard-widgets.js';
-import { initCountUp } from '/assets/js/count-up-animation.js';
 
 // Budget calculation configuration
 const BUDGET_CONFIG = {
@@ -473,10 +472,13 @@ async function calculateRealBudget(plans) {
 }
 
 // Initialize dashboard widgets after data loads
-async function initCustomerDashboardWidgets() {
+async function initCustomerDashboardWidgets(preloadedPlans) {
   try {
-    // Fetch customer data with fallback
+    // Fetch customer data with fallback (skip fetch if plans already provided)
     let plans = [];
+    if (preloadedPlans) {
+      plans = preloadedPlans;
+    } else {
     try {
       const response = await fetch('/api/me/plans', { credentials: 'include' });
       if (response.ok) {
@@ -519,6 +521,7 @@ async function initCustomerDashboardWidgets() {
       
       return; // Don't continue with empty data
     }
+    } // end else (no preloadedPlans)
     
     // Count saved suppliers (from localStorage or API)
     let savedSuppliers = [];
@@ -527,8 +530,6 @@ async function initCustomerDashboardWidgets() {
     } catch (err) {
       console.error('Error reading saved suppliers from localStorage:', err);
       // Continue with empty array
-    }
-      savedSuppliers = [];
     }
     
     // Count messages/conversations - updated by MessengerWidgetV4
@@ -591,7 +592,7 @@ async function initCustomerDashboardWidgets() {
         icon.textContent = '⚠️';
         const message = document.createElement('span');
         const link = document.createElement('a');
-        link.href = '#budget-settings';
+        link.href = '#budget-settings-form';
         link.style.cssText = 'color:#92400E;font-weight:600;text-decoration:underline;';
         link.textContent = 'Set a budget';
         message.appendChild(document.createTextNode('You have spending recorded but no budget set. '));
@@ -736,19 +737,23 @@ async function initCustomerDashboardWidgets() {
 window.__EF_PAGE__='dash_customer';
 
 // Load customer plans
-async function loadCustomerPlans() {
+async function loadCustomerPlans(preloadedPlans) {
   const container = document.getElementById('customer-plans-list');
   if (!container) return;
 
   try {
-    const response = await fetch('/api/me/plans', { credentials: 'include' });
-    if (!response.ok) {
-      container.innerHTML = '<p class="small" style="color:#667085;">Unable to load plans.</p>';
-      return;
+    let plans;
+    if (preloadedPlans) {
+      plans = preloadedPlans;
+    } else {
+      const response = await fetch('/api/me/plans', { credentials: 'include' });
+      if (!response.ok) {
+        container.innerHTML = '<p class="small" style="color:#667085;">Unable to load plans.</p>';
+        return;
+      }
+      const data = await response.json();
+      plans = data.plans || [];
     }
-
-    const data = await response.json();
-    const plans = data.plans || [];
 
     if (plans.length === 0) {
       container.innerHTML = '<p class="small" style="color:#667085;">No plans yet. Create one to get started!</p>';
@@ -826,10 +831,22 @@ async function initDashboard() {
   await claimGuestPlanIfExists();
 
   // Load all dashboard components IN PARALLEL
+  // Fetch /api/me/plans once and share the result to avoid duplicate requests
+  let sharedPlans;
+  try {
+    const plansResponse = await fetch('/api/me/plans', { credentials: 'include' });
+    if (plansResponse.ok) {
+      const plansData = await plansResponse.json();
+      sharedPlans = plansData.plans || [];
+    }
+  } catch (err) {
+    console.error('Error pre-fetching plans:', err);
+  }
+
   const componentNames = ['loadCustomerPlans', 'initCustomerDashboardWidgets', 'initCalendar'];
   const settledResults = await Promise.allSettled([
-    loadCustomerPlans(),
-    initCustomerDashboardWidgets(),
+    loadCustomerPlans(sharedPlans),
+    initCustomerDashboardWidgets(sharedPlans),
     initCalendar(),
   ]);
 

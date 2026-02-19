@@ -68,10 +68,17 @@
 
   // Returns the first safe (non-email) display name from the arguments, or fallback
   function safeDisplayName(...candidates) {
+    let firstEmail = null;
     for (const candidate of candidates) {
       if (candidate && !looksLikeEmail(candidate)) {
         return candidate;
       }
+      if (candidate && looksLikeEmail(candidate) && !firstEmail) {
+        firstEmail = candidate;
+      }
+    }
+    if (firstEmail) {
+      return firstEmail.split('@')[0] || firstEmail;
     }
     return 'Unknown';
   }

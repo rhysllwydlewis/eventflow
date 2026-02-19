@@ -15,6 +15,8 @@
       return;
     }
 
+    let found = false;
+
     // Use MutationObserver instead of setTimeout
     const observer = new MutationObserver(() => {
       const statsSection = document.querySelector('#customer-stats-grid');
@@ -26,6 +28,7 @@
       // Double-check widget doesn't exist
       if (document.getElementById('recommendations-widget')) {
         observer.disconnect();
+        found = true;
         return;
       }
 
@@ -43,6 +46,7 @@
         window.RecommendationsWidget.init();
       }
 
+      found = true;
       observer.disconnect();
     });
 
@@ -53,8 +57,10 @@
 
       // Disconnect after 10 seconds if the target element never appears
       setTimeout(() => {
-        observer.disconnect();
-        console.warn('addRecommendationsWidget: #customer-stats-grid not found within 10 seconds. Observer disconnected.');
+        if (!found) {
+          observer.disconnect();
+          console.warn('addRecommendationsWidget: #customer-stats-grid not found within 10 seconds. Observer disconnected.');
+        }
       }, 10000);
     }
   }
