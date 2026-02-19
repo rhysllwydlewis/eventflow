@@ -304,12 +304,40 @@ async function isThreadParticipant(thread, userId, db = null) {
 }
 
 // =========================
+// Deprecation Warning Middleware
+// =========================
+
+/**
+ * Deprecation warning middleware for v2 Messaging API
+ * All routes in this file are deprecated in favor of v4 Messenger API
+ */
+router.use((req, res, next) => {
+  res.setHeader('X-API-Deprecation', 'true');
+  res.setHeader('X-API-Deprecation-Version', 'v2');
+  res.setHeader('X-API-Deprecation-Sunset', '2026-12-31');
+  res.setHeader('X-API-Deprecation-Replacement', '/api/v4/messenger');
+  res.setHeader(
+    'X-API-Deprecation-Info',
+    'This API is deprecated. Please migrate to /api/v4/messenger. See documentation at https://docs.eventflow.com/api/messenger-v4'
+  );
+  
+  if (logger) {
+    logger.warn(
+      `[DEPRECATED API] v2 Messaging API called: ${req.method} ${req.originalUrl} - Migrate to /api/v4/messenger`
+    );
+  }
+  
+  next();
+});
+
+// =========================
 // Thread Management
 // =========================
 
 /**
  * POST /api/v2/messages/threads
  * Create a new conversation thread
+ * @deprecated Use POST /api/v4/messenger/conversations instead
  */
 router.post(
   '/threads',
