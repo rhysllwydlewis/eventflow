@@ -86,6 +86,17 @@ function createSupplierCard(supplier, position) {
           <button class="btn btn-primary btn-quote" data-supplier-id="${escapeHtml(supplier.id)}">
             Request Quote
           </button>
+          ${supplier.ownerUserId ? `
+          <button class="btn btn-secondary btn-contact-supplier"
+                  data-messenger-action="new-conversation"
+                  data-recipient-id="${escapeHtml(supplier.ownerUserId)}"
+                  data-context-type="supplier"
+                  data-context-id="${escapeHtml(supplier.id)}"
+                  data-context-title="${escapeHtml(supplier.name)}"
+                  style="font-size: 13px; padding: 6px 12px;">
+            💬 Contact
+          </button>
+          ` : ''}
           <button class="btn btn-secondary btn-shortlist ${shortlistBtnClass}" 
                   data-supplier-id="${escapeHtml(supplier.id)}"
                   data-supplier-name="${escapeHtml(supplier.name)}"

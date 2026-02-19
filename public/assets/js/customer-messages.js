@@ -385,7 +385,7 @@ function renderConversations(conversations, currentUser) {
   // Add "View All Messages" link with glass styling
   html += `
     <div style="margin-top:1rem;text-align:center;">
-      <a href="/messages.html" 
+      <a href="/messenger/" 
          class="glass-btn glass-btn--primary" 
          style="display:inline-flex;
                 align-items:center;

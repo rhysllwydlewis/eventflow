@@ -1714,6 +1714,8 @@
               </div>
             </div>
           </div>
+          <!-- Messenger Dashboard Widget -->
+          <div id="messenger-dashboard-widget-supplier" style="margin-bottom: 1rem;"></div>
           <div id="threads-sup" class="section">
             <div class="skeleton skeleton-text skeleton-text-long"></div>
             <div class="skeleton skeleton-text skeleton-text-medium"></div>
@@ -1992,17 +1994,7 @@
             const viewConvBtn = document.getElementById('viewConversationsBtn');
             if (viewConvBtn) {
               viewConvBtn.addEventListener('click', () => {
-                const messagesPill = document.querySelector(
-                  '.mobile-nav-pill[data-section="threads-sup"]'
-                );
-                if (messagesPill) {
-                  messagesPill.click();
-                } else {
-                  const threadsSection = document.getElementById('threads-sup');
-                  if (threadsSection) {
-                    threadsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }
+                window.location.href = '/messenger/';
               });
             }
           });
@@ -2745,5 +2737,17 @@
     <script src="/assets/js/vendor/confetti-safe.js?v=18.3.0"></script>
     <script src="/assets/js/utils/p3-features.js" defer></script>
     <script src="/assets/js/supplier-dashboard-enhancements.js" defer></script>
+
+    <!-- Messenger Components -->
+    <script src="/messenger/js/MessengerWidget.js" defer></script>
+    <script src="/messenger/js/MessengerTrigger.js" defer></script>
+    <script src="/messenger/js/NotificationBridge.js" defer></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof MessengerWidget !== 'undefined') {
+          new MessengerWidget('messenger-dashboard-widget-supplier', { maxItems: 5 });
+        }
+      });
+    </script>
   </body>
 </html>

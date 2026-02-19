@@ -51,6 +51,14 @@ app.get('/suppliers.html', (req, res) => {
   res.redirect(301, '/suppliers');
 });
 
+app.get('/messenger', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'messenger', 'index.html'));
+});
+
+app.get('/messenger/', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'messenger', 'index.html'));
+});
+
 // Canonical routes for other pages (matching server.js behavior)
 const canonicalPages = [
   'start',

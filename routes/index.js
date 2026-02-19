@@ -336,6 +336,27 @@ function mountRoutes(app, deps) {
     messengerRoutes.initializeDependencies(deps);
   }
   app.use('/api/v3/messenger', messengerRoutes);
+
+  // ===== LEGACY REDIRECTS =====
+  // Redirect old messages page to new messenger
+  app.get('/messages', (req, res) => res.redirect(301, '/messenger/'));
+  app.get('/messages.html', (req, res) => res.redirect(301, '/messenger/'));
+  
+  // Redirect old conversation page to new messenger
+  app.get('/conversation', (req, res) => {
+    const id = req.query.id;
+    if (id) {
+      return res.redirect(301, `/messenger/?conversation=${id}`);
+    }
+    return res.redirect(301, '/messenger/');
+  });
+  app.get('/conversation.html', (req, res) => {
+    const id = req.query.id;
+    if (id) {
+      return res.redirect(301, `/messenger/?conversation=${id}`);
+    }
+    return res.redirect(301, '/messenger/');
+  });
 }
 
 module.exports = {

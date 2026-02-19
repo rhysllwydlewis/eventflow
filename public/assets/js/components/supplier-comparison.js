@@ -461,8 +461,14 @@ class SupplierComparison {
   }
 
   contactSupplier(supplier) {
-    // Redirect to contact/message page
-    window.location.href = `/supplier.html?id=${supplier.id}#contact`;
+    const params = new URLSearchParams({
+      new: 'true',
+      recipientId: supplier.ownerUserId || '',
+      contextType: 'supplier',
+      contextId: supplier.id,
+      contextTitle: supplier.name || 'Supplier'
+    });
+    window.location.href = `/messenger/?${params.toString()}`;
   }
 
   escapeHtml(text) {
