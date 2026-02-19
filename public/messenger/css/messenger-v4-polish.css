@@ -35,13 +35,20 @@
   .messenger-v4__conversation-item,
   .messenger-v4__message,
   .messenger-v4__unread-badge,
+  .messenger-v4__messages,
   .messenger-v4__scroll-to-bottom,
   .messenger-v4__chat,
   .messenger-v4__sidebar,
   .messenger-v4__reaction-pill,
+  .messenger-v4__reaction-pill.is-entering,
   .messenger-v4__read-receipt,
+  .messenger-v4__read-receipt svg,
+  .messenger-v4__read-receipt span,
   .messenger-v4__composer-input,
   .messenger-v4__composer-button,
+  .messenger-v4__send-button--loading::after,
+  .messenger-v4__context-menu,
+  .messenger-v4__emoji-popover,
   .messenger-v4__date-separator-text {
     animation: none !important;
     transition: none !important;
@@ -53,6 +60,7 @@
    Subtle animated gradient matching EventFlow teal palette
    ============================================================ */
 .messenger-v4 {
+  position: relative; /* needed so mobile absolute panels are contained */
   background:
     linear-gradient(135deg,
       rgba(11, 128, 115, 0.04) 0%,
@@ -269,6 +277,12 @@
 /* ============================================================
    10. SCROLL-TO-BOTTOM BUTTON – polished glass pill
    ============================================================ */
+
+/* Make the chat-view container the anchor for absolute children */
+[data-v4="chat-view"] {
+  position: relative;
+}
+
 .messenger-v4__scroll-to-bottom {
   position: absolute;
   bottom: 16px;

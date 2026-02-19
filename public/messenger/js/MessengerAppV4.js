@@ -298,10 +298,10 @@ class MessengerAppV4 {
     if (panel === 'chat') {
       if (reduced) {
         sidebar.style.display = 'none';
-        chat.style.display = '';
+        chat.style.display = 'flex';
       } else {
         sidebar.classList.add('is-leaving');
-        chat.style.display = '';
+        chat.style.display = 'flex';
         chat.classList.add('is-entering');
         setTimeout(() => {
           sidebar.style.display = 'none';

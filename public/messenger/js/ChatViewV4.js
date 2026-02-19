@@ -138,12 +138,9 @@ class ChatViewV4 {
     if (conv) this._renderHeader(conv);
     this.headerEl.style.display = '';
 
-    // Show loading skeleton with cross-fade
+    // Show loading skeleton (instant – no animation, just indicates loading)
+    this.messagesEl.classList.remove('is-switching');
     this.messagesEl.innerHTML = this._buildMessageSkeleton();
-    this.messagesEl.classList.add('is-switching');
-    this.messagesEl.addEventListener('animationend', () => {
-      this.messagesEl.classList.remove('is-switching');
-    }, { once: true });
 
     try {
       const data = await this.api.getMessages(conversationId, { limit: 40 });
@@ -152,6 +149,14 @@ class ChatViewV4 {
 
       this.state.setMessages(conversationId, messages);
       this._renderMessages(messages);
+
+      // Fade-in the real content after the skeleton is replaced
+      void this.messagesEl.offsetHeight; // force reflow so animation restarts cleanly
+      this.messagesEl.classList.add('is-switching');
+      this.messagesEl.addEventListener('animationend', () => {
+        this.messagesEl.classList.remove('is-switching');
+      }, { once: true });
+
       this.scrollToBottom();
     } catch (err) {
       console.error('[ChatViewV4] Failed to load messages:', err);
