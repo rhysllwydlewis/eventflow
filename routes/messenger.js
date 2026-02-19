@@ -77,15 +77,41 @@ function initializeDependencies(deps) {
 
   authRequired = deps.authRequired;
   csrfProtection = deps.csrfProtection;
+  
+  // db can be either mongoDb module or db instance
   db = deps.db;
+  
   wsServer = deps.wsServer; // Optional
   postmark = deps.postmark; // Optional
   logger = deps.logger;
 
-  // Initialize messenger service
-  messengerService = new MessengerService(db);
+  // Service will be initialized lazily on first request
+  messengerService = null;
   
   logger.info('✅ Messenger v3 routes initialized');
+}
+
+/**
+ * Get database instance (handles both mongoDb module and db instance)
+ */
+async function getDbInstance() {
+  if (db && typeof db.getDb === 'function') {
+    // It's the mongoDb module
+    return await db.getDb();
+  }
+  // It's already a db instance
+  return db;
+}
+
+/**
+ * Get or initialize messenger service
+ */
+async function getMessengerService() {
+  if (!messengerService) {
+    const dbInstance = await getDbInstance();
+    messengerService = new MessengerService(dbInstance);
+  }
+  return messengerService;
 }
 
 /**
@@ -247,7 +273,7 @@ router.post(
       const sanitizedMetadata = metadata || {};
 
       // Create conversation
-      const result = await messengerService.createConversation(
+      const result = await (await getMessengerService()).createConversation(
         userId,
         recipientId,
         context,
@@ -320,7 +346,7 @@ router.get('/conversations', applyAuthRequired, ensureServices, async (req, res)
       search: search || '',
     };
 
-    const conversations = await messengerService.getConversations(userId, filters);
+    const conversations = await (await getMessengerService()).getConversations(userId, filters);
 
     res.json({
       success: true,
@@ -346,7 +372,7 @@ router.get('/conversations/:id', applyAuthRequired, ensureServices, async (req, 
     const { id } = req.params;
     const userId = req.user.id;
 
-    const conversation = await messengerService.getConversation(id, userId);
+    const conversation = await (await getMessengerService()).getConversation(id, userId);
 
     res.json({
       success: true,
@@ -383,7 +409,7 @@ router.patch(
       if (isMuted !== undefined) updates.isMuted = isMuted;
       if (isArchived !== undefined) updates.isArchived = isArchived;
 
-      const conversation = await messengerService.updateConversation(id, userId, updates);
+      const conversation = await (await getMessengerService()).updateConversation(id, userId, updates);
 
       res.json({
         success: true,
@@ -415,7 +441,7 @@ router.delete(
       const { id } = req.params;
       const userId = req.user.id;
 
-      await messengerService.deleteConversation(id, userId);
+      await (await getMessengerService()).deleteConversation(id, userId);
 
       res.json({
         success: true,
@@ -505,7 +531,7 @@ router.post(
       }
 
       // Send message
-      const message = await messengerService.sendMessage(
+      const message = await (await getMessengerService()).sendMessage(
         conversationId,
         userId,
         sanitizedContent,
@@ -524,7 +550,7 @@ router.post(
       // Send email notification to other participants if offline
       if (postmark) {
         try {
-          const conversation = await messengerService.getConversation(conversationId, userId);
+          const conversation = await (await getMessengerService()).getConversation(conversationId, userId);
           const recipients = conversation.participants.filter(p => p.userId !== userId);
           
           for (const recipient of recipients) {
@@ -575,7 +601,7 @@ router.get('/conversations/:id/messages', applyAuthRequired, ensureServices, asy
     const userId = req.user.id;
     const { before, limit = 50 } = req.query;
 
-    const result = await messengerService.getMessages(
+    const result = await (await getMessengerService()).getMessages(
       conversationId,
       userId,
       before,
@@ -620,7 +646,7 @@ router.patch(
       }
 
       const sanitizedContent = sanitizeInput(content);
-      const message = await messengerService.editMessage(messageId, userId, sanitizedContent);
+      const message = await (await getMessengerService()).editMessage(messageId, userId, sanitizedContent);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToRoom) {
@@ -677,7 +703,7 @@ router.delete(
       const conversationId = message.conversationId;
 
       // Delete the message
-      const success = await messengerService.deleteMessage(messageId, userId);
+      const success = await (await getMessengerService()).deleteMessage(messageId, userId);
 
       if (!success) {
         return res.status(404).json({
@@ -723,7 +749,7 @@ router.post(
       const { id: conversationId } = req.params;
       const userId = req.user.id;
 
-      const result = await messengerService.markAsRead(conversationId, userId);
+      const result = await (await getMessengerService()).markAsRead(conversationId, userId);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToUser) {
@@ -767,7 +793,7 @@ router.post(
         });
       }
 
-      const message = await messengerService.toggleReaction(messageId, userId, emoji);
+      const message = await (await getMessengerService()).toggleReaction(messageId, userId, emoji);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToRoom) {
@@ -810,7 +836,7 @@ router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
       });
     }
 
-    const messages = await messengerService.searchMessages(userId, query.trim(), conversationId);
+    const messages = await (await getMessengerService()).searchMessages(userId, query.trim(), conversationId);
 
     res.json({
       success: true,
@@ -836,7 +862,7 @@ router.get('/contacts', applyAuthRequired, ensureServices, async (req, res) => {
     const userId = req.user.id;
     const { q: searchQuery = '' } = req.query;
 
-    const contacts = await messengerService.getContacts(userId, searchQuery.trim());
+    const contacts = await (await getMessengerService()).getContacts(userId, searchQuery.trim());
 
     res.json({
       success: true,
@@ -860,7 +886,7 @@ router.get('/contacts', applyAuthRequired, ensureServices, async (req, res) => {
 router.get('/unread-count', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const userId = req.user.id;
-    const count = await messengerService.getUnreadCount(userId);
+    const count = await (await getMessengerService()).getUnreadCount(userId);
 
     res.json({
       success: true,
@@ -891,7 +917,7 @@ router.post(
       const { isTyping } = req.body;
 
       // Verify user has access to this conversation
-      await messengerService.getConversation(conversationId, userId);
+      await (await getMessengerService()).getConversation(conversationId, userId);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToRoom) {

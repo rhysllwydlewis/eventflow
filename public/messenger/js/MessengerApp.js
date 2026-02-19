@@ -39,8 +39,8 @@ class MessengerApp {
       // Setup event listeners
       this.setupEventListeners();
 
-      // Initialize components (these are loaded via separate script tags)
-      // ConversationList, ConversationView, ContactPicker, etc.
+      // Initialize components
+      this.initializeComponents();
       
       // Handle deep links (e.g., /messenger/?conversation=xxx)
       this.handleDeepLink();
@@ -49,10 +49,50 @@ class MessengerApp {
       await this.loadConversations();
       await this.loadUnreadCount();
 
-      console.log('Messenger app initialized');
+      // Load conversation from URL if specified
+      const urlParams = new URLSearchParams(window.location.search);
+      const conversationId = urlParams.get('conversation');
+      if (conversationId) {
+        this.handleConversationSelect(conversationId);
+      }
     } catch (error) {
       console.error('Failed to initialize messenger:', error);
       this.showError('Failed to load messenger. Please refresh the page.');
+    }
+  }
+
+  /**
+   * Initialize UI components
+   */
+  initializeComponents() {
+    // Initialize ConversationList
+    const conversationListContainer = document.querySelector('#conversationList');
+    if (conversationListContainer && window.ConversationList) {
+      this.conversationList = new ConversationList(conversationListContainer, this.state, this.api);
+    }
+
+    // Initialize ConversationView
+    const conversationViewContainer = document.querySelector('#conversationView');
+    if (conversationViewContainer && window.ConversationView) {
+      this.conversationView = new ConversationView(conversationViewContainer, this.state, this.api);
+      this.conversationView.setCurrentUser(this.currentUser);
+    }
+
+    // Initialize MessageComposer
+    const composerContainer = document.querySelector('.messenger-composer');
+    if (composerContainer && window.MessageComposer) {
+      this.messageComposer = new MessageComposer(composerContainer, this.state, this.api, this.socket);
+    }
+
+    // Initialize ContactPicker
+    const contactPickerModal = document.querySelector('#contactPickerModal');
+    if (contactPickerModal && window.ContactPicker) {
+      this.contactPicker = new ContactPicker(contactPickerModal, this.state, this.api);
+    }
+
+    // Initialize NotificationBridge
+    if (window.NotificationBridge) {
+      this.notificationBridge = new NotificationBridge(this.state);
     }
   }
 
@@ -67,7 +107,21 @@ class MessengerApp {
         return;
       }
 
-      // Fallback: fetch from API
+      // Fallback: try v4 API first
+      try {
+        const response = await fetch('/api/v4/users/me', {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          this.currentUser = await response.json();
+          return;
+        }
+      } catch (v4Error) {
+        // v4 endpoint might not exist, continue to v1 fallback
+      }
+
+      // Final fallback: v1 API (for backward compatibility)
       const response = await fetch('/api/v1/me', {
         credentials: 'include',
       });
@@ -137,7 +191,9 @@ class MessengerApp {
         this.socket.joinConversation(conversationId);
         
         // Mark as read
-        this.api.markAsRead(conversationId).catch(console.error);
+        this.api.markAsRead(conversationId).catch((error) => {
+          console.error('Failed to mark conversation as read:', error);
+        });
         
         // Update URL
         const url = new URL(window.location);

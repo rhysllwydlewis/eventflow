@@ -633,8 +633,8 @@
 
       const csrfToken = await fetchCsrfToken();
       
-      // Try v3 API first
-      let threadRes = await fetch('/api/v3/messenger/conversations', {
+      // Use v4 API for conversation creation (2-step: create conversation, then send message)
+      let threadRes = await fetch('/api/v4/messenger/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -642,24 +642,42 @@
         },
         credentials: 'include',
         body: JSON.stringify({
-          recipientId: sellerUserId,
+          type: 'marketplace',
+          participantIds: [sellerUserId],
           context: {
             type: 'listing',
             referenceId: listing.id,
             referenceTitle: listingTitle,
           },
-          initialMessage: message,
         }),
       });
 
       let conversationId = null;
-      let isV3 = false;
+      let useV4 = false;
 
       if (threadRes.ok) {
-        // v3 API succeeded
+        // v4 API succeeded - now send the initial message
         const data = await threadRes.json();
         conversationId = data.conversation?._id || data.conversation?.id;
-        isV3 = true;
+        
+        if (conversationId && message.trim()) {
+          // Step 2: Send initial message to the conversation
+          try {
+            await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+              },
+              credentials: 'include',
+              body: JSON.stringify({ message: message.trim() }),
+            });
+          } catch (msgError) {
+            console.error('Failed to send initial message:', msgError);
+            // Continue anyway - conversation was created
+          }
+        }
+        useV4 = true;
       } else {
         // Fall back to v1 API for backward compatibility
         threadRes = await fetch('/api/v1/threads/start', {

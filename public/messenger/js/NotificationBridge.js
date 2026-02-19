@@ -180,7 +180,7 @@
    */
   async function fetchUnreadCount() {
     try {
-      const response = await fetch('/api/v3/messenger/conversations?unreadOnly=true&limit=100', {
+      const response = await fetch('/api/v4/messenger/conversations?unreadOnly=true&limit=100', {
         credentials: 'include',
         headers: {
           'Accept': 'application/json'
@@ -200,6 +200,8 @@
     }
   }
 
+  let updateInterval = null;
+
   /**
    * Initialize notification bridge
    */
@@ -215,8 +217,21 @@
     // Fetch initial unread count
     fetchUnreadCount();
 
-    // Periodically update unread count
-    setInterval(fetchUnreadCount, UNREAD_COUNT_POLL_INTERVAL);
+    // Periodically update unread count (store reference for cleanup)
+    if (updateInterval) {
+      clearInterval(updateInterval);
+    }
+    updateInterval = setInterval(fetchUnreadCount, UNREAD_COUNT_POLL_INTERVAL);
+  }
+
+  /**
+   * Cleanup function to stop polling
+   */
+  function destroy() {
+    if (updateInterval) {
+      clearInterval(updateInterval);
+      updateInterval = null;
+    }
   }
 
   // Auto-initialize when DOM is ready
@@ -230,6 +245,7 @@
   // Export for manual control if needed
   window.NotificationBridge = {
     init,
+    destroy,
     updateUnreadBadge,
     fetchUnreadCount
   };

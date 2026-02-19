@@ -13,6 +13,12 @@
    */
   async function checkAuth() {
     try {
+      // Check AuthState first (most reliable)
+      if (window.AuthState && window.AuthState.isAuthenticated) {
+        return true;
+      }
+
+      // Fallback: check via API
       const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
         headers: {
