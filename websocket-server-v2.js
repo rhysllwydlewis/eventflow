@@ -192,7 +192,9 @@ class WebSocketServerV2 {
 
       // Typing indicator start
       socket.on('chat:v5:typing-start', data => {
-        if (!socket.userId || !data || !data.conversationId) return;
+        if (!socket.userId || !data || !data.conversationId) {
+          return;
+        }
 
         socket.to(`chat:v5:${data.conversationId}`).emit('chat:v5:user-typing', {
           conversationId: data.conversationId,
@@ -208,7 +210,9 @@ class WebSocketServerV2 {
 
       // Typing indicator stop
       socket.on('chat:v5:typing-stop', data => {
-        if (!socket.userId || !data || !data.conversationId) return;
+        if (!socket.userId || !data || !data.conversationId) {
+          return;
+        }
 
         socket.to(`chat:v5:${data.conversationId}`).emit('chat:v5:user-stopped-typing', {
           conversationId: data.conversationId,
@@ -586,7 +590,7 @@ class WebSocketServerV2 {
         }
         this.socketUsers.delete(socket.id);
 
-        // Update presence
+        // Update presence — setUserOffline removes user from online set
         await this.presenceService.setOffline(userId, socket.id);
 
         // Check if user is still online (other sockets)

@@ -2620,7 +2620,7 @@ async function initDashSupplier() {
   async function ensureCsrfToken() {
     if (!window.__CSRF_TOKEN__) {
       try {
-        const resp = await fetch('/api/v1/csrf-token', { credentials: 'include' });
+        const resp = await fetch('/api/csrf-token', { credentials: 'include' });
         if (resp.ok) {
           const data = await resp.json();
           window.__CSRF_TOKEN__ = data.csrfToken;
@@ -3134,12 +3134,57 @@ async function initDashSupplier() {
     }
   });
 
+  function buildSupplierPayload(form) {
+    const fd = new FormData(form);
+    const payload = {};
+    fd.forEach((v, k) => (payload[k] = v));
+    // Collect highlights
+    const highlights = [];
+    for (let i = 1; i <= 5; i++) {
+      const h = document.getElementById(`sup-highlight-${i}`);
+      if (h && h.value.trim()) {
+        highlights.push(h.value.trim());
+      }
+    }
+    if (highlights.length > 0) {
+      payload.highlights = highlights;
+    }
+    // Collect featured services
+    const fsInput = document.getElementById('sup-featured-services');
+    if (fsInput && fsInput.value.trim()) {
+      const services = fsInput.value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .slice(0, 10);
+      if (services.length > 0) {
+        payload.featuredServices = services;
+      }
+    }
+    // Collect social links
+    const socialLinks = {};
+    ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok'].forEach(p => {
+      const inp = document.getElementById(`sup-social-${p}`);
+      if (inp && inp.value.trim()) {
+        socialLinks[p] = inp.value.trim();
+      }
+    });
+    if (Object.keys(socialLinks).length > 0) {
+      payload.socialLinks = socialLinks;
+    }
+    // Theme color
+    const tc = document.getElementById('sup-theme-color');
+    if (tc && tc.value) {
+      payload.themeColor = tc.value;
+    }
+    return payload;
+  }
+
   const supForm = document.getElementById('supplier-form');
   if (supForm) {
     supForm.addEventListener('submit', async e => {
       e.preventDefault();
 
-      // Validate venue postcode if Venues category selected
       if (typeof window.validateVenuePostcode === 'function') {
         if (!window.validateVenuePostcode()) {
           return; // Stop submission if validation fails
@@ -3151,55 +3196,9 @@ async function initDashSupplier() {
         // Ensure CSRF token is available
         const csrfToken = await ensureCsrfToken();
 
-        const fd = new FormData(supForm);
-        const payload = {};
-        fd.forEach((v, k) => (payload[k] = v));
+        const payload = buildSupplierPayload(supForm);
 
-        // Collect highlights from individual inputs
-        const highlights = [];
-        for (let i = 1; i <= 5; i++) {
-          const highlightInput = document.getElementById(`sup-highlight-${i}`);
-          if (highlightInput && highlightInput.value.trim()) {
-            highlights.push(highlightInput.value.trim());
-          }
-        }
-        if (highlights.length > 0) {
-          payload.highlights = highlights;
-        }
-
-        // Collect featured services from textarea
-        const featuredServicesInput = document.getElementById('sup-featured-services');
-        if (featuredServicesInput && featuredServicesInput.value.trim()) {
-          const services = featuredServicesInput.value
-            .split('\n')
-            .map(s => s.trim())
-            .filter(Boolean)
-            .slice(0, 10);
-          if (services.length > 0) {
-            payload.featuredServices = services;
-          }
-        }
-
-        // Collect social links
-        const socialLinks = {};
-        const platforms = ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok'];
-        for (const platform of platforms) {
-          const input = document.getElementById(`sup-social-${platform}`);
-          if (input && input.value.trim()) {
-            socialLinks[platform] = input.value.trim();
-          }
-        }
-        if (Object.keys(socialLinks).length > 0) {
-          payload.socialLinks = socialLinks;
-        }
-
-        // Get theme color from color picker
-        const themeColorInput = document.getElementById('sup-theme-color');
-        if (themeColorInput && themeColorInput.value) {
-          payload.themeColor = themeColorInput.value;
-        }
-
-        // Clean up payload - remove empty venuePostcode if not Venues category
+        // Remove venuePostcode if not Venues category
         if (payload.category !== 'Venues') {
           delete payload.venuePostcode;
         }
@@ -3222,8 +3221,7 @@ async function initDashSupplier() {
           body: JSON.stringify(payload),
         });
 
-        // Update the currently editing supplier ID with the saved/created supplier ID
-        // This ensures we continue editing the same supplier after reload
+        // Update currently editing supplier ID with the saved/created ID
         if (response && response.supplier && response.supplier.id) {
           currentEditingSupplierId = response.supplier.id;
         } else if (id) {

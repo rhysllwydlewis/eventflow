@@ -1003,7 +1003,7 @@
                 <input id="sup-max" name="maxGuests" type="number" min="0" step="1" />
               </div>
 
-              <div class="form-row form-row-hidden" id="venue-postcode-row">
+              <div class="form-row form-row-hidden" id="venue-postcode-row" style="display:none">
                 <label for="sup-venue-postcode"
                   >Venue postcode <span class="form-required">*</span></label
                 >
@@ -2318,7 +2318,7 @@
               try {
                 wsClientInstance = new WebSocketClient({
                   onConnect: () => console.log('🟢 Live Dashboard Connected'),
-                  onNotification: data => handleRealtimeNotification(data),
+                  onNotification: (data) => handleRealtimeNotification(data),
                 });
               } catch (error) {
                 console.error('Error initializing WebSocket client:', error);

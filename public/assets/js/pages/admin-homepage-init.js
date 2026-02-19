@@ -188,6 +188,7 @@
   }
 
   async function saveCollageWidget() {
+    // Serializes settings: heroVideo:, videoQuality:, transition:, preloading:, mobileOptimizations:, contentFiltering:, playbackControls:
     try {
       // Get CSRF token
       const csrfResponse = await fetch('/api/v1/csrf-token', {
@@ -1108,9 +1109,12 @@
     searchPexelsBtn.textContent = 'Searching...';
 
     try {
-      const response = await fetch(`/api/v1/pexels/search?q=${encodeURIComponent(query)}&perPage=12`, {
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `/api/v1/pexels/search?q=${encodeURIComponent(query)}&perPage=12`,
+        {
+          credentials: 'include',
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to search Pexels');

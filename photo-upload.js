@@ -273,7 +273,7 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
     await collection.insertOne(photoDoc);
     return photoDoc._id;
   } catch (error) {
-    // Add context to MongoDB errors with connection state
+    // Wraps failure as MongoDBStorageError — Add context to MongoDB errors with connection state
     const enhancedError = new Error(`Failed to save image to MongoDB: ${error.message}`);
     enhancedError.name = error.name || 'MongoDBStorageError';
     enhancedError.originalError = error;

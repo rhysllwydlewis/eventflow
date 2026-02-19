@@ -178,7 +178,7 @@
     // Perform logout request
     if (token) {
       try {
-        await fetch('/api/v1/auth/logout', {
+        await fetch('/api/auth/logout', {
           method: 'POST',
           credentials: 'include',
           headers: { 'X-CSRF-Token': token },
@@ -208,7 +208,7 @@
       // Retry logout once
       if (token) {
         try {
-          await fetch('/api/v1/auth/logout', {
+          await fetch('/api/auth/logout', {
             method: 'POST',
             credentials: 'include',
             headers: { 'X-CSRF-Token': token },
