@@ -92,6 +92,16 @@ class MessengerState {
   }
 
   /**
+   * Prepend older messages to a conversation (for infinite scroll)
+   */
+  prependMessages(conversationId, olderMessages) {
+    const messages = this.messages.get(conversationId) || [];
+    const combined = [...olderMessages, ...messages];
+    this.messages.set(conversationId, combined);
+    this.emit('messagesChanged', { conversationId, messages: combined });
+  }
+
+  /**
    * Get messages for a conversation
    */
   getMessages(conversationId) {

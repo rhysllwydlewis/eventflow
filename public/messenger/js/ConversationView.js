@@ -128,8 +128,8 @@ class ConversationView {
       const response = await this.api.getMessages(conversationId, cursor);
       
       if (response.messages && response.messages.length > 0) {
-        // Add older messages to state
-        response.messages.forEach(msg => this.state.addMessage(msg));
+        // Prepend older messages to state (not append - they're older!)
+        this.state.prependMessages(conversationId, response.messages);
         this.hasMoreMessages = response.hasMore;
       } else {
         this.hasMoreMessages = false;
