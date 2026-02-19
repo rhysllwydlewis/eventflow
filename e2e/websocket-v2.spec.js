@@ -32,8 +32,9 @@ test.describe('WebSocket v2 E2E Tests @backend', () => {
   });
 
   test.describe('Messaging UI', () => {
-    test('messaging page should load', async ({ page }) => {
-      await page.goto('/messages.html');
+    test('messenger page (v4) should load', async ({ page }) => {
+      // Navigate to the canonical v4 messenger route (legacy /messages.html is deprecated)
+      await page.goto('/messenger/');
       // Page should load without JavaScript errors
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));

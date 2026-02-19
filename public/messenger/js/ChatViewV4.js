@@ -18,6 +18,7 @@ class ChatViewV4 {
     this.isLoadingOlder = false;
     this.hasMoreMessages = true;
     this.oldestCursor = null; // cursor (message ID) for pagination
+    this._seenMessageIds = new Set(); // deduplication across both event listeners
 
     // Bound handlers
     this._onNewMessage = this._onNewMessage.bind(this);
@@ -30,6 +31,8 @@ class ChatViewV4 {
   init() {
     this.render();
     this.attachEventListeners();
+    // Listen to both the canonical v4 event and the bridge alias for backward compatibility.
+    window.addEventListener('messenger:v4:message', this._onNewMessage);
     window.addEventListener('messenger:new-message', this._onNewMessage);
   }
 
@@ -251,6 +254,7 @@ class ChatViewV4 {
   /** Clean up all listeners. */
   destroy() {
     this.messagesEl.removeEventListener('scroll', this._onScroll);
+    window.removeEventListener('messenger:v4:message', this._onNewMessage);
     window.removeEventListener('messenger:new-message', this._onNewMessage);
     this.container.innerHTML = '';
   }
@@ -412,6 +416,18 @@ class ChatViewV4 {
   _onNewMessage(e) {
     const { message, conversationId } = e.detail || {};
     if (!message || conversationId !== this.conversationId) return;
+
+    // Deduplicate: both messenger:v4:message and messenger:new-message may fire for the same incoming message
+    const msgId = message._id || message.id;
+    if (msgId) {
+      if (this._seenMessageIds.has(msgId)) return;
+      this._seenMessageIds.add(msgId);
+      // Bound the set to avoid memory growth
+      if (this._seenMessageIds.size > 100) {
+        this._seenMessageIds.delete(this._seenMessageIds.values().next().value);
+      }
+    }
+
     this.hideTyping();
     this.appendMessage(message);
   }

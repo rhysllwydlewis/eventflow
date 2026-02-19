@@ -66,6 +66,8 @@ class MessengerSocket {
 
     // Messenger v4 events (upgraded naming convention)
     this.socket.on('messenger:v4:message', (data) => {
+      // Dispatch both: canonical v4 event name and legacy bridge name for backward compatibility
+      window.dispatchEvent(new CustomEvent('messenger:v4:message', { detail: data }));
       window.dispatchEvent(new CustomEvent('messenger:new-message', { detail: data }));
     });
 
