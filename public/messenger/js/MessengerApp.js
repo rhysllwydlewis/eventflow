@@ -177,7 +177,9 @@ class MessengerApp {
         this.socket.joinConversation(conversationId);
         
         // Mark as read
-        this.api.markAsRead(conversationId).catch(console.error);
+        this.api.markAsRead(conversationId).catch((error) => {
+          console.error('Failed to mark conversation as read:', error);
+        });
         
         // Update URL
         const url = new URL(window.location);
