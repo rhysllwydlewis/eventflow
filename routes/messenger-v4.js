@@ -64,6 +64,19 @@ const upload = multer({
  * Initialize routes with dependencies
  */
 function initialize(dependencies) {
+  if (!dependencies) {
+    throw new Error('Messenger v4 routes: dependencies object is required');
+  }
+
+  const required = ['authRequired', 'csrfProtection', 'db', 'logger'];
+  const missing = required.filter((key) => !dependencies[key]);
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Messenger v4 routes: missing required dependencies: ${missing.join(', ')}`
+    );
+  }
+
   authRequired = dependencies.authRequired;
   csrfProtection = dependencies.csrfProtection;
   db = dependencies.db;
