@@ -589,12 +589,8 @@ router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, re
  * DELETE /api/admin/suppliers/:id
  * Delete a supplier
  */
-router.delete(
-  '/suppliers/:id',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
+// prettier-ignore
+router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
     try {
       const all = await dbUnified.read('suppliers');
       const idx = all.findIndex(s => s.id === req.params.id);
@@ -620,12 +616,8 @@ router.delete(
  * POST /api/admin/suppliers/:id/approve
  * Approve or reject a supplier
  */
-router.post(
-  '/suppliers/:id/approve',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
+// prettier-ignore
+router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
     try {
       const all = await dbUnified.read('suppliers');
       const i = all.findIndex(s => s.id === req.params.id);
@@ -1169,12 +1161,8 @@ router.post(
  * POST /api/admin/suppliers/bulk-approve
  * Bulk approve/reject suppliers
  */
-router.post(
-  '/suppliers/bulk-approve',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
+// prettier-ignore
+router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
     try {
       const { supplierIds, approved = true } = req.body;
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
@@ -1207,12 +1195,8 @@ router.post(
  * POST /api/admin/suppliers/bulk-reject
  * Bulk reject suppliers
  */
-router.post(
-  '/suppliers/bulk-reject',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
+// prettier-ignore
+router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
     try {
       const { supplierIds } = req.body;
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
@@ -1245,12 +1229,8 @@ router.post(
  * POST /api/admin/suppliers/bulk-delete
  * Bulk delete suppliers
  */
-router.post(
-  '/suppliers/bulk-delete',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
+// prettier-ignore
+router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
     try {
       const { supplierIds } = req.body;
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
@@ -2661,13 +2641,8 @@ router.get('/settings/maintenance', authRequired, roleRequired('admin'), async (
  * PUT /api/admin/settings/maintenance
  * Update maintenance mode settings
  */
-router.put(
-  '/settings/maintenance',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  writeLimiter,
-  async (req, res) => {
+// prettier-ignore
+router.put('/settings/maintenance', authRequired, roleRequired('admin'), csrfProtection, writeLimiter, async (req, res) => {
     try {
       const { enabled, message, duration } = req.body;
 
