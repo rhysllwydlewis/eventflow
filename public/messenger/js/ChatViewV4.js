@@ -217,6 +217,12 @@ class ChatViewV4 {
       return;
     }
 
+    // Deduplicate: skip if this message is already in the DOM (prevents double-display
+    // when both the API response and the WS echo arrive for the same send)
+    if (msg._id && this.messagesEl.querySelector(`[data-id="${CSS.escape(String(msg._id))}"]`)) {
+      return;
+    }
+
     // Remove empty state if present
     const emptyEl = this.messagesEl.querySelector('.messenger-v4__empty-state');
     if (emptyEl) {
@@ -384,14 +390,14 @@ class ChatViewV4 {
    * @returns {string|null}
    */
   _maybeDateSeparator(prevMsg, msg) {
-    const msgDate = new Date(msg.createdAt || msg.timestamp);
+    const msgDate = new Date(msg.createdAt || msg.sentAt || msg.timestamp);
     if (isNaN(msgDate)) {
       return null;
     }
     if (!prevMsg) {
       return this._dateSeparatorHTML(msgDate);
     }
-    const prevDate = new Date(prevMsg.createdAt || prevMsg.timestamp);
+    const prevDate = new Date(prevMsg.createdAt || prevMsg.sentAt || prevMsg.timestamp);
     if (msgDate.toDateString() !== prevDate.toDateString()) {
       return this._dateSeparatorHTML(msgDate);
     }
@@ -425,8 +431,8 @@ class ChatViewV4 {
   _buildMessageHTML(msg, currentUser) {
     const uid = currentUser?.id || currentUser?._id;
     const isSent = msg.senderId === uid;
-    const time = msg.createdAt
-      ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const time = msg.createdAt || msg.sentAt
+      ? new Date(msg.createdAt || msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '';
     return `
       <div class="messenger-v4__message ${isSent ? 'messenger-v4__message--sent' : 'messenger-v4__message--received'}" data-id="${this.escape(msg._id)}">

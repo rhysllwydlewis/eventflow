@@ -404,9 +404,11 @@ router.post(
       const userId = req.user.id;
       const userName = req.user.displayName || req.user.businessName || req.user.email;
 
-      if (!content || content.trim().length === 0) {
+      // Allow attachment-only messages (image/file with no caption text)
+      const hasAttachments = req.files && req.files.length > 0;
+      if ((!content || content.trim().length === 0) && !hasAttachments) {
         return res.status(400).json({
-          error: 'Message content is required',
+          error: 'Message content or at least one attachment is required',
         });
       }
 
@@ -603,18 +605,19 @@ router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (re
     const { id } = req.params;
     const userId = req.user.id;
 
-    const message = await (
-      await getMessengerService()
-    ).messagesCollection.findOne({
+    const svc = await getMessengerService();
+    const message = await svc.messagesCollection.findOne({
       _id: new ObjectId(id),
     });
 
-    await (await getMessengerService()).deleteMessage(id, userId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    await svc.deleteMessage(id, userId);
 
     // Emit delete event
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(message.conversationId.toString(), userId);
+    const conversation = await svc.getConversation(message.conversationId.toString(), userId);
     emitToConversation(conversation, 'messenger:v4:message-deleted', {
       messageId: id,
     });
@@ -763,10 +766,7 @@ router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => 
     const userId = req.user.id;
     const userName = req.user.displayName || req.user.businessName || req.user.email;
 
-    // Verify user is participant
-    await (await getMessengerService()).getConversation(conversationId, userId);
-
-    // Emit typing event to other participants
+    // Fetch conversation once — verifies participant access and provides participant list
     const conversation = await (
       await getMessengerService()
     ).getConversation(conversationId, userId);

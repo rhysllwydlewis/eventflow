@@ -298,12 +298,46 @@ class MessengerAppV4 {
           if (existing) existing.remove();
           if (reactions?.length) {
             const tmp = document.createElement('div');
-            tmp.innerHTML = MessageBubbleV4.renderReactions(reactions, messageId);
+            tmp.innerHTML = window.MessageBubbleV4.renderReactions(reactions, messageId);
             const bar = tmp.firstElementChild;
             if (bar) el.querySelector('.messenger-v4__message-content')?.appendChild(bar);
           }
         }
       }
+    });
+
+    // Conversation updated by another participant (pin/archive/mute change from WS)
+    window.addEventListener('messenger:conversation-updated', e => {
+      const { conversationId, updates } = e.detail || {};
+      if (!conversationId || !updates) return;
+      const conv = this.state.conversations.find(c => c._id === conversationId);
+      if (conv) {
+        this.state.updateConversation({ ...conv, ...updates });
+      }
+    });
+
+    // Read receipt: another participant read the conversation → update sent message tick colours
+    window.addEventListener('messenger:conversation-read', e => {
+      const { conversationId, userId } = e.detail || {};
+      if (!conversationId || conversationId !== this._activeConversationId) return;
+      const uid = this._getCurrentUserId();
+      // Only react when a different user (the recipient) has read — not our own echo
+      if (userId === uid || !this.chatView?.messagesEl) return;
+      this.chatView.messagesEl
+        .querySelectorAll('.messenger-v4__message--sent .messenger-v4__read-receipt')
+        .forEach(el => {
+          el.textContent = '✓✓';
+          el.classList.add('messenger-v4__read-receipt--read');
+          el.setAttribute('aria-label', 'Read');
+          el.title = 'Read';
+        });
+    });
+
+    // WebSocket connection permanently failed — show UI error
+    window.addEventListener('messenger:connection-failed', () => {
+      this._showGlobalError(
+        'Connection lost. Real-time updates are paused — please refresh to reconnect.'
+      );
     });
 
     // ---- Message action events (from context menu) ----
@@ -356,8 +390,15 @@ class MessengerAppV4 {
     if (this._activeConversationId === id) {
       return;
     }
+
+    // Leave previous WebSocket room, join the new one
+    const prevId = this._activeConversationId;
+    if (prevId && prevId !== id) {
+      this.socket?.leaveConversation(prevId);
+    }
     this._activeConversationId = id;
     this.state.setActiveConversation(id);
+    this.socket?.joinConversation(id);
 
     // Update composer's conversationId
     if (this.composer) {
@@ -635,10 +676,13 @@ class MessengerAppV4 {
         this.state.updateMessage(this._activeConversationId, messageId, updated);
         // Re-render the message bubble in the DOM
         const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
-        if (el && MessageBubbleV4) {
+        if (el && window.MessageBubbleV4) {
           const uid = this._getCurrentUserId();
-          const wrapper = document.createElement('div');
-          wrapper.innerHTML = MessageBubbleV4.render(updated, uid);
+        // MessageBubbleV4.render() escapes all user-supplied content (message text, senderName,
+        // attachments, reactions) via MessageBubbleV4.escape() before producing HTML.
+        // innerHTML is therefore safe — it receives only factory-escaped output.
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = window.MessageBubbleV4.render(updated, uid);
           el.replaceWith(wrapper.firstElementChild);
         }
       }
@@ -699,14 +743,15 @@ class MessengerAppV4 {
         });
         // Re-render only the reactions bar
         const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
-        if (el && MessageBubbleV4) {
+        if (el && window.MessageBubbleV4) {
           const reactBar = el.querySelector('.messenger-v4__reactions-bar');
           if (reactBar) {
             reactBar.remove();
           }
           if (updated.reactions?.length) {
             const newBar = document.createElement('div');
-            newBar.innerHTML = MessageBubbleV4.renderReactions(updated.reactions, messageId);
+            // renderReactions escapes all values via MessageBubbleV4.escape() — innerHTML is safe.
+            newBar.innerHTML = window.MessageBubbleV4.renderReactions(updated.reactions, messageId);
             el.querySelector('.messenger-v4__message-content')?.appendChild(
               newBar.firstElementChild
             );
