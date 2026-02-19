@@ -6,7 +6,21 @@
 'use strict';
 
 const ChatV5Service = require('../../services/chat-v5.service');
-const { CONVERSATION_TYPES, MESSAGE_TYPES, CONVERSATION_STATUS } = require('../../models/ChatMessage');
+const {
+  CONVERSATION_TYPES,
+  MESSAGE_TYPES,
+  CONVERSATION_STATUS,
+} = require('../../models/ChatMessage');
+
+// Valid 24-char hex ObjectId strings for use in mock data
+// These must be valid hex strings so the service can call new ObjectId(id) safely.
+const CONV_ID = '507f1f77bcf86cd799439011';
+const EXISTING_CONV_ID = '507f1f77bcf86cd799439013';
+const MSG_ID = '507f1f77bcf86cd799439012';
+const MSG1_ID = '507f1f77bcf86cd799439014';
+const MSG2_ID = '507f1f77bcf86cd799439015';
+const CONV1_ID = '507f1f77bcf86cd799439016';
+const CONV2_ID = '507f1f77bcf86cd799439017';
 
 // Mock logger
 const mockLogger = {
@@ -36,7 +50,7 @@ beforeEach(() => {
       toArray: jest.fn().mockResolvedValue([]),
       project: jest.fn().mockReturnThis(),
     }),
-    insertOne: jest.fn().mockResolvedValue({ insertedId: 'conv123' }),
+    insertOne: jest.fn().mockResolvedValue({ insertedId: CONV_ID }),
     updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 }),
     updateMany: jest.fn().mockResolvedValue({ matchedCount: 1 }),
     countDocuments: jest.fn().mockResolvedValue(0),
@@ -49,15 +63,19 @@ beforeEach(() => {
       limit: jest.fn().mockReturnThis(),
       toArray: jest.fn().mockResolvedValue([]),
     }),
-    insertOne: jest.fn().mockResolvedValue({ insertedId: 'msg123' }),
+    insertOne: jest.fn().mockResolvedValue({ insertedId: MSG_ID }),
     updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 }),
     updateMany: jest.fn().mockResolvedValue({ matchedCount: 1 }),
   };
 
   mockDb = {
-    collection: jest.fn((name) => {
-      if (name === 'chat_conversations') return mockConversationsCollection;
-      if (name === 'chat_messages') return mockMessagesCollection;
+    collection: jest.fn(name => {
+      if (name === 'chat_conversations') {
+        return mockConversationsCollection;
+      }
+      if (name === 'chat_messages') {
+        return mockMessagesCollection;
+      }
       throw new Error(`Unknown collection: ${name}`);
     }),
   };
@@ -84,7 +102,7 @@ describe('ChatV5Service', () => {
       const result = await chatService.createConversation(params);
 
       expect(result).toBeDefined();
-      expect(result._id).toBe('conv123');
+      expect(result._id).toBe(CONV_ID);
       expect(mockConversationsCollection.insertOne).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalled();
     });
@@ -101,7 +119,7 @@ describe('ChatV5Service', () => {
         userId: 'user1',
       };
 
-      const existingConv = { _id: 'existing123', type: CONVERSATION_TYPES.DIRECT };
+      const existingConv = { _id: EXISTING_CONV_ID, type: CONVERSATION_TYPES.DIRECT };
       mockConversationsCollection.findOne.mockResolvedValue(existingConv);
 
       const result = await chatService.createConversation(params);
@@ -113,32 +131,32 @@ describe('ChatV5Service', () => {
     it('should throw error for invalid conversation type', async () => {
       const params = {
         type: 'invalid_type',
-        participants: [
-          { userId: 'user1', displayName: 'User 1', avatar: null, role: 'customer' },
-        ],
+        participants: [{ userId: 'user1', displayName: 'User 1', avatar: null, role: 'customer' }],
         userId: 'user1',
       };
 
-      await expect(chatService.createConversation(params)).rejects.toThrow('Invalid conversation type');
+      await expect(chatService.createConversation(params)).rejects.toThrow(
+        'Invalid conversation type'
+      );
     });
 
     it('should throw error for insufficient participants', async () => {
       const params = {
         type: CONVERSATION_TYPES.DIRECT,
-        participants: [
-          { userId: 'user1', displayName: 'User 1', avatar: null, role: 'customer' },
-        ],
+        participants: [{ userId: 'user1', displayName: 'User 1', avatar: null, role: 'customer' }],
         userId: 'user1',
       };
 
-      await expect(chatService.createConversation(params)).rejects.toThrow('At least 2 participants are required');
+      await expect(chatService.createConversation(params)).rejects.toThrow(
+        'At least 2 participants are required'
+      );
     });
   });
 
   describe('sendMessage', () => {
     it('should send a message in a valid conversation', async () => {
       const conversation = {
-        _id: 'conv123',
+        _id: CONV_ID,
         participants: [
           { userId: 'user1', unreadCount: 0 },
           { userId: 'user2', unreadCount: 0 },
@@ -149,7 +167,7 @@ describe('ChatV5Service', () => {
       mockConversationsCollection.findOne.mockResolvedValue(conversation);
 
       const params = {
-        conversationId: 'conv123',
+        conversationId: CONV_ID,
         senderId: 'user1',
         senderName: 'User 1',
         senderAvatar: null,
@@ -160,7 +178,7 @@ describe('ChatV5Service', () => {
       const result = await chatService.sendMessage(params);
 
       expect(result).toBeDefined();
-      expect(result._id).toBe('msg123');
+      expect(result._id).toBe(MSG_ID);
       expect(mockMessagesCollection.insertOne).toHaveBeenCalled();
       expect(mockConversationsCollection.updateOne).toHaveBeenCalled();
       expect(mockConversationsCollection.updateMany).toHaveBeenCalled();
@@ -170,7 +188,7 @@ describe('ChatV5Service', () => {
       mockConversationsCollection.findOne.mockResolvedValue(null);
 
       const params = {
-        conversationId: 'invalid123',
+        conversationId: '507f1f77bcf86cd799439099', // valid ObjectId that doesn't exist
         senderId: 'user1',
         senderName: 'User 1',
         content: 'Hello',
@@ -181,7 +199,7 @@ describe('ChatV5Service', () => {
 
     it('should sanitize message content', async () => {
       const conversation = {
-        _id: 'conv123',
+        _id: CONV_ID,
         participants: [{ userId: 'user1' }],
         status: CONVERSATION_STATUS.ACTIVE,
       };
@@ -189,7 +207,7 @@ describe('ChatV5Service', () => {
       mockConversationsCollection.findOne.mockResolvedValue(conversation);
 
       const params = {
-        conversationId: 'conv123',
+        conversationId: CONV_ID,
         senderId: 'user1',
         senderName: 'User 1',
         content: '<script>alert("xss")</script>Hello',
@@ -208,14 +226,14 @@ describe('ChatV5Service', () => {
   describe('getMessages', () => {
     it('should retrieve messages for a conversation', async () => {
       const conversation = {
-        _id: 'conv123',
+        _id: CONV_ID,
         participants: [{ userId: 'user1' }],
         status: CONVERSATION_STATUS.ACTIVE,
       };
 
       const messages = [
-        { _id: 'msg1', content: 'Hello', createdAt: new Date() },
-        { _id: 'msg2', content: 'Hi', createdAt: new Date() },
+        { _id: MSG1_ID, content: 'Hello', createdAt: new Date() },
+        { _id: MSG2_ID, content: 'Hi', createdAt: new Date() },
       ];
 
       mockConversationsCollection.findOne.mockResolvedValue(conversation);
@@ -225,7 +243,7 @@ describe('ChatV5Service', () => {
         toArray: jest.fn().mockResolvedValue(messages),
       });
 
-      const result = await chatService.getMessages('conv123', 'user1');
+      const result = await chatService.getMessages(CONV_ID, 'user1');
 
       expect(result.messages).toEqual(messages);
       expect(mockMessagesCollection.find).toHaveBeenCalled();
@@ -234,17 +252,19 @@ describe('ChatV5Service', () => {
     it('should throw error if user not in conversation', async () => {
       mockConversationsCollection.findOne.mockResolvedValue(null);
 
-      await expect(chatService.getMessages('conv123', 'user1')).rejects.toThrow('Conversation not found');
+      await expect(chatService.getMessages(CONV_ID, 'user1')).rejects.toThrow(
+        'Conversation not found'
+      );
     });
   });
 
   describe('markAsRead', () => {
     it('should mark conversation as read', async () => {
       mockMessagesCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue([{ _id: 'msg1' }]),
+        toArray: jest.fn().mockResolvedValue([{ _id: MSG1_ID }]),
       });
 
-      const result = await chatService.markAsRead('conv123', 'user1');
+      const result = await chatService.markAsRead(CONV_ID, 'user1');
 
       expect(result.success).toBe(true);
       expect(mockConversationsCollection.updateOne).toHaveBeenCalled();
@@ -255,7 +275,7 @@ describe('ChatV5Service', () => {
   describe('editMessage', () => {
     it('should edit a message within time limit', async () => {
       const message = {
-        _id: 'msg123',
+        _id: MSG_ID,
         senderId: 'user1',
         content: 'Updated content',
         editedAt: new Date(),
@@ -263,7 +283,7 @@ describe('ChatV5Service', () => {
 
       mockMessagesCollection.findOne.mockResolvedValue(message);
 
-      const result = await chatService.editMessage('msg123', 'user1', 'Updated content');
+      const result = await chatService.editMessage(MSG_ID, 'user1', 'Updated content');
 
       expect(result).toBeDefined();
       expect(mockMessagesCollection.updateOne).toHaveBeenCalled();
@@ -272,7 +292,7 @@ describe('ChatV5Service', () => {
 
   describe('deleteMessage', () => {
     it('should soft delete a message', async () => {
-      const result = await chatService.deleteMessage('msg123', 'user1');
+      const result = await chatService.deleteMessage(MSG_ID, 'user1');
 
       expect(result.success).toBe(true);
       expect(mockMessagesCollection.updateOne).toHaveBeenCalled();
@@ -282,7 +302,7 @@ describe('ChatV5Service', () => {
   describe('toggleReaction', () => {
     it('should add a reaction to a message', async () => {
       const message = {
-        _id: 'msg123',
+        _id: MSG_ID,
         reactions: [],
       };
 
@@ -291,7 +311,7 @@ describe('ChatV5Service', () => {
         reactions: [{ emoji: '👍', userId: 'user1', userName: 'User 1' }],
       });
 
-      const result = await chatService.toggleReaction('msg123', 'user1', 'User 1', '👍');
+      const result = await chatService.toggleReaction(MSG_ID, 'user1', 'User 1', '👍');
 
       expect(result).toBeDefined();
       expect(mockMessagesCollection.updateOne).toHaveBeenCalled();
@@ -299,7 +319,7 @@ describe('ChatV5Service', () => {
 
     it('should remove a reaction if already exists', async () => {
       const message = {
-        _id: 'msg123',
+        _id: MSG_ID,
         reactions: [{ emoji: '👍', userId: 'user1', userName: 'User 1' }],
       };
 
@@ -308,7 +328,7 @@ describe('ChatV5Service', () => {
         reactions: [],
       });
 
-      const result = await chatService.toggleReaction('msg123', 'user1', 'User 1', '👍');
+      const result = await chatService.toggleReaction(MSG_ID, 'user1', 'User 1', '👍');
 
       expect(result).toBeDefined();
       expect(mockMessagesCollection.updateOne).toHaveBeenCalled();
@@ -319,12 +339,12 @@ describe('ChatV5Service', () => {
     it('should calculate total unread count for a user', async () => {
       const conversations = [
         {
-          _id: 'conv1',
+          _id: CONV1_ID,
           participants: [{ userId: 'user1', unreadCount: 5, isMuted: false, isArchived: false }],
           status: CONVERSATION_STATUS.ACTIVE,
         },
         {
-          _id: 'conv2',
+          _id: CONV2_ID,
           participants: [{ userId: 'user1', unreadCount: 3, isMuted: false, isArchived: false }],
           status: CONVERSATION_STATUS.ACTIVE,
         },
@@ -342,12 +362,12 @@ describe('ChatV5Service', () => {
     it('should exclude muted and archived conversations', async () => {
       const conversations = [
         {
-          _id: 'conv1',
+          _id: CONV1_ID,
           participants: [{ userId: 'user1', unreadCount: 5, isMuted: true, isArchived: false }],
           status: CONVERSATION_STATUS.ACTIVE,
         },
         {
-          _id: 'conv2',
+          _id: CONV2_ID,
           participants: [{ userId: 'user1', unreadCount: 3, isMuted: false, isArchived: true }],
           status: CONVERSATION_STATUS.ACTIVE,
         },
@@ -365,10 +385,10 @@ describe('ChatV5Service', () => {
 
   describe('updateConversation', () => {
     it('should update conversation settings', async () => {
-      const conversation = { _id: 'conv123' };
+      const conversation = { _id: CONV_ID };
       mockConversationsCollection.findOne.mockResolvedValue(conversation);
 
-      const result = await chatService.updateConversation('conv123', 'user1', {
+      const result = await chatService.updateConversation(CONV_ID, 'user1', {
         isPinned: true,
         isMuted: false,
       });
@@ -379,7 +399,7 @@ describe('ChatV5Service', () => {
 
     it('should throw error for invalid updates', async () => {
       await expect(
-        chatService.updateConversation('conv123', 'user1', {
+        chatService.updateConversation(CONV_ID, 'user1', {
           invalidField: true,
         })
       ).rejects.toThrow('No valid updates provided');
@@ -388,14 +408,11 @@ describe('ChatV5Service', () => {
 
   describe('searchMessages', () => {
     it('should search messages across conversations', async () => {
-      const conversations = [
-        { _id: 'conv1' },
-        { _id: 'conv2' },
-      ];
+      const conversations = [{ _id: CONV1_ID }, { _id: CONV2_ID }];
 
       const messages = [
-        { _id: 'msg1', content: 'Hello world' },
-        { _id: 'msg2', content: 'Hello there' },
+        { _id: MSG1_ID, content: 'Hello world' },
+        { _id: MSG2_ID, content: 'Hello there' },
       ];
 
       mockConversationsCollection.find.mockReturnValue({
@@ -445,14 +462,14 @@ describe('ChatMessage Model', () => {
   describe('createMessage', () => {
     it('should create a message document', () => {
       const msg = createMessage({
-        conversationId: 'conv123',
+        conversationId: CONV_ID,
         senderId: 'user1',
         senderName: 'User 1',
         content: 'Hello',
         type: MESSAGE_TYPES.TEXT,
       });
 
-      expect(msg.conversationId).toBe('conv123');
+      expect(msg.conversationId).toBe(CONV_ID);
       expect(msg.senderId).toBe('user1');
       expect(msg.content).toBe('Hello');
       expect(msg.type).toBe(MESSAGE_TYPES.TEXT);

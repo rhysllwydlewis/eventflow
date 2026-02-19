@@ -171,7 +171,11 @@ class ChatV5Service {
 
       return conversation;
     } catch (error) {
-      this.logger.error('Error getting conversation', { error: error.message, conversationId, userId });
+      this.logger.error('Error getting conversation', {
+        error: error.message,
+        conversationId,
+        userId,
+      });
       throw error;
     }
   }
@@ -213,7 +217,11 @@ class ChatV5Service {
 
       return await this.getConversation(conversationId, userId);
     } catch (error) {
-      this.logger.error('Error updating conversation', { error: error.message, conversationId, userId });
+      this.logger.error('Error updating conversation', {
+        error: error.message,
+        conversationId,
+        userId,
+      });
       throw error;
     }
   }
@@ -242,7 +250,11 @@ class ChatV5Service {
 
       return { success: true };
     } catch (error) {
-      this.logger.error('Error deleting conversation', { error: error.message, conversationId, userId });
+      this.logger.error('Error deleting conversation', {
+        error: error.message,
+        conversationId,
+        userId,
+      });
       throw error;
     }
   }
@@ -283,7 +295,7 @@ class ChatV5Service {
         sanitizedContent = contentSanitizer.sanitizeContent(content);
 
         // Check for spam
-        const spamCheck = spamDetection.checkSpam(sanitizedContent);
+        const spamCheck = spamDetection.checkSpam(senderId, sanitizedContent);
         if (spamCheck.isSpam) {
           throw new Error(`Message rejected: ${spamCheck.reason}`);
         }
@@ -342,7 +354,11 @@ class ChatV5Service {
 
       return message;
     } catch (error) {
-      this.logger.error('Error sending message', { error: error.message, conversationId, senderId });
+      this.logger.error('Error sending message', {
+        error: error.message,
+        conversationId,
+        senderId,
+      });
       throw error;
     }
   }
@@ -400,7 +416,7 @@ class ChatV5Service {
       const sanitizedContent = contentSanitizer.sanitizeContent(newContent);
 
       // Check spam
-      const spamCheck = spamDetection.checkSpam(sanitizedContent);
+      const spamCheck = spamDetection.checkSpam(userId, sanitizedContent);
       if (spamCheck.isSpam) {
         throw new Error(`Message rejected: ${spamCheck.reason}`);
       }
@@ -663,9 +679,7 @@ class ChatV5Service {
       // Apply search filter
       if (search) {
         const searchLower = search.toLowerCase();
-        contactList = contactList.filter(c =>
-          c.displayName.toLowerCase().includes(searchLower)
-        );
+        contactList = contactList.filter(c => c.displayName.toLowerCase().includes(searchLower));
       }
 
       return {

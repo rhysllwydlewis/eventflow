@@ -37,8 +37,8 @@
     });
 
     try {
-      // Use AdminShared.adminFetch for consistent error handling
-      const data = await AdminShared.adminFetch('/api/admin/users', { method: 'GET' });
+      // Use AdminShared.api for consistent error handling
+      const data = await AdminShared.api('/api/admin/users', { method: 'GET' });
       allUsers = (data && data.items) || [];
 
       renderUsers();
@@ -707,9 +707,9 @@
       </div>
     `;
 
-    // Load subscription history using AdminShared.adminFetch
+    // Load subscription history using AdminShared.api
     try {
-      const data = await AdminShared.adminFetch(`/api/admin/users/${userId}/subscription-history`, {
+      const data = await AdminShared.api(`/api/admin/users/${userId}/subscription-history`, {
         method: 'GET',
       });
       const history = data.history || [];

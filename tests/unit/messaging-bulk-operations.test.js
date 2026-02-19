@@ -19,6 +19,7 @@ describe('MessagingService - Bulk Operations', () => {
     mockMessagesCollection = {
       find: jest.fn(),
       updateMany: jest.fn(),
+      updateOne: jest.fn(),
       findOneAndUpdate: jest.fn(),
       countDocuments: jest.fn(),
     };
@@ -27,6 +28,14 @@ describe('MessagingService - Bulk Operations', () => {
       insertOne: jest.fn(),
       findOne: jest.fn(),
       updateOne: jest.fn(),
+    };
+
+    // Mock session for transaction support
+    const mockSession = {
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      abortTransaction: jest.fn(),
+      endSession: jest.fn(),
     };
 
     // Mock database
@@ -40,6 +49,9 @@ describe('MessagingService - Bulk Operations', () => {
         }
         return null;
       }),
+      client: {
+        startSession: jest.fn().mockReturnValue(mockSession),
+      },
     };
 
     messagingService = new MessagingService(mockDb);
@@ -57,7 +69,7 @@ describe('MessagingService - Bulk Operations', () => {
         new ObjectId().toString(),
       ];
       const userId = 'user123';
-      const threadId = 'thread456';
+      const threadId = new ObjectId().toString();
       const reason = 'Test deletion';
 
       const mockMessages = [
@@ -97,7 +109,8 @@ describe('MessagingService - Bulk Operations', () => {
           _id: expect.any(Object),
           threadId: threadId, // Security: Validate thread ownership
           deletedAt: null, // Security: Don't delete already deleted messages
-        })
+        }),
+        expect.anything() // session option
       );
       expect(mockMessagesCollection.updateMany).toHaveBeenCalled();
       expect(mockOperationsCollection.insertOne).toHaveBeenCalled();
@@ -107,7 +120,7 @@ describe('MessagingService - Bulk Operations', () => {
       const messageId = new ObjectId();
       const messageIds = [messageId.toString()];
       const userId = 'user123';
-      const threadId = 'thread456';
+      const threadId = new ObjectId().toString();
 
       const mockMessage = {
         _id: messageId,
@@ -137,15 +150,17 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should reject deletion when message count mismatch (security check)', async () => {
-      const messageIds = [new ObjectId().toString(), new ObjectId().toString(), new ObjectId().toString()];
+      const messageIds = [
+        new ObjectId().toString(),
+        new ObjectId().toString(),
+        new ObjectId().toString(),
+      ];
       const userId = 'user123';
-      const threadId = 'thread456';
+      const threadId = new ObjectId().toString();
 
       // Return fewer messages than requested (some don't belong to thread or user)
       mockMessagesCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue([
-          { _id: new ObjectId(), isStarred: false },
-        ]),
+        toArray: jest.fn().mockResolvedValue([{ _id: new ObjectId(), isStarred: false }]),
       });
 
       await expect(
@@ -180,7 +195,8 @@ describe('MessagingService - Bulk Operations', () => {
             status: 'read',
             lastActionedBy: userId,
           }),
-        })
+        }),
+        expect.anything() // session option
       );
     });
 
@@ -204,7 +220,8 @@ describe('MessagingService - Bulk Operations', () => {
             status: 'delivered',
             lastActionedBy: userId,
           }),
-        })
+        }),
+        expect.anything() // session option
       );
     });
   });
@@ -399,7 +416,7 @@ describe('MessagingService - Bulk Operations', () => {
 
   describe('getMessagesWithFilters', () => {
     it('should fetch messages with sorting', async () => {
-      const threadId = 'thread123';
+      const threadId = new ObjectId().toString();
       const options = {
         sortBy: 'date-asc',
         page: 1,
@@ -424,7 +441,7 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should apply read/unread filter', async () => {
-      const threadId = 'thread123';
+      const threadId = new ObjectId().toString();
       const options = {
         filterBy: 'unread',
       };
@@ -448,7 +465,7 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should apply flagged filter', async () => {
-      const threadId = 'thread123';
+      const threadId = new ObjectId().toString();
       const options = {
         filterBy: 'flagged',
       };
@@ -472,7 +489,7 @@ describe('MessagingService - Bulk Operations', () => {
     });
 
     it('should apply date range filter', async () => {
-      const threadId = 'thread123';
+      const threadId = new ObjectId().toString();
       const dateFrom = '2024-01-01T00:00:00.000Z';
       const dateTo = '2024-12-31T23:59:59.999Z';
       const options = {

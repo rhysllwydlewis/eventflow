@@ -334,9 +334,6 @@ async function calculateMRR() {
       if (planKey === 'pro_plus') {
         planKey = 'pro';
       }
-      if (planKey === 'pro' && sub.status === 'trialing') {
-        planKey = 'basic';
-      }
 
       const planPrice = PLAN_FEATURES[planKey]?.price || 0;
       totalMRR += planPrice;
