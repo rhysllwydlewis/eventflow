@@ -40,7 +40,6 @@ class MessengerSocket {
   setupEventHandlers(userId) {
     // Connection events
     this.socket.on('connect', () => {
-      console.log('Messenger WebSocket connected');
       this.isConnected = true;
       this.reconnectAttempts = 0;
 
@@ -57,23 +56,20 @@ class MessengerSocket {
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Messenger WebSocket disconnected');
       this.isConnected = false;
       window.dispatchEvent(new CustomEvent('messenger:disconnected'));
     });
 
     this.socket.on('auth:success', (data) => {
-      console.log('Messenger authenticated:', data.userId);
+      // Authentication successful
     });
 
     // Messenger v4 events (upgraded naming convention)
     this.socket.on('messenger:v4:message', (data) => {
-      console.log('New message received (v4):', data);
       window.dispatchEvent(new CustomEvent('messenger:new-message', { detail: data }));
     });
 
     this.socket.on('messenger:v4:typing', (data) => {
-      console.log('Typing indicator (v4):', data);
       this.state.setTyping(data.conversationId, data.userId, data.isTyping);
       window.dispatchEvent(new CustomEvent('messenger:typing', { detail: data }));
     });

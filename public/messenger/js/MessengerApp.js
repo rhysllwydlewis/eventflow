@@ -49,7 +49,12 @@ class MessengerApp {
       await this.loadConversations();
       await this.loadUnreadCount();
 
-      console.log('Messenger app initialized');
+      // Load conversation from URL if specified
+      const urlParams = new URLSearchParams(window.location.search);
+      const conversationId = urlParams.get('conversation');
+      if (conversationId) {
+        this.handleConversationSelect(conversationId);
+      }
     } catch (error) {
       console.error('Failed to initialize messenger:', error);
       this.showError('Failed to load messenger. Please refresh the page.');
@@ -89,14 +94,6 @@ class MessengerApp {
     if (window.NotificationBridge) {
       this.notificationBridge = new NotificationBridge(this.state);
     }
-
-    console.log('Components initialized:', {
-      conversationList: !!this.conversationList,
-      conversationView: !!this.conversationView,
-      messageComposer: !!this.messageComposer,
-      contactPicker: !!this.contactPicker,
-      notificationBridge: !!this.notificationBridge,
-    });
   }
 
   /**
