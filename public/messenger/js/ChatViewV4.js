@@ -21,6 +21,7 @@ class ChatViewV4 {
 
     // Bound handlers
     this._onNewMessage = this._onNewMessage.bind(this);
+    this._onV4Message = this._onV4Message.bind(this);
     this._onScroll = this._onScroll.bind(this);
     this._onLightboxClose = this._onLightboxClose.bind(this);
 
@@ -31,6 +32,7 @@ class ChatViewV4 {
     this.render();
     this.attachEventListeners();
     window.addEventListener('messenger:new-message', this._onNewMessage);
+    window.addEventListener('messenger:v4:message', this._onV4Message);
   }
 
   // ---------------------------------------------------------------------------
@@ -252,6 +254,7 @@ class ChatViewV4 {
   destroy() {
     this.messagesEl.removeEventListener('scroll', this._onScroll);
     window.removeEventListener('messenger:new-message', this._onNewMessage);
+    window.removeEventListener('messenger:v4:message', this._onV4Message);
     this.container.innerHTML = '';
   }
 
@@ -414,6 +417,11 @@ class ChatViewV4 {
     if (!message || conversationId !== this.conversationId) return;
     this.hideTyping();
     this.appendMessage(message);
+  }
+
+  /** Direct handler for raw socket event (belt-and-suspenders alongside messenger:new-message). */
+  _onV4Message(e) {
+    this._onNewMessage(e);
   }
 
   _isAtBottom() {
