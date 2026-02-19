@@ -233,17 +233,19 @@ class MessengerAPI {
    */
   async getMessages(conversationId, beforeOrOptions = null, limit = 50) {
     let before = beforeOrOptions;
+    let resolvedLimit = limit;
     if (beforeOrOptions !== null && typeof beforeOrOptions === 'object') {
       before = beforeOrOptions.before || null;
-      limit = beforeOrOptions.limit || limit;
+      resolvedLimit = beforeOrOptions.limit || limit;
     }
 
     const params = new URLSearchParams();
+    // Backend reads 'cursor' (not 'before') for cursor-based pagination
     if (before) {
-      params.append('before', before);
+      params.append('cursor', before);
     }
-    if (limit) {
-      params.append('limit', limit);
+    if (resolvedLimit) {
+      params.append('limit', resolvedLimit);
     }
 
     const queryString = params.toString();

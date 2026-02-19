@@ -240,6 +240,43 @@ class MessengerAppV4 {
       const count = e.detail?.count ?? e.detail ?? 0;
       this.notificationBridge?.setUnreadCount(count);
     });
+
+    // ---- Message action events (from context menu) ----
+
+    // Reply: wire the message into the composer
+    window.addEventListener('messenger:set-reply', e => {
+      const { message } = e.detail || {};
+      if (message) {
+        this.composer?.setReplyTo(message);
+      }
+    });
+
+    // Edit a message
+    window.addEventListener('messenger:edit-message', async e => {
+      const { messageId } = e.detail || {};
+      if (!messageId) {
+        return;
+      }
+      await this._editMessage(messageId);
+    });
+
+    // Delete a message
+    window.addEventListener('messenger:delete-message', async e => {
+      const { messageId } = e.detail || {};
+      if (!messageId) {
+        return;
+      }
+      await this._deleteMessage(messageId);
+    });
+
+    // Toggle emoji reaction
+    window.addEventListener('messenger:react-message', async e => {
+      const { messageId, emoji } = e.detail || {};
+      if (!messageId) {
+        return;
+      }
+      await this._reactToMessage(messageId, emoji);
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -501,6 +538,111 @@ class MessengerAppV4 {
       await this._loadConversations();
     } catch (err) {
       console.error('[MessengerAppV4] Archive failed:', err);
+    }
+  }
+
+  async _editMessage(messageId) {
+    try {
+      // Use MessengerModals if available; fall back to a simple prompt
+      const msgs = this.state.getMessages(this._activeConversationId) || [];
+      const msg = msgs.find(m => String(m._id) === messageId);
+      const currentContent = msg?.content || '';
+
+      let newContent;
+      if (window.MessengerModals && typeof window.MessengerModals.showEdit === 'function') {
+        newContent = await window.MessengerModals.showEdit(currentContent);
+      } else {
+        // eslint-disable-next-line no-alert
+        newContent = window.prompt('Edit message:', currentContent);
+      }
+
+      if (!newContent || newContent.trim() === currentContent.trim()) {
+        return;
+      }
+
+      const data = await this.api.editMessage(messageId, newContent.trim());
+      const updated = data.message || data;
+      if (updated) {
+        this.state.updateMessage(this._activeConversationId, updated);
+        // Re-render the message bubble in the DOM
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el && MessageBubbleV4) {
+          const uid = this._getCurrentUserId();
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = MessageBubbleV4.render(updated, uid);
+          el.replaceWith(wrapper.firstElementChild);
+        }
+      }
+    } catch (err) {
+      console.error('[MessengerAppV4] Edit message failed:', err);
+    }
+  }
+
+  async _deleteMessage(messageId) {
+    try {
+      const confirmed =
+        window.MessengerModals && typeof window.MessengerModals.showDelete === 'function'
+          ? await window.MessengerModals.showDelete()
+          : // eslint-disable-next-line no-alert
+            window.confirm('Delete this message?');
+
+      if (!confirmed) {
+        return;
+      }
+
+      await this.api.deleteMessage(messageId);
+      this.state.deleteMessage(this._activeConversationId, messageId);
+      // Remove from DOM
+      const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+      if (el) {
+        el.remove();
+      }
+    } catch (err) {
+      console.error('[MessengerAppV4] Delete message failed:', err);
+    }
+  }
+
+  async _reactToMessage(messageId, emoji) {
+    try {
+      // If no emoji provided, prompt via MessengerModals or a simple picker
+      let resolvedEmoji = emoji;
+      if (!resolvedEmoji) {
+        if (
+          window.MessengerModals &&
+          typeof window.MessengerModals.showEmojiPicker === 'function'
+        ) {
+          resolvedEmoji = await window.MessengerModals.showEmojiPicker();
+        } else {
+          // eslint-disable-next-line no-alert
+          resolvedEmoji = window.prompt('Enter emoji to react with (e.g. 👍):');
+        }
+      }
+      if (!resolvedEmoji) {
+        return;
+      }
+
+      const data = await this.api.toggleReaction(messageId, resolvedEmoji);
+      const updated = data.message || data;
+      if (updated) {
+        this.state.updateReaction(this._activeConversationId, messageId, updated.reactions || []);
+        // Re-render only the reactions bar
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el && MessageBubbleV4) {
+          const reactBar = el.querySelector('.messenger-v4__reactions-bar');
+          if (reactBar) {
+            reactBar.remove();
+          }
+          if (updated.reactions?.length) {
+            const newBar = document.createElement('div');
+            newBar.innerHTML = MessageBubbleV4.renderReactions(updated.reactions, messageId);
+            el.querySelector('.messenger-v4__message-content')?.appendChild(
+              newBar.firstElementChild
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[MessengerAppV4] React to message failed:', err);
     }
   }
 
