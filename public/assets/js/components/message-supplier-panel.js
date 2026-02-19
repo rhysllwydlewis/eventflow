@@ -161,6 +161,11 @@ class MessageSupplierPanel {
         color: var(--success, #28a745);
       }
 
+      .message-panel-status.warning {
+        color: var(--warning, #f59e0b);
+        font-weight: 500;
+      }
+
       .message-panel-status.error {
         color: var(--error, #dc3545);
       }
@@ -396,19 +401,28 @@ class MessageSupplierPanel {
       });
       const csrfData = await csrfResponse.json();
 
-      // Start thread and send message
-      const response = await fetch('/api/v1/threads/start', {
+      // Create conversation with initial message using v4 API
+      const conversationData = {
+        type: this.options.packageId ? 'marketplace' : 'supplier_network',
+        participantIds: [this.options.supplierId],
+        context: {
+          type: this.options.packageId ? 'package' : 'supplier',
+          id: this.options.packageId || this.options.supplierId,
+          title: this.options.supplierName || 'Supplier',
+        },
+        metadata: {
+          source: 'message_supplier_panel',
+        },
+      };
+
+      const response = await fetch('/api/v4/messenger/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfData.csrfToken,
         },
         credentials: 'include',
-        body: JSON.stringify({
-          supplierId: this.options.supplierId,
-          packageId: this.options.packageId,
-          message: message,
-        }),
+        body: JSON.stringify(conversationData),
       });
 
       if (response.status === 401) {
@@ -421,25 +435,69 @@ class MessageSupplierPanel {
       }
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        throw new Error('Failed to create conversation');
       }
 
-      statusEl.textContent = 'Message sent successfully!';
-      statusEl.className = 'message-panel-status success';
-      textarea.value = '';
+      const result = await response.json();
+      const conversationId = result.conversation?._id || result.conversation?.id;
 
-      // Clear any pending message
-      this.authGate.getPendingAction('supplier_message');
+      if (!conversationId) {
+        throw new Error('No conversation ID returned');
+      }
 
-      // Redirect to messages after a short delay
-      setTimeout(() => {
-        window.location.href = '/messenger/';
-      }, 2000);
+      // Send the initial message (Step 2)
+      let messageSent = false;
+      try {
+        const messageResponse = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfData.csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            message: message,
+          }),
+        });
+
+        if (!messageResponse.ok) {
+          // Conversation was created but message failed
+          const errorData = await messageResponse.json().catch(() => ({}));
+          throw new Error(`Message failed: ${errorData.error || 'Unable to send message'}. Conversation was created - you can continue in the messenger.`);
+        }
+        
+        messageSent = true;
+      } catch (msgError) {
+        // If message send fails, redirect to conversation anyway
+        statusEl.textContent = 'Conversation created but message failed. Redirecting...';
+        statusEl.className = 'message-panel-status warning';
+        setTimeout(() => {
+          window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
+        }, 2000);
+        throw msgError;
+      }
+
+      if (messageSent) {
+        statusEl.textContent = 'Message sent successfully!';
+        statusEl.className = 'message-panel-status success';
+        textarea.value = '';
+
+        // Clear any pending message
+        this.authGate.getPendingAction('supplier_message');
+
+        // Redirect to messages after a short delay
+        setTimeout(() => {
+          window.location.href = '/messenger/';
+        }, 2000);
+      }
     } catch (error) {
-      console.error('Error sending message:', error);
-      statusEl.textContent = 'Failed to send message. Please try again.';
-      statusEl.className = 'message-panel-status error';
-      statusEl.setAttribute('role', 'alert');
+      // Only show generic error if conversation creation failed (Step 1)
+      if (!error.message || !error.message.includes('Conversation was created')) {
+        statusEl.textContent = 'Failed to send message. Please try again.';
+        statusEl.className = 'message-panel-status error';
+        statusEl.setAttribute('role', 'alert');
+      }
+      // Error already handled in inner catch for Step 2 failures
     } finally {
       sendBtn.disabled = false;
       sendBtn.removeAttribute('aria-busy');

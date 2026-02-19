@@ -132,9 +132,32 @@ async function isThreadParticipant(thread, userId, suppliers = null) {
 const router = express.Router();
 
 /**
+ * Deprecation warning middleware for v1 Messages API
+ * All routes in this file are deprecated in favor of v4 Messenger API
+ */
+router.use((req, res, next) => {
+  res.setHeader('X-API-Deprecation', 'true');
+  res.setHeader('X-API-Deprecation-Version', 'v1');
+  res.setHeader('X-API-Deprecation-Sunset', '2026-12-31');
+  res.setHeader('X-API-Deprecation-Replacement', '/api/v4/messenger');
+  res.setHeader(
+    'X-API-Deprecation-Info',
+    'This API is deprecated. Please migrate to /api/v4/messenger. See documentation at https://docs.eventflow.com/api/messenger-v4'
+  );
+  
+  // Log deprecation usage (logger not available in this route, use console)
+  console.warn(
+    `[DEPRECATED API] v1 Messages API called: ${req.method} ${req.originalUrl} - Migrate to /api/v4/messenger`
+  );
+  
+  next();
+});
+
+/**
  * GET /api/messages/threads
  * List all conversation threads for the current user
  * Query params: status (open/closed/archived), unreadOnly (boolean)
+ * @deprecated Use GET /api/v4/messenger/conversations instead
  */
 router.get('/threads', applyAuthRequired, async (req, res) => {
   try {

@@ -137,33 +137,97 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
 
-      // Send message via MongoDB API
-      const response = await fetch('/api/v1/threads/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/v1/csrf-token', {
         credentials: 'include',
-        body: JSON.stringify({
-          supplierId: supplierId,
-          message: messageText,
-        }),
+      });
+      const csrfData = await csrfResponse.json();
+
+      // Create conversation with initial message using v4 API
+      const conversationData = {
+        type: 'supplier_network',
+        participantIds: [supplierId],
+        context: {
+          type: 'supplier',
+          id: supplierId,
+          title: supplierInfo?.name || 'Supplier',
+        },
+        metadata: {
+          source: 'supplier_conversation',
+        },
+      };
+
+      const response = await fetch('/api/v4/messenger/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfData.csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify(conversationData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        throw new Error('Failed to create conversation');
       }
 
-      closeModal();
+      const result = await response.json();
+      const conversationId = result.conversation?._id || result.conversation?.id;
 
-      if (typeof Toast !== 'undefined') {
-        Toast.success('Message sent! The supplier will respond soon.');
-      } else {
-        alert('Message sent! Visit your dashboard to continue the conversation.');
+      if (!conversationId) {
+        throw new Error('No conversation ID returned');
       }
 
-      // Redirect to customer dashboard
-      setTimeout(() => {
-        window.location.href = '/dashboard-customer.html';
-      }, 1500);
+      // Send the initial message (Step 2)
+      let messageSent = false;
+      try {
+        const messageResponse = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfData.csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            message: messageText,
+          }),
+        });
+
+        if (!messageResponse.ok) {
+          // Conversation created but message failed - redirect anyway
+          closeModal();
+          if (typeof Toast !== 'undefined') {
+            Toast.warning('Conversation created but message failed. Opening conversation...');
+          }
+          window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
+          return;
+        }
+        
+        messageSent = true;
+      } catch (msgError) {
+        // If message send fails, redirect to conversation anyway
+        closeModal();
+        if (typeof Toast !== 'undefined') {
+          Toast.warning('Conversation created but message failed. Opening conversation...');
+        }
+        window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
+        return;
+      }
+
+      if (messageSent) {
+        closeModal();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Message sent! The supplier will respond soon.');
+        } else {
+          alert('Message sent! Visit your dashboard to continue the conversation.');
+        }
+
+        // Redirect to messenger with this conversation
+        setTimeout(() => {
+          window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
+        }, 1500);
+      }
     } catch (error) {
       console.error('Error starting conversation:', error);
       if (typeof Toast !== 'undefined') {

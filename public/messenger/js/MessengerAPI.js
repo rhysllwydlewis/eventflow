@@ -1,13 +1,13 @@
 /**
  * Messenger API Client
- * Handles all HTTP requests to the messenger v3 API
+ * Handles all HTTP requests to the messenger v4 API
  */
 
 'use strict';
 
 class MessengerAPI {
   constructor() {
-    this.baseUrl = '/api/v3/messenger';
+    this.baseUrl = '/api/v4/messenger';
     this.csrfToken = this.getCsrfToken();
   }
 

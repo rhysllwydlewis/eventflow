@@ -182,11 +182,39 @@ async function storeAttachment(file) {
   };
 }
 
+// =========================
+// Deprecation Warning Middleware
+// =========================
+
+/**
+ * Deprecation warning middleware for v3 Messenger API
+ * All routes in this file are deprecated in favor of v4 Messenger API
+ */
+router.use((req, res, next) => {
+  res.setHeader('X-API-Deprecation', 'true');
+  res.setHeader('X-API-Deprecation-Version', 'v3');
+  res.setHeader('X-API-Deprecation-Sunset', '2027-03-31');
+  res.setHeader('X-API-Deprecation-Replacement', '/api/v4/messenger');
+  res.setHeader(
+    'X-API-Deprecation-Info',
+    'This API is deprecated. Please migrate to /api/v4/messenger. See documentation at https://docs.eventflow.com/api/messenger-v4'
+  );
+  
+  if (logger) {
+    logger.warn(
+      `[DEPRECATED API] v3 Messenger API called: ${req.method} ${req.originalUrl} - Migrate to /api/v4/messenger`
+    );
+  }
+  
+  next();
+});
+
 // ===== CONVERSATION ROUTES =====
 
 /**
  * POST /api/v3/messenger/conversations
  * Create a new conversation
+ * @deprecated Use POST /api/v4/messenger/conversations instead
  */
 router.post(
   '/conversations',
