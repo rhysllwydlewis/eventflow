@@ -16,15 +16,15 @@ This document tracks the implementation status of the Messenger v4 rebuild - a c
 
 All backend infrastructure is **production-ready** and fully functional.
 
-#### Files Created (7 files, 2,931 lines):
+#### Files Created (7 files, 3,798 lines):
 
-1. **models/ConversationV4.js** (269 lines)
+1. **models/ConversationV4.js** (247 lines)
    - Comprehensive MongoDB schema with validation
    - 7 indexes for conversations_v4 collection
    - 6 indexes for chat_messages_v4 collection
    - Input validation functions for conversations and messages
 
-2. **services/messenger-v4.service.js** (727 lines)
+2. **services/messenger-v4.service.js** (778 lines)
    - Complete business logic layer
    - 15+ methods covering all messaging operations
    - Content sanitization with `contentSanitizer.js`
@@ -36,7 +36,7 @@ All backend infrastructure is **production-ready** and fully functional.
    - Read receipts, reactions, typing indicators
    - Contact discovery
 
-3. **routes/messenger-v4.js** (679 lines)
+3. **routes/messenger-v4.js** (705 lines)
    - 15 API endpoints mounted at `/api/v4/messenger/`
    - CSRF protection on all write operations
    - Rate limiting on message sending
@@ -57,7 +57,7 @@ All backend infrastructure is **production-ready** and fully functional.
      - `messenger:v4:conversation-created`
      - `messenger:v4:conversation-updated`
 
-5. **scripts/migrate-to-messenger-v4.js** (532 lines)
+5. **scripts/migrate-to-messenger-v4.js** (517 lines)
    - Migrates v1/v2 threads to v4 conversations
    - Migrates v3 conversations to v4
    - Migrates all messages with proper field mapping
@@ -66,7 +66,7 @@ All backend infrastructure is **production-ready** and fully functional.
    - Comprehensive error handling and logging
    - Verification step to check migration integrity
 
-6. **tests/unit/messenger-v4.test.js** (724 lines)
+6. **tests/unit/messenger-v4.test.js** (627 lines)
    - 23 comprehensive test cases
    - Tests all service layer methods
    - Tests conversation creation, deduplication
