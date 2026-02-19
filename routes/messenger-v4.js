@@ -373,7 +373,7 @@ router.post(
               ? ` (Re: ${conversation.context.referenceTitle})`
               : '';
 
-            await postmark.sendEmail({
+            await postmark.sendMail({
               to: recipient.email,
               subject: `New message from ${userName}${contextInfo}`,
               text: `${userName} sent you a message:\n\n"${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,

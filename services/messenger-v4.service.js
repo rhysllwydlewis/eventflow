@@ -7,8 +7,8 @@
 
 const { ObjectId } = require('mongodb');
 const { validateConversation, validateMessage } = require('../models/ConversationV4');
-const contentSanitizer = require('../utils/contentSanitizer');
-const spamDetection = require('../utils/spamDetection');
+const contentSanitizer = require('./contentSanitizer');
+const spamDetection = require('./spamDetection');
 const messagingLimits = require('../config/messagingLimits');
 
 class MessengerV4Service {
@@ -315,12 +315,12 @@ class MessengerV4Service {
     }
 
     // Sanitize content
-    const sanitizedContent = contentSanitizer.sanitize(messageData.content);
+    const sanitizedContent = contentSanitizer.sanitizeContent(messageData.content);
 
     // Check for spam
-    const isSpam = await spamDetection.isSpam(sanitizedContent, messageData.senderId);
-    if (isSpam) {
-      throw new Error('Message flagged as spam');
+    const spamCheck = spamDetection.checkSpam(messageData.senderId, sanitizedContent);
+    if (spamCheck.isSpam) {
+      throw new Error(`Message flagged as spam: ${spamCheck.reason}`);
     }
 
     // Check rate limits based on user's subscription tier
@@ -473,7 +473,7 @@ class MessengerV4Service {
       throw new Error('Edit window expired (15 minutes)');
     }
 
-    const sanitizedContent = contentSanitizer.sanitize(newContent);
+    const sanitizedContent = contentSanitizer.sanitizeContent(newContent);
 
     await this.messagesCollection.updateOne(
       { _id: new ObjectId(messageId) },
