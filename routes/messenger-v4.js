@@ -246,7 +246,7 @@ router.post(
       messengerMetrics.increment('messenger_v4_errors_total');
       logger.error('Error creating conversation:', {
         error: error.message,
-        userId: req.user?._id,
+        userId: req.user?.id,
         durationMs: Date.now() - startMs,
         statusCode: 500,
       });
@@ -442,7 +442,7 @@ router.post(
         content,
         type,
         attachments,
-        replyTo: replyTo ? JSON.parse(replyTo) : null,
+        replyTo: replyTo ? (typeof replyTo === 'string' ? JSON.parse(replyTo) : replyTo) : null,
       };
 
       const message = await (await getMessengerService()).sendMessage(conversationId, messageData);
@@ -468,7 +468,7 @@ router.post(
           // Check if recipient is online (would need presence tracking)
           // For now, send email to all non-muted participants
           const dbInstance = await getDbInstance();
-          const recipient = await dbInstance.collection('users').findOne({ _id: recipientId });
+          const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.email) {
             const contextInfo = conversation.context?.referenceTitle
               ? ` (Re: ${conversation.context.referenceTitle})`
@@ -513,7 +513,7 @@ router.post(
       const statusCode = error.message.includes('spam') ? 429 : 500;
       logger.error('Error sending message:', {
         error: error.message,
-        userId: req.user?._id,
+        userId: req.user?.id,
         conversationId: req.params.id,
         durationMs: Date.now() - startMs,
         statusCode,

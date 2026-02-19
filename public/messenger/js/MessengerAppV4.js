@@ -241,6 +241,71 @@ class MessengerAppV4 {
       this.notificationBridge?.setUnreadCount(count);
     });
 
+    // New conversation arrived via WebSocket (e.g., marketplace enquiry from another user)
+    window.addEventListener('messenger:new-conversation', e => {
+      const { conversation } = e.detail || {};
+      if (conversation) {
+        this.state.updateConversation(conversation);
+      }
+    });
+
+    // Real-time message edit from another user's session
+    window.addEventListener('messenger:message-edited', e => {
+      const { messageId, content, editedAt } = e.detail || {};
+      // Only update if we have a messageId and valid content from the server
+      if (!messageId || !content || !this._activeConversationId) return;
+      this.state.updateMessage(this._activeConversationId, messageId, { content, isEdited: true, editedAt });
+      // Patch the DOM bubble text if it's visible — use textContent (never innerHTML) to prevent XSS
+      const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+      if (el) {
+        const textEl = el.querySelector('.messenger-v4__message-text');
+        if (textEl) textEl.textContent = content;
+        // Add "(edited)" label if not already present; use createTextNode to stay safe
+        if (!el.querySelector('.messenger-v4__edited-label')) {
+          const bubble = el.querySelector('.messenger-v4__message-bubble');
+          if (bubble) {
+            const span = document.createElement('span');
+            span.className = 'messenger-v4__edited-label';
+            span.setAttribute('aria-label', 'Edited');
+            span.textContent = '(edited)';
+            bubble.appendChild(span);
+          }
+        }
+      }
+    });
+
+    // Real-time message delete from another user's session
+    window.addEventListener('messenger:message-deleted', e => {
+      const { messageId } = e.detail || {};
+      if (messageId && this._activeConversationId) {
+        this.state.deleteMessage(this._activeConversationId, messageId);
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el) el.remove();
+      }
+    });
+
+    // Real-time reaction update from another user's session
+    window.addEventListener('messenger:reaction-updated', e => {
+      const { messageId, reactions } = e.detail || {};
+      if (messageId && this._activeConversationId) {
+        this.state.updateMessage(this._activeConversationId, messageId, { reactions: reactions || [] });
+        // Re-render the reactions bar in the DOM.
+        // MessageBubbleV4.renderReactions() escapes all dynamic values (emoji, messageId, counts)
+        // via MessageBubbleV4.escape() before building the HTML string, so innerHTML is safe here.
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el && window.MessageBubbleV4) {
+          const existing = el.querySelector('.messenger-v4__reactions-bar');
+          if (existing) existing.remove();
+          if (reactions?.length) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = MessageBubbleV4.renderReactions(reactions, messageId);
+            const bar = tmp.firstElementChild;
+            if (bar) el.querySelector('.messenger-v4__message-content')?.appendChild(bar);
+          }
+        }
+      }
+    });
+
     // ---- Message action events (from context menu) ----
 
     // Reply: wire the message into the composer
@@ -433,15 +498,19 @@ class MessengerAppV4 {
   }
 
   async _loadCurrentUser() {
-    // Try existing AuthState first (already logged in)
-    if (window.AuthState?.getUser) {
-      const user = AuthState.getUser();
-      if (user) {
-        return user;
-      }
+    // Try AuthStateManager first (primary, set by auth-state.js)
+    if (window.AuthStateManager?.isAuthenticated?.()) {
+      const user = window.AuthStateManager.getUser();
+      if (user) return user;
     }
 
-    // Fallback to API
+    // Legacy fallback: AuthState
+    if (window.AuthState?.getUser) {
+      const user = window.AuthState.getUser();
+      if (user) return user;
+    }
+
+    // Final fallback: fetch from API
     try {
       const data = await fetch('/api/v1/auth/me', { credentials: 'include' }).then(r => r.json());
       return data.user || data || null;
@@ -563,7 +632,7 @@ class MessengerAppV4 {
       const data = await this.api.editMessage(messageId, newContent.trim());
       const updated = data.message || data;
       if (updated) {
-        this.state.updateMessage(this._activeConversationId, updated);
+        this.state.updateMessage(this._activeConversationId, messageId, updated);
         // Re-render the message bubble in the DOM
         const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
         if (el && MessageBubbleV4) {
@@ -624,7 +693,10 @@ class MessengerAppV4 {
       const data = await this.api.toggleReaction(messageId, resolvedEmoji);
       const updated = data.message || data;
       if (updated) {
-        this.state.updateReaction(this._activeConversationId, messageId, updated.reactions || []);
+        // Replace the reactions array from the server response (authoritative)
+        this.state.updateMessage(this._activeConversationId, messageId, {
+          reactions: updated.reactions || [],
+        });
         // Re-render only the reactions bar
         const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
         if (el && MessageBubbleV4) {
