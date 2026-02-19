@@ -28,7 +28,7 @@
  * - admin-config.js: Badge and category management
  * - packages.js: Package CRUD operations
  * - suppliers.js: Supplier management
- * - messaging.js: Thread and message operations
+ * - messaging-v2.js/messenger-v4.js: Messaging operations (v4 is canonical)
  * - notifications.js: User notifications
  * - ai.js: AI-powered event planning
  * - reviews.js: Review and rating system

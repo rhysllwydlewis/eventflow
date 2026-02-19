@@ -6,6 +6,11 @@
 const fs = require('fs');
 const path = require('path');
 
+// messaging.js was removed as part of Messenger v4 migration (Phase 7).
+const messagingJsPath = path.join(process.cwd(), 'public/assets/js/messaging.js');
+const messagingJsExists = fs.existsSync(messagingJsPath);
+const messagingJsContent = messagingJsExists ? fs.readFileSync(messagingJsPath, 'utf8') : '';
+
 describe('Messaging-Notification Integration', () => {
   describe('Backend integration (routes/messaging-v2.js)', () => {
     const messagingV2Js = fs.readFileSync(
@@ -88,42 +93,38 @@ describe('Messaging-Notification Integration', () => {
     });
   });
 
-  describe('Frontend messaging.js integration', () => {
-    const messagingJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/messaging.js'),
-      'utf8'
-    );
+  (messagingJsExists ? describe : describe.skip)('Frontend messaging.js integration', () => {
 
     it('has triggerMessageNotification method', () => {
-      expect(messagingJs).toContain('triggerMessageNotification(data)');
+      expect(messagingJsContent).toContain('triggerMessageNotification(data)');
     });
 
     it('handleNewMessage triggers notification system', () => {
       // Simply check that the entire file contains the necessary integration
-      expect(messagingJs).toContain('triggerMessageNotification');
-      expect(messagingJs).toContain('handleNewMessage(data)');
+      expect(messagingJsContent).toContain('triggerMessageNotification');
+      expect(messagingJsContent).toContain('handleNewMessage(data)');
       // The handleNewMessage method should call triggerMessageNotification
-      const hasIntegration = messagingJs.includes('handleNewMessage') && 
-                            messagingJs.includes('triggerMessageNotification');
+      const hasIntegration = messagingJsContent.includes('handleNewMessage') && 
+                            messagingJsContent.includes('triggerMessageNotification');
       expect(hasIntegration).toBe(true);
     });
 
     it('triggerMessageNotification dispatches custom event', () => {
       // Check that the file contains the event dispatch logic
-      expect(messagingJs).toContain("new CustomEvent('messaging:notification'");
-      expect(messagingJs).toContain('window.dispatchEvent');
-      expect(messagingJs).toContain('triggerMessageNotification');
+      expect(messagingJsContent).toContain("new CustomEvent('messaging:notification'");
+      expect(messagingJsContent).toContain('window.dispatchEvent');
+      expect(messagingJsContent).toContain('triggerMessageNotification');
     });
 
     it('markMessagesAsRead dispatches marked-read event', () => {
       // Check for the marked-read event dispatch
-      expect(messagingJs).toContain("new CustomEvent('messaging:marked-read'");
-      expect(messagingJs).toContain('conversationId');
+      expect(messagingJsContent).toContain("new CustomEvent('messaging:marked-read'");
+      expect(messagingJsContent).toContain('conversationId');
     });
 
     it('uses consistent message preview length (100 chars)', () => {
       // Check that message preview is truncated to 100 characters
-      expect(messagingJs).toContain('substring(0, 100)');
+      expect(messagingJsContent).toContain('substring(0, 100)');
     });
   });
 

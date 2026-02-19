@@ -113,13 +113,16 @@ test.describe('Messenger v4 – Core Flows', () => {
       await page.goto(MESSENGER_URL);
       await page.waitForLoadState('networkidle');
 
-      const hasV4Messenger = await page.evaluate(() => {
-        return typeof window.API_VERSION !== 'undefined' &&
-               typeof window.API_VERSION.MESSENGER !== 'undefined';
+      const result = await page.evaluate(() => {
+        if (typeof window.API_VERSION === 'undefined') return null; // not loaded = OK
+        return typeof window.API_VERSION.MESSENGER !== 'undefined';
       });
 
-      // API_VERSION may not be loaded on this page; either way legacy v2 must not exist
-      expect(hasLegacyMessaging === undefined || hasV4Messenger !== false).toBeTruthy();
+      // If API_VERSION is loaded on this page it must expose the v4 MESSENGER config;
+      // if not loaded (null), the page is fine – the first test already guards against v2.
+      if (result !== null) {
+        expect(result).toBe(true);
+      }
     });
   });
 
