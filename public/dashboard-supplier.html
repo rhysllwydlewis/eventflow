@@ -2739,13 +2739,14 @@
     <script src="/assets/js/supplier-dashboard-enhancements.js" defer></script>
 
     <!-- Messenger Components -->
-    <script src="/messenger/js/MessengerWidget.js" defer></script>
+    <link rel="stylesheet" href="/messenger/css/messenger-widget-v4.css">
+    <script src="/messenger/js/MessengerWidgetV4.js" defer></script>
     <script src="/messenger/js/MessengerTrigger.js" defer></script>
     <script src="/messenger/js/NotificationBridge.js" defer></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        if (typeof MessengerWidget !== 'undefined') {
-          new MessengerWidget('messenger-dashboard-widget-supplier', { maxItems: 5 });
+        if (typeof MessengerWidgetV4 !== 'undefined') {
+          new MessengerWidgetV4('messenger-dashboard-widget-supplier', { maxItems: 5 });
         }
       });
     </script>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+  <script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Messenger Moderation — EventFlow admin</title>
+<link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/admin.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/admin-enhanced.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/admin-navbar.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/admin-cards.css?v=18.0.0'>
+<link rel='icon' href='/favicon.svg'>
+<script src="/assets/js/admin-navbar.js" defer></script>
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
+</head>
+<body class="has-admin-navbar">
+<!-- Modern Top Navbar -->
+<nav class="admin-top-navbar">
+  <div class="admin-navbar-content">
+    <div class="admin-navbar-brand">
+      <a href="/admin.html" class="admin-navbar-logo">EventFlow</a>
+      <span class="admin-navbar-title">Admin Panel</span>
+    </div>
+    <button class="admin-hamburger" id="adminHamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="admin-navbar-nav" id="adminNavbarNav">
+      <a href="/admin.html" class="admin-nav-btn"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></a>
+      <a href="/admin-users.html" class="admin-nav-btn"><span class="nav-icon">👥</span><span class="nav-label">Users</span></a>
+      <a href="/admin-suppliers.html" class="admin-nav-btn"><span class="nav-icon">🏢</span><span class="nav-label">Suppliers</span></a>
+      <a href="/admin-packages.html" class="admin-nav-btn"><span class="nav-icon">📦</span><span class="nav-label">Packages</span></a>
+      <a href="/admin-marketplace.html" class="admin-nav-btn"><span class="nav-icon">🛒</span><span class="nav-label">Marketplace</span></a>
+      <a href="/admin-messenger.html" class="admin-nav-btn admin-nav-btn--active"><span class="nav-icon">💬</span><span class="nav-label">Messenger</span></a>
+      <a href="/admin-tickets.html" class="admin-nav-btn"><span class="nav-icon">🎫</span><span class="nav-label">Tickets</span></a>
+      <a href="/admin-reports.html" class="admin-nav-btn"><span class="nav-icon">📈</span><span class="nav-label">Reports</span></a>
+      <a href="/admin-settings.html" class="admin-nav-btn"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></a>
+    </div>
+    <div class="admin-navbar-actions">
+      <div class="db-status-badge db-loading" id="dbStatusBadge" title="Database status">
+        <span class="db-status-dot"></span> Loading...
+      </div>
+      <button class="navbar-icon-btn" id="navRefreshBtn" title="Refresh data">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+      </button>
+      <div class="admin-user-dropdown">
+        <button class="admin-user-btn" id="adminUserBtn">
+          <div class="admin-user-avatar">A</div>
+          <span>Admin</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="admin-dropdown-menu" id="adminDropdownMenu">
+          <a href="/admin-settings.html" class="admin-dropdown-item">Settings</a>
+          <div class="admin-dropdown-divider"></div>
+          <button class="admin-dropdown-item" id="adminLogoutBtn">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main id="main-content" class="section">
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div>
+        <h1 class="dashboard-title">Messenger Moderation</h1>
+        <p class="dashboard-subtitle">View and moderate all platform conversations</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <!-- Toolbar -->
+      <div class="admin-toolbar" style="display:flex;gap:12px;flex-wrap:wrap;padding:16px;border-bottom:1px solid rgba(0,0,0,0.08);">
+        <input type="text" id="messengerSearch" placeholder="Search conversations…"
+               style="flex:1;min-width:200px;" aria-label="Search conversations">
+        <select id="statusFilter" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="archived">Archived</option>
+          <option value="deleted">Deleted</option>
+        </select>
+        <button id="searchBtn" class="btn btn-primary" style="min-width:100px;">Search</button>
+      </div>
+
+      <!-- Results summary -->
+      <p id="resultsSummary" style="padding:8px 16px;font-size:0.85rem;color:#6b7280;margin:0;"></p>
+
+      <!-- Table -->
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;" id="conversationsTable" aria-label="Conversations">
+          <thead>
+            <tr style="background:rgba(11,128,115,0.06);text-align:left;">
+              <th style="padding:12px 16px;font-size:0.82rem;color:#374151;">Participants</th>
+              <th style="padding:12px 16px;font-size:0.82rem;color:#374151;">Type</th>
+              <th style="padding:12px 16px;font-size:0.82rem;color:#374151;">Last message</th>
+              <th style="padding:12px 16px;font-size:0.82rem;color:#374151;">Updated</th>
+              <th style="padding:12px 16px;font-size:0.82rem;color:#374151;">Status</th>
+              <th style="padding:12px 16px;font-size:0.82rem;color:#374151;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="conversationsBody">
+            <tr>
+              <td colspan="6" style="padding:32px;text-align:center;color:#9ca3af;">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div id="paginationControls"
+           style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid rgba(0,0,0,0.06);">
+        <button id="prevPageBtn" class="btn btn-secondary" disabled>← Prev</button>
+        <span id="pageInfo" style="font-size:0.85rem;color:#6b7280;flex:1;text-align:center;"></span>
+        <button id="nextPageBtn" class="btn btn-secondary" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container flex-between">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="small"><a href="/admin.html">Admin</a> · <a href="/legal">Legal</a></div>
+  </div>
+</footer>
+
+<script src="/assets/js/admin-shared.js"></script>
+<script src="/assets/js/app.js"></script>
+<script>window.__EF_PAGE__ = 'admin_messenger';</script>
+<script>
+(function () {
+  'use strict';
+
+  const PAGE_SIZE = 20;
+  let currentPage = 0;
+  let currentSearch = '';
+  let currentStatus = '';
+  let totalConversations = 0;
+
+  function escapeHtml(s) {
+    if (typeof s !== 'string') return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function formatDate(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
+  function getParticipantNames(participants) {
+    if (!Array.isArray(participants) || participants.length === 0) return 'Unknown';
+    return participants
+      .map((p) => escapeHtml(p.displayName || p.businessName || p.email || p.userId || 'Unknown'))
+      .join(', ');
+  }
+
+  async function fetchConversations() {
+    const tbody = document.getElementById('conversationsBody');
+    const summary = document.getElementById('resultsSummary');
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:#9ca3af;">Loading…</td></tr>';
+
+    try {
+      const params = new URLSearchParams({
+        limit: PAGE_SIZE,
+        skip: currentPage * PAGE_SIZE,
+      });
+      if (currentSearch.trim()) params.set('search', currentSearch.trim());
+      if (currentStatus) params.set('status', currentStatus);
+
+      const res = await fetch(`/api/v4/messenger/admin/conversations?${params.toString()}`, {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (res.status === 403) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:#dc2626;">Access denied. Admin role required.</td></tr>';
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      totalConversations = data.total || 0;
+      const conversations = data.conversations || [];
+
+      summary.textContent = `Showing ${currentPage * PAGE_SIZE + 1}–${Math.min((currentPage + 1) * PAGE_SIZE, totalConversations)} of ${totalConversations} conversations`;
+
+      if (conversations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:#9ca3af;">No conversations found.</td></tr>';
+        updatePagination();
+        return;
+      }
+
+      tbody.innerHTML = conversations.map((conv) => {
+        const names = getParticipantNames(conv.participants);
+        const type = escapeHtml(conv.type || '—');
+        const lastMsg = (conv.lastMessage && (conv.lastMessage.content || conv.lastMessage.text)) || '—';
+        const preview = escapeHtml(lastMsg.length > 80 ? lastMsg.substring(0, 80) + '…' : lastMsg);
+        const updated = formatDate(conv.updatedAt);
+        const status = escapeHtml(conv.status || 'active');
+        const id = escapeHtml(conv._id || conv.id || '');
+        return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05);">
+          <td style="padding:12px 16px;font-size:0.85rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${names}">${names}</td>
+          <td style="padding:12px 16px;font-size:0.82rem;"><span style="background:rgba(11,128,115,0.1);color:#0b8073;padding:2px 8px;border-radius:4px;">${type}</span></td>
+          <td style="padding:12px 16px;font-size:0.82rem;color:#6b7280;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${preview}">${preview}</td>
+          <td style="padding:12px 16px;font-size:0.82rem;color:#6b7280;white-space:nowrap;">${updated}</td>
+          <td style="padding:12px 16px;font-size:0.82rem;">${status}</td>
+          <td style="padding:12px 16px;">
+            ${id ? `<a href="/messenger/?conversation=${id}" target="_blank" rel="noopener"
+                      style="font-size:0.82rem;color:#0b8073;text-decoration:none;font-weight:600;">Open ↗</a>` : '—'}
+          </td>
+        </tr>`;
+      }).join('');
+
+      updatePagination();
+    } catch (err) {
+      console.error('Admin messenger: fetch failed', err);
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:#dc2626;">Failed to load conversations. Please try again.</td></tr>';
+    }
+  }
+
+  function updatePagination() {
+    const totalPages = Math.ceil(totalConversations / PAGE_SIZE) || 1;
+    document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+    document.getElementById('prevPageBtn').disabled = currentPage === 0;
+    document.getElementById('nextPageBtn').disabled = (currentPage + 1) >= totalPages;
+  }
+
+  // Wire up controls
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    currentPage = 0;
+    currentSearch = document.getElementById('messengerSearch').value;
+    currentStatus = document.getElementById('statusFilter').value;
+    fetchConversations();
+  });
+
+  document.getElementById('messengerSearch').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('searchBtn').click();
+  });
+
+  document.getElementById('prevPageBtn').addEventListener('click', () => {
+    if (currentPage > 0) { currentPage--; fetchConversations(); }
+  });
+
+  document.getElementById('nextPageBtn').addEventListener('click', () => {
+    currentPage++;
+    fetchConversations();
+  });
+
+  document.getElementById('navRefreshBtn').addEventListener('click', fetchConversations);
+
+  // Initial load
+  document.addEventListener('DOMContentLoaded', fetchConversations);
+})();
+</script>
+<script src="/assets/js/cookie-consent.js" defer></script>
+</body>
+</html>

@@ -467,8 +467,14 @@
           <div class="listing-detail-actions">
             ${
               currentUser && currentUser.id !== resolveListingSellerUserId(listing)
-                ? `<button class="cta listing-message-toggle" type="button">
-                     Message Seller
+                ? `<button class="cta listing-message-toggle" type="button"
+                          data-quick-compose="true"
+                          data-recipient-id="${escapeHtml(resolveListingSellerUserId(listing) || '')}"
+                          data-context-type="marketplace_listing"
+                          data-context-id="${escapeHtml(listing.id)}"
+                          data-context-title="${escapeHtml(listing.title)}"
+                          data-prefill="${escapeHtml(buildInitialMarketplaceMessage(listing.title))}">
+                     Contact Seller
                    </button>
                    <div class="listing-inline-composer" hidden>
                      <p class="listing-inline-composer-intro">Send a message about <strong>${escapeHtml(listing.title)}</strong>.</p>
@@ -499,6 +505,11 @@
     // Trigger animation
     setTimeout(() => overlay.classList.add('active'), 10);
 
+    // Attach QuickComposeV4 to any compose triggers in the overlay
+    if (window.QuickComposeV4 && typeof window.QuickComposeV4.attachAll === 'function') {
+      window.QuickComposeV4.attachAll();
+    }
+
     // Close button
     const closeBtn = overlay.querySelector('.listing-detail-close');
     closeBtn.addEventListener('click', () => closeModal(overlay));
@@ -523,6 +534,10 @@
     const inlineComposer = overlay.querySelector('.listing-inline-composer');
 
     if (messageToggleBtn && inlineComposer) {
+      // If QuickComposeV4 is handling this button, skip inline composer setup
+      if (messageToggleBtn.dataset.quickCompose === 'true' && window.QuickComposeV4) {
+        // QuickComposeV4.attachAll() already bound the click handler above
+      } else {
       const composerInput = inlineComposer.querySelector('.listing-inline-composer-input');
       const composerStatus = inlineComposer.querySelector('.listing-inline-composer-status');
       const composerSendBtn = inlineComposer.querySelector('.listing-inline-composer-send');
@@ -562,6 +577,7 @@
           sendBtn: composerSendBtn,
         });
       });
+      } // end else (inline composer)
     }
 
     // Thumbnail clicks

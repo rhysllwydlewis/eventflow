@@ -1,0 +1,347 @@
+/**
+ * MessengerWidgetV4 – Dashboard widget styles
+ * Uses BEM naming (.mwv4__*) and the existing liquid-glass design tokens.
+ */
+
+/* ── Card shell ────────────────────────────────────────────────── */
+.mwv4 {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(11, 128, 115, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(11, 128, 115, 0.08);
+  font-family: inherit;
+}
+
+/* ── Header ────────────────────────────────────────────────────── */
+.mwv4__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(11, 128, 115, 0.08);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.mwv4__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0b8073;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mwv4__view-all {
+  font-size: 0.8rem;
+  color: #0b8073;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.mwv4__view-all:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+/* ── Unread badge (header level) ───────────────────────────────── */
+.mwv4__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0b8073, #0d9488);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@keyframes mwv4-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(11, 128, 115, 0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(11, 128, 115, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(11, 128, 115, 0); }
+}
+
+.mwv4__badge--pulse {
+  animation: mwv4-pulse 1.2s ease-out 3;
+}
+
+/* ── List ──────────────────────────────────────────────────────── */
+.mwv4__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Item ──────────────────────────────────────────────────────── */
+.mwv4__item {
+  border-bottom: 1px solid rgba(11, 128, 115, 0.06);
+  transition: background 0.15s;
+}
+
+.mwv4__item:last-child {
+  border-bottom: none;
+}
+
+.mwv4__item--unread {
+  background: rgba(11, 128, 115, 0.04);
+}
+
+.mwv4__item-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.mwv4__item-btn:hover,
+.mwv4__item-btn:focus-visible {
+  background: rgba(11, 128, 115, 0.06);
+  outline: 2px solid rgba(11, 128, 115, 0.3);
+  outline-offset: -2px;
+}
+
+/* ── Avatar ────────────────────────────────────────────────────── */
+.mwv4__avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.mwv4__avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mwv4__avatar-initial {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 40px;
+}
+
+.mwv4__unread-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+}
+
+/* ── Content ───────────────────────────────────────────────────── */
+.mwv4__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.mwv4__name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mwv4__preview {
+  font-size: 0.8rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ── Meta ──────────────────────────────────────────────────────── */
+.mwv4__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mwv4__time {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.mwv4__item-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #0b8073;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* ── Quick-reply panel ────────────────────────────────────────── */
+.mwv4__reply-panel {
+  padding: 8px 16px 12px;
+  background: rgba(240, 253, 244, 0.6);
+  border-top: 1px solid rgba(11, 128, 115, 0.08);
+}
+
+.mwv4__reply-textarea {
+  width: 100%;
+  min-height: 38px;
+  max-height: 120px;
+  padding: 8px 12px;
+  border: 1px solid rgba(11, 128, 115, 0.25);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  overflow-y: auto;
+}
+
+.mwv4__reply-textarea:focus {
+  outline: none;
+  border-color: #0b8073;
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.15);
+}
+
+.mwv4__reply-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
+.mwv4__reply-send {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #0b8073, #0d9488);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.mwv4__reply-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mwv4__reply-send:not(:disabled):hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.mwv4__reply-cancel {
+  padding: 6px 14px;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mwv4__reply-cancel:hover {
+  background: rgba(107, 114, 128, 0.08);
+}
+
+.mwv4__reply-error {
+  font-size: 0.78rem;
+  color: #dc2626;
+  margin: 4px 0 0;
+}
+
+/* ── Empty state ───────────────────────────────────────────────── */
+.mwv4__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  gap: 8px;
+  color: #9ca3af;
+}
+
+.mwv4__empty-icon {
+  font-size: 2rem;
+}
+
+.mwv4__empty-text {
+  font-size: 0.85rem;
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Skeleton loading ──────────────────────────────────────────── */
+.mwv4__item--skeleton .mwv4__avatar--skeleton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(11, 128, 115, 0.08);
+  animation: mwv4-shimmer 1.4s infinite linear;
+}
+
+.mwv4__skeleton-line {
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(11, 128, 115, 0.08);
+  animation: mwv4-shimmer 1.4s infinite linear;
+  margin-bottom: 6px;
+}
+
+.mwv4__skeleton-line--name {
+  width: 55%;
+}
+
+.mwv4__skeleton-line--preview {
+  width: 80%;
+  height: 8px;
+}
+
+@keyframes mwv4-shimmer {
+  0%   { opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* ── Avatar skeleton (inside item) ────────────────────────────── */
+.mwv4__item--skeleton {
+  pointer-events: none;
+}
+
+.mwv4__item--skeleton .mwv4__item-btn {
+  cursor: default;
+}

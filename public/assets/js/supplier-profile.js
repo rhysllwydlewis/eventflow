@@ -247,6 +247,20 @@
         const supplierName = (supplier.name || 'Supplier')
           .replace(/[<>'"&]/g, '')
           .trim() || 'Supplier';
+
+        // Use QuickComposeV4 slide-up panel if available
+        if (window.QuickComposeV4) {
+          window.QuickComposeV4.open({
+            recipientId: recipientId,
+            contextType: 'supplier_profile',
+            contextId: supplier.id,
+            contextTitle: supplier.name,
+            prefill: `Hi ${supplierName}! I'd like to enquire about your services.`,
+          });
+          return;
+        }
+
+        // Fallback: navigate to messenger
         const params = new URLSearchParams({
           new: 'true',
           recipientId: recipientId,
@@ -262,9 +276,17 @@
     // Setup message button
     const btnMessage = document.getElementById('btn-message-supplier');
     if (btnMessage && supplier.ownerUserId) {
+      btnMessage.setAttribute('data-quick-compose', 'true');
       btnMessage.setAttribute('data-recipient-id', supplier.ownerUserId);
+      btnMessage.setAttribute('data-context-type', 'supplier_profile');
       btnMessage.setAttribute('data-context-id', supplier.id);
       btnMessage.setAttribute('data-context-title', supplier.name);
+      // Remove legacy action attribute to avoid MessengerTrigger conflict
+      btnMessage.removeAttribute('data-messenger-action');
+      // Re-attach QuickComposeV4 handler once attributes are set
+      if (window.QuickComposeV4 && typeof window.QuickComposeV4.attachAll === 'function') {
+        window.QuickComposeV4.attachAll();
+      }
     } else if (btnMessage) {
       btnMessage.style.display = 'none'; // Hide if no owner user ID
     }

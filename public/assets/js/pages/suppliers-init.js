@@ -88,13 +88,13 @@ function createSupplierCard(supplier, position) {
           </button>
           ${supplier.ownerUserId ? `
           <button class="btn btn-secondary btn-contact-supplier"
-                  data-messenger-action="new-conversation"
+                  data-quick-compose="true"
                   data-recipient-id="${escapeHtml(supplier.ownerUserId)}"
-                  data-context-type="supplier"
+                  data-context-type="supplier_profile"
                   data-context-id="${escapeHtml(supplier.id)}"
                   data-context-title="${escapeHtml(supplier.name)}"
                   style="font-size: 13px; padding: 6px 12px;">
-            💬 Contact
+            💬 Message
           </button>
           ` : ''}
           <button class="btn btn-secondary btn-shortlist ${shortlistBtnClass}" 
@@ -377,6 +377,11 @@ async function initSuppliersPage() {
         trackResultClick('supplier', supplierId, position);
       });
     });
+
+    // Attach QuickComposeV4 to any new compose triggers
+    if (window.QuickComposeV4 && typeof window.QuickComposeV4.attachAll === 'function') {
+      window.QuickComposeV4.attachAll();
+    }
   }
 
   // Attach handlers to empty state
