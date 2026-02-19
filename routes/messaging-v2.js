@@ -317,7 +317,7 @@ router.use(
   createDeprecationMiddleware({
     version: 'v2',
     sunset: '2026-12-31',
-    logger: logger ? msg => logger.warn(msg) : undefined,
+    logger: msg => logger && logger.warn(msg),
   })
 );
 

@@ -222,7 +222,7 @@ router.use(
   createDeprecationMiddleware({
     version: 'v3',
     sunset: '2027-03-31',
-    logger: logger ? msg => logger.warn(msg) : undefined,
+    logger: msg => logger && logger.warn(msg),
   })
 );
 

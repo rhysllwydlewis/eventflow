@@ -1142,9 +1142,20 @@ async function startServer() {
         }
 
         // Auto-migrate v1 threads and messages to MongoDB (if needed)
-        // This ensures any threads created between deployments are caught
-        // Runs once on startup in a non-blocking manner
+        // DEPRECATED: This migration is from the v1→MongoDB transition.
+        // It is disabled by default. Set LEGACY_STARTUP_MIGRATION=true to re-enable.
         setImmediate(async () => {
+          if (process.env.LEGACY_STARTUP_MIGRATION !== 'true') {
+            // Migration has been completed; skip unless explicitly re-enabled.
+            return;
+          }
+
+          console.warn(
+            '⚠️  [DEPRECATED] Running legacy v1→MongoDB startup migration ' +
+              '(LEGACY_STARTUP_MIGRATION=true). ' +
+              'Disable by removing this env var once migration is complete.'
+          );
+
           try {
             console.log('');
             console.log('🔄 Checking for v1 threads to migrate to MongoDB...');
