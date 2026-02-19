@@ -724,6 +724,393 @@ router.get('/conversations', applyAuthRequired, ensureServices, async (req, res)
 // Messaging (Generic Routes - must come after specific routes)
 // =========================
 
+// ============================================
+// PHASE 1: BULK OPERATIONS & MANAGEMENT
+// ============================================
+
+/**
+ * Bulk delete messages
+ * POST /api/v2/messages/bulk-delete
+ */
+router.post(
+  '/bulk-delete',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { messageIds, threadId, reason } = req.body;
+      const userId = req.user.id;
+
+      // Enhanced validation with detailed error messages
+      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({
+          error: 'messageIds array is required and must not be empty',
+          retriable: false,
+          code: 'INVALID_MESSAGE_IDS',
+          hint: 'Provide an array of message IDs to delete',
+        });
+      }
+
+      if (messageIds.length > 100) {
+        return res.status(400).json({
+          error: 'Cannot delete more than 100 messages at once',
+          retriable: false,
+          code: 'TOO_MANY_MESSAGES',
+          limit: 100,
+          provided: messageIds.length,
+          hint: 'Split into smaller batches of 100 or fewer messages',
+        });
+      }
+
+      // Validate all message IDs are valid ObjectIds
+      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({
+          error: 'Invalid message IDs provided',
+          retriable: false,
+          code: 'INVALID_OBJECT_IDS',
+          invalidIds: invalidIds.slice(0, 5), // Only show first 5 to avoid huge response
+          invalidCount: invalidIds.length,
+        });
+      }
+
+      if (!threadId) {
+        return res.status(400).json({
+          error: 'threadId is required',
+          retriable: false,
+          code: 'MISSING_THREAD_ID',
+        });
+      }
+
+      if (!ObjectId.isValid(threadId)) {
+        return res.status(400).json({
+          error: 'Invalid threadId format',
+          retriable: false,
+          code: 'INVALID_THREAD_ID',
+          threadId,
+        });
+      }
+
+      // Verify user has access to the thread
+      const thread = await messagingService.getThread(threadId, userId);
+      if (!thread) {
+        return res.status(404).json({
+          error: 'Thread not found or access denied',
+          retriable: false,
+          code: 'THREAD_NOT_FOUND_OR_ACCESS_DENIED',
+          threadId,
+        });
+      }
+
+      // Perform bulk delete with timeout protection
+      const startTime = Date.now();
+      const result = await Promise.race([
+        messagingService.bulkDeleteMessages(messageIds, userId, threadId, reason),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timeout')), 30000)),
+      ]);
+      const duration = Date.now() - startTime;
+
+      logger.info('Bulk delete completed', {
+        userId,
+        threadId,
+        deletedCount: result.deletedCount,
+        duration,
+      });
+
+      res.json({
+        success: true,
+        deletedCount: result.deletedCount,
+        operationId: result.operationId,
+        undoToken: result.undoToken,
+        message: `${result.deletedCount} message(s) deleted successfully`,
+        duration,
+      });
+    } catch (error) {
+      logger.error('Bulk delete error', {
+        error: error.message,
+        userId: req.user.id,
+        threadId: req.body.threadId,
+        messageCount: req.body.messageIds?.length,
+      });
+
+      const isTimeout = error.message === 'Operation timeout';
+      res.status(isTimeout ? 504 : 500).json({
+        error: isTimeout ? 'Operation timed out' : 'Failed to delete messages',
+        message: error.message,
+        retriable: isTimeout,
+        code: isTimeout ? 'TIMEOUT' : 'INTERNAL_ERROR',
+        hint: isTimeout ? 'Try with fewer messages or retry later' : undefined,
+      });
+    }
+  }
+);
+
+/**
+ * Bulk mark messages as read/unread
+ * POST /api/v2/messages/bulk-mark-read
+ */
+router.post(
+  '/bulk-mark-read',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { messageIds, isRead } = req.body;
+      const userId = req.user.id;
+
+      // Enhanced validation with detailed error messages
+      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({
+          error: 'messageIds array is required and must not be empty',
+          retriable: false,
+          code: 'INVALID_MESSAGE_IDS',
+          hint: 'Provide an array of message IDs',
+        });
+      }
+
+      if (messageIds.length > 100) {
+        return res.status(400).json({
+          error: 'Cannot mark more than 100 messages at once',
+          retriable: false,
+          code: 'TOO_MANY_MESSAGES',
+          limit: 100,
+          provided: messageIds.length,
+          hint: 'Split into smaller batches of 100 or fewer messages',
+        });
+      }
+
+      // Validate all message IDs are valid ObjectIds
+      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({
+          error: 'Invalid message IDs provided',
+          retriable: false,
+          code: 'INVALID_OBJECT_IDS',
+          invalidIds: invalidIds.slice(0, 5),
+          invalidCount: invalidIds.length,
+        });
+      }
+
+      if (typeof isRead !== 'boolean') {
+        return res.status(400).json({
+          error: 'isRead must be a boolean',
+          retriable: false,
+          code: 'INVALID_IS_READ',
+          received: typeof isRead,
+          hint: 'Use true to mark as read, false to mark as unread',
+        });
+      }
+
+      // Perform bulk mark read with timeout protection
+      const startTime = Date.now();
+      const result = await Promise.race([
+        messagingService.bulkMarkRead(messageIds, userId, isRead),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timeout')), 30000)),
+      ]);
+      const duration = Date.now() - startTime;
+
+      logger.info('Bulk mark read completed', {
+        userId,
+        updatedCount: result.updatedCount,
+        isRead,
+        duration,
+      });
+
+      res.json({
+        success: true,
+        updatedCount: result.updatedCount,
+        message: `${result.updatedCount} message(s) marked as ${isRead ? 'read' : 'unread'}`,
+        duration,
+      });
+    } catch (error) {
+      logger.error('Bulk mark read error', {
+        error: error.message,
+        userId: req.user.id,
+        messageCount: req.body.messageIds?.length,
+        isRead: req.body.isRead,
+      });
+
+      const isTimeout = error.message === 'Operation timeout';
+      res.status(isTimeout ? 504 : 500).json({
+        error: isTimeout ? 'Operation timed out' : 'Failed to mark messages',
+        message: error.message,
+        retriable: isTimeout,
+        code: isTimeout ? 'TIMEOUT' : 'INTERNAL_ERROR',
+        hint: isTimeout ? 'Try with fewer messages or retry later' : undefined,
+      });
+    }
+  }
+);
+
+/**
+ * Undo an operation
+ * POST /api/v2/messages/operations/:operationId/undo
+ */
+router.post(
+  '/operations/:operationId/undo',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { operationId } = req.params;
+      const { undoToken } = req.body;
+      const userId = req.user.id;
+
+      // Enhanced validation
+      if (!operationId) {
+        return res.status(400).json({
+          error: 'operationId is required',
+          retriable: false,
+          code: 'MISSING_OPERATION_ID',
+          hint: 'Provide the operationId from the original delete operation',
+        });
+      }
+
+      if (!undoToken || typeof undoToken !== 'string') {
+        return res.status(400).json({
+          error: 'undoToken is required and must be a string',
+          retriable: false,
+          code: 'INVALID_UNDO_TOKEN',
+          hint: 'Provide the undoToken from the original delete operation',
+        });
+      }
+
+      // Perform undo with timeout protection
+      const startTime = Date.now();
+      const result = await Promise.race([
+        messagingService.undoOperation(operationId, undoToken, userId),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timeout')), 30000)),
+      ]);
+      const duration = Date.now() - startTime;
+
+      if (!result.success) {
+        // Check if it's an expired undo window
+        const isExpired =
+          result.error?.includes('expired') || result.error?.includes('Undo window');
+        return res.status(isExpired ? 410 : 400).json({
+          error: result.error,
+          retriable: false,
+          code: isExpired ? 'UNDO_EXPIRED' : 'UNDO_FAILED',
+          operationId,
+        });
+      }
+
+      logger.info('Undo operation completed', {
+        userId,
+        operationId,
+        restoredCount: result.restoredCount,
+        duration,
+      });
+
+      res.json({
+        success: true,
+        restoredCount: result.restoredCount,
+        message: `${result.restoredCount} message(s) restored successfully`,
+        operationId,
+        duration,
+      });
+    } catch (error) {
+      logger.error('Undo operation error', {
+        error: error.message,
+        userId: req.user.id,
+        operationId: req.params.operationId,
+      });
+
+      const isTimeout = error.message === 'Operation timeout';
+      res.status(isTimeout ? 504 : 500).json({
+        error: isTimeout ? 'Undo operation timed out' : 'Failed to undo operation',
+        message: error.message,
+        retriable: isTimeout,
+        code: isTimeout ? 'TIMEOUT' : 'INTERNAL_ERROR',
+      });
+    }
+  }
+);
+
+/**
+ * Flag/unflag a message
+ * POST /api/v2/messages/:id/flag
+ */
+router.post(
+  '/:id/flag',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isFlagged } = req.body;
+      const userId = req.user.id;
+
+      // Validation
+      if (!id || !ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+
+      if (typeof isFlagged !== 'boolean') {
+        return res.status(400).json({ error: 'isFlagged must be a boolean' });
+      }
+
+      // Perform flag
+      const result = await messagingService.flagMessage(id, userId, isFlagged);
+
+      res.json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      logger.error('Flag message error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to flag message', message: error.message });
+    }
+  }
+);
+
+/**
+ * Archive/restore a message
+ * POST /api/v2/messages/:id/archive
+ */
+router.post(
+  '/:id/archive',
+  writeLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action } = req.body;
+      const userId = req.user.id;
+
+      // Validation
+      if (!id || !ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+
+      if (!action || !['archive', 'restore'].includes(action)) {
+        return res.status(400).json({ error: 'action must be "archive" or "restore"' });
+      }
+
+      // Perform archive
+      const result = await messagingService.archiveMessage(id, userId, action);
+
+      res.json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      logger.error('Archive message error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to archive message', message: error.message });
+    }
+  }
+);
+
 /**
  * GET /api/v2/messages/:threadId
  * Get message history for a thread
@@ -896,7 +1283,9 @@ router.post(
     try {
       const { threadId } = req.params;
       // Support both 'content' (v2) and 'message' (legacy v1) for backward compatibility
-      let { content, message: legacyMessage } = req.body;
+      let content;
+      const { message: legacyMessage } = req.body;
+      content = req.body.content;
 
       // If 'message' is provided but not 'content', use 'message' as 'content'
       if (!content && legacyMessage) {
@@ -2645,393 +3034,6 @@ router.put(
     } catch (error) {
       logger.error('Update report error', { error: error.message, userId: req.user.id });
       res.status(500).json({ error: 'Failed to update report', message: error.message });
-    }
-  }
-);
-
-// ============================================
-// PHASE 1: BULK OPERATIONS & MANAGEMENT
-// ============================================
-
-/**
- * Bulk delete messages
- * POST /api/v2/messages/bulk-delete
- */
-router.post(
-  '/bulk-delete',
-  writeLimiter,
-  applyAuthRequired,
-  applyCsrfProtection,
-  ensureServices,
-  async (req, res) => {
-    try {
-      const { messageIds, threadId, reason } = req.body;
-      const userId = req.user.id;
-
-      // Enhanced validation with detailed error messages
-      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
-        return res.status(400).json({
-          error: 'messageIds array is required and must not be empty',
-          retriable: false,
-          code: 'INVALID_MESSAGE_IDS',
-          hint: 'Provide an array of message IDs to delete',
-        });
-      }
-
-      if (messageIds.length > 100) {
-        return res.status(400).json({
-          error: 'Cannot delete more than 100 messages at once',
-          retriable: false,
-          code: 'TOO_MANY_MESSAGES',
-          limit: 100,
-          provided: messageIds.length,
-          hint: 'Split into smaller batches of 100 or fewer messages',
-        });
-      }
-
-      // Validate all message IDs are valid ObjectIds
-      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
-      if (invalidIds.length > 0) {
-        return res.status(400).json({
-          error: 'Invalid message IDs provided',
-          retriable: false,
-          code: 'INVALID_OBJECT_IDS',
-          invalidIds: invalidIds.slice(0, 5), // Only show first 5 to avoid huge response
-          invalidCount: invalidIds.length,
-        });
-      }
-
-      if (!threadId) {
-        return res.status(400).json({
-          error: 'threadId is required',
-          retriable: false,
-          code: 'MISSING_THREAD_ID',
-        });
-      }
-
-      if (!ObjectId.isValid(threadId)) {
-        return res.status(400).json({
-          error: 'Invalid threadId format',
-          retriable: false,
-          code: 'INVALID_THREAD_ID',
-          threadId,
-        });
-      }
-
-      // Verify user has access to the thread
-      const thread = await messagingService.getThread(threadId, userId);
-      if (!thread) {
-        return res.status(404).json({
-          error: 'Thread not found or access denied',
-          retriable: false,
-          code: 'THREAD_NOT_FOUND_OR_ACCESS_DENIED',
-          threadId,
-        });
-      }
-
-      // Perform bulk delete with timeout protection
-      const startTime = Date.now();
-      const result = await Promise.race([
-        messagingService.bulkDeleteMessages(messageIds, userId, threadId, reason),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timeout')), 30000)),
-      ]);
-      const duration = Date.now() - startTime;
-
-      logger.info('Bulk delete completed', {
-        userId,
-        threadId,
-        deletedCount: result.deletedCount,
-        duration,
-      });
-
-      res.json({
-        success: true,
-        deletedCount: result.deletedCount,
-        operationId: result.operationId,
-        undoToken: result.undoToken,
-        message: `${result.deletedCount} message(s) deleted successfully`,
-        duration,
-      });
-    } catch (error) {
-      logger.error('Bulk delete error', {
-        error: error.message,
-        userId: req.user.id,
-        threadId: req.body.threadId,
-        messageCount: req.body.messageIds?.length,
-      });
-
-      const isTimeout = error.message === 'Operation timeout';
-      res.status(isTimeout ? 504 : 500).json({
-        error: isTimeout ? 'Operation timed out' : 'Failed to delete messages',
-        message: error.message,
-        retriable: isTimeout,
-        code: isTimeout ? 'TIMEOUT' : 'INTERNAL_ERROR',
-        hint: isTimeout ? 'Try with fewer messages or retry later' : undefined,
-      });
-    }
-  }
-);
-
-/**
- * Bulk mark messages as read/unread
- * POST /api/v2/messages/bulk-mark-read
- */
-router.post(
-  '/bulk-mark-read',
-  writeLimiter,
-  applyAuthRequired,
-  applyCsrfProtection,
-  ensureServices,
-  async (req, res) => {
-    try {
-      const { messageIds, isRead } = req.body;
-      const userId = req.user.id;
-
-      // Enhanced validation with detailed error messages
-      if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
-        return res.status(400).json({
-          error: 'messageIds array is required and must not be empty',
-          retriable: false,
-          code: 'INVALID_MESSAGE_IDS',
-          hint: 'Provide an array of message IDs',
-        });
-      }
-
-      if (messageIds.length > 100) {
-        return res.status(400).json({
-          error: 'Cannot mark more than 100 messages at once',
-          retriable: false,
-          code: 'TOO_MANY_MESSAGES',
-          limit: 100,
-          provided: messageIds.length,
-          hint: 'Split into smaller batches of 100 or fewer messages',
-        });
-      }
-
-      // Validate all message IDs are valid ObjectIds
-      const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
-      if (invalidIds.length > 0) {
-        return res.status(400).json({
-          error: 'Invalid message IDs provided',
-          retriable: false,
-          code: 'INVALID_OBJECT_IDS',
-          invalidIds: invalidIds.slice(0, 5),
-          invalidCount: invalidIds.length,
-        });
-      }
-
-      if (typeof isRead !== 'boolean') {
-        return res.status(400).json({
-          error: 'isRead must be a boolean',
-          retriable: false,
-          code: 'INVALID_IS_READ',
-          received: typeof isRead,
-          hint: 'Use true to mark as read, false to mark as unread',
-        });
-      }
-
-      // Perform bulk mark read with timeout protection
-      const startTime = Date.now();
-      const result = await Promise.race([
-        messagingService.bulkMarkRead(messageIds, userId, isRead),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timeout')), 30000)),
-      ]);
-      const duration = Date.now() - startTime;
-
-      logger.info('Bulk mark read completed', {
-        userId,
-        updatedCount: result.updatedCount,
-        isRead,
-        duration,
-      });
-
-      res.json({
-        success: true,
-        updatedCount: result.updatedCount,
-        message: `${result.updatedCount} message(s) marked as ${isRead ? 'read' : 'unread'}`,
-        duration,
-      });
-    } catch (error) {
-      logger.error('Bulk mark read error', {
-        error: error.message,
-        userId: req.user.id,
-        messageCount: req.body.messageIds?.length,
-        isRead: req.body.isRead,
-      });
-
-      const isTimeout = error.message === 'Operation timeout';
-      res.status(isTimeout ? 504 : 500).json({
-        error: isTimeout ? 'Operation timed out' : 'Failed to mark messages',
-        message: error.message,
-        retriable: isTimeout,
-        code: isTimeout ? 'TIMEOUT' : 'INTERNAL_ERROR',
-        hint: isTimeout ? 'Try with fewer messages or retry later' : undefined,
-      });
-    }
-  }
-);
-
-/**
- * Undo an operation
- * POST /api/v2/messages/operations/:operationId/undo
- */
-router.post(
-  '/operations/:operationId/undo',
-  writeLimiter,
-  applyAuthRequired,
-  applyCsrfProtection,
-  ensureServices,
-  async (req, res) => {
-    try {
-      const { operationId } = req.params;
-      const { undoToken } = req.body;
-      const userId = req.user.id;
-
-      // Enhanced validation
-      if (!operationId) {
-        return res.status(400).json({
-          error: 'operationId is required',
-          retriable: false,
-          code: 'MISSING_OPERATION_ID',
-          hint: 'Provide the operationId from the original delete operation',
-        });
-      }
-
-      if (!undoToken || typeof undoToken !== 'string') {
-        return res.status(400).json({
-          error: 'undoToken is required and must be a string',
-          retriable: false,
-          code: 'INVALID_UNDO_TOKEN',
-          hint: 'Provide the undoToken from the original delete operation',
-        });
-      }
-
-      // Perform undo with timeout protection
-      const startTime = Date.now();
-      const result = await Promise.race([
-        messagingService.undoOperation(operationId, undoToken, userId),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timeout')), 30000)),
-      ]);
-      const duration = Date.now() - startTime;
-
-      if (!result.success) {
-        // Check if it's an expired undo window
-        const isExpired =
-          result.error?.includes('expired') || result.error?.includes('Undo window');
-        return res.status(isExpired ? 410 : 400).json({
-          error: result.error,
-          retriable: false,
-          code: isExpired ? 'UNDO_EXPIRED' : 'UNDO_FAILED',
-          operationId,
-        });
-      }
-
-      logger.info('Undo operation completed', {
-        userId,
-        operationId,
-        restoredCount: result.restoredCount,
-        duration,
-      });
-
-      res.json({
-        success: true,
-        restoredCount: result.restoredCount,
-        message: `${result.restoredCount} message(s) restored successfully`,
-        operationId,
-        duration,
-      });
-    } catch (error) {
-      logger.error('Undo operation error', {
-        error: error.message,
-        userId: req.user.id,
-        operationId: req.params.operationId,
-      });
-
-      const isTimeout = error.message === 'Operation timeout';
-      res.status(isTimeout ? 504 : 500).json({
-        error: isTimeout ? 'Undo operation timed out' : 'Failed to undo operation',
-        message: error.message,
-        retriable: isTimeout,
-        code: isTimeout ? 'TIMEOUT' : 'INTERNAL_ERROR',
-      });
-    }
-  }
-);
-
-/**
- * Flag/unflag a message
- * POST /api/v2/messages/:id/flag
- */
-router.post(
-  '/:id/flag',
-  writeLimiter,
-  applyAuthRequired,
-  applyCsrfProtection,
-  ensureServices,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { isFlagged } = req.body;
-      const userId = req.user.id;
-
-      // Validation
-      if (!id || !ObjectId.isValid(id)) {
-        return res.status(400).json({ error: 'Invalid message ID' });
-      }
-
-      if (typeof isFlagged !== 'boolean') {
-        return res.status(400).json({ error: 'isFlagged must be a boolean' });
-      }
-
-      // Perform flag
-      const result = await messagingService.flagMessage(id, userId, isFlagged);
-
-      res.json({
-        success: true,
-        message: result.message,
-      });
-    } catch (error) {
-      logger.error('Flag message error', { error: error.message, userId: req.user.id });
-      res.status(500).json({ error: 'Failed to flag message', message: error.message });
-    }
-  }
-);
-
-/**
- * Archive/restore a message
- * POST /api/v2/messages/:id/archive
- */
-router.post(
-  '/:id/archive',
-  writeLimiter,
-  applyAuthRequired,
-  applyCsrfProtection,
-  ensureServices,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { action } = req.body;
-      const userId = req.user.id;
-
-      // Validation
-      if (!id || !ObjectId.isValid(id)) {
-        return res.status(400).json({ error: 'Invalid message ID' });
-      }
-
-      if (!action || !['archive', 'restore'].includes(action)) {
-        return res.status(400).json({ error: 'action must be "archive" or "restore"' });
-      }
-
-      // Perform archive
-      const result = await messagingService.archiveMessage(id, userId, action);
-
-      res.json({
-        success: true,
-        message: result.message,
-      });
-    } catch (error) {
-      logger.error('Archive message error', { error: error.message, userId: req.user.id });
-      res.status(500).json({ error: 'Failed to archive message', message: error.message });
     }
   }
 );

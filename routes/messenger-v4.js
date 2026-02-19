@@ -11,7 +11,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
-const { writeLimiter, uploadLimiter } = require('../middleware/rateLimits');
+const { writeLimiter } = require('../middleware/rateLimits');
 const MessengerV4Service = require('../services/messenger-v4.service');
 const messengerMetrics = require('../services/messengerMetrics');
 
@@ -27,6 +27,26 @@ let logger;
 
 // Messenger service instance
 let messengerService;
+
+// ---------------------------------------------------------------------------
+// Deferred middleware wrappers
+// Routes are registered at module-load time, but authRequired/csrfProtection
+// are only assigned inside initialize(). These wrappers defer the call so
+// Express does not throw "requires a callback function" on undefined.
+// ---------------------------------------------------------------------------
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
 
 // Configure multer for attachments
 const attachmentStorage = multer.memoryStorage();
@@ -146,91 +166,97 @@ function emitToConversation(conversation, event, data) {
  * POST /api/v4/messenger/conversations
  * Create a new conversation
  */
-router.post('/conversations', authRequired, csrfProtection, writeLimiter, async (req, res) => {
-  const startMs = Date.now();
-  try {
-    const { type, participantIds, context, metadata } = req.body;
-    const currentUserId = req.user._id;
+router.post(
+  '/conversations',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    const startMs = Date.now();
+    try {
+      const { type, participantIds, context, metadata } = req.body;
+      const currentUserId = req.user._id;
 
-    if (!type || !Array.isArray(participantIds) || participantIds.length === 0) {
-      return res.status(400).json({
-        error: 'type and participantIds are required',
+      if (!type || !Array.isArray(participantIds) || participantIds.length === 0) {
+        return res.status(400).json({
+          error: 'type and participantIds are required',
+        });
+      }
+
+      // Get database instance
+      const dbInstance = await getDbInstance();
+
+      // Fetch user information for all participants
+      const usersCollection = dbInstance.collection('users');
+      const participantUsers = await usersCollection
+        .find({
+          _id: { $in: [currentUserId, ...participantIds] },
+        })
+        .toArray();
+
+      if (participantUsers.length !== participantIds.length + 1) {
+        return res.status(400).json({
+          error: 'One or more participant IDs are invalid',
+        });
+      }
+
+      // Build participants array
+      const participants = participantUsers.map(user => ({
+        userId: user._id,
+        displayName: user.displayName || user.businessName || user.email,
+        avatar: user.avatar || null,
+        role: user.role || 'customer',
+      }));
+
+      // Create conversation
+      const conversation = await (
+        await getMessengerService()
+      ).createConversation({
+        type,
+        participants,
+        context: context || null,
+        metadata: metadata || {},
+      });
+
+      // Emit WebSocket event to all participants
+      emitToConversation(conversation, 'messenger:v4:conversation-created', {
+        conversation,
+      });
+
+      messengerMetrics.increment('messenger_v4_conversations_created_total');
+      logger.info('messenger_v4 conversation_created', {
+        userId: currentUserId,
+        conversationId: conversation._id,
+        type,
+        participantCount: participants.length,
+        durationMs: Date.now() - startMs,
+        statusCode: 201,
+      });
+
+      res.status(201).json({
+        success: true,
+        conversation,
+      });
+    } catch (error) {
+      messengerMetrics.increment('messenger_v4_errors_total');
+      logger.error('Error creating conversation:', {
+        error: error.message,
+        userId: req.user?._id,
+        durationMs: Date.now() - startMs,
+        statusCode: 500,
+      });
+      res.status(500).json({
+        error: error.message || 'Failed to create conversation',
       });
     }
-
-    // Get database instance
-    const dbInstance = await getDbInstance();
-
-    // Fetch user information for all participants
-    const usersCollection = dbInstance.collection('users');
-    const participantUsers = await usersCollection
-      .find({
-        _id: { $in: [currentUserId, ...participantIds] },
-      })
-      .toArray();
-
-    if (participantUsers.length !== participantIds.length + 1) {
-      return res.status(400).json({
-        error: 'One or more participant IDs are invalid',
-      });
-    }
-
-    // Build participants array
-    const participants = participantUsers.map(user => ({
-      userId: user._id,
-      displayName: user.displayName || user.businessName || user.email,
-      avatar: user.avatar || null,
-      role: user.role || 'customer',
-    }));
-
-    // Create conversation
-    const conversation = await (
-      await getMessengerService()
-    ).createConversation({
-      type,
-      participants,
-      context: context || null,
-      metadata: metadata || {},
-    });
-
-    // Emit WebSocket event to all participants
-    emitToConversation(conversation, 'messenger:v4:conversation-created', {
-      conversation,
-    });
-
-    messengerMetrics.increment('messenger_v4_conversations_created_total');
-    logger.info('messenger_v4 conversation_created', {
-      userId: currentUserId,
-      conversationId: conversation._id,
-      type,
-      participantCount: participants.length,
-      durationMs: Date.now() - startMs,
-      statusCode: 201,
-    });
-
-    res.status(201).json({
-      success: true,
-      conversation,
-    });
-  } catch (error) {
-    messengerMetrics.increment('messenger_v4_errors_total');
-    logger.error('Error creating conversation:', {
-      error: error.message,
-      userId: req.user?._id,
-      durationMs: Date.now() - startMs,
-      statusCode: 500,
-    });
-    res.status(500).json({
-      error: error.message || 'Failed to create conversation',
-    });
   }
-});
+);
 
 /**
  * GET /api/v4/messenger/conversations
  * List conversations for the authenticated user
  */
-router.get('/conversations', authRequired, async (req, res) => {
+router.get('/conversations', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user._id;
     const { unread, pinned, archived, search, status, limit = 50, skip = 0 } = req.query;
@@ -273,7 +299,7 @@ router.get('/conversations', authRequired, async (req, res) => {
  * GET /api/v4/messenger/conversations/:id
  * Get a specific conversation
  */
-router.get('/conversations/:id', authRequired, async (req, res) => {
+router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
@@ -296,7 +322,7 @@ router.get('/conversations/:id', authRequired, async (req, res) => {
  * PATCH /api/v4/messenger/conversations/:id
  * Update conversation settings
  */
-router.patch('/conversations/:id', authRequired, csrfProtection, async (req, res) => {
+router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
@@ -328,7 +354,7 @@ router.patch('/conversations/:id', authRequired, csrfProtection, async (req, res
  * DELETE /api/v4/messenger/conversations/:id
  * Soft delete a conversation (archive for the user)
  */
-router.delete('/conversations/:id', authRequired, csrfProtection, async (req, res) => {
+router.delete('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
@@ -361,8 +387,8 @@ router.delete('/conversations/:id', authRequired, csrfProtection, async (req, re
  */
 router.post(
   '/conversations/:id/messages',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   writeLimiter,
   upload.array('attachments', 10),
   async (req, res) => {
@@ -498,7 +524,7 @@ router.post(
  * GET /api/v4/messenger/conversations/:id/messages
  * Get messages for a conversation (cursor-paginated)
  */
-router.get('/conversations/:id/messages', authRequired, async (req, res) => {
+router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
     const userId = req.user._id;
@@ -527,7 +553,7 @@ router.get('/conversations/:id/messages', authRequired, async (req, res) => {
  * PATCH /api/v4/messenger/messages/:id
  * Edit a message
  */
-router.patch('/messages/:id', authRequired, csrfProtection, async (req, res) => {
+router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
@@ -567,7 +593,7 @@ router.patch('/messages/:id', authRequired, csrfProtection, async (req, res) => 
  * DELETE /api/v4/messenger/messages/:id
  * Delete a message
  */
-router.delete('/messages/:id', authRequired, csrfProtection, async (req, res) => {
+router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
@@ -604,7 +630,7 @@ router.delete('/messages/:id', authRequired, csrfProtection, async (req, res) =>
  * POST /api/v4/messenger/messages/:id/reactions
  * Toggle emoji reaction on a message
  */
-router.post('/messages/:id/reactions', authRequired, csrfProtection, async (req, res) => {
+router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
@@ -648,7 +674,7 @@ router.post('/messages/:id/reactions', authRequired, csrfProtection, async (req,
  * GET /api/v4/messenger/unread-count
  * Get total unread message count for badge
  */
-router.get('/unread-count', authRequired, async (req, res) => {
+router.get('/unread-count', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user._id;
     const unreadCount = await (await getMessengerService()).getUnreadCount(userId);
@@ -669,7 +695,7 @@ router.get('/unread-count', authRequired, async (req, res) => {
  * GET /api/v4/messenger/contacts
  * Search for contactable users
  */
-router.get('/contacts', authRequired, async (req, res) => {
+router.get('/contacts', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user._id;
     const { q: query, role, limit = 20 } = req.query;
@@ -694,7 +720,7 @@ router.get('/contacts', authRequired, async (req, res) => {
  * GET /api/v4/messenger/search
  * Full-text search across all user messages
  */
-router.get('/search', authRequired, async (req, res) => {
+router.get('/search', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user._id;
     const { q: query, limit = 50 } = req.query;
@@ -726,7 +752,7 @@ router.get('/search', authRequired, async (req, res) => {
  * POST /api/v4/messenger/conversations/:id/typing
  * Send typing indicator
  */
-router.post('/conversations/:id/typing', authRequired, async (req, res) => {
+router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
     const userId = req.user._id;
@@ -764,7 +790,7 @@ router.post('/conversations/:id/typing', authRequired, async (req, res) => {
  * POST /api/v4/messenger/conversations/:id/read
  * Mark conversation as read
  */
-router.post('/conversations/:id/read', authRequired, csrfProtection, async (req, res) => {
+router.post('/conversations/:id/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
     const userId = req.user._id;
@@ -805,7 +831,7 @@ router.post('/conversations/:id/read', authRequired, csrfProtection, async (req,
  * List all conversations (admin only).
  * Query params: limit, skip, search, status
  */
-router.get('/admin/conversations', authRequired, async (req, res) => {
+router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
   try {
     // Admin role check
     if (!req.user || req.user.role !== 'admin') {
@@ -850,7 +876,7 @@ router.get('/admin/conversations', authRequired, async (req, res) => {
  * GET /api/v4/messenger/admin/metrics
  * Return in-memory messenger v4 operational counters (admin only).
  */
-router.get('/admin/metrics', authRequired, async (req, res) => {
+router.get('/admin/metrics', applyAuthRequired, async (req, res) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Forbidden: admin access required' });
   }
