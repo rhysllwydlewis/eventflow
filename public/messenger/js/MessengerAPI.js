@@ -7,7 +7,7 @@
 
 class MessengerAPI {
   constructor() {
-    this.baseUrl = '/api/v3/messenger';
+    this.baseUrl = '/api/v4/messenger';
     this.csrfToken = this.getCsrfToken();
   }
 
