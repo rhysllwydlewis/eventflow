@@ -369,7 +369,7 @@ function mountRoutes(app, deps) {
   // Redirect old messages page to new messenger
   app.get('/messages', (req, res) => res.redirect(301, '/messenger/'));
   app.get('/messages.html', (req, res) => res.redirect(301, '/messenger/'));
-  
+
   // Redirect old conversation page to new messenger
   app.get('/conversation', (req, res) => {
     const id = req.query.id;
@@ -384,6 +384,10 @@ function mountRoutes(app, deps) {
       return res.redirect(301, `/messenger/?conversation=${id}`);
     }
     return res.redirect(301, '/messenger/');
+  });
+  // Redirect /conversation/:id path-param style URLs
+  app.get('/conversation/:id', (req, res) => {
+    return res.redirect(301, `/messenger/?conversation=${encodeURIComponent(req.params.id)}`);
   });
 }
 

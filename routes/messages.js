@@ -11,6 +11,7 @@
 
 const express = require('express');
 const validator = require('validator');
+const { createDeprecationMiddleware } = require('../middleware/legacyMessaging');
 
 // Dependencies injected by server.js
 let dbUnified;
@@ -132,26 +133,16 @@ async function isThreadParticipant(thread, userId, suppliers = null) {
 const router = express.Router();
 
 /**
- * Deprecation warning middleware for v1 Messages API
- * All routes in this file are deprecated in favor of v4 Messenger API
+ * Deprecation enforcement middleware for v1 Messages API.
+ * Behaviour is controlled by LEGACY_MESSAGING_MODE env var (off|read-only|on).
+ * Write endpoints return HTTP 410 when mode is "off" or "read-only".
  */
-router.use((req, res, next) => {
-  res.setHeader('X-API-Deprecation', 'true');
-  res.setHeader('X-API-Deprecation-Version', 'v1');
-  res.setHeader('X-API-Deprecation-Sunset', '2026-12-31');
-  res.setHeader('X-API-Deprecation-Replacement', '/api/v4/messenger');
-  res.setHeader(
-    'X-API-Deprecation-Info',
-    'This API is deprecated. Please migrate to /api/v4/messenger. See documentation at https://docs.eventflow.com/api/messenger-v4'
-  );
-  
-  // Log deprecation usage (logger not available in this route, use console)
-  console.warn(
-    `[DEPRECATED API] v1 Messages API called: ${req.method} ${req.originalUrl} - Migrate to /api/v4/messenger`
-  );
-  
-  next();
-});
+router.use(
+  createDeprecationMiddleware({
+    version: 'v1',
+    sunset: '2026-12-31',
+  })
+);
 
 /**
  * GET /api/messages/threads

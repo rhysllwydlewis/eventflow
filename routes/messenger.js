@@ -13,6 +13,7 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 const { writeLimiter, uploadLimiter } = require('../middleware/rateLimits');
 const MessengerService = require('../services/messenger.service');
+const { createDeprecationMiddleware } = require('../middleware/legacyMessaging');
 
 const router = express.Router();
 
@@ -70,24 +71,24 @@ function initializeDependencies(deps) {
 
   const required = ['authRequired', 'csrfProtection', 'db', 'logger'];
   const missing = required.filter(key => !deps[key]);
-  
+
   if (missing.length > 0) {
     throw new Error(`Messenger routes: missing required dependencies: ${missing.join(', ')}`);
   }
 
   authRequired = deps.authRequired;
   csrfProtection = deps.csrfProtection;
-  
+
   // db can be either mongoDb module or db instance
   db = deps.db;
-  
+
   wsServer = deps.wsServer; // Optional
   postmark = deps.postmark; // Optional
   logger = deps.logger;
 
   // Service will be initialized lazily on first request
   messengerService = null;
-  
+
   logger.info('✅ Messenger v3 routes initialized');
 }
 
@@ -150,7 +151,7 @@ function applyUploadLimiter(req, res, next) {
  */
 function ensureServices(req, res, next) {
   if (!messengerService) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Messenger service not initialized',
       code: 'SERVICE_UNAVAILABLE',
     });
@@ -180,7 +181,7 @@ function sanitizeInput(text) {
  */
 async function storeAttachment(file) {
   const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
-  
+
   try {
     await fs.mkdir(uploadsDir, { recursive: true });
   } catch (err) {
@@ -209,31 +210,21 @@ async function storeAttachment(file) {
 }
 
 // =========================
-// Deprecation Warning Middleware
+// Deprecation Enforcement Middleware
 // =========================
 
 /**
- * Deprecation warning middleware for v3 Messenger API
- * All routes in this file are deprecated in favor of v4 Messenger API
+ * Deprecation enforcement middleware for v3 Messenger API.
+ * Behaviour is controlled by LEGACY_MESSAGING_MODE env var (off|read-only|on).
+ * Write endpoints return HTTP 410 when mode is "off" or "read-only".
  */
-router.use((req, res, next) => {
-  res.setHeader('X-API-Deprecation', 'true');
-  res.setHeader('X-API-Deprecation-Version', 'v3');
-  res.setHeader('X-API-Deprecation-Sunset', '2027-03-31');
-  res.setHeader('X-API-Deprecation-Replacement', '/api/v4/messenger');
-  res.setHeader(
-    'X-API-Deprecation-Info',
-    'This API is deprecated. Please migrate to /api/v4/messenger. See documentation at https://docs.eventflow.com/api/messenger-v4'
-  );
-  
-  if (logger) {
-    logger.warn(
-      `[DEPRECATED API] v3 Messenger API called: ${req.method} ${req.originalUrl} - Migrate to /api/v4/messenger`
-    );
-  }
-  
-  next();
-});
+router.use(
+  createDeprecationMiddleware({
+    version: 'v3',
+    sunset: '2027-03-31',
+    logger: logger ? msg => logger.warn(msg) : undefined,
+  })
+);
 
 // ===== CONVERSATION ROUTES =====
 
@@ -273,13 +264,9 @@ router.post(
       const sanitizedMetadata = metadata || {};
 
       // Create conversation
-      const result = await (await getMessengerService()).createConversation(
-        userId,
-        recipientId,
-        context,
-        sanitizedMetadata,
-        sanitizedMessage
-      );
+      const result = await (
+        await getMessengerService()
+      ).createConversation(userId, recipientId, context, sanitizedMetadata, sanitizedMessage);
 
       // Emit WebSocket event if available
       if (wsServer && wsServer.emitToUser) {
@@ -405,11 +392,19 @@ router.patch(
       const { isPinned, isMuted, isArchived } = req.body;
 
       const updates = {};
-      if (isPinned !== undefined) updates.isPinned = isPinned;
-      if (isMuted !== undefined) updates.isMuted = isMuted;
-      if (isArchived !== undefined) updates.isArchived = isArchived;
+      if (isPinned !== undefined) {
+        updates.isPinned = isPinned;
+      }
+      if (isMuted !== undefined) {
+        updates.isMuted = isMuted;
+      }
+      if (isArchived !== undefined) {
+        updates.isArchived = isArchived;
+      }
 
-      const conversation = await (await getMessengerService()).updateConversation(id, userId, updates);
+      const conversation = await (
+        await getMessengerService()
+      ).updateConversation(id, userId, updates);
 
       res.json({
         success: true,
@@ -531,13 +526,9 @@ router.post(
       }
 
       // Send message
-      const message = await (await getMessengerService()).sendMessage(
-        conversationId,
-        userId,
-        sanitizedContent,
-        attachments,
-        replyToId
-      );
+      const message = await (
+        await getMessengerService()
+      ).sendMessage(conversationId, userId, sanitizedContent, attachments, replyToId);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToRoom) {
@@ -550,9 +541,11 @@ router.post(
       // Send email notification to other participants if offline
       if (postmark) {
         try {
-          const conversation = await (await getMessengerService()).getConversation(conversationId, userId);
+          const conversation = await (
+            await getMessengerService()
+          ).getConversation(conversationId, userId);
           const recipients = conversation.participants.filter(p => p.userId !== userId);
-          
+
           for (const recipient of recipients) {
             const user = await db.collection('users').findOne({ id: recipient.userId });
             if (user && user.notify_account !== false && !recipient.isMuted) {
@@ -601,12 +594,9 @@ router.get('/conversations/:id/messages', applyAuthRequired, ensureServices, asy
     const userId = req.user.id;
     const { before, limit = 50 } = req.query;
 
-    const result = await (await getMessengerService()).getMessages(
-      conversationId,
-      userId,
-      before,
-      parseInt(limit, 10)
-    );
+    const result = await (
+      await getMessengerService()
+    ).getMessages(conversationId, userId, before, parseInt(limit, 10));
 
     res.json({
       success: true,
@@ -646,7 +636,9 @@ router.patch(
       }
 
       const sanitizedContent = sanitizeInput(content);
-      const message = await (await getMessengerService()).editMessage(messageId, userId, sanitizedContent);
+      const message = await (
+        await getMessengerService()
+      ).editMessage(messageId, userId, sanitizedContent);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToRoom) {
@@ -836,7 +828,9 @@ router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
       });
     }
 
-    const messages = await (await getMessengerService()).searchMessages(userId, query.trim(), conversationId);
+    const messages = await (
+      await getMessengerService()
+    ).searchMessages(userId, query.trim(), conversationId);
 
     res.json({
       success: true,
@@ -906,41 +900,36 @@ router.get('/unread-count', applyAuthRequired, ensureServices, async (req, res) 
  * POST /api/v3/messenger/conversations/:id/typing
  * Send typing indicator (proxied through WebSocket)
  */
-router.post(
-  '/conversations/:id/typing',
-  applyAuthRequired,
-  ensureServices,
-  async (req, res) => {
-    try {
-      const { id: conversationId } = req.params;
-      const userId = req.user.id;
-      const { isTyping } = req.body;
+router.post('/conversations/:id/typing', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const { id: conversationId } = req.params;
+    const userId = req.user.id;
+    const { isTyping } = req.body;
 
-      // Verify user has access to this conversation
-      await (await getMessengerService()).getConversation(conversationId, userId);
+    // Verify user has access to this conversation
+    await (await getMessengerService()).getConversation(conversationId, userId);
 
-      // Emit WebSocket event
-      if (wsServer && wsServer.emitToRoom) {
-        wsServer.emitToRoom(`messenger:${conversationId}`, 'messenger:typing', {
-          conversationId,
-          userId,
-          isTyping: !!isTyping,
-        });
-      }
-
-      res.json({
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Typing indicator error:', error);
-      res.status(500).json({
-        error: 'Failed to send typing indicator',
-        code: 'TYPING_FAILED',
-        message: error.message,
+    // Emit WebSocket event
+    if (wsServer && wsServer.emitToRoom) {
+      wsServer.emitToRoom(`messenger:${conversationId}`, 'messenger:typing', {
+        conversationId,
+        userId,
+        isTyping: !!isTyping,
       });
     }
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    logger.error('Typing indicator error:', error);
+    res.status(500).json({
+      error: 'Failed to send typing indicator',
+      code: 'TYPING_FAILED',
+      message: error.message,
+    });
   }
-);
+});
 
 // Export router and initialization function
 module.exports = router;
