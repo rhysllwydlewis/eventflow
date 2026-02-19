@@ -228,7 +228,7 @@
   });
 
   // LEGACY WEBSOCKET CODE - DISABLED
-  // The messaging.js system now handles WebSocket connections.
+  // WebSocket connections are now handled by Messenger v4 (MessengerSocket.js).
   // This legacy code is preserved but disabled to prevent conflicts.
   // If you need to re-enable it, uncomment the lines below.
   /*

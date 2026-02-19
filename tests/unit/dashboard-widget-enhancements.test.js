@@ -6,12 +6,17 @@
 const fs = require('fs');
 const path = require('path');
 
-describe('Dashboard Widget Enhancements - Customer', () => {
+// Guard hoisted files removed in Messenger v4 migration (Phase 7)
+const customerMsgJsPath = path.join(process.cwd(), 'public/assets/js/customer-messages.js');
+const customerMsgJsExists = fs.existsSync(customerMsgJsPath);
+const customerMessagesJs = customerMsgJsExists ? fs.readFileSync(customerMsgJsPath, 'utf8') : '';
+
+const supplierMsgJsPath = path.join(process.cwd(), 'public/assets/js/supplier-messages.js');
+const supplierMsgJsExists = fs.existsSync(supplierMsgJsPath);
+const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPath, 'utf8') : '';
+
+(customerMsgJsExists ? describe : describe.skip)('Dashboard Widget Enhancements - Customer', () => {
   describe('customer-messages.js helper functions', () => {
-    const customerMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/customer-messages.js'),
-      'utf8'
-    );
 
     it('includes formatTimeAgo helper function', () => {
       expect(customerMessagesJs).toContain('function formatTimeAgo(timestamp)');
@@ -51,10 +56,6 @@ describe('Dashboard Widget Enhancements - Customer', () => {
   });
 
   describe('renderConversations with timestamps', () => {
-    const customerMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/customer-messages.js'),
-      'utf8'
-    );
 
     it('uses formatTimeAgo for timestamps', () => {
       const renderFn = customerMessagesJs
@@ -93,10 +94,6 @@ describe('Dashboard Widget Enhancements - Customer', () => {
   });
 
   describe('search and filter functionality', () => {
-    const customerMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/customer-messages.js'),
-      'utf8'
-    );
 
     it('includes setupSearchAndFilter function', () => {
       expect(customerMessagesJs).toContain('function setupSearchAndFilter(getConversations, user)');
@@ -163,12 +160,8 @@ describe('Dashboard Widget Enhancements - Customer', () => {
   });
 });
 
-describe('Dashboard Widget Enhancements - Supplier', () => {
+(supplierMsgJsExists ? describe : describe.skip)('Dashboard Widget Enhancements - Supplier', () => {
   describe('supplier-messages.js helper functions', () => {
-    const supplierMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/supplier-messages.js'),
-      'utf8'
-    );
 
     it('includes formatTimeAgo helper function', () => {
       expect(supplierMessagesJs).toContain('function formatTimeAgo(timestamp)');
@@ -180,11 +173,6 @@ describe('Dashboard Widget Enhancements - Supplier', () => {
   });
 
   describe('renderConversations with timestamps', () => {
-    const supplierMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/supplier-messages.js'),
-      'utf8'
-    );
-
     it('uses formatTimeAgo for timestamps', () => {
       const renderFn = supplierMessagesJs
         .split('function renderConversations(conversations, supplierProfile')[1]
@@ -212,11 +200,6 @@ describe('Dashboard Widget Enhancements - Supplier', () => {
   });
 
   describe('search and filter functionality', () => {
-    const supplierMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/supplier-messages.js'),
-      'utf8'
-    );
-
     it('includes setupSearchAndFilterSupplier function', () => {
       expect(supplierMessagesJs).toContain('function setupSearchAndFilterSupplier(getConversations, supplierProfile, user)');
     });

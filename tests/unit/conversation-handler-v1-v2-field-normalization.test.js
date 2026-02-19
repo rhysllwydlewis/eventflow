@@ -1,15 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
-describe('Conversation handler v1/v2 field normalization', () => {
-  const conversationHandlerJs = fs.readFileSync(
-    path.join(process.cwd(), 'public/assets/js/conversation-handler.js'),
-    'utf8'
-  );
+// conversation-handler.js was removed as part of Messenger v4 migration (Phase 7)
+const conversationHandlerPath = path.join(process.cwd(), 'public/assets/js/conversation-handler.js');
+const conversationHandlerExists = fs.existsSync(conversationHandlerPath);
+const conversationHandlerJs = conversationHandlerExists ? fs.readFileSync(conversationHandlerPath, 'utf8') : '';
+
+(conversationHandlerExists ? describe : describe.skip)('Conversation handler v1/v2 field normalization', () => {
 
   describe('loadMessages v1 field normalization', () => {
-    const loadMessagesFn = conversationHandlerJs
-      .split('async function loadMessages()')[1]
+    const loadMessagesFn = (conversationHandlerJs.split('async function loadMessages()')[1] || '')
       .split('async function')[0];
 
     it('normalizes v1 messages array after loading from v1 API', () => {
@@ -44,8 +44,7 @@ describe('Conversation handler v1/v2 field normalization', () => {
   });
 
   describe('v2 to v1 fallback for empty messages with legacy thread IDs', () => {
-    const loadMessagesFn = conversationHandlerJs
-      .split('async function loadMessages()')[1]
+    const loadMessagesFn = (conversationHandlerJs.split('async function loadMessages()')[1] || '')
       .split('async function')[0];
 
     it('checks for empty messages array when v2 response is OK', () => {
@@ -101,8 +100,7 @@ describe('Conversation handler v1/v2 field normalization', () => {
 
   describe('renderThreadHeader improved name resolution', () => {
     // The name resolution logic is now in resolveOtherPartyName function
-    const resolveOtherPartyNameFn = conversationHandlerJs
-      .split('function resolveOtherPartyName()')[1]
+    const resolveOtherPartyNameFn = (conversationHandlerJs.split('function resolveOtherPartyName()')[1] || '')
       .split('function ')[0];
 
     it('includes marketplace listing title as fallback for other party name', () => {
@@ -153,8 +151,7 @@ describe('Conversation handler v1/v2 field normalization', () => {
   });
 
   describe('renderMessages uses normalized fields', () => {
-    const renderMessagesFn = conversationHandlerJs
-      .split('function renderMessages()')[1]
+    const renderMessagesFn = (conversationHandlerJs.split('function renderMessages()')[1] || '')
       .split('function ')[0];
 
     it('checks senderId for determining if message was sent by current user', () => {

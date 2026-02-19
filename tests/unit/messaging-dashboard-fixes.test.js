@@ -1,17 +1,21 @@
-/**
- * Tests for messaging dashboard fixes
- * Validates that customer and supplier dashboards can send messages and mark threads as read
- */
-
 const fs = require('fs');
 const path = require('path');
 
+// Guard hoisted files removed in Messenger v4 migration (Phase 7)
+const messagingJsPath = path.join(process.cwd(), 'public/assets/js/messaging.js');
+const messagingJsExists = fs.existsSync(messagingJsPath);
+const messagingJs = messagingJsExists ? fs.readFileSync(messagingJsPath, 'utf8') : '';
+
+const customerMsgJsPath = path.join(process.cwd(), 'public/assets/js/customer-messages.js');
+const customerMsgJsExists = fs.existsSync(customerMsgJsPath);
+const customerMessagesJs = customerMsgJsExists ? fs.readFileSync(customerMsgJsPath, 'utf8') : '';
+
+const supplierMsgJsPath = path.join(process.cwd(), 'public/assets/js/supplier-messages.js');
+const supplierMsgJsExists = fs.existsSync(supplierMsgJsPath);
+const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPath, 'utf8') : '';
+
 describe('Messaging Dashboard Fixes', () => {
-  describe('messaging.js client-side fixes', () => {
-    const messagingJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/messaging.js'),
-      'utf8'
-    );
+  (messagingJsExists ? describe : describe.skip)('messaging.js client-side fixes', () => {
 
     it('transforms message field to content field in sendMessageViaAPI', () => {
       const sendMessageFn = messagingJs
@@ -115,11 +119,7 @@ describe('Messaging Dashboard Fixes', () => {
     });
   });
 
-  describe('customer-messages.js usage', () => {
-    const customerMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/customer-messages.js'),
-      'utf8'
-    );
+  (customerMsgJsExists ? describe : describe.skip)('customer-messages.js usage', () => {
 
     it('imports MessagingManager from messaging.js', () => {
       // Should import MessagingManager to avoid "messagingManager is not defined" error
@@ -323,11 +323,7 @@ describe('Messaging Dashboard Fixes', () => {
     });
   });
 
-  describe('supplier-messages.js usage', () => {
-    const supplierMessagesJs = fs.readFileSync(
-      path.join(process.cwd(), 'public/assets/js/supplier-messages.js'),
-      'utf8'
-    );
+  (supplierMsgJsExists ? describe : describe.skip)('supplier-messages.js usage', () => {
 
     it('validates conversationId in openConversation', () => {
       // Should validate conversationId before opening conversation modal
