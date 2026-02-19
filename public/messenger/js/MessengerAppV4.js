@@ -52,7 +52,7 @@ class MessengerAppV4 {
       // 3. Connect WebSocket
       if (window.MessengerSocket) {
         this.socket = new MessengerSocket(this.state);
-        this.socket.connect(this.currentUser.id || this.currentUser._id);
+        this.socket.connect(this._getCurrentUserId());
       }
 
       // 4. Load initial conversation list
@@ -96,7 +96,6 @@ class MessengerAppV4 {
     // Message composer
     const composerContainer = document.querySelector('[data-v4="composer"]');
     if (composerContainer && window.MessageComposerV4) {
-      const uid = this.currentUser.id || this.currentUser._id;
       this.composer = new MessageComposerV4(composerContainer, {
         onTyping: isTyping => this._broadcastTyping(isTyping),
         maxLength: 5000,
@@ -107,7 +106,7 @@ class MessengerAppV4 {
     const pickerContainer = document.querySelector('[data-v4="contact-picker"]');
     if (pickerContainer && window.ContactPickerV4) {
       this.contactPicker = new ContactPickerV4(pickerContainer, this.api, {
-        currentUserId: this.currentUser.id || this.currentUser._id,
+        currentUserId: this._getCurrentUserId(),
       });
     }
 
@@ -161,8 +160,9 @@ class MessengerAppV4 {
 
       // Desktop notification if conversation is not currently open
       if (conversationId !== this._activeConversationId) {
+        const uid = this._getCurrentUserId();
         const unread = this.state.conversations.reduce((sum, c) => {
-          const me = c.participants?.find(p => p.userId === (this.currentUser.id || this.currentUser._id));
+          const me = c.participants?.find(p => p.userId === uid);
           return sum + (me?.unreadCount || 0);
         }, 0);
         this.state.setUnreadCount(unread);
@@ -332,6 +332,11 @@ class MessengerAppV4 {
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  /** Returns the current user's ID string. Supports both .id and ._id fields. */
+  _getCurrentUserId() {
+    return this.currentUser?.id || this.currentUser?._id || null;
+  }
+
   async _loadCurrentUser() {
     // Try existing AuthState first (already logged in)
     if (window.AuthState?.getUser) {
@@ -355,7 +360,7 @@ class MessengerAppV4 {
       this.state.setConversations(conversations);
 
       // Set global unread count
-      const uid = this.currentUser.id || this.currentUser._id;
+      const uid = this._getCurrentUserId();
       const unread = conversations.reduce((sum, c) => {
         const me = c.participants?.find(p => p.userId === uid);
         return sum + (me?.unreadCount || 0);
