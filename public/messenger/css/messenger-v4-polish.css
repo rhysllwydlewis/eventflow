@@ -1,0 +1,716 @@
+/**
+ * Messenger v4 – Gold Standard UI/UX Polish
+ *
+ * Layered on top of /assets/css/messenger-v4.css.
+ * Imports nothing; relies on design tokens already loaded.
+ *
+ * Sections:
+ *  1.  Motion guard (prefers-reduced-motion)
+ *  2.  Page background – level-1 glass
+ *  3.  Panels – level-2 glass (sidebar / chat)
+ *  4.  Conversation list items – level-3 glass cards
+ *  5.  Selected / active / unread states
+ *  6.  Unread badge pulse
+ *  7.  Sticky date headers
+ *  8.  Message entrance animation
+ *  9.  Conversation cross-fade
+ * 10.  Scroll-to-bottom button
+ * 11.  Message bubble refinements
+ * 12.  Emoji reaction pop
+ * 13.  Read receipt transition
+ * 14.  Context menu (glass theme)
+ * 15.  Composer refinements (focus ring, loading, disabled)
+ * 16.  Emoji-picker popover
+ * 17.  Attachment preview cards
+ * 18.  Mobile slide transitions
+ * 19.  Focus-visible & accessibility
+ * 20.  High-contrast / dark-mode overrides
+ */
+
+/* ============================================================
+   1. MOTION GUARD
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  /* Override any animation/transition defined below */
+  .messenger-v4__conversation-item,
+  .messenger-v4__message,
+  .messenger-v4__unread-badge,
+  .messenger-v4__scroll-to-bottom,
+  .messenger-v4__chat,
+  .messenger-v4__sidebar,
+  .messenger-v4__reaction-pill,
+  .messenger-v4__read-receipt,
+  .messenger-v4__composer-input,
+  .messenger-v4__composer-button,
+  .messenger-v4__date-separator-text {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   2. PAGE BACKGROUND – level-1 glass
+   Subtle animated gradient matching EventFlow teal palette
+   ============================================================ */
+.messenger-v4 {
+  background:
+    linear-gradient(135deg,
+      rgba(11, 128, 115, 0.04) 0%,
+      rgba(10, 107, 95, 0.06) 40%,
+      rgba(241, 245, 249, 1) 100%);
+  background-attachment: fixed;
+}
+
+/* ============================================================
+   3. PANELS – level-2 glass
+   Sidebar and chat panel both use frosted glass treatment
+   ============================================================ */
+.messenger-v4__sidebar {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid rgba(11, 128, 115, 0.12);
+  box-shadow: 2px 0 24px rgba(11, 128, 115, 0.08);
+}
+
+.messenger-v4__chat {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+.messenger-v4__chat-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(11, 128, 115, 0.10);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(11, 128, 115, 0.06);
+}
+
+/* Sidebar header */
+.messenger-v4__sidebar-header {
+  background: rgba(255, 255, 255, 0.60);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(11, 128, 115, 0.08);
+}
+
+/* Composer area */
+.messenger-v4__composer {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-top: 1px solid rgba(11, 128, 115, 0.08);
+  box-shadow: 0 -2px 12px rgba(11, 128, 115, 0.05);
+}
+
+/* ============================================================
+   4. CONVERSATION LIST ITEMS – level-3 glass cards
+   ============================================================ */
+.messenger-v4__conversation-item {
+  border-bottom: 1px solid rgba(11, 128, 115, 0.05);
+  border-radius: 0;
+  transition:
+    background var(--messenger-transition-base, 250ms cubic-bezier(0.4, 0, 0.2, 1)),
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.messenger-v4__conversation-item:hover {
+  background: rgba(11, 128, 115, 0.06);
+  transform: translateX(3px);
+  box-shadow: inset 3px 0 0 rgba(11, 128, 115, 0.30);
+}
+
+/* Press/active state */
+.messenger-v4__conversation-item:active {
+  background: rgba(11, 128, 115, 0.10);
+  transform: translateX(2px);
+}
+
+/* ============================================================
+   5. SELECTED / ACTIVE / UNREAD STATES
+   ============================================================ */
+.messenger-v4__conversation-item--active {
+  background: rgba(11, 128, 115, 0.12) !important;
+  border-left: 3px solid var(--messenger-primary, #0B8073);
+  box-shadow: inset 0 0 0 1px rgba(11, 128, 115, 0.15);
+}
+
+.messenger-v4__conversation-item--active .messenger-v4__conversation-name {
+  color: var(--messenger-primary, #0B8073);
+}
+
+.messenger-v4__conversation-item--active .messenger-v4__message-preview {
+  color: rgba(11, 128, 115, 0.75);
+}
+
+/* Unread conversation – bolder name + slightly elevated bg */
+.messenger-v4__conversation-item--unread .messenger-v4__conversation-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.messenger-v4__conversation-item--unread .messenger-v4__message-preview {
+  font-weight: 500;
+  color: #374151;
+}
+
+.messenger-v4__conversation-item--unread {
+  background: rgba(11, 128, 115, 0.04);
+}
+
+/* Unread badge – teal, rounded */
+.messenger-v4__unread-badge {
+  background: var(--messenger-primary, #0B8073);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  padding: 0 6px;
+  box-shadow: 0 2px 6px rgba(11, 128, 115, 0.35);
+}
+
+/* ============================================================
+   6. UNREAD BADGE PULSE – triggers when JS adds .is-pulsing
+   ============================================================ */
+@keyframes mvUnreadPulse {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(11, 128, 115, 0.55); }
+  50%  { transform: scale(1.28); box-shadow: 0 0 0 8px rgba(11, 128, 115, 0);   }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(11, 128, 115, 0);   }
+}
+
+.messenger-v4__unread-badge.is-pulsing {
+  animation: mvUnreadPulse 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 2;
+}
+
+/* ============================================================
+   7. STICKY DATE HEADERS – polished pill treatment
+   ============================================================ */
+.messenger-v4__date-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  position: sticky;
+  top: 8px;
+  z-index: 10;
+}
+
+.messenger-v4__date-separator::before,
+.messenger-v4__date-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(11, 128, 115, 0.15), transparent);
+}
+
+.messenger-v4__date-separator-text {
+  display: inline-block;
+  padding: 5px 14px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(11, 128, 115, 0.14);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(11, 128, 115, 0.85);
+  box-shadow: 0 1px 4px rgba(11, 128, 115, 0.08);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   8. MESSAGE ENTRANCE ANIMATION
+   fade + slide up, applied by JS via .messenger-v4__message--fade-in
+   ============================================================ */
+@keyframes mvMsgEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.messenger-v4__message--fade-in {
+  animation: mvMsgEnter 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Received bubbles animate from lower-left origin */
+.messenger-v4__message--received.messenger-v4__message--fade-in {
+  transform-origin: bottom left;
+}
+
+/* Sent bubbles animate from lower-right origin */
+.messenger-v4__message--sent.messenger-v4__message--fade-in {
+  transform-origin: bottom right;
+}
+
+/* ============================================================
+   9. CONVERSATION SWITCH CROSS-FADE
+   JS adds .is-switching to .messenger-v4__messages then removes
+   ============================================================ */
+@keyframes mvChatFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.messenger-v4__messages.is-switching {
+  animation: mvChatFadeIn 0.18s ease-out both;
+}
+
+/* ============================================================
+   10. SCROLL-TO-BOTTOM BUTTON – polished glass pill
+   ============================================================ */
+.messenger-v4__scroll-to-bottom {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(11, 128, 115, 0.25);
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--messenger-primary, #0B8073);
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.18);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--messenger-z-dropdown, 100);
+  transition:
+    opacity 200ms ease,
+    transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 200ms ease;
+}
+
+.messenger-v4__scroll-to-bottom:hover {
+  background: var(--messenger-primary, #0B8073);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(11, 128, 115, 0.30);
+  transform: translateY(-2px);
+}
+
+.messenger-v4__scroll-to-bottom:active {
+  transform: translateY(0);
+}
+
+/* ============================================================
+   11. MESSAGE BUBBLE REFINEMENTS
+   ============================================================ */
+
+/* Sent bubble – vivid teal gradient */
+.messenger-v4__message--sent .messenger-v4__message-bubble {
+  background: linear-gradient(
+    135deg,
+    rgba(11, 128, 115, 0.90) 0%,
+    rgba(10, 107, 95, 0.97) 100%
+  );
+  box-shadow:
+    0 2px 8px rgba(11, 128, 115, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 18px;
+}
+
+/* Received bubble – light glass */
+.messenger-v4__message--received .messenger-v4__message-bubble {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  border: 1px solid rgba(11, 128, 115, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-bottom-left-radius: 4px;
+}
+
+/* Meta (time + receipt) – always visible for last message */
+.messenger-v4__message:last-child .messenger-v4__message-meta {
+  opacity: 1;
+}
+
+/* ============================================================
+   12. EMOJI REACTION POP ANIMATION
+   Triggered by JS via .is-entering class on .messenger-v4__reaction-pill
+   ============================================================ */
+@keyframes mvReactionPop {
+  0%   { transform: scale(0);    opacity: 0; }
+  60%  { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.messenger-v4__reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(11, 128, 115, 0.15);
+  border-radius: 99px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.messenger-v4__reaction-pill:hover {
+  background: rgba(11, 128, 115, 0.08);
+  border-color: rgba(11, 128, 115, 0.30);
+  transform: scale(1.08);
+}
+
+.messenger-v4__reaction-pill.is-entering {
+  animation: mvReactionPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.messenger-v4__reaction-pill--mine {
+  background: rgba(11, 128, 115, 0.12);
+  border-color: rgba(11, 128, 115, 0.35);
+}
+
+/* ============================================================
+   13. READ RECEIPT TRANSITION grey → teal
+   ============================================================ */
+.messenger-v4__read-receipt svg,
+.messenger-v4__read-receipt span {
+  transition: color 0.30s ease, opacity 0.30s ease;
+  color: rgba(107, 114, 128, 0.70);
+}
+
+.messenger-v4__read-receipt--read svg,
+.messenger-v4__read-receipt--read span {
+  color: var(--messenger-primary, #0B8073);
+}
+
+/* ============================================================
+   14. CONTEXT MENU – glass theme
+   ============================================================ */
+.messenger-v4__context-menu {
+  position: absolute;
+  z-index: var(--messenger-z-dropdown, 100);
+  min-width: 160px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(11, 128, 115, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(11, 128, 115, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  padding: 4px 0;
+}
+
+@keyframes mvContextMenuIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.messenger-v4__context-menu.is-entering {
+  animation: mvContextMenuIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: top left;
+}
+
+.messenger-v4__context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.messenger-v4__context-menu-item:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: var(--messenger-primary, #0B8073);
+}
+
+.messenger-v4__context-menu-item--danger {
+  color: #ef4444;
+}
+
+.messenger-v4__context-menu-item--danger:hover {
+  background: rgba(239, 68, 68, 0.06);
+  color: #dc2626;
+}
+
+/* ============================================================
+   15. COMPOSER REFINEMENTS
+   ============================================================ */
+
+/* Premium focus ring */
+.messenger-v4__composer-input:focus {
+  outline: none;
+  border-color: var(--messenger-primary, #0B8073);
+  box-shadow:
+    0 0 0 3px rgba(11, 128, 115, 0.14),
+    0 1px 4px rgba(11, 128, 115, 0.10);
+}
+
+/* Placeholder text */
+.messenger-v4__composer-input::placeholder {
+  color: rgba(107, 114, 128, 0.65);
+}
+
+/* Disabled / loading state */
+.messenger-v4__composer-input:disabled {
+  background: rgba(243, 244, 246, 0.80);
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Send button loading spinner */
+@keyframes mvSendSpin {
+  to { transform: rotate(360deg); }
+}
+
+.messenger-v4__send-button--loading {
+  pointer-events: none;
+  opacity: 0.75;
+  position: relative;
+}
+
+.messenger-v4__send-button--loading::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: mvSendSpin 0.6s linear infinite;
+}
+
+/* Char count warning */
+.messenger-v4__char-count {
+  font-size: 11px;
+  color: rgba(107, 114, 128, 0.70);
+  transition: color 200ms ease;
+}
+
+.messenger-v4__char-count--warning {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* Composer error banner */
+.messenger-v4__composer-error {
+  margin: 0 0 8px;
+  padding: 8px 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.20);
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+/* ============================================================
+   16. EMOJI-PICKER POPOVER – glass panel
+   ============================================================ */
+.messenger-v4__emoji-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: var(--messenger-z-dropdown, 100);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(11, 128, 115, 0.14);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(11, 128, 115, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+  min-width: 240px;
+}
+
+@keyframes mvPopoverIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.messenger-v4__emoji-popover.is-entering {
+  animation: mvPopoverIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.messenger-v4__emoji-popover .messenger-emoji-picker__item {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.messenger-v4__emoji-popover .messenger-emoji-picker__item:hover {
+  background: rgba(11, 128, 115, 0.08);
+  border-color: rgba(11, 128, 115, 0.20);
+  transform: scale(1.12);
+}
+
+/* ============================================================
+   17. ATTACHMENT PREVIEW CARDS
+   ============================================================ */
+.messenger-v4__attachment-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px var(--messenger-space-lg, 16px) 0;
+}
+
+.messenger-v4__attachment-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(11, 128, 115, 0.16);
+  border-radius: 10px;
+  font-size: 13px;
+  color: #374151;
+  max-width: 200px;
+  box-shadow: 0 1px 4px rgba(11, 128, 115, 0.08);
+}
+
+.messenger-v4__attachment-card-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messenger-v4__attachment-card-remove {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.messenger-v4__attachment-card-remove:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ============================================================
+   18. MOBILE SLIDE TRANSITIONS (≤767px)
+   JS adds .is-entering / .is-leaving via handleMobilePanel()
+   ============================================================ */
+@media (max-width: 767px) {
+  .messenger-v4__sidebar,
+  .messenger-v4__chat {
+    /* allow CSS animations rather than instant display toggling */
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  @keyframes mvSlideInRight {
+    from { transform: translateX(100%); opacity: 0.8; }
+    to   { transform: translateX(0);    opacity: 1;   }
+  }
+
+  @keyframes mvSlideOutLeft {
+    from { transform: translateX(0);     opacity: 1;   }
+    to   { transform: translateX(-30%);  opacity: 0;   }
+  }
+
+  @keyframes mvSlideInLeft {
+    from { transform: translateX(-30%);  opacity: 0.8; }
+    to   { transform: translateX(0);     opacity: 1;   }
+  }
+
+  @keyframes mvSlideOutRight {
+    from { transform: translateX(0);     opacity: 1;   }
+    to   { transform: translateX(100%);  opacity: 0;   }
+  }
+
+  .messenger-v4__chat.is-entering {
+    animation: mvSlideInRight 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .messenger-v4__sidebar.is-entering {
+    animation: mvSlideInLeft 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .messenger-v4__chat.is-leaving {
+    animation: mvSlideOutRight 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .messenger-v4__sidebar.is-leaving {
+    animation: mvSlideOutLeft 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  /* Ensure touch target minimum 44×44px (WCAG 2.5.5) */
+  .messenger-v4__composer-button,
+  .messenger-v4__action-button,
+  .messenger-v4__filter-tab {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* ============================================================
+   19. FOCUS-VISIBLE & ACCESSIBILITY
+   ============================================================ */
+.messenger-v4__conversation-item:focus-visible {
+  outline: 2px solid var(--messenger-primary, #0B8073);
+  outline-offset: -2px;
+  background: rgba(11, 128, 115, 0.08);
+}
+
+.messenger-v4__action-button:focus-visible,
+.messenger-v4__composer-button:focus-visible,
+.messenger-v4__send-button:focus-visible,
+.messenger-v4__filter-tab:focus-visible,
+.messenger-v4__scroll-to-bottom:focus-visible,
+.messenger-v4__empty-cta:focus-visible {
+  outline: 2px solid var(--messenger-primary, #0B8073);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(11, 128, 115, 0.14);
+}
+
+.messenger-v4__composer-input:focus-visible {
+  outline: none; /* handled by :focus above */
+}
+
+/* Load-more spinner */
+.messenger-v4__load-more-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: rgba(107, 114, 128, 0.70);
+  font-size: 13px;
+}
+
+/* ============================================================
+   20. HIGH-CONTRAST & DARK-MODE OVERRIDES
+   ============================================================ */
+@media (prefers-contrast: high) {
+  .messenger-v4__conversation-item--active {
+    outline: 2px solid var(--messenger-primary, #0B8073);
+    outline-offset: -2px;
+  }
+
+  .messenger-v4__message--sent .messenger-v4__message-bubble {
+    border: 2px solid #fff;
+  }
+
+  .messenger-v4__message--received .messenger-v4__message-bubble {
+    border: 2px solid currentColor;
+  }
+
+  .messenger-v4__date-separator-text {
+    border-width: 2px;
+  }
+}

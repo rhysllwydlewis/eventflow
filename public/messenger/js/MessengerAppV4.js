@@ -292,12 +292,37 @@ class MessengerAppV4 {
     const chat = document.querySelector('[data-v4="chat-panel"]');
     if (!sidebar || !chat) return;
 
+    // Use CSS slide animations unless the user prefers reduced motion.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     if (panel === 'chat') {
-      sidebar.style.display = 'none';
-      chat.style.display = '';
+      if (reduced) {
+        sidebar.style.display = 'none';
+        chat.style.display = '';
+      } else {
+        sidebar.classList.add('is-leaving');
+        chat.style.display = '';
+        chat.classList.add('is-entering');
+        setTimeout(() => {
+          sidebar.style.display = 'none';
+          sidebar.classList.remove('is-leaving');
+          chat.classList.remove('is-entering');
+        }, 260);
+      }
     } else {
-      sidebar.style.display = '';
-      chat.style.display = 'none';
+      if (reduced) {
+        sidebar.style.display = '';
+        chat.style.display = 'none';
+      } else {
+        sidebar.style.display = '';
+        sidebar.classList.add('is-entering');
+        chat.classList.add('is-leaving');
+        setTimeout(() => {
+          chat.style.display = 'none';
+          chat.classList.remove('is-leaving');
+          sidebar.classList.remove('is-entering');
+        }, 260);
+      }
     }
   }
 

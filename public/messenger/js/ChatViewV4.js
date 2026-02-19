@@ -138,8 +138,12 @@ class ChatViewV4 {
     if (conv) this._renderHeader(conv);
     this.headerEl.style.display = '';
 
-    // Show loading skeleton
+    // Show loading skeleton with cross-fade
     this.messagesEl.innerHTML = this._buildMessageSkeleton();
+    this.messagesEl.classList.add('is-switching');
+    this.messagesEl.addEventListener('animationend', () => {
+      this.messagesEl.classList.remove('is-switching');
+    }, { once: true });
 
     try {
       const data = await this.api.getMessages(conversationId, { limit: 40 });

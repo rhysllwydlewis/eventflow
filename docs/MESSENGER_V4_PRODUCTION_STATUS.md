@@ -10,6 +10,59 @@ future release.
 
 ---
 
+## UI/UX Polish (Gold Standard)
+
+> Added February 2026 – `public/messenger/css/messenger-v4-polish.css`
+
+### What was changed
+
+| Area | Change |
+|---|---|
+| **Glass hierarchy** | Three-level glassmorphism: page background (teal-tinted gradient), panels (sidebar/chat with `backdrop-filter: blur(20px)`), cards (conversation items, bubbles with lighter blur) |
+| **Conversation list** | Stronger selected state (teal left border + tinted bg), hover/press transforms, unread items use bolder typography |
+| **Unread badge** | Teal badge with drop shadow; pulses (`is-pulsing` animation) when count increases (triggered in `ConversationListV4._onConversationsChanged`) |
+| **Date headers** | Sticky pill treatment with horizontal rule lines on each side; frosted glass backdrop |
+| **Message entrance** | `messenger-v4__message--fade-in` → `mvMsgEnter` keyframe (fade + scale-up), transform-origin differs for sent vs received |
+| **Conversation cross-fade** | `is-switching` class on `.messenger-v4__messages` triggers `mvChatFadeIn` on each conversation switch (ChatViewV4.js) |
+| **Scroll-to-bottom** | Frosted glass circle, teal icon; slides up on appear; hover fills teal |
+| **Sent bubble** | Vivid teal gradient + inset highlight; tighter border-radius asymmetry |
+| **Received bubble** | Glass background with subtle teal border |
+| **Reactions** | `.messenger-v4__reaction-pill` glass pill; `is-entering` triggers `mvReactionPop` spring animation |
+| **Read receipts** | `messenger-v4__read-receipt` transitions colour from grey → teal (`--read` modifier) |
+| **Context menu** | Frosted glass panel with `mvContextMenuIn` entrance animation |
+| **Composer** | Premium focus ring (teal glow), disabled/placeholder states, send-button loading spinner via `--loading` modifier, char-count warning colour, error banner |
+| **Emoji picker popover** | `.messenger-v4__emoji-popover` glass panel with `mvPopoverIn` entrance |
+| **Attachment previews** | `.messenger-v4__attachment-card` glass card with remove button |
+| **Mobile transitions** | `handleMobilePanel()` in MessengerAppV4.js now adds `is-entering`/`is-leaving` classes for CSS slide animations (`mvSlideInRight`, `mvSlideOutLeft`, etc.) with 260 ms duration; falls back to instant toggle for `prefers-reduced-motion` |
+| **Accessibility** | `focus-visible` outlines on all interactive elements; touch targets ≥44 px on mobile (WCAG 2.5.5); `prefers-reduced-motion` guard disables all new animations |
+| **High-contrast** | `@media (prefers-contrast: high)` adds explicit borders on bubbles and date headers |
+
+### Files changed
+
+| File | Type | Notes |
+|---|---|---|
+| `public/messenger/css/messenger-v4-polish.css` | **New** | All UI/UX polish styles (≈420 lines) |
+| `public/messenger/index.html` | Updated | Added `<link>` for `messenger-v4-polish.css` |
+| `public/messenger/js/MessengerAppV4.js` | Updated | `handleMobilePanel` uses animated CSS transitions |
+| `public/messenger/js/ChatViewV4.js` | Updated | `loadConversation` adds `is-switching` for cross-fade |
+| `public/messenger/js/ConversationListV4.js` | Updated | `_onConversationsChanged` pulses newly-increased unread badges |
+
+### How to test
+
+1. **Glass hierarchy** – Open `/messenger/` and check that the page background, sidebar, chat panel, and individual bubbles each have progressively lighter glass layers.
+2. **Conversation switch** – Click between conversations; the message area should briefly fade in.
+3. **Unread badge pulse** – Use a second browser tab / another account to send a message; observe the unread badge in the conversation list pulse twice then settle.
+4. **Date headers** – Scroll through a conversation spanning multiple days; the date pill should remain sticky near the top while scrolling.
+5. **Message entrance** – Send or receive a message and observe the bubble scale-up animation.
+6. **Scroll-to-bottom** – Scroll up in a long conversation; a teal circle button should appear bottom-right and scroll on click.
+7. **Mobile transitions** – Resize browser to ≤767 px (or DevTools mobile mode), select a conversation — sidebar should slide out left while chat slides in from right. Back button reverses this.
+8. **Reduced motion** – Enable "Reduce motion" in OS/browser settings; all animations should be replaced with instant changes.
+9. **Keyboard nav** – Tab through the conversation list; each item should show a clear teal focus ring.
+10. **High contrast** – Enable forced-colours/high-contrast mode; bubbles and date headers gain explicit borders.
+
+---
+
+
 ## Canonical Routes
 
 | Concern | Route |

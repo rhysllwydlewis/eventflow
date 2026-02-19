@@ -248,7 +248,28 @@ class ConversationListV4 {
   }
 
   _onConversationsChanged(conversations) {
+    // Capture previous unread counts before re-rendering so we can pulse new ones
+    const prevUnread = {};
+    this.listEl.querySelectorAll('.messenger-v4__conversation-item[data-id]').forEach(el => {
+      const badge = el.querySelector('.messenger-v4__unread-badge');
+      prevUnread[el.dataset.id] = badge ? parseInt(badge.textContent, 10) || 0 : 0;
+    });
+
     this.renderConversations(conversations || []);
+
+    // Pulse unread badges that increased
+    this.listEl.querySelectorAll('.messenger-v4__conversation-item[data-id]').forEach(el => {
+      const badge = el.querySelector('.messenger-v4__unread-badge');
+      if (!badge) return;
+      const newCount = parseInt(badge.textContent, 10) || 0;
+      if (newCount > (prevUnread[el.dataset.id] || 0)) {
+        badge.classList.remove('is-pulsing'); // reset if already running
+        // Force reflow so animation restarts
+        void badge.offsetWidth;
+        badge.classList.add('is-pulsing');
+        badge.addEventListener('animationend', () => badge.classList.remove('is-pulsing'), { once: true });
+      }
+    });
   }
 
   _onPresenceChanged() {
