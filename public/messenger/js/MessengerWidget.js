@@ -408,7 +408,7 @@
           return;
         }
 
-        const response = await fetch(`/api/v3/messenger/conversations?limit=${this.options.maxItems}`, {
+        const response = await fetch(`/api/v4/messenger/conversations?limit=${this.options.maxItems}`, {
           credentials: 'include',
           headers: {
             'Accept': 'application/json'

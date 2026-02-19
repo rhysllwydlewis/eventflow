@@ -633,8 +633,8 @@
 
       const csrfToken = await fetchCsrfToken();
       
-      // Try v3 API first
-      let threadRes = await fetch('/api/v3/messenger/conversations', {
+      // Use v4 API for conversation creation
+      let threadRes = await fetch('/api/v4/messenger/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

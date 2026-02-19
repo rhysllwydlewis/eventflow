@@ -180,7 +180,7 @@
    */
   async function fetchUnreadCount() {
     try {
-      const response = await fetch('/api/v3/messenger/conversations?unreadOnly=true&limit=100', {
+      const response = await fetch('/api/v4/messenger/conversations?unreadOnly=true&limit=100', {
         credentials: 'include',
         headers: {
           'Accept': 'application/json'
