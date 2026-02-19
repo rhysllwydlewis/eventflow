@@ -326,9 +326,10 @@ class ChatViewV4 {
 
   _formatDateLabel(date) {
     const now = new Date();
-    const diff = now - date;
-    if (diff < 86400000 && now.toDateString() === date.toDateString()) return 'Today';
-    if (diff < 172800000) return 'Yesterday';
+    if (date.toDateString() === now.toDateString()) return 'Today';
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
     return date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   }
 

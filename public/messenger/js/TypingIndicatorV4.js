@@ -52,9 +52,9 @@ class TypingIndicatorV4 {
 
     clearTimeout(this._autoHideTimer);
 
-    const safeLabel = this._escape(name ? `${name} is typing…` : 'Someone is typing…');
-    this.labelEl.textContent = name ? `${name} is typing…` : 'Someone is typing…';
-    this.indicatorEl.setAttribute('aria-label', safeLabel);
+    const label = name ? `${name} is typing…` : 'Someone is typing…';
+    this.labelEl.textContent = label;
+    this.indicatorEl.setAttribute('aria-label', label);
     this.indicatorEl.style.display = 'flex';
     this._visible = true;
 

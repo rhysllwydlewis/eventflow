@@ -6,6 +6,14 @@
 
 'use strict';
 
+// Named time constants for readability
+const _CLV4_MS = {
+  MINUTE: 60_000,
+  HOUR:   3_600_000,
+  DAY:    86_400_000,
+  WEEK:   604_800_000,
+};
+
 class ConversationListV4 {
   constructor(container, state, api, options = {}) {
     this.container = typeof container === 'string' ? document.querySelector(container) : container;
@@ -379,10 +387,10 @@ class ConversationListV4 {
     const now = new Date();
     const diff = now - d;
     if (isNaN(diff)) return '';
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-    if (diff < 604800000) return d.toLocaleDateString(undefined, { weekday: 'short' });
+    if (diff < _CLV4_MS.MINUTE) return 'Just now';
+    if (diff < _CLV4_MS.HOUR) return `${Math.floor(diff / _CLV4_MS.MINUTE)}m`;
+    if (diff < _CLV4_MS.DAY) return `${Math.floor(diff / _CLV4_MS.HOUR)}h`;
+    if (diff < _CLV4_MS.WEEK) return d.toLocaleDateString(undefined, { weekday: 'short' });
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 

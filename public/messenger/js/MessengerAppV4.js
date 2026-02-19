@@ -258,7 +258,8 @@ class MessengerAppV4 {
     this.composer?.focus();
 
     // Mark as read via API (non-blocking)
-    this.api.request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' }).catch(() => {});
+    this.api.request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' })
+      .catch(err => console.warn('[MessengerAppV4] mark-read failed:', err));
   }
 
   /**
@@ -371,12 +372,13 @@ class MessengerAppV4 {
     try {
       let sentMsg;
       if (files?.length) {
-        // Multipart upload
+        // Multipart upload (use fetch directly with FormData; api.baseUrl for the URL)
+        const baseUrl = this.api.baseUrl || '/api/v4/messenger';
         const form = new FormData();
         if (message) form.append('content', message);
         if (replyTo?._id) form.append('replyToId', replyTo._id);
         files.forEach(f => form.append('files', f));
-        const res = await fetch(`${this.api.baseUrl}/conversations/${encodeURIComponent(conversationId)}/messages`, {
+        const res = await fetch(`${baseUrl}/conversations/${encodeURIComponent(conversationId)}/messages`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'X-CSRF-Token': this.api.csrfToken },

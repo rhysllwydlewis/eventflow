@@ -363,13 +363,18 @@ class MessageComposerV4 {
     const remaining = this.options.maxFiles - this.attachedFiles.length;
     const toAdd = files.slice(0, remaining);
 
+    const oversized = [];
     toAdd.forEach(file => {
       if (file.size > this.options.maxFileSize) {
-        alert(`"${file.name}" exceeds the 10 MB limit and was not attached.`);
+        oversized.push(file.name);
         return;
       }
       this.attachedFiles.push(file);
     });
+
+    if (oversized.length) {
+      this._showInlineError(`${oversized.map(n => `"${n}"`).join(', ')} exceed${oversized.length === 1 ? 's' : ''} the 10 MB limit and ${oversized.length === 1 ? 'was' : 'were'} not attached.`);
+    }
 
     if (typeof this.options.onFileSelect === 'function') {
       this.options.onFileSelect(this.attachedFiles);
@@ -404,6 +409,21 @@ class MessageComposerV4 {
         this._updateSendButton();
       });
     });
+  }
+
+  /** Show a non-blocking inline error message that auto-dismisses after 4 s. */
+  _showInlineError(message) {
+    let errEl = this.container.querySelector('.messenger-v4__composer-error');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.className = 'messenger-v4__composer-error';
+      errEl.setAttribute('role', 'alert');
+      this.container.querySelector('.messenger-v4__composer').prepend(errEl);
+    }
+    errEl.textContent = message;
+    errEl.style.display = 'block';
+    clearTimeout(this._errorTimer);
+    this._errorTimer = setTimeout(() => { errEl.style.display = 'none'; }, 4000);
   }
 
   escape(str) {
