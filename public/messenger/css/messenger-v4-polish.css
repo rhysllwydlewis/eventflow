@@ -1333,3 +1333,489 @@
   line-height: 1;
   border-radius: 10px;
 }
+
+/* ============================================================
+   45. HEIGHT FIX
+   .messenger-v4 uses height:100vh in base CSS but the navbar
+   is 64px sticky/fixed, causing a 64px overflow. Fix to dvh.
+   Using 100dvh (dynamic viewport height) accounts for mobile
+   browser chrome (address bar, iOS toolbar).
+   ============================================================ */
+.messenger-v4 {
+  height: calc(100dvh - var(--ef-header-height, 64px));
+}
+
+/* ============================================================
+   46. MESSAGE POSITION – needed so context menu absolute-
+   positions relative to the message row, not the chat panel.
+   ============================================================ */
+.messenger-v4__message {
+  position: relative;
+}
+
+/* ============================================================
+   47. CHAT-VIEW CONTAINER – min-height:0 for correct flex
+   overflow; also clip horizontally to prevent bubble overflow.
+   (The HTML inline style has been updated to use min-height:0
+   instead of overflow:hidden to allow position:sticky headers.)
+   ============================================================ */
+[data-v4="chat-view"] {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* ============================================================
+   48. CONTACT PICKER – contact items
+   ============================================================ */
+.messenger-v4__contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.messenger-v4__contact-item:hover {
+  background: rgba(11, 128, 115, 0.06);
+}
+
+.messenger-v4__contact-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.messenger-v4__contact-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a202c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messenger-v4__contact-email {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Recent contacts label */
+.messenger-v4__recent-label {
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(107, 114, 128, 0.70);
+}
+
+/* ============================================================
+   49. CONTACT PICKER – context type selector
+   ============================================================ */
+.messenger-v4__context-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.messenger-v4__context-option {
+  padding: 6px 14px;
+  border: 1px solid rgba(11, 128, 115, 0.20);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.80);
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.messenger-v4__context-option:hover {
+  background: rgba(11, 128, 115, 0.07);
+  border-color: rgba(11, 128, 115, 0.35);
+  color: var(--messenger-primary, #0B8073);
+}
+
+.messenger-v4__context-option--active {
+  background: var(--messenger-primary, #0B8073);
+  border-color: var(--messenger-primary, #0B8073);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.28);
+}
+
+/* ============================================================
+   50. CONTEXT BANNER – inner layout elements
+   ============================================================ */
+.messenger-v4__context-banner {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.06) 0%, rgba(10, 107, 95, 0.09) 100%);
+  border-bottom: 1px solid rgba(11, 128, 115, 0.10);
+}
+
+.messenger-v4__context-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.messenger-v4__context-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.messenger-v4__context-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.messenger-v4__context-banner-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.messenger-v4__context-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.messenger-v4__context-banner-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--messenger-primary, #0B8073);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messenger-v4__context-banner-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messenger-v4__context-banner-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(11, 128, 115, 0.12);
+}
+
+.messenger-v4__context-banner-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--messenger-primary, #0B8073);
+  text-decoration: none;
+  padding: 4px 12px;
+  border: 1px solid rgba(11, 128, 115, 0.25);
+  border-radius: 99px;
+  white-space: nowrap;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.messenger-v4__context-banner-link:hover {
+  background: rgba(11, 128, 115, 0.08);
+  border-color: rgba(11, 128, 115, 0.40);
+}
+
+/* ============================================================
+   51. DATE DIVIDER (alternative class used in ConversationView)
+   ============================================================ */
+.messenger-v4__date-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(11, 128, 115, 0.75);
+}
+
+.messenger-v4__date-divider::before,
+.messenger-v4__date-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(11, 128, 115, 0.12), transparent);
+}
+
+/* ============================================================
+   52. TYPING INDICATOR – label + text variants
+   ============================================================ */
+.messenger-v4__typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+}
+
+.messenger-v4__typing-label,
+.messenger-v4__typing-text {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* ============================================================
+   53. FILE CHIP (attachment preview in composer before send)
+   ============================================================ */
+.messenger-v4__file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(11, 128, 115, 0.18);
+  border-radius: 8px;
+  font-size: 13px;
+  max-width: 180px;
+  box-shadow: 0 1px 4px rgba(11, 128, 115, 0.07);
+}
+
+.messenger-v4__file-chip-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #374151;
+}
+
+.messenger-v4__file-chip-remove {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+  border-radius: 3px;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.messenger-v4__file-chip-remove:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ============================================================
+   54. MESSAGE ACTIONS BAR + ACTION BUTTONS
+   ============================================================ */
+.messenger-v4__message-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.messenger-v4__message:hover .messenger-v4__message-actions {
+  opacity: 1;
+}
+
+.messenger-v4__message-action {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.messenger-v4__message-action:hover {
+  color: var(--messenger-primary, #0B8073);
+  background: rgba(11, 128, 115, 0.08);
+}
+
+/* ============================================================
+   55. MESSAGE REACTIONS (alternative class in ConversationView)
+   ============================================================ */
+.messenger-v4__message-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   56. MESSAGE IMAGE (inline image in chat bubble)
+   ============================================================ */
+.messenger-v4__message-image {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 10px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+
+.messenger-v4__message-image:hover {
+  opacity: 0.92;
+}
+
+/* ============================================================
+   57. MESSAGE FILE ATTACHMENT (inside bubble)
+   ============================================================ */
+.messenger-v4__message-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.messenger-v4__message-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(11, 128, 115, 0.10);
+  border-radius: 10px;
+}
+
+.messenger-v4__message-file-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.messenger-v4__message-file-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--messenger-primary, #0B8073);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messenger-v4__message-file-size {
+  font-size: 11px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+/* Sent bubble adjustments */
+.messenger-v4__message--sent .messenger-v4__message-file {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.messenger-v4__message--sent .messenger-v4__message-file-name {
+  color: #fff;
+}
+
+/* ============================================================
+   58. MESSAGE DELETED STATE
+   ============================================================ */
+.messenger-v4__message--deleted .messenger-v4__message-bubble {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.messenger-v4__message-deleted-text {
+  font-size: 14px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ============================================================
+   59. MESSAGE EDITED LABEL (alternative class)
+   ============================================================ */
+.messenger-v4__message-edited {
+  font-size: 11px;
+  color: rgba(107, 114, 128, 0.65);
+  font-style: italic;
+  margin-left: 4px;
+}
+
+.messenger-v4__message--sent .messenger-v4__message-edited {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ============================================================
+   60. MESSAGE READ RECEIPT (alternative class used in ConversationView)
+   ============================================================ */
+.messenger-v4__message-read-receipt {
+  font-size: 11px;
+  color: rgba(107, 114, 128, 0.70);
+  transition: color 0.30s ease;
+}
+
+.messenger-v4__message-read-receipt--read {
+  color: var(--messenger-primary, #0B8073);
+}
+
+/* ============================================================
+   61. MESSAGES CONTAINER / SCROLL (alternative class names)
+   ============================================================ */
+.messenger-v4__messages-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.messenger-v4__messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--messenger-space-xl, 24px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(11, 128, 115, 0.20) transparent;
+}
+
+/* ============================================================
+   62. REACTION EMOJI SPAN
+   ============================================================ */
+.messenger-v4__reaction-emoji {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ============================================================
+   63. GLOBAL LAYOUT HARDENING
+   – ensure the messenger sits flush, no body padding bleeds in.
+   body:has(.messenger-v4) is more specific than the bare `body`
+   rule that adds padding-bottom:70px for the footer nav bar,
+   so no !important is needed.
+   ============================================================ */
+body:has(.messenger-v4) {
+  /* Prevent the footer's 70px bottom padding from pushing content */
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* Ensure the whole messenger fills without gaps */
+.messenger-v4 {
+  /* Prevent iOS overscroll bounce from showing page background */
+  overscroll-behavior: contain;
+}
