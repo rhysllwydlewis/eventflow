@@ -136,7 +136,7 @@ class ContactPickerV4 {
    */
   async search(query) {
     try {
-      const data = await this.api.request(`/contacts?search=${encodeURIComponent(query)}`);
+      const data = await this.api.getContacts(query);
       const contacts = data.contacts || data || [];
       this.resultsEl.innerHTML = contacts.length
         ? contacts.map(c => this._buildContactHTML(c)).join('')

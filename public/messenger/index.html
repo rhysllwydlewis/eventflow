@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/assets/css/components.css?v=18.2.1">
   <link rel="stylesheet" href="/assets/css/messenger-v4.css?v=4.0.0">
   <link rel="stylesheet" href="/messenger/css/messenger-v4-animations.css?v=7.0.0">
+  <link rel="stylesheet" href="/messenger/css/messenger-v4-polish.css?v=1.0.0">
 
   <!-- Socket.IO -->
   <script src="/socket.io/socket.io.js" defer></script>
@@ -135,7 +136,7 @@
       <!-- ChatViewV4 mounts here — renders chat header + messages area -->
       <div
         data-v4="chat-view"
-        style="flex: 1; overflow: hidden; display: flex; flex-direction: column;"
+        style="flex: 1; min-height: 0; display: flex; flex-direction: column;"
       ></div>
 
       <!-- Typing indicator (TypingIndicatorV4 mounts here) -->

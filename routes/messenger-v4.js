@@ -175,7 +175,7 @@ router.post(
     const startMs = Date.now();
     try {
       const { type, participantIds, context, metadata } = req.body;
-      const currentUserId = req.user._id;
+      const currentUserId = req.user.id;
 
       if (!type || !Array.isArray(participantIds) || participantIds.length === 0) {
         return res.status(400).json({
@@ -187,10 +187,12 @@ router.post(
       const dbInstance = await getDbInstance();
 
       // Fetch user information for all participants
+      // Users are keyed by their string 'id' field (from JWT auth), NOT ObjectId '_id'
       const usersCollection = dbInstance.collection('users');
+      const allUserIds = [currentUserId, ...participantIds];
       const participantUsers = await usersCollection
         .find({
-          _id: { $in: [currentUserId, ...participantIds] },
+          id: { $in: allUserIds },
         })
         .toArray();
 
@@ -200,9 +202,12 @@ router.post(
         });
       }
 
-      // Build participants array
+      // Build participants array.
+      // Use the string 'id' field (consistent with JWT auth) so that all
+      // participant checks (getConversations, sendMessage, etc.) work with
+      // the string user IDs that auth middleware provides.
       const participants = participantUsers.map(user => ({
-        userId: user._id,
+        userId: user.id,
         displayName: user.displayName || user.businessName || user.email,
         avatar: user.avatar || null,
         role: user.role || 'customer',
@@ -241,7 +246,7 @@ router.post(
       messengerMetrics.increment('messenger_v4_errors_total');
       logger.error('Error creating conversation:', {
         error: error.message,
-        userId: req.user?._id,
+        userId: req.user?.id,
         durationMs: Date.now() - startMs,
         statusCode: 500,
       });
@@ -258,7 +263,7 @@ router.post(
  */
 router.get('/conversations', applyAuthRequired, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { unread, pinned, archived, search, status, limit = 50, skip = 0 } = req.query;
 
     const filters = {};
@@ -302,7 +307,7 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
 router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     const conversation = await (await getMessengerService()).getConversation(id, userId);
 
@@ -325,7 +330,7 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
 router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const updates = req.body;
 
     const conversation = await (
@@ -357,7 +362,7 @@ router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, async
 router.delete('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     await (await getMessengerService()).deleteConversation(id, userId);
 
@@ -396,12 +401,14 @@ router.post(
     try {
       const { id: conversationId } = req.params;
       const { content, type = 'text', replyTo } = req.body;
-      const userId = req.user._id;
+      const userId = req.user.id;
       const userName = req.user.displayName || req.user.businessName || req.user.email;
 
-      if (!content || content.trim().length === 0) {
+      // Allow attachment-only messages (image/file with no caption text)
+      const hasAttachments = req.files && req.files.length > 0;
+      if ((!content || content.trim().length === 0) && !hasAttachments) {
         return res.status(400).json({
-          error: 'Message content is required',
+          error: 'Message content or at least one attachment is required',
         });
       }
 
@@ -437,7 +444,7 @@ router.post(
         content,
         type,
         attachments,
-        replyTo: replyTo ? JSON.parse(replyTo) : null,
+        replyTo: replyTo ? (typeof replyTo === 'string' ? JSON.parse(replyTo) : replyTo) : null,
       };
 
       const message = await (await getMessengerService()).sendMessage(conversationId, messageData);
@@ -463,7 +470,7 @@ router.post(
           // Check if recipient is online (would need presence tracking)
           // For now, send email to all non-muted participants
           const dbInstance = await getDbInstance();
-          const recipient = await dbInstance.collection('users').findOne({ _id: recipientId });
+          const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.email) {
             const contextInfo = conversation.context?.referenceTitle
               ? ` (Re: ${conversation.context.referenceTitle})`
@@ -473,7 +480,7 @@ router.post(
               .sendMail({
                 to: recipient.email,
                 subject: `New message from ${userName}${contextInfo}`,
-                text: `${userName} sent you a message:\n\n"${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
+                text: `${userName} sent you a message:\n\n"${(content || '').substring(0, 200)}${(content || '').length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
               })
               .catch(emailError => {
                 logger.error('Failed to send email notification:', emailError);
@@ -508,7 +515,7 @@ router.post(
       const statusCode = error.message.includes('spam') ? 429 : 500;
       logger.error('Error sending message:', {
         error: error.message,
-        userId: req.user?._id,
+        userId: req.user?.id,
         conversationId: req.params.id,
         durationMs: Date.now() - startMs,
         statusCode,
@@ -527,7 +534,7 @@ router.post(
 router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { cursor, limit = 50 } = req.query;
 
     const result = await (
@@ -556,7 +563,7 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
 router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { content } = req.body;
 
     if (!content || content.trim().length === 0) {
@@ -596,20 +603,21 @@ router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req
 router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
-    const message = await (
-      await getMessengerService()
-    ).messagesCollection.findOne({
+    const svc = await getMessengerService();
+    const message = await svc.messagesCollection.findOne({
       _id: new ObjectId(id),
     });
 
-    await (await getMessengerService()).deleteMessage(id, userId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    await svc.deleteMessage(id, userId);
 
     // Emit delete event
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(message.conversationId.toString(), userId);
+    const conversation = await svc.getConversation(message.conversationId.toString(), userId);
     emitToConversation(conversation, 'messenger:v4:message-deleted', {
       messageId: id,
     });
@@ -633,7 +641,7 @@ router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (re
 router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const userName = req.user.displayName || req.user.businessName || req.user.email;
     const { emoji } = req.body;
 
@@ -676,7 +684,7 @@ router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, a
  */
 router.get('/unread-count', applyAuthRequired, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const unreadCount = await (await getMessengerService()).getUnreadCount(userId);
 
     res.json({
@@ -697,7 +705,7 @@ router.get('/unread-count', applyAuthRequired, async (req, res) => {
  */
 router.get('/contacts', applyAuthRequired, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { q: query, role, limit = 20 } = req.query;
 
     const contacts = await (
@@ -722,7 +730,7 @@ router.get('/contacts', applyAuthRequired, async (req, res) => {
  */
 router.get('/search', applyAuthRequired, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { q: query, limit = 50 } = req.query;
 
     if (!query || query.trim().length === 0) {
@@ -755,13 +763,12 @@ router.get('/search', applyAuthRequired, async (req, res) => {
 router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const userName = req.user.displayName || req.user.businessName || req.user.email;
+    // isTyping defaults to true — clients may send false to indicate they stopped typing
+    const isTyping = req.body.isTyping !== false;
 
-    // Verify user is participant
-    await (await getMessengerService()).getConversation(conversationId, userId);
-
-    // Emit typing event to other participants
+    // Fetch conversation once — verifies participant access and provides participant list
     const conversation = await (
       await getMessengerService()
     ).getConversation(conversationId, userId);
@@ -771,6 +778,7 @@ router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => 
           conversationId,
           userId,
           userName,
+          isTyping,
         });
       }
     });
@@ -793,7 +801,7 @@ router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => 
 router.post('/conversations/:id/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     await (await getMessengerService()).markAsRead(conversationId, userId);
 

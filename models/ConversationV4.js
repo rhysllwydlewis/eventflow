@@ -227,7 +227,9 @@ function validateMessage(data) {
     errors.push('senderName is required');
   }
 
-  if (!data.content || typeof data.content !== 'string' || data.content.trim().length === 0) {
+  // Content is required unless the message has attachments (attachment-only messages are valid)
+  const hasAttachments = Array.isArray(data.attachments) && data.attachments.length > 0;
+  if (!hasAttachments && (!data.content || typeof data.content !== 'string' || data.content.trim().length === 0)) {
     errors.push('content is required and must be a non-empty string');
   }
 

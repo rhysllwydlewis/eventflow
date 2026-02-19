@@ -249,11 +249,12 @@ class NotificationBridgeV4 {
   }
 
   _updateTabTitle() {
-    const base = this.options.titlePrefix;
     if (this._unreadCount > 0) {
-      document.title = `(${this._unreadCount}) ${base}`;
+      // Prefix the original page title (e.g. "Messenger | EventFlow") with unread count
+      document.title = `(${this._unreadCount}) ${this._originalTitle}`;
     } else {
-      document.title = base;
+      // Restore the original title rather than overwriting with just the prefix
+      document.title = this._originalTitle;
     }
   }
 }

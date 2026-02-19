@@ -92,13 +92,16 @@ class MessageBubbleV4 {
   static renderAttachment(attachment) {
     if (!attachment || !attachment.url) return '';
 
-    const isImage = attachment.type && attachment.type.startsWith('image/');
+    // Backend stores mimeType (not type) and filename (not name)
+    const mimeType = attachment.mimeType || attachment.type || '';
+    const fileName = attachment.filename || attachment.name || '';
+    const isImage = mimeType.startsWith('image/');
 
     if (isImage) {
       return `
         <div class="messenger-v4__attachment messenger-v4__attachment--image">
           <img src="${MessageBubbleV4.escape(attachment.url)}"
-               alt="${MessageBubbleV4.escape(attachment.name || 'Image attachment')}"
+               alt="${MessageBubbleV4.escape(fileName || 'Image attachment')}"
                loading="lazy"
                class="messenger-v4__attachment-image" />
         </div>`;
@@ -113,8 +116,8 @@ class MessageBubbleV4 {
              target="_blank"
              rel="noopener noreferrer"
              class="messenger-v4__attachment-name"
-             download="${MessageBubbleV4.escape(attachment.name || 'file')}">
-            ${MessageBubbleV4.escape(attachment.name || 'File')}
+             download="${MessageBubbleV4.escape(fileName || 'file')}">
+            ${MessageBubbleV4.escape(fileName || 'File')}
           </a>
           ${sizeLabel ? `<span class="messenger-v4__attachment-size">${MessageBubbleV4.escape(sizeLabel)}</span>` : ''}
         </div>

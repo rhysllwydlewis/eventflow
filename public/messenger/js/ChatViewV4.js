@@ -89,33 +89,71 @@ class ChatViewV4 {
     this.scrollBtn.addEventListener('click', () => this.scrollToBottom(true));
 
     // Lightbox close
-    this.container.querySelector('#v4LightboxClose').addEventListener('click', this._onLightboxClose);
+    this.container
+      .querySelector('#v4LightboxClose')
+      .addEventListener('click', this._onLightboxClose);
     this.lightbox.addEventListener('click', e => {
-      if (e.target === this.lightbox) this._onLightboxClose();
+      if (e.target === this.lightbox) {
+        this._onLightboxClose();
+      }
     });
 
     // Header action buttons
     this.container.querySelector('#v4PinBtn').addEventListener('click', () => {
       if (this.conversationId) {
-        window.dispatchEvent(new CustomEvent('messenger:pin-conversation', { detail: { id: this.conversationId } }));
+        window.dispatchEvent(
+          new CustomEvent('messenger:pin-conversation', { detail: { id: this.conversationId } })
+        );
       }
     });
     this.container.querySelector('#v4ArchiveBtn').addEventListener('click', () => {
       if (this.conversationId) {
-        window.dispatchEvent(new CustomEvent('messenger:archive-conversation', { detail: { id: this.conversationId } }));
+        window.dispatchEvent(
+          new CustomEvent('messenger:archive-conversation', { detail: { id: this.conversationId } })
+        );
       }
     });
     this.container.querySelector('#v4BackBtn').addEventListener('click', () => {
       window.dispatchEvent(new CustomEvent('messenger:mobile-back'));
     });
 
-    // Delegated click: image lightbox + context menu
+    // Delegated click: image lightbox + context menu + context menu items + reaction pills
     this.messagesEl.addEventListener('click', e => {
+      // Image lightbox
       const img = e.target.closest('.messenger-v4__attachment--image img');
-      if (img) { this._openLightbox(img.src, img.alt); return; }
+      if (img) {
+        this._openLightbox(img.src, img.alt);
+        return;
+      }
 
+      // Context menu item action
+      const menuItem = e.target.closest('.messenger-v4__context-menu-item[data-action]');
+      if (menuItem) {
+        this._handleContextMenuAction(menuItem.dataset.action, menuItem.dataset.id);
+        this._closeContextMenu();
+        return;
+      }
+
+      // Context menu open/close toggle
       const menuBtn = e.target.closest('.messenger-v4__context-menu-btn');
-      if (menuBtn) { this._showContextMenu(menuBtn); }
+      if (menuBtn) {
+        this._toggleContextMenu(menuBtn);
+        return;
+      }
+
+      // Reaction pill toggle
+      const reactionBtn = e.target.closest('.messenger-v4__reaction[data-emoji][data-message-id]');
+      if (reactionBtn) {
+        window.dispatchEvent(
+          new CustomEvent('messenger:react-message', {
+            detail: { messageId: reactionBtn.dataset.messageId, emoji: reactionBtn.dataset.emoji },
+          })
+        );
+        return;
+      }
+
+      // Click anywhere else → close any open context menu
+      this._closeContextMenu();
     });
   }
 
@@ -135,10 +173,13 @@ class ChatViewV4 {
 
     // Show header
     const conv = (this.state.conversations || []).find(c => c._id === conversationId);
-    if (conv) this._renderHeader(conv);
+    if (conv) {
+      this._renderHeader(conv);
+    }
     this.headerEl.style.display = '';
 
-    // Show loading skeleton
+    // Show loading skeleton (instant – no animation, just indicates loading)
+    this.messagesEl.classList.remove('is-switching');
     this.messagesEl.innerHTML = this._buildMessageSkeleton();
 
     try {
@@ -148,6 +189,18 @@ class ChatViewV4 {
 
       this.state.setMessages(conversationId, messages);
       this._renderMessages(messages);
+
+      // Fade-in the real content after the skeleton is replaced
+      void this.messagesEl.offsetHeight; // force reflow so animation restarts cleanly
+      this.messagesEl.classList.add('is-switching');
+      this.messagesEl.addEventListener(
+        'animationend',
+        () => {
+          this.messagesEl.classList.remove('is-switching');
+        },
+        { once: true }
+      );
+
       this.scrollToBottom();
     } catch (err) {
       console.error('[ChatViewV4] Failed to load messages:', err);
@@ -160,11 +213,21 @@ class ChatViewV4 {
    * @param {Object} msg - Message object
    */
   appendMessage(msg) {
-    if (!this.messagesEl) return;
+    if (!this.messagesEl) {
+      return;
+    }
+
+    // Deduplicate: skip if this message is already in the DOM (prevents double-display
+    // when both the API response and the WS echo arrive for the same send)
+    if (msg._id && this.messagesEl.querySelector(`[data-id="${CSS.escape(String(msg._id))}"]`)) {
+      return;
+    }
 
     // Remove empty state if present
     const emptyEl = this.messagesEl.querySelector('.messenger-v4__empty-state');
-    if (emptyEl) emptyEl.remove();
+    if (emptyEl) {
+      emptyEl.remove();
+    }
 
     const wasAtBottom = this._isAtBottom();
     const currentUser = this.state.currentUser;
@@ -173,7 +236,9 @@ class ChatViewV4 {
 
     // Date separator if new day
     const dateSep = this._maybeDateSeparator(prevMsg, msg);
-    if (dateSep) this.messagesEl.insertAdjacentHTML('beforeend', dateSep);
+    if (dateSep) {
+      this.messagesEl.insertAdjacentHTML('beforeend', dateSep);
+    }
 
     const html = MessageBubbleV4
       ? MessageBubbleV4.render(msg, currentUser?.id || currentUser?._id)
@@ -187,8 +252,11 @@ class ChatViewV4 {
       this.messagesEl.appendChild(el);
     }
 
-    if (wasAtBottom) this.scrollToBottom(true);
-    else this.scrollBtn.style.display = 'flex';
+    if (wasAtBottom) {
+      this.scrollToBottom(true);
+    } else {
+      this.scrollBtn.style.display = 'flex';
+    }
   }
 
   /**
@@ -196,7 +264,9 @@ class ChatViewV4 {
    * @param {Array} msgs - Older messages array (oldest first)
    */
   prependMessages(msgs) {
-    if (!msgs.length) return;
+    if (!msgs.length) {
+      return;
+    }
     const prevHeight = this.messagesEl.scrollHeight;
     const currentUser = this.state.currentUser;
     const uid = currentUser?.id || currentUser?._id;
@@ -204,8 +274,10 @@ class ChatViewV4 {
     let html = '';
     for (let i = 0; i < msgs.length; i++) {
       const prev = i === 0 ? null : msgs[i - 1];
-      html += (this._maybeDateSeparator(prev, msgs[i]) || '');
-      html += MessageBubbleV4 ? MessageBubbleV4.render(msgs[i], uid) : this._buildMessageHTML(msgs[i], currentUser);
+      html += this._maybeDateSeparator(prev, msgs[i]) || '';
+      html += MessageBubbleV4
+        ? MessageBubbleV4.render(msgs[i], uid)
+        : this._buildMessageHTML(msgs[i], currentUser);
     }
 
     this.messagesEl.insertAdjacentHTML('afterbegin', html);
@@ -241,13 +313,17 @@ class ChatViewV4 {
         <span class="messenger-v4__typing-dot"></span>
       </div>`;
     this.messagesEl.appendChild(el);
-    if (this._isAtBottom()) this.scrollToBottom(true);
+    if (this._isAtBottom()) {
+      this.scrollToBottom(true);
+    }
   }
 
   /** Remove the typing indicator bubble. */
   hideTyping() {
     const el = this.messagesEl.querySelector('#v4TypingBubble');
-    if (el) el.remove();
+    if (el) {
+      el.remove();
+    }
   }
 
   /** Clean up all listeners. */
@@ -268,10 +344,15 @@ class ChatViewV4 {
     const other = conv.participants?.find(p => p.userId !== uid) || {};
     const isOnline = this.state.getPresence(other.userId)?.state === 'online';
 
-    this.container.querySelector('.messenger-v4__chat-header-avatar').textContent =
-      (other.displayName || 'U').charAt(0).toUpperCase();
+    this.container.querySelector('.messenger-v4__chat-header-avatar').textContent = (
+      other.displayName || 'U'
+    )
+      .charAt(0)
+      .toUpperCase();
     this.container.querySelector('#v4ChatHeaderName').textContent = other.displayName || 'Unknown';
-    this.container.querySelector('#v4ChatHeaderStatus').textContent = isOnline ? 'Online' : 'Offline';
+    this.container.querySelector('#v4ChatHeaderStatus').textContent = isOnline
+      ? 'Online'
+      : 'Offline';
 
     const dot = this.container.querySelector('#v4HeaderPresenceDot');
     dot.classList.toggle('messenger-v4__presence-dot--online', isOnline);
@@ -295,8 +376,10 @@ class ChatViewV4 {
 
     for (let i = 0; i < messages.length; i++) {
       const prev = i === 0 ? null : messages[i - 1];
-      html += (this._maybeDateSeparator(prev, messages[i]) || '');
-      html += MessageBubbleV4 ? MessageBubbleV4.render(messages[i], uid) : this._buildMessageHTML(messages[i], currentUser);
+      html += this._maybeDateSeparator(prev, messages[i]) || '';
+      html += MessageBubbleV4
+        ? MessageBubbleV4.render(messages[i], uid)
+        : this._buildMessageHTML(messages[i], currentUser);
     }
 
     this.messagesEl.innerHTML = html;
@@ -307,12 +390,14 @@ class ChatViewV4 {
    * @returns {string|null}
    */
   _maybeDateSeparator(prevMsg, msg) {
-    const msgDate = new Date(msg.createdAt || msg.timestamp);
-    if (isNaN(msgDate)) return null;
+    const msgDate = new Date(msg.createdAt || msg.sentAt || msg.timestamp);
+    if (isNaN(msgDate)) {
+      return null;
+    }
     if (!prevMsg) {
       return this._dateSeparatorHTML(msgDate);
     }
-    const prevDate = new Date(prevMsg.createdAt || prevMsg.timestamp);
+    const prevDate = new Date(prevMsg.createdAt || prevMsg.sentAt || prevMsg.timestamp);
     if (msgDate.toDateString() !== prevDate.toDateString()) {
       return this._dateSeparatorHTML(msgDate);
     }
@@ -329,10 +414,14 @@ class ChatViewV4 {
 
   _formatDateLabel(date) {
     const now = new Date();
-    if (date.toDateString() === now.toDateString()) return 'Today';
+    if (date.toDateString() === now.toDateString()) {
+      return 'Today';
+    }
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    }
     return date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   }
 
@@ -342,7 +431,9 @@ class ChatViewV4 {
   _buildMessageHTML(msg, currentUser) {
     const uid = currentUser?.id || currentUser?._id;
     const isSent = msg.senderId === uid;
-    const time = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    const time = msg.createdAt || msg.sentAt
+      ? new Date(msg.createdAt || msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
     return `
       <div class="messenger-v4__message ${isSent ? 'messenger-v4__message--sent' : 'messenger-v4__message--received'}" data-id="${this.escape(msg._id)}">
         <div class="messenger-v4__message-content">
@@ -377,13 +468,20 @@ class ChatViewV4 {
     }
 
     // Load older messages when scrolled within 80px of top
-    if (this.messagesEl.scrollTop <= 80 && !this.isLoadingOlder && this.hasMoreMessages && this.conversationId) {
+    if (
+      this.messagesEl.scrollTop <= 80 &&
+      !this.isLoadingOlder &&
+      this.hasMoreMessages &&
+      this.conversationId
+    ) {
       await this._loadOlderMessages();
     }
   }
 
   async _loadOlderMessages() {
-    if (!this.oldestCursor) return;
+    if (!this.oldestCursor) {
+      return;
+    }
     this.isLoadingOlder = true;
 
     const loader = document.createElement('div');
@@ -392,7 +490,10 @@ class ChatViewV4 {
     this.messagesEl.prepend(loader);
 
     try {
-      const data = await this.api.getMessages(this.conversationId, { before: this.oldestCursor, limit: 30 });
+      const data = await this.api.getMessages(this.conversationId, {
+        before: this.oldestCursor,
+        limit: 30,
+      });
       const older = data.messages || data || [];
 
       loader.remove();
@@ -414,7 +515,9 @@ class ChatViewV4 {
 
   _onNewMessage(e) {
     const { message, conversationId } = e.detail || {};
-    if (!message || conversationId !== this.conversationId) return;
+    if (!message || conversationId !== this.conversationId) {
+      return;
+    }
     this.hideTyping();
     this.appendMessage(message);
   }
@@ -443,16 +546,91 @@ class ChatViewV4 {
     document.body.style.overflow = '';
   }
 
-  _showContextMenu(btn) {
-    // Context menus are handled inline by MessageBubbleV4; dispatch an event.
+  _toggleContextMenu(btn) {
     const msgEl = btn.closest('[data-id]');
-    if (msgEl) {
-      window.dispatchEvent(new CustomEvent('messenger:context-menu', { detail: { messageId: msgEl.dataset.id } }));
+    if (!msgEl) {
+      return;
+    }
+
+    // If a menu is already open on this message, close it
+    const existing = msgEl.querySelector('.messenger-v4__context-menu');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    // Close any other open menus
+    this._closeContextMenu();
+
+    const messageId = msgEl.dataset.id;
+    const isOwn = btn.dataset.isOwn === 'true';
+    const canEdit = btn.dataset.canEdit === 'true';
+
+    // Retrieve message for complete data (needed for reply)
+    const msgs = this.state ? this.state.getMessages(this.conversationId) : [];
+    const msg = msgs.find(m => String(m._id) === messageId) || { _id: messageId };
+
+    const menuHtml = MessageBubbleV4
+      ? MessageBubbleV4.renderContextMenu(msg, isOwn, canEdit)
+      : `<div class="messenger-v4__context-menu" role="menu">
+           <button class="messenger-v4__context-menu-item" data-action="copy" data-id="${this.escape(messageId)}">📋 Copy</button>
+           ${isOwn ? `<button class="messenger-v4__context-menu-item messenger-v4__context-menu-item--danger" data-action="delete" data-id="${this.escape(messageId)}">🗑️ Delete</button>` : ''}
+         </div>`;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = menuHtml;
+    const menuEl = wrapper.firstElementChild;
+    if (menuEl) {
+      msgEl.appendChild(menuEl);
+    }
+  }
+
+  _closeContextMenu() {
+    this.messagesEl.querySelectorAll('.messenger-v4__context-menu').forEach(m => m.remove());
+  }
+
+  _handleContextMenuAction(action, messageId) {
+    switch (action) {
+      case 'reply': {
+        const msgs = this.state ? this.state.getMessages(this.conversationId) : [];
+        const msg = msgs.find(m => String(m._id) === messageId);
+        if (msg) {
+          window.dispatchEvent(
+            new CustomEvent('messenger:set-reply', { detail: { message: msg } })
+          );
+        }
+        break;
+      }
+      case 'copy': {
+        const msgs = this.state ? this.state.getMessages(this.conversationId) : [];
+        const msg = msgs.find(m => String(m._id) === messageId);
+        if (msg?.content) {
+          navigator.clipboard?.writeText(msg.content).catch(() => {});
+        }
+        break;
+      }
+      case 'edit':
+        window.dispatchEvent(new CustomEvent('messenger:edit-message', { detail: { messageId } }));
+        break;
+      case 'delete':
+        window.dispatchEvent(
+          new CustomEvent('messenger:delete-message', { detail: { messageId } })
+        );
+        break;
+      case 'react':
+        window.dispatchEvent(
+          new CustomEvent('messenger:react-message', { detail: { messageId, emoji: null } })
+        );
+        break;
+      default:
+        break;
     }
   }
 
   escape(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) {
+      return '';
+    }
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

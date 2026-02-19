@@ -86,6 +86,11 @@ class MessengerState {
    */
   addMessage(conversationId, message) {
     const messages = this.messages.get(conversationId) || [];
+    // Deduplicate: skip if we already have a message with this _id (prevents double-display
+    // when the API response and the WebSocket echo both arrive for the same send)
+    if (message._id && messages.some(m => String(m._id) === String(message._id))) {
+      return;
+    }
     messages.push(message);
     this.messages.set(conversationId, messages);
     this.emit('messageAdded', { conversationId, message });
@@ -233,17 +238,17 @@ class MessengerState {
     // Apply active filter
     if (this.filters.active === 'unread') {
       filtered = filtered.filter(conv => {
-        const participant = conv.participants.find(p => p.userId === this.currentUser?.id);
+        const participant = conv.participants?.find(p => p.userId === this.currentUser?.id);
         return participant && participant.unreadCount > 0;
       });
     } else if (this.filters.active === 'pinned') {
       filtered = filtered.filter(conv => {
-        const participant = conv.participants.find(p => p.userId === this.currentUser?.id);
+        const participant = conv.participants?.find(p => p.userId === this.currentUser?.id);
         return participant && participant.isPinned;
       });
     } else if (this.filters.active === 'archived') {
       filtered = filtered.filter(conv => {
-        const participant = conv.participants.find(p => p.userId === this.currentUser?.id);
+        const participant = conv.participants?.find(p => p.userId === this.currentUser?.id);
         return participant && participant.isArchived;
       });
     }
@@ -252,7 +257,7 @@ class MessengerState {
     if (this.filters.search) {
       const searchLower = this.filters.search.toLowerCase();
       filtered = filtered.filter(conv => {
-        const otherParticipant = conv.participants.find(p => p.userId !== this.currentUser?.id);
+        const otherParticipant = conv.participants?.find(p => p.userId !== this.currentUser?.id);
         const nameMatch = otherParticipant?.displayName?.toLowerCase().includes(searchLower);
         const contentMatch = conv.lastMessage?.content?.toLowerCase().includes(searchLower);
         return nameMatch || contentMatch;

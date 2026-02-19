@@ -315,13 +315,16 @@ class MessengerV4Service {
       throw new Error(`Message validation failed: ${validationErrors.join(', ')}`);
     }
 
-    // Sanitize content
-    const sanitizedContent = contentSanitizer.sanitizeContent(messageData.content);
+    // Sanitize content. contentSanitizer.sanitizeContent() returns '' for null/undefined,
+    // but we add the || '' guard explicitly as a defensive measure for attachment-only messages.
+    const sanitizedContent = contentSanitizer.sanitizeContent(messageData.content || '');
 
-    // Check for spam
-    const spamCheck = spamDetection.checkSpam(messageData.senderId, sanitizedContent);
-    if (spamCheck.isSpam) {
-      throw new Error(`Message flagged as spam: ${spamCheck.reason}`);
+    // Check for spam only when there is text content (attachment-only messages skip text checks)
+    if (sanitizedContent.trim().length > 0) {
+      const spamCheck = spamDetection.checkSpam(messageData.senderId, sanitizedContent);
+      if (spamCheck.isSpam) {
+        throw new Error(`Message flagged as spam: ${spamCheck.reason}`);
+      }
     }
 
     // Check rate limits based on user's subscription tier
@@ -660,7 +663,8 @@ class MessengerV4Service {
   async searchContacts(currentUserId, query, filters = {}, limit = 20) {
     const usersCollection = this.db.collection('users');
     const searchQuery = {
-      _id: { $ne: currentUserId }, // Exclude current user
+      // Users are keyed by their string 'id' field (JWT auth), not MongoDB ObjectId '_id'
+      id: { $ne: currentUserId },
     };
 
     if (query) {
@@ -680,7 +684,7 @@ class MessengerV4Service {
       .find(searchQuery)
       .limit(limit)
       .project({
-        _id: 1,
+        id: 1,
         displayName: 1,
         email: 1,
         role: 1,
@@ -690,7 +694,9 @@ class MessengerV4Service {
       .toArray();
 
     return users.map(user => ({
-      userId: user._id,
+      // Use the string 'id' field (consistent with JWT auth and all participant lookups)
+      userId: user.id,
+      id: user.id,
       displayName: user.displayName || user.businessName || user.email,
       role: user.role || 'customer',
       avatar: user.avatar || null,
@@ -725,7 +731,7 @@ class MessengerV4Service {
       .limit(limit)
       .toArray();
 
-    // Enrich with conversation data
+    // Enrich with conversation data (guard against hard-deleted conversations)
     const enrichedMessages = await Promise.all(
       messages.map(async msg => {
         const conv = await this.conversationsCollection.findOne({
@@ -733,11 +739,13 @@ class MessengerV4Service {
         });
         return {
           ...msg,
-          conversation: {
-            _id: conv._id,
-            type: conv.type,
-            participants: conv.participants,
-          },
+          conversation: conv
+            ? {
+                _id: conv._id,
+                type: conv.type,
+                participants: conv.participants,
+              }
+            : null,
         };
       })
     );
@@ -753,7 +761,7 @@ class MessengerV4Service {
   async checkRateLimit(userId) {
     // Get user's subscription tier
     const usersCollection = this.db.collection('users');
-    const user = await usersCollection.findOne({ _id: userId });
+    const user = await usersCollection.findOne({ id: userId });
 
     const tier = user?.subscriptionTier || 'free';
     const limits = messagingLimits[tier] || messagingLimits.free;

@@ -69,7 +69,6 @@ class MessengerAppV4 {
 
       // 8. Request notification permission (non-blocking)
       this.notificationBridge?.requestPermission();
-
     } catch (err) {
       console.error('[MessengerAppV4] init failed:', err);
       this._showGlobalError('Failed to load messenger. Please refresh the page.');
@@ -139,13 +138,17 @@ class MessengerAppV4 {
     // Conversation selected (from list or deep link)
     window.addEventListener('messenger:conversation-selected', e => {
       const { id } = e.detail || {};
-      if (id) this.selectConversation(id);
+      if (id) {
+        this.selectConversation(id);
+      }
     });
 
     // New message from socket
     window.addEventListener('messenger:new-message', e => {
       const { message, conversationId } = e.detail || {};
-      if (!message) return;
+      if (!message) {
+        return;
+      }
 
       // Update state
       this.state.addMessage(conversationId, message);
@@ -166,7 +169,9 @@ class MessengerAppV4 {
           return sum + (me?.unreadCount || 0);
         }, 0);
         this.state.setUnreadCount(unread);
-        window.dispatchEvent(new CustomEvent('messenger:unread-count', { detail: { count: unread } }));
+        window.dispatchEvent(
+          new CustomEvent('messenger:unread-count', { detail: { count: unread } })
+        );
 
         this.notificationBridge?.notify(
           message.senderName || 'New message',
@@ -179,19 +184,32 @@ class MessengerAppV4 {
     // Composer send
     window.addEventListener('composer:send', async e => {
       const { message, files, replyTo, conversationId } = e.detail || {};
-      await this._sendMessage({ message, files, replyTo, conversationId: conversationId || this._activeConversationId });
+      await this._sendMessage({
+        message,
+        files,
+        replyTo,
+        conversationId: conversationId || this._activeConversationId,
+      });
     });
 
     // Contact picker selected → create conversation
     window.addEventListener('contactpicker:selected', async e => {
       const { contact, context } = e.detail || {};
-      if (contact) await this.createConversation([contact._id || contact.id], context);
+      if (contact) {
+        await this.createConversation([contact._id || contact.id], context);
+      }
     });
 
-    // Typing events
+    // Typing events — only react to other users' typing (from WebSocket via MessengerSocket).
+    // The local composer fires 'messenger:typing' too, but without a userId field;
+    // guard against showing the current user's own typing indicator.
     window.addEventListener('messenger:typing', e => {
-      const { conversationId, isTyping, userName } = e.detail || {};
-      if (conversationId !== this._activeConversationId) return;
+      const { conversationId, isTyping, userName, userId } = e.detail || {};
+      // Skip events with no userId — these are local composer broadcasts, not incoming WS events
+      if (!userId) return;
+      if (conversationId !== this._activeConversationId) {
+        return;
+      }
       if (isTyping) {
         this.typingIndicator?.show(userName || '');
         this.chatView?.showTyping(userName || '');
@@ -204,11 +222,15 @@ class MessengerAppV4 {
     // Pin/archive from list or chat header
     window.addEventListener('messenger:pin-conversation', async e => {
       const { id } = e.detail || {};
-      if (id) await this._togglePin(id);
+      if (id) {
+        await this._togglePin(id);
+      }
     });
     window.addEventListener('messenger:archive-conversation', async e => {
       const { id } = e.detail || {};
-      if (id) await this._toggleArchive(id);
+      if (id) {
+        await this._toggleArchive(id);
+      }
     });
 
     // Open contact picker
@@ -222,6 +244,142 @@ class MessengerAppV4 {
       const count = e.detail?.count ?? e.detail ?? 0;
       this.notificationBridge?.setUnreadCount(count);
     });
+
+    // New conversation arrived via WebSocket (e.g., marketplace enquiry from another user)
+    window.addEventListener('messenger:new-conversation', e => {
+      const { conversation } = e.detail || {};
+      if (conversation) {
+        this.state.updateConversation(conversation);
+      }
+    });
+
+    // Real-time message edit from another user's session
+    window.addEventListener('messenger:message-edited', e => {
+      const { messageId, content, editedAt } = e.detail || {};
+      // Only update if we have a messageId and valid content from the server
+      if (!messageId || !content || !this._activeConversationId) return;
+      this.state.updateMessage(this._activeConversationId, messageId, { content, isEdited: true, editedAt });
+      // Patch the DOM bubble text if it's visible — use textContent (never innerHTML) to prevent XSS
+      const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+      if (el) {
+        const textEl = el.querySelector('.messenger-v4__message-text');
+        if (textEl) textEl.textContent = content;
+        // Add "(edited)" label if not already present; use createTextNode to stay safe
+        if (!el.querySelector('.messenger-v4__edited-label')) {
+          const bubble = el.querySelector('.messenger-v4__message-bubble');
+          if (bubble) {
+            const span = document.createElement('span');
+            span.className = 'messenger-v4__edited-label';
+            span.setAttribute('aria-label', 'Edited');
+            span.textContent = '(edited)';
+            bubble.appendChild(span);
+          }
+        }
+      }
+    });
+
+    // Real-time message delete from another user's session
+    window.addEventListener('messenger:message-deleted', e => {
+      const { messageId } = e.detail || {};
+      if (messageId && this._activeConversationId) {
+        this.state.deleteMessage(this._activeConversationId, messageId);
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el) el.remove();
+      }
+    });
+
+    // Real-time reaction update from another user's session
+    window.addEventListener('messenger:reaction-updated', e => {
+      const { messageId, reactions } = e.detail || {};
+      if (messageId && this._activeConversationId) {
+        this.state.updateMessage(this._activeConversationId, messageId, { reactions: reactions || [] });
+        // Re-render the reactions bar in the DOM.
+        // MessageBubbleV4.renderReactions() escapes all dynamic values (emoji, messageId, counts)
+        // via MessageBubbleV4.escape() before building the HTML string, so innerHTML is safe here.
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el && window.MessageBubbleV4) {
+          const existing = el.querySelector('.messenger-v4__reactions-bar');
+          if (existing) existing.remove();
+          if (reactions?.length) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = window.MessageBubbleV4.renderReactions(reactions, messageId);
+            const bar = tmp.firstElementChild;
+            if (bar) el.querySelector('.messenger-v4__message-content')?.appendChild(bar);
+          }
+        }
+      }
+    });
+
+    // Conversation updated by another participant (pin/archive/mute change from WS)
+    window.addEventListener('messenger:conversation-updated', e => {
+      const { conversationId, updates } = e.detail || {};
+      if (!conversationId || !updates) return;
+      const conv = this.state.conversations.find(c => c._id === conversationId);
+      if (conv) {
+        this.state.updateConversation({ ...conv, ...updates });
+      }
+    });
+
+    // Read receipt: another participant read the conversation → update sent message tick colours
+    window.addEventListener('messenger:conversation-read', e => {
+      const { conversationId, userId } = e.detail || {};
+      if (!conversationId || conversationId !== this._activeConversationId) return;
+      const uid = this._getCurrentUserId();
+      // Only react when a different user (the recipient) has read — not our own echo
+      if (userId === uid || !this.chatView?.messagesEl) return;
+      this.chatView.messagesEl
+        .querySelectorAll('.messenger-v4__message--sent .messenger-v4__read-receipt')
+        .forEach(el => {
+          el.textContent = '✓✓';
+          el.classList.add('messenger-v4__read-receipt--read');
+          el.setAttribute('aria-label', 'Read');
+          el.title = 'Read';
+        });
+    });
+
+    // WebSocket connection permanently failed — show UI error
+    window.addEventListener('messenger:connection-failed', () => {
+      this._showGlobalError(
+        'Connection lost. Real-time updates are paused — please refresh to reconnect.'
+      );
+    });
+
+    // ---- Message action events (from context menu) ----
+
+    // Reply: wire the message into the composer
+    window.addEventListener('messenger:set-reply', e => {
+      const { message } = e.detail || {};
+      if (message) {
+        this.composer?.setReplyTo(message);
+      }
+    });
+
+    // Edit a message
+    window.addEventListener('messenger:edit-message', async e => {
+      const { messageId } = e.detail || {};
+      if (!messageId) {
+        return;
+      }
+      await this._editMessage(messageId);
+    });
+
+    // Delete a message
+    window.addEventListener('messenger:delete-message', async e => {
+      const { messageId } = e.detail || {};
+      if (!messageId) {
+        return;
+      }
+      await this._deleteMessage(messageId);
+    });
+
+    // Toggle emoji reaction
+    window.addEventListener('messenger:react-message', async e => {
+      const { messageId, emoji } = e.detail || {};
+      if (!messageId) {
+        return;
+      }
+      await this._reactToMessage(messageId, emoji);
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -233,15 +391,28 @@ class MessengerAppV4 {
    * @param {string} id - Conversation ID
    */
   async selectConversation(id) {
-    if (this._activeConversationId === id) return;
+    if (this._activeConversationId === id) {
+      return;
+    }
+
+    // Leave previous WebSocket room, join the new one
+    const prevId = this._activeConversationId;
+    if (prevId && prevId !== id) {
+      this.socket?.leaveConversation(prevId);
+    }
     this._activeConversationId = id;
     this.state.setActiveConversation(id);
+    this.socket?.joinConversation(id);
 
     // Update composer's conversationId
-    if (this.composer) this.composer.options.conversationId = id;
+    if (this.composer) {
+      this.composer.options.conversationId = id;
+    }
 
     // Load chat
-    if (this.chatView) await this.chatView.loadConversation(id);
+    if (this.chatView) {
+      await this.chatView.loadConversation(id);
+    }
 
     // Show context banner if applicable
     const conv = this.state.conversations.find(c => c._id === id);
@@ -252,27 +423,34 @@ class MessengerAppV4 {
     }
 
     // On mobile, switch to chat panel
-    if (window.innerWidth <= 768) this.handleMobilePanel('chat');
+    if (window.innerWidth <= 768) {
+      this.handleMobilePanel('chat');
+    }
 
     // Focus composer
     this.composer?.focus();
 
     // Mark as read via API (non-blocking)
-    this.api.request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' })
+    this.api
+      .request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' })
       .catch(err => console.warn('[MessengerAppV4] mark-read failed:', err));
   }
 
   /**
    * Create a new conversation with given participant IDs.
    * @param {string[]} participantIds
-   * @param {string} context - 'direct' | 'package' | 'marketplace'
+   * @param {string|Object} contextOrType - conversation type string ('direct'|'marketplace'|...)
+   *   or a context object with a .type property. Backend requires `type` to be set.
    */
-  async createConversation(participantIds, context = 'direct') {
+  async createConversation(participantIds, contextOrType = 'direct') {
     try {
-      const data = await this.api.request('/conversations', {
-        method: 'POST',
-        body: JSON.stringify({ participantIds, context }),
-      });
+      // Normalise: accept either a plain type string or a context object
+      const type =
+        typeof contextOrType === 'string' ? contextOrType : contextOrType?.type || 'direct';
+      const context = typeof contextOrType === 'object' ? contextOrType : null;
+
+      // Use MessengerAPI.createConversation which constructs the correct request body
+      const data = await this.api.createConversation({ type, participantIds, context });
       const conv = data.conversation || data;
       if (conv?._id) {
         this.state.updateConversation(conv);
@@ -290,14 +468,41 @@ class MessengerAppV4 {
   handleMobilePanel(panel) {
     const sidebar = document.querySelector('[data-v4="sidebar"]');
     const chat = document.querySelector('[data-v4="chat-panel"]');
-    if (!sidebar || !chat) return;
+    if (!sidebar || !chat) {
+      return;
+    }
+
+    // Use CSS slide animations unless the user prefers reduced motion.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (panel === 'chat') {
-      sidebar.style.display = 'none';
-      chat.style.display = '';
+      if (reduced) {
+        sidebar.style.display = 'none';
+        chat.style.display = 'flex';
+      } else {
+        sidebar.classList.add('is-leaving');
+        chat.style.display = 'flex';
+        chat.classList.add('is-entering');
+        setTimeout(() => {
+          sidebar.style.display = 'none';
+          sidebar.classList.remove('is-leaving');
+          chat.classList.remove('is-entering');
+        }, 260);
+      }
     } else {
-      sidebar.style.display = '';
-      chat.style.display = 'none';
+      if (reduced) {
+        sidebar.style.display = '';
+        chat.style.display = 'none';
+      } else {
+        sidebar.style.display = '';
+        sidebar.classList.add('is-entering');
+        chat.classList.add('is-leaving');
+        setTimeout(() => {
+          chat.style.display = 'none';
+          chat.classList.remove('is-leaving');
+          sidebar.classList.remove('is-entering');
+        }, 260);
+      }
     }
   }
 
@@ -338,13 +543,19 @@ class MessengerAppV4 {
   }
 
   async _loadCurrentUser() {
-    // Try existing AuthState first (already logged in)
-    if (window.AuthState?.getUser) {
-      const user = AuthState.getUser();
+    // Try AuthStateManager first (primary, set by auth-state.js)
+    if (window.AuthStateManager?.isAuthenticated?.()) {
+      const user = window.AuthStateManager.getUser();
       if (user) return user;
     }
 
-    // Fallback to API
+    // Legacy fallback: AuthState
+    if (window.AuthState?.getUser) {
+      const user = window.AuthState.getUser();
+      if (user) return user;
+    }
+
+    // Final fallback: fetch from API
     try {
       const data = await fetch('/api/v1/auth/me', { credentials: 'include' }).then(r => r.json());
       return data.user || data || null;
@@ -366,36 +577,38 @@ class MessengerAppV4 {
         return sum + (me?.unreadCount || 0);
       }, 0);
       this.state.setUnreadCount(unread);
-      window.dispatchEvent(new CustomEvent('messenger:unread-count', { detail: { count: unread } }));
+      window.dispatchEvent(
+        new CustomEvent('messenger:unread-count', { detail: { count: unread } })
+      );
     } catch (err) {
       console.error('[MessengerAppV4] Failed to load conversations:', err);
     }
   }
 
   async _sendMessage({ message, files, replyTo, conversationId }) {
-    if (!conversationId) return;
+    if (!conversationId) {
+      return;
+    }
     try {
       let sentMsg;
       if (files?.length) {
-        // Multipart upload (use fetch directly with FormData; api.baseUrl for the URL)
-        const baseUrl = this.api.baseUrl || '/api/v4/messenger';
-        const form = new FormData();
-        if (message) form.append('content', message);
-        if (replyTo?._id) form.append('replyToId', replyTo._id);
-        files.forEach(f => form.append('files', f));
-        const res = await fetch(`${baseUrl}/conversations/${encodeURIComponent(conversationId)}/messages`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'X-CSRF-Token': this.api.csrfToken },
-          body: form,
-        });
-        const data = await res.json();
+        // Multipart upload – delegate entirely to MessengerAPI.sendMessage so field
+        // names stay consistent.  api.sendMessage(id, content, attachments, replyToId)
+        const data = await this.api.sendMessage(
+          conversationId,
+          message || '',
+          files,
+          replyTo?._id || null
+        );
         sentMsg = data.message || data;
       } else {
-        const data = await this.api.sendMessage(conversationId, {
-          content: message,
-          replyToId: replyTo?._id,
-        });
+        // Text-only – pass content string and optional replyToId
+        const data = await this.api.sendMessage(
+          conversationId,
+          message || '',
+          [],
+          replyTo?._id || null
+        );
         sentMsg = data.message || data;
       }
 
@@ -410,7 +623,15 @@ class MessengerAppV4 {
 
   async _togglePin(conversationId) {
     try {
-      await this.api.request(`/conversations/${encodeURIComponent(conversationId)}/pin`, { method: 'POST' });
+      // No dedicated /pin endpoint; backend uses PATCH /conversations/:id with body
+      const uid = this._getCurrentUserId();
+      if (!uid) {
+        return;
+      }
+      const conv = this.state.conversations.find(c => c._id === conversationId);
+      const me = conv?.participants?.find(p => p.userId === uid);
+      const newPinned = !(me?.isPinned || false);
+      await this.api.updateConversation(conversationId, { isPinned: newPinned });
       await this._loadConversations();
     } catch (err) {
       console.error('[MessengerAppV4] Pin failed:', err);
@@ -419,17 +640,142 @@ class MessengerAppV4 {
 
   async _toggleArchive(conversationId) {
     try {
-      await this.api.request(`/conversations/${encodeURIComponent(conversationId)}/archive`, { method: 'POST' });
+      // No dedicated /archive endpoint; backend uses PATCH /conversations/:id with body
+      const uid = this._getCurrentUserId();
+      if (!uid) {
+        return;
+      }
+      const conv = this.state.conversations.find(c => c._id === conversationId);
+      const me = conv?.participants?.find(p => p.userId === uid);
+      const newArchived = !(me?.isArchived || false);
+      await this.api.updateConversation(conversationId, { isArchived: newArchived });
       await this._loadConversations();
     } catch (err) {
       console.error('[MessengerAppV4] Archive failed:', err);
     }
   }
 
-  _broadcastTyping(isTyping) {
-    if (!this._activeConversationId || !this.socket) return;
+  async _editMessage(messageId) {
     try {
-      this.socket.emit?.('typing', { conversationId: this._activeConversationId, isTyping });
+      // Use MessengerModals if available; fall back to a simple prompt
+      const msgs = this.state.getMessages(this._activeConversationId) || [];
+      const msg = msgs.find(m => String(m._id) === messageId);
+      const currentContent = msg?.content || '';
+
+      let newContent;
+      if (window.MessengerModals && typeof window.MessengerModals.showEdit === 'function') {
+        newContent = await window.MessengerModals.showEdit(currentContent);
+      } else {
+        // eslint-disable-next-line no-alert
+        newContent = window.prompt('Edit message:', currentContent);
+      }
+
+      if (!newContent || newContent.trim() === currentContent.trim()) {
+        return;
+      }
+
+      const data = await this.api.editMessage(messageId, newContent.trim());
+      const updated = data.message || data;
+      if (updated) {
+        this.state.updateMessage(this._activeConversationId, messageId, updated);
+        // Re-render the message bubble in the DOM
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el && window.MessageBubbleV4) {
+          const uid = this._getCurrentUserId();
+        // MessageBubbleV4.render() escapes all user-supplied content (message text, senderName,
+        // attachments, reactions) via MessageBubbleV4.escape() before producing HTML.
+        // innerHTML is therefore safe — it receives only factory-escaped output.
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = window.MessageBubbleV4.render(updated, uid);
+          el.replaceWith(wrapper.firstElementChild);
+        }
+      }
+    } catch (err) {
+      console.error('[MessengerAppV4] Edit message failed:', err);
+    }
+  }
+
+  async _deleteMessage(messageId) {
+    try {
+      const confirmed =
+        window.MessengerModals && typeof window.MessengerModals.showDelete === 'function'
+          ? await window.MessengerModals.showDelete()
+          : // eslint-disable-next-line no-alert
+            window.confirm('Delete this message?');
+
+      if (!confirmed) {
+        return;
+      }
+
+      await this.api.deleteMessage(messageId);
+      this.state.deleteMessage(this._activeConversationId, messageId);
+      // Remove from DOM
+      const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+      if (el) {
+        el.remove();
+      }
+    } catch (err) {
+      console.error('[MessengerAppV4] Delete message failed:', err);
+    }
+  }
+
+  async _reactToMessage(messageId, emoji) {
+    try {
+      // If no emoji provided, prompt via MessengerModals or a simple picker
+      let resolvedEmoji = emoji;
+      if (!resolvedEmoji) {
+        if (
+          window.MessengerModals &&
+          typeof window.MessengerModals.showEmojiPicker === 'function'
+        ) {
+          resolvedEmoji = await window.MessengerModals.showEmojiPicker();
+        } else {
+          // eslint-disable-next-line no-alert
+          resolvedEmoji = window.prompt('Enter emoji to react with (e.g. 👍):');
+        }
+      }
+      if (!resolvedEmoji) {
+        return;
+      }
+
+      const data = await this.api.toggleReaction(messageId, resolvedEmoji);
+      const updated = data.message || data;
+      if (updated) {
+        // Replace the reactions array from the server response (authoritative)
+        this.state.updateMessage(this._activeConversationId, messageId, {
+          reactions: updated.reactions || [],
+        });
+        // Re-render only the reactions bar
+        const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
+        if (el && window.MessageBubbleV4) {
+          const reactBar = el.querySelector('.messenger-v4__reactions-bar');
+          if (reactBar) {
+            reactBar.remove();
+          }
+          if (updated.reactions?.length) {
+            const newBar = document.createElement('div');
+            // renderReactions escapes all values via MessageBubbleV4.escape() — innerHTML is safe.
+            newBar.innerHTML = window.MessageBubbleV4.renderReactions(updated.reactions, messageId);
+            el.querySelector('.messenger-v4__message-content')?.appendChild(
+              newBar.firstElementChild
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[MessengerAppV4] React to message failed:', err);
+    }
+  }
+
+  _broadcastTyping(isTyping) {
+    if (!this._activeConversationId || !this.socket) {
+      return;
+    }
+    try {
+      // Pass the current user's display name so recipients can show it in the typing indicator
+      const userName = this.currentUser?.displayName || this.currentUser?.businessName || '';
+      // MessengerSocket.sendTyping() emits the correct v4 socket event
+      this.socket.sendTyping(this._activeConversationId, isTyping, userName);
     } catch {
       // Socket may not be connected
     }
@@ -450,7 +796,9 @@ class MessengerAppV4 {
       }
 
       // Ignore shortcuts when typing in an input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+        return;
+      }
 
       // ArrowDown / ArrowUp: navigate conversations
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -462,7 +810,9 @@ class MessengerAppV4 {
 
   _navigateConversations(direction) {
     const convs = this.state.getFilteredConversations();
-    if (!convs.length) return;
+    if (!convs.length) {
+      return;
+    }
     const idx = convs.findIndex(c => c._id === this._activeConversationId);
     const next = idx + direction;
     if (next >= 0 && next < convs.length) {
@@ -477,8 +827,12 @@ class MessengerAppV4 {
         // Restore both panels on desktop
         const sidebar = document.querySelector('[data-v4="sidebar"]');
         const chat = document.querySelector('[data-v4="chat-panel"]');
-        if (sidebar) sidebar.style.display = '';
-        if (chat) chat.style.display = '';
+        if (sidebar) {
+          sidebar.style.display = '';
+        }
+        if (chat) {
+          chat.style.display = '';
+        }
       }
     };
     mq.addEventListener('change', handler);
@@ -486,8 +840,12 @@ class MessengerAppV4 {
 
   _showGlobalError(msg) {
     const el = document.querySelector('[data-v4="global-error"]');
-    if (el) { el.textContent = msg; el.style.display = 'block'; }
-    else console.error('[MessengerAppV4]', msg);
+    if (el) {
+      el.textContent = msg;
+      el.style.display = 'block';
+    } else {
+      console.error('[MessengerAppV4]', msg);
+    }
   }
 }
 

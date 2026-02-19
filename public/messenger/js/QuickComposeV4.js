@@ -573,7 +573,7 @@
             'Content-Type': 'application/json',
             'X-CSRF-Token': getCsrfToken(),
           },
-          body: JSON.stringify({ message: messageText }),
+          body: JSON.stringify({ content: messageText }),
         }
       );
 

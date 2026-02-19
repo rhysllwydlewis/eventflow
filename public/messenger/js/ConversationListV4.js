@@ -150,6 +150,18 @@ class ConversationListV4 {
       });
     }
 
+    // Sort by most recently updated (mirrors the API sort order; required because
+    // state.updateConversation() updates in-place without re-sorting the array)
+    filtered = filtered.slice().sort((a, b) => {
+      // Pinned conversations always float above non-pinned within the same tab
+      const meA = this._myParticipant(a, currentUser);
+      const meB = this._myParticipant(b, currentUser);
+      if (meA?.isPinned !== meB?.isPinned) return meA?.isPinned ? -1 : 1;
+      const ta = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const tb = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return tb - ta;
+    });
+
     if (!filtered.length) {
       this.renderEmpty();
       return;
@@ -176,6 +188,7 @@ class ConversationListV4 {
       clearTimeout(this.searchDebounceTimer);
       this.searchDebounceTimer = setTimeout(() => {
         this.searchQuery = e.target.value.trim();
+        this.state.setFilter('search', this.searchQuery);
         this.renderConversations(this.state.conversations || []);
       }, 300);
     });
@@ -244,11 +257,34 @@ class ConversationListV4 {
       el.classList.toggle('messenger-v4__filter-tab--active', active);
       el.setAttribute('aria-selected', active ? 'true' : 'false');
     });
+    // Keep MessengerState.filters in sync so arrow-key navigation mirrors the visible list
+    this.state.setFilter('active', tab);
     this.renderConversations(this.state.conversations || []);
   }
 
   _onConversationsChanged(conversations) {
+    // Capture previous unread counts before re-rendering so we can pulse new ones
+    const prevUnread = {};
+    this.listEl.querySelectorAll('.messenger-v4__conversation-item[data-id]').forEach(el => {
+      const badge = el.querySelector('.messenger-v4__unread-badge');
+      prevUnread[el.dataset.id] = badge ? parseInt(badge.textContent, 10) || 0 : 0;
+    });
+
     this.renderConversations(conversations || []);
+
+    // Pulse unread badges that increased
+    this.listEl.querySelectorAll('.messenger-v4__conversation-item[data-id]').forEach(el => {
+      const badge = el.querySelector('.messenger-v4__unread-badge');
+      if (!badge) return;
+      const newCount = parseInt(badge.textContent, 10) || 0;
+      if (newCount > (prevUnread[el.dataset.id] || 0)) {
+        badge.classList.remove('is-pulsing'); // reset if already running
+        // Force reflow so animation restarts
+        void badge.offsetWidth;
+        badge.classList.add('is-pulsing');
+        badge.addEventListener('animationend', () => badge.classList.remove('is-pulsing'), { once: true });
+      }
+    });
   }
 
   _onPresenceChanged() {

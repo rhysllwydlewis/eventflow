@@ -74,38 +74,31 @@ class MessengerSocket {
       window.dispatchEvent(new CustomEvent('messenger:typing', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:conversation-created', (data) => {
-      console.log('New conversation (v4):', data);
+    this.socket.on('messenger:v4:conversation-created', data => {
       window.dispatchEvent(new CustomEvent('messenger:new-conversation', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:conversation-updated', (data) => {
-      console.log('Conversation updated (v4):', data);
+    this.socket.on('messenger:v4:conversation-updated', data => {
       window.dispatchEvent(new CustomEvent('messenger:conversation-updated', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:message-edited', (data) => {
-      console.log('Message edited (v4):', data);
+    this.socket.on('messenger:v4:message-edited', data => {
       window.dispatchEvent(new CustomEvent('messenger:message-edited', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:message-deleted', (data) => {
-      console.log('Message deleted (v4):', data);
+    this.socket.on('messenger:v4:message-deleted', data => {
       window.dispatchEvent(new CustomEvent('messenger:message-deleted', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:reaction', (data) => {
-      console.log('Reaction updated (v4):', data);
+    this.socket.on('messenger:v4:reaction', data => {
       window.dispatchEvent(new CustomEvent('messenger:reaction-updated', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:read', (data) => {
-      console.log('Conversation marked as read (v4):', data);
+    this.socket.on('messenger:v4:read', data => {
       window.dispatchEvent(new CustomEvent('messenger:conversation-read', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:presence', (data) => {
-      console.log('Presence update (v4):', data);
+    this.socket.on('messenger:v4:presence', data => {
       this.state.setPresence(data.userId, data.status);
       window.dispatchEvent(new CustomEvent('messenger:presence', { detail: data }));
     });
@@ -133,12 +126,10 @@ class MessengerSocket {
    */
   joinConversation(conversationId) {
     if (!this.isConnected || !this.socket) {
-      console.warn('Cannot join conversation: not connected');
       return;
     }
 
     this.socket.emit('messenger:v4:join-conversation', { conversationId });
-    console.log('Joined v4 conversation:', conversationId);
   }
 
   /**
@@ -150,18 +141,17 @@ class MessengerSocket {
     }
 
     this.socket.emit('messenger:v4:leave-conversation', { conversationId });
-    console.log('Left v4 conversation:', conversationId);
   }
 
   /**
    * Send typing indicator
    */
-  sendTyping(conversationId, isTyping) {
+  sendTyping(conversationId, isTyping, userName) {
     if (!this.isConnected || !this.socket) {
       return;
     }
 
-    this.socket.emit('messenger:typing', { conversationId, isTyping });
+    this.socket.emit('messenger:typing', { conversationId, isTyping, userName: userName || '' });
   }
 
   /**

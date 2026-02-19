@@ -167,6 +167,28 @@ class WebSocketServerV2 {
         }
       });
 
+      // Typing indicator for messenger v4 (client → server → other participants in room)
+      socket.on('messenger:typing', data => {
+        if (!socket.userId || !data || !data.conversationId) {
+          return;
+        }
+        // Broadcast to all OTHER sockets in the conversation room.
+        // socket.to() excludes the sender automatically.
+        socket.to(`conversation:v4:${data.conversationId}`).emit('messenger:v4:typing', {
+          conversationId: data.conversationId,
+          userId: socket.userId,
+          userName: data.userName || '',
+          // Default isTyping to true — stop-typing events carry isTyping: false
+          isTyping: data.isTyping !== false,
+        });
+
+        logger.debug('Typing indicator forwarded', {
+          userId: socket.userId,
+          conversationId: data.conversationId,
+          isTyping: data.isTyping,
+        });
+      });
+
       // ===== CHAT V5 EVENT HANDLERS =====
       // Join a conversation room
       socket.on('chat:v5:join-conversation', data => {
