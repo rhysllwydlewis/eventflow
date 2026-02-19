@@ -1,6 +1,6 @@
 /**
  * Messenger API Client
- * Handles all HTTP requests to the messenger v3 API
+ * Handles all HTTP requests to the messenger v4 API
  */
 
 'use strict';

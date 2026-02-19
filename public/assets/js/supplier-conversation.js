@@ -150,7 +150,7 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
         context: {
           type: 'supplier',
           id: supplierId,
-          title: supplierName || 'Supplier',
+          title: supplierInfo?.name || 'Supplier',
         },
         metadata: {
           source: 'supplier_conversation',
