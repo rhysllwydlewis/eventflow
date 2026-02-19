@@ -526,8 +526,8 @@ class ConversationView {
     const messageEl = event.currentTarget.closest('.messenger-v4__message');
     const messageId = messageEl.dataset.messageId;
     
-    // Simple emoji picker (could be enhanced)
-    const emoji = prompt('Enter emoji:', '👍');
+    // Use custom emoji picker modal
+    const emoji = await window.MessengerModals.showEmojiPicker();
     if (emoji) {
       try {
         await this.api.toggleReaction(messageId, emoji);
@@ -547,7 +547,8 @@ class ConversationView {
     
     if (!message || message.isDeleted) return;
 
-    const newContent = prompt('Edit message:', message.content);
+    // Use custom edit modal
+    const newContent = await window.MessengerModals.showEditPrompt(message.content);
     if (newContent && newContent !== message.content) {
       try {
         await this.api.editMessage(messageId, newContent);
@@ -565,7 +566,15 @@ class ConversationView {
     const messageEl = event.currentTarget.closest('.messenger-v4__message');
     const messageId = messageEl.dataset.messageId;
     
-    if (confirm('Delete this message?')) {
+    // Use custom confirmation modal
+    const confirmed = await window.MessengerModals.showConfirm(
+      'Delete Message',
+      'Are you sure you want to delete this message? This action cannot be undone.',
+      'Delete',
+      'Cancel'
+    );
+    
+    if (confirmed) {
       try {
         await this.api.deleteMessage(messageId);
       } catch (error) {
