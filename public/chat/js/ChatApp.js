@@ -77,7 +77,7 @@ class ChatApp {
       }
 
       // Fall back to API
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/v1/auth/me', {
         credentials: 'include'
       });
 
@@ -85,7 +85,8 @@ class ChatApp {
         throw new Error('Not authenticated');
       }
 
-      this.currentUser = await response.json();
+      const data = await response.json();
+      this.currentUser = data.user || data;
 
     } catch (error) {
       console.error('Failed to load current user:', error);

@@ -47,12 +47,12 @@ class ChatView {
    * Setup DOM references
    */
   setupDOM() {
-    this.messagesContainer = this.container.querySelector('.chat-messages');
+    this.messagesContainer = this.container.querySelector('#messagesContainer');
     this.messageInput = this.container.querySelector('#messageInput');
-    this.sendButton = this.container.querySelector('#sendButton');
-    this.charCounter = this.container.querySelector('.char-counter');
-    this.scrollToBottomBtn = this.container.querySelector('.scroll-to-bottom');
-    this.typingIndicator = this.container.querySelector('.typing-indicator');
+    this.sendButton = this.container.querySelector('#sendMessageBtn');
+    this.charCounter = this.container.querySelector('#charCount');
+    this.scrollToBottomBtn = this.container.querySelector('#scrollToBottomBtn');
+    this.typingIndicator = this.container.querySelector('#typingIndicator');
   }
 
   /**

@@ -123,10 +123,19 @@ class ConversationList {
 
     // Sort by pinned first, then by last message time
     filtered.sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      const timeA = a.lastMessage?.timestamp || a.createdAt || 0;
-      const timeB = b.lastMessage?.timestamp || b.createdAt || 0;
+      const currentUser = this.chatState.getCurrentUser();
+      const currentUserId = currentUser?.userId || currentUser?.id;
+      
+      const participantA = a.participants?.find(p => p.userId === currentUserId);
+      const participantB = b.participants?.find(p => p.userId === currentUserId);
+      const aPinned = participantA?.isPinned || false;
+      const bPinned = participantB?.isPinned || false;
+      
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      
+      const timeA = a.lastMessage?.sentAt || a.updatedAt || a.createdAt || 0;
+      const timeB = b.lastMessage?.sentAt || b.updatedAt || b.createdAt || 0;
       return new Date(timeB) - new Date(timeA);
     });
 
@@ -238,34 +247,67 @@ class ConversationList {
    * @returns {string}
    */
   renderConversation(conversation) {
-    const isActive = conversation.id === this.activeConversationId;
-    const unreadBadge = conversation.unreadCount > 0 
-      ? `<span class="unread-badge">${conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}</span>` 
+    const currentUser = this.chatState.getCurrentUser();
+    const currentUserId = currentUser?.userId || currentUser?.id;
+    const conversationId = conversation._id || conversation.id;
+    
+    // Get current user's participant data
+    const participant = conversation.participants?.find(p => p.userId === currentUserId);
+    const unreadCount = participant?.unreadCount || 0;
+    const isPinned = participant?.isPinned || false;
+    
+    // Get other participant for display
+    const otherParticipant = conversation.participants?.find(p => p.userId !== currentUserId);
+    const displayName = otherParticipant?.displayName || 'Unknown';
+    const avatar = otherParticipant?.avatar;
+    
+    const isActive = conversationId === this.activeConversationId;
+    const unreadBadge = unreadCount > 0 
+      ? `<span class="unread-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>` 
       : '';
     const lastMessageText = conversation.lastMessage?.content || 'No messages yet';
-    const timestamp = this.formatTimestamp(conversation.lastMessage?.timestamp || conversation.createdAt);
-    const avatar = conversation.avatar || this.getInitialsAvatar(conversation.name);
-    const pinnedIndicator = conversation.pinned ? '<span class="pinned-indicator">📌</span>' : '';
+    const timestamp = this.formatTimestamp(conversation.lastMessage?.sentAt || conversation.updatedAt || conversation.createdAt);
+    const avatarHtml = avatar 
+      ? `<img src="${this.escapeHtml(avatar)}" alt="${this.escapeHtml(displayName)}">` 
+      : `<span>${this.getInitials(displayName)}</span>`;
+    const pinnedIndicator = isPinned ? '<span class="pinned-icon">📌</span>' : '';
+    
+    // Check if context exists to show a badge
+    const contextBadge = conversation.context 
+      ? `<span class="conversation-badge badge-context">${this.escapeHtml(conversation.context.type || 'Context')}</span>`
+      : '';
 
     return `
-      <div class="conversation-item ${isActive ? 'active' : ''}" data-conversation-id="${conversation.id}">
+      <div class="conversation-item ${isActive ? 'active' : ''} ${unreadCount > 0 ? 'unread' : ''}" data-conversation-id="${conversationId}">
+        ${pinnedIndicator}
         <div class="conversation-avatar">
-          <img src="${this.escapeHtml(avatar)}" alt="${this.escapeHtml(conversation.name)}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%239ca3af%22/><text x=%2250%%22 y=%2250%%22 font-size=%2216%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22white%22>${this.escapeHtml(conversation.name?.charAt(0) || '?')}</text></svg>'">
-          ${conversation.online ? '<span class="online-indicator"></span>' : ''}
+          ${avatarHtml}
         </div>
         <div class="conversation-content">
           <div class="conversation-header">
-            <span class="conversation-name">${this.escapeHtml(conversation.name)}</span>
+            <span class="conversation-name">${this.escapeHtml(displayName)}</span>
             <span class="conversation-time">${this.escapeHtml(timestamp)}</span>
           </div>
-          <div class="conversation-preview">
-            <span class="last-message">${this.escapeHtml(this.truncate(lastMessageText))}</span>
-            ${unreadBadge}
-            ${pinnedIndicator}
-          </div>
+          <div class="conversation-preview">${this.escapeHtml(this.truncate(lastMessageText))}</div>
+          ${contextBadge ? `<div class="conversation-badges">${contextBadge}</div>` : ''}
         </div>
+        ${unreadBadge}
       </div>
     `;
+  }
+
+  /**
+   * Get initials from name
+   * @param {string} name
+   * @returns {string}
+   */
+  getInitials(name) {
+    if (!name) return '?';
+    const words = name.trim().split(' ');
+    if (words.length === 1) {
+      return words[0].charAt(0).toUpperCase();
+    }
+    return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
   }
 
   /**
