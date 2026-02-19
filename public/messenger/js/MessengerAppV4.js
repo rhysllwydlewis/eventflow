@@ -206,7 +206,9 @@ class MessengerAppV4 {
     window.addEventListener('messenger:typing', e => {
       const { conversationId, isTyping, userName, userId } = e.detail || {};
       // Skip events with no userId — these are local composer broadcasts, not incoming WS events
-      if (!userId) return;
+      if (!userId) {
+        return;
+      }
       if (conversationId !== this._activeConversationId) {
         return;
       }
@@ -257,13 +259,21 @@ class MessengerAppV4 {
     window.addEventListener('messenger:message-edited', e => {
       const { messageId, content, editedAt } = e.detail || {};
       // Only update if we have a messageId and valid content from the server
-      if (!messageId || !content || !this._activeConversationId) return;
-      this.state.updateMessage(this._activeConversationId, messageId, { content, isEdited: true, editedAt });
+      if (!messageId || !content || !this._activeConversationId) {
+        return;
+      }
+      this.state.updateMessage(this._activeConversationId, messageId, {
+        content,
+        isEdited: true,
+        editedAt,
+      });
       // Patch the DOM bubble text if it's visible — use textContent (never innerHTML) to prevent XSS
       const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
       if (el) {
         const textEl = el.querySelector('.messenger-v4__message-text');
-        if (textEl) textEl.textContent = content;
+        if (textEl) {
+          textEl.textContent = content;
+        }
         // Add "(edited)" label if not already present; use createTextNode to stay safe
         if (!el.querySelector('.messenger-v4__edited-label')) {
           const bubble = el.querySelector('.messenger-v4__message-bubble');
@@ -284,7 +294,9 @@ class MessengerAppV4 {
       if (messageId && this._activeConversationId) {
         this.state.deleteMessage(this._activeConversationId, messageId);
         const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
-        if (el) el.remove();
+        if (el) {
+          el.remove();
+        }
       }
     });
 
@@ -292,19 +304,25 @@ class MessengerAppV4 {
     window.addEventListener('messenger:reaction-updated', e => {
       const { messageId, reactions } = e.detail || {};
       if (messageId && this._activeConversationId) {
-        this.state.updateMessage(this._activeConversationId, messageId, { reactions: reactions || [] });
+        this.state.updateMessage(this._activeConversationId, messageId, {
+          reactions: reactions || [],
+        });
         // Re-render the reactions bar in the DOM.
         // MessageBubbleV4.renderReactions() escapes all dynamic values (emoji, messageId, counts)
         // via MessageBubbleV4.escape() before building the HTML string, so innerHTML is safe here.
         const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
         if (el && window.MessageBubbleV4) {
           const existing = el.querySelector('.messenger-v4__reactions-bar');
-          if (existing) existing.remove();
+          if (existing) {
+            existing.remove();
+          }
           if (reactions?.length) {
             const tmp = document.createElement('div');
             tmp.innerHTML = window.MessageBubbleV4.renderReactions(reactions, messageId);
             const bar = tmp.firstElementChild;
-            if (bar) el.querySelector('.messenger-v4__message-content')?.appendChild(bar);
+            if (bar) {
+              el.querySelector('.messenger-v4__message-content')?.appendChild(bar);
+            }
           }
         }
       }
@@ -313,7 +331,9 @@ class MessengerAppV4 {
     // Conversation updated by another participant (pin/archive/mute change from WS)
     window.addEventListener('messenger:conversation-updated', e => {
       const { conversationId, updates } = e.detail || {};
-      if (!conversationId || !updates) return;
+      if (!conversationId || !updates) {
+        return;
+      }
       const conv = this.state.conversations.find(c => c._id === conversationId);
       if (conv) {
         this.state.updateConversation({ ...conv, ...updates });
@@ -323,10 +343,14 @@ class MessengerAppV4 {
     // Read receipt: another participant read the conversation → update sent message tick colours
     window.addEventListener('messenger:conversation-read', e => {
       const { conversationId, userId } = e.detail || {};
-      if (!conversationId || conversationId !== this._activeConversationId) return;
+      if (!conversationId || conversationId !== this._activeConversationId) {
+        return;
+      }
       const uid = this._getCurrentUserId();
       // Only react when a different user (the recipient) has read — not our own echo
-      if (userId === uid || !this.chatView?.messagesEl) return;
+      if (userId === uid || !this.chatView?.messagesEl) {
+        return;
+      }
       this.chatView.messagesEl
         .querySelectorAll('.messenger-v4__message--sent .messenger-v4__read-receipt')
         .forEach(el => {
@@ -546,13 +570,17 @@ class MessengerAppV4 {
     // Try AuthStateManager first (primary, set by auth-state.js)
     if (window.AuthStateManager?.isAuthenticated?.()) {
       const user = window.AuthStateManager.getUser();
-      if (user) return user;
+      if (user) {
+        return user;
+      }
     }
 
     // Legacy fallback: AuthState
     if (window.AuthState?.getUser) {
       const user = window.AuthState.getUser();
-      if (user) return user;
+      if (user) {
+        return user;
+      }
     }
 
     // Final fallback: fetch from API
@@ -682,11 +710,11 @@ class MessengerAppV4 {
         const el = this.chatView?.messagesEl?.querySelector(`[data-id="${CSS.escape(messageId)}"]`);
         if (el && window.MessageBubbleV4) {
           const uid = this._getCurrentUserId();
-        // MessageBubbleV4.render() escapes all user-supplied content (message text, senderName,
-        // attachments, reactions) via MessageBubbleV4.escape() before producing HTML.
-        // innerHTML is therefore safe — it receives only factory-escaped output.
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = window.MessageBubbleV4.render(updated, uid);
+          // MessageBubbleV4.render() escapes all user-supplied content (message text, senderName,
+          // attachments, reactions) via MessageBubbleV4.escape() before producing HTML.
+          // innerHTML is therefore safe — it receives only factory-escaped output.
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = window.MessageBubbleV4.render(updated, uid);
           el.replaceWith(wrapper.firstElementChild);
         }
       }

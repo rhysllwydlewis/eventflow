@@ -208,7 +208,7 @@ router.post(
       // the string user IDs that auth middleware provides.
       const participants = participantUsers.map(user => ({
         userId: user.id,
-        displayName: user.displayName || user.businessName || user.email,
+        displayName: user.displayName || user.businessName || user.name || user.firstName || 'User',
         avatar: user.avatar || null,
         role: user.role || 'customer',
       }));
@@ -402,9 +402,12 @@ router.post(
       const { id: conversationId } = req.params;
       const { content, type = 'text', replyTo } = req.body;
       const userId = req.user.id;
-      const userName = req.user.displayName || req.user.businessName || req.user.email;
-
-      // Allow attachment-only messages (image/file with no caption text)
+      const userName =
+        req.user.displayName ||
+        req.user.businessName ||
+        req.user.name ||
+        req.user.firstName ||
+        'User';
       const hasAttachments = req.files && req.files.length > 0;
       if ((!content || content.trim().length === 0) && !hasAttachments) {
         return res.status(400).json({
@@ -642,7 +645,12 @@ router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, a
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const userName = req.user.displayName || req.user.businessName || req.user.email;
+    const userName =
+      req.user.displayName ||
+      req.user.businessName ||
+      req.user.name ||
+      req.user.firstName ||
+      'User';
     const { emoji } = req.body;
 
     if (!emoji) {
@@ -764,7 +772,12 @@ router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => 
   try {
     const { id: conversationId } = req.params;
     const userId = req.user.id;
-    const userName = req.user.displayName || req.user.businessName || req.user.email;
+    const userName =
+      req.user.displayName ||
+      req.user.businessName ||
+      req.user.name ||
+      req.user.firstName ||
+      'User';
     // isTyping defaults to true — clients may send false to indicate they stopped typing
     const isTyping = req.body.isTyping !== false;
 

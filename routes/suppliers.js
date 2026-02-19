@@ -144,6 +144,7 @@ router.get('/suppliers', async (req, res) => {
     .map(s => {
       const copy = { ...s };
       delete copy._idx;
+      delete copy.email;
       return copy;
     });
 
@@ -181,6 +182,8 @@ router.get('/suppliers/:id', async (req, res) => {
       isPro: isProActive,
       proExpiresAt: sRaw.proExpiresAt || null,
     };
+    // Strip sensitive fields from public response (admins/owners get data via authenticated routes)
+    delete s.email;
 
     // Track profile view (unless preview mode)
     const isPreview = req.query.preview === 'true';
