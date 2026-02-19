@@ -30,9 +30,13 @@ class MessengerAPI {
   }
 
   /**
-   * Make authenticated request
+   * Make authenticated request with retry logic
+   * @param {string} endpoint - API endpoint
+   * @param {Object} options - Fetch options
+   * @param {number} retryCount - Number of retries (default: 0, max: 2)
+   * @returns {Promise<Object>} Response data
    */
-  async request(endpoint, options = {}) {
+  async request(endpoint, options = {}, retryCount = 0) {
     const url = `${this.baseUrl}${endpoint}`;
     const config = {
       ...options,
@@ -51,6 +55,16 @@ class MessengerAPI {
     try {
       const response = await fetch(url, config);
       
+      // Retry on 5xx errors (server issues) if not a write operation
+      if (response.status >= 500 && response.status < 600 && retryCount < 2) {
+        const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
+        if (isReadOperation) {
+          // Wait briefly before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 500));
+          return this.request(endpoint, options, retryCount + 1);
+        }
+      }
+      
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Request failed' }));
         throw new Error(error.error || error.message || 'Request failed');
@@ -58,21 +72,43 @@ class MessengerAPI {
 
       return await response.json();
     } catch (error) {
+      // Retry on network errors for read operations
+      if (error.name === 'TypeError' && retryCount < 2) {
+        const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
+        if (isReadOperation) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 500));
+          return this.request(endpoint, options, retryCount + 1);
+        }
+      }
+      
       console.error('API request failed:', error);
       throw error;
     }
   }
 
   /**
-   * Create a new conversation
+   * Create a new conversation (v4 API)
+   * @param {Object} params - Conversation parameters
+   * @param {string} params.type - Conversation type (direct, marketplace, enquiry, etc.)
+   * @param {Array<string>} params.participantIds - Array of participant user IDs
+   * @param {Object} params.context - Optional context (for package/supplier references)
+   * @param {Object} params.metadata - Optional metadata
+   * @returns {Promise<Object>} Created conversation
    */
-  async createConversation(recipientId, context = null, initialMessage = null, metadata = {}) {
+  async createConversation({ type, participantIds, context = null, metadata = {} }) {
+    if (!type) {
+      throw new Error('Conversation type is required');
+    }
+    if (!Array.isArray(participantIds) || participantIds.length === 0) {
+      throw new Error('participantIds must be a non-empty array');
+    }
+
     return this.request('/conversations', {
       method: 'POST',
       body: JSON.stringify({
-        recipientId,
+        type,
+        participantIds,
         context,
-        initialMessage,
         metadata,
       }),
     });

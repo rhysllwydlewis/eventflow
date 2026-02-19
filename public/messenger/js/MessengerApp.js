@@ -107,7 +107,21 @@ class MessengerApp {
         return;
       }
 
-      // Fallback: fetch from API
+      // Fallback: try v4 API first
+      try {
+        const response = await fetch('/api/v4/users/me', {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          this.currentUser = await response.json();
+          return;
+        }
+      } catch (v4Error) {
+        // v4 endpoint might not exist, continue to v1 fallback
+      }
+
+      // Final fallback: v1 API (for backward compatibility)
       const response = await fetch('/api/v1/me', {
         credentials: 'include',
       });

@@ -403,11 +403,47 @@ class ConversationView {
   }
 
   /**
-   * Get user avatar
+   * Get user avatar or initials
+   * @param {string} userId - User ID
+   * @returns {string} Avatar URL or initials
    */
   getAvatar(userId) {
-    // TODO: Get actual avatar from user data
+    // Try to get avatar from conversation participants
+    const conversation = this.state.getActiveConversation();
+    if (conversation && conversation.participants) {
+      const participant = conversation.participants.find(
+        p => (p.userId || p._id) === userId
+      );
+      
+      if (participant) {
+        // Return avatar URL if available
+        if (participant.avatar) {
+          return `<img src="${this.escapeHtml(participant.avatar)}" alt="Avatar" class="messenger-message__avatar-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                  <div class="messenger-message__avatar-fallback" style="display:none;">${this.getInitials(participant)}</div>`;
+        }
+        // Return initials fallback
+        return this.getInitials(participant);
+      }
+    }
+    
+    // Fallback to first character of userId
     return userId?.charAt(0)?.toUpperCase() || '?';
+  }
+
+  /**
+   * Get user initials from participant data
+   * @param {Object} participant - Participant object
+   * @returns {string} User initials
+   */
+  getInitials(participant) {
+    const displayName = participant.displayName || participant.name || '';
+    if (!displayName) return '?';
+    
+    const parts = displayName.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+    return displayName.charAt(0).toUpperCase();
   }
 
   /**
