@@ -748,8 +748,8 @@ class MessengerAppV4 {
       const currentContent = msg?.content || '';
 
       let newContent;
-      if (window.MessengerModals && typeof window.MessengerModals.showEdit === 'function') {
-        newContent = await window.MessengerModals.showEdit(currentContent);
+      if (window.MessengerModals && typeof window.MessengerModals.showEditPrompt === 'function') {
+        newContent = await window.MessengerModals.showEditPrompt(currentContent);
       } else {
         // eslint-disable-next-line no-alert
         newContent = window.prompt('Edit message:', currentContent);
@@ -783,8 +783,8 @@ class MessengerAppV4 {
   async _deleteMessage(messageId) {
     try {
       const confirmed =
-        window.MessengerModals && typeof window.MessengerModals.showDelete === 'function'
-          ? await window.MessengerModals.showDelete()
+        window.MessengerModals && typeof window.MessengerModals.showConfirm === 'function'
+          ? await window.MessengerModals.showConfirm('Delete Message', 'Are you sure you want to delete this message?', 'Delete', 'Cancel')
           : // eslint-disable-next-line no-alert
             window.confirm('Delete this message?');
 

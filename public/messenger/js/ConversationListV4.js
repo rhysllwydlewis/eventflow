@@ -129,11 +129,23 @@ class ConversationListV4 {
 
   /** Show empty-state illustration and message. */
   renderEmpty() {
+    const tabMessages = {
+      pinned: { icon: '📌', title: 'No pinned conversations', sub: 'Pin a conversation to find it quickly.' },
+      unread: { icon: '✅', title: 'All caught up!', sub: 'You have no unread conversations.' },
+      archived: { icon: '🗂️', title: 'No archived conversations', sub: 'Archived conversations will appear here.' },
+    };
+    const cfg = tabMessages[this.activeTab] || { icon: '💬', title: 'No conversations yet', sub: 'Start a new conversation to get going.' };
+
+    const cta = this.activeTab === 'all'
+      ? `<button class="messenger-v4__empty-cta" data-action="new-conversation" aria-label="Start a new conversation">+ New Conversation</button>`
+      : '';
+
     this.listEl.innerHTML = `
       <div class="messenger-v4__empty-state" role="status">
-        <span class="messenger-v4__empty-icon" aria-hidden="true">💬</span>
-        <p class="messenger-v4__empty-title">No conversations yet</p>
-        <p class="messenger-v4__empty-sub">Start a new conversation to get going.</p>
+        <span class="messenger-v4__empty-icon" aria-hidden="true">${cfg.icon}</span>
+        <p class="messenger-v4__empty-title">${cfg.title}</p>
+        <p class="messenger-v4__empty-sub">${cfg.sub}</p>
+        ${cta}
       </div>`;
   }
 
@@ -242,7 +254,92 @@ class ConversationListV4 {
           this.selectConversation(el.dataset.id);
         }
       });
+      el.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        this._showItemContextMenu(el.dataset.id, e.clientX, e.clientY);
+      });
     });
+  }
+
+  /**
+   * Show a context menu for a conversation item (right-click).
+   * @param {string} id - Conversation ID
+   * @param {number} x - Client X position
+   * @param {number} y - Client Y position
+   */
+  _showItemContextMenu(id, x, y) {
+    // Remove any existing context menus
+    document.querySelectorAll('.messenger-v4__conv-context-menu').forEach(m => m.remove());
+
+    const menu = document.createElement('div');
+    menu.className = 'messenger-v4__conv-context-menu';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', 'Conversation options');
+    menu.innerHTML = `
+      <button class="messenger-v4__conv-context-menu-item" data-action="mark-unread" data-id="${this.escape(id)}" role="menuitem">✉️ Mark as Unread</button>
+      <button class="messenger-v4__conv-context-menu-item" data-action="pin" data-id="${this.escape(id)}" role="menuitem">📌 Pin</button>
+      <button class="messenger-v4__conv-context-menu-item" data-action="archive" data-id="${this.escape(id)}" role="menuitem">🗂️ Archive</button>
+      <button class="messenger-v4__conv-context-menu-item messenger-v4__conv-context-menu-item--danger" data-action="delete" data-id="${this.escape(id)}" role="menuitem">🗑️ Delete</button>
+    `;
+
+    // Position the menu near the cursor
+    menu.style.position = 'fixed';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    document.body.appendChild(menu);
+
+    // Adjust to keep within viewport
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+      menu.style.left = `${x - rect.width}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+      menu.style.top = `${y - rect.height}px`;
+    }
+
+    // Wire action buttons
+    menu.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        const convId = btn.dataset.id;
+        menu.remove();
+        switch (action) {
+          case 'mark-unread':
+            window.dispatchEvent(new CustomEvent('messenger:mark-unread', { detail: { id: convId } }));
+            break;
+          case 'pin':
+            window.dispatchEvent(new CustomEvent('messenger:pin-conversation', { detail: { id: convId } }));
+            break;
+          case 'archive':
+            window.dispatchEvent(new CustomEvent('messenger:archive-conversation', { detail: { id: convId } }));
+            break;
+          case 'delete':
+            window.dispatchEvent(new CustomEvent('messenger:delete-conversation', { detail: { id: convId } }));
+            break;
+        }
+      });
+    });
+
+    // Close menu on outside click or Escape
+    const closeMenu = e => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closeMenu, true);
+        document.removeEventListener('keydown', onEsc);
+      }
+    };
+    const onEsc = e => {
+      if (e.key === 'Escape') {
+        menu.remove();
+        document.removeEventListener('click', closeMenu, true);
+        document.removeEventListener('keydown', onEsc);
+      }
+    };
+    // Use capture so the click on the menu items fires before this handler
+    setTimeout(() => {
+      document.addEventListener('click', closeMenu, true);
+      document.addEventListener('keydown', onEsc);
+    }, 0);
   }
 
   // ---------------------------------------------------------------------------
