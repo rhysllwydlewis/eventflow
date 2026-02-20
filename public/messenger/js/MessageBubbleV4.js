@@ -104,7 +104,7 @@ class MessageBubbleV4 {
                alt="${MessageBubbleV4.escape(fileName || 'Image attachment')}"
                loading="lazy"
                class="messenger-v4__attachment-image"
-               onerror="this.onerror=null;this.alt='Image unavailable';this.classList.add('messenger-v4__attachment-error');" />
+               onerror="this.onerror=null;this.classList.add('messenger-v4__attachment-error');if(this.parentNode){var l=document.createElement('span');l.className='messenger-v4__attachment-error-label';l.textContent='Image unavailable';this.parentNode.appendChild(l);}" />
         </div>`;
     }
 

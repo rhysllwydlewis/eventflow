@@ -218,7 +218,11 @@ class ContactPickerV4 {
     if (!this._recentContacts.length) {
       return '<div class="messenger-v4__empty-state" role="status">Search for a contact to start a conversation</div>';
     }
-    const items = this._recentContacts.slice(0, 5).map(c => this._buildContactHTML(c)).join('');
+    const filtered = this._filterByRole(this._recentContacts.slice(0, 5));
+    if (!filtered.length) {
+      return '<div class="messenger-v4__empty-state" role="status">Search for a contact to start a conversation</div>';
+    }
+    const items = filtered.map(c => this._buildContactHTML(c)).join('');
     return `<div class="messenger-v4__recent-label">Recent</div>${items}`;
   }
 

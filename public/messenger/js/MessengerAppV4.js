@@ -256,7 +256,7 @@ class MessengerAppV4 {
           this.state.setActiveConversation(null);
           this.handleMobilePanel('sidebar');
         }
-        this.conversationList?.render();
+        this.conversationList?.renderConversations(this.state.conversations);
       } catch (err) {
         console.error('[MessengerAppV4] Delete conversation failed:', err);
       }

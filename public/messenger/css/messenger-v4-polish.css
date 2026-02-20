@@ -1051,6 +1051,20 @@
   transform: scale(0.99);
 }
 
+/* Broken/unavailable image fallback */
+.messenger-v4__attachment--image .messenger-v4__attachment-image.messenger-v4__attachment-error {
+  display: none;
+}
+
+.messenger-v4__attachment-error-label {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ef-text-muted, #888);
+  font-size: 0.8125rem;
+}
+
 /* File attachment card */
 .messenger-v4__attachment--file {
   display: flex;
