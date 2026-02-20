@@ -136,17 +136,39 @@ class ConversationListV4 {
     };
     const cfg = tabMessages[this.activeTab] || { icon: '💬', title: 'No conversations yet', sub: 'Start a new conversation to get going.' };
 
-    const cta = this.activeTab === 'all'
-      ? `<button class="messenger-v4__empty-cta" data-action="new-conversation" aria-label="Start a new conversation">+ New Conversation</button>`
-      : '';
+    // Build using DOM methods so values are always escaped even if source changes
+    const wrapper = document.createElement('div');
+    wrapper.className = 'messenger-v4__empty-state';
+    wrapper.setAttribute('role', 'status');
 
-    this.listEl.innerHTML = `
-      <div class="messenger-v4__empty-state" role="status">
-        <span class="messenger-v4__empty-icon" aria-hidden="true">${cfg.icon}</span>
-        <p class="messenger-v4__empty-title">${cfg.title}</p>
-        <p class="messenger-v4__empty-sub">${cfg.sub}</p>
-        ${cta}
-      </div>`;
+    const iconEl = document.createElement('span');
+    iconEl.className = 'messenger-v4__empty-icon';
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconEl.textContent = cfg.icon;
+
+    const titleEl = document.createElement('p');
+    titleEl.className = 'messenger-v4__empty-title';
+    titleEl.textContent = cfg.title;
+
+    const subEl = document.createElement('p');
+    subEl.className = 'messenger-v4__empty-sub';
+    subEl.textContent = cfg.sub;
+
+    wrapper.appendChild(iconEl);
+    wrapper.appendChild(titleEl);
+    wrapper.appendChild(subEl);
+
+    if (this.activeTab === 'all') {
+      const cta = document.createElement('button');
+      cta.className = 'messenger-v4__empty-cta';
+      cta.dataset.action = 'new-conversation';
+      cta.setAttribute('aria-label', 'Start a new conversation');
+      cta.textContent = '+ New Conversation';
+      wrapper.appendChild(cta);
+    }
+
+    this.listEl.innerHTML = '';
+    this.listEl.appendChild(wrapper);
   }
 
   /**
@@ -297,12 +319,38 @@ class ConversationListV4 {
       menu.style.top = `${y - rect.height}px`;
     }
 
+    // Setup close-on-outside-mousedown BEFORE wiring buttons so references are available
+    let menuClicked = false;
+    menu.addEventListener('mousedown', () => { menuClicked = true; });
+
+    const removeListeners = () => {
+      document.removeEventListener('mousedown', closeMenu);
+      document.removeEventListener('keydown', onEsc);
+    };
+    const closeMenu = () => {
+      if (menuClicked) {
+        menuClicked = false;
+        return;
+      }
+      menu.remove();
+      removeListeners();
+    };
+    const onEsc = e => {
+      if (e.key === 'Escape') {
+        menu.remove();
+        removeListeners();
+      }
+    };
+    document.addEventListener('mousedown', closeMenu);
+    document.addEventListener('keydown', onEsc);
+
     // Wire action buttons
     menu.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
         const action = btn.dataset.action;
         const convId = btn.dataset.id;
         menu.remove();
+        removeListeners();
         switch (action) {
           case 'mark-unread':
             window.dispatchEvent(new CustomEvent('messenger:mark-unread', { detail: { id: convId } }));
@@ -319,27 +367,6 @@ class ConversationListV4 {
         }
       });
     });
-
-    // Close menu on outside click or Escape
-    const closeMenu = e => {
-      if (!menu.contains(e.target)) {
-        menu.remove();
-        document.removeEventListener('click', closeMenu, true);
-        document.removeEventListener('keydown', onEsc);
-      }
-    };
-    const onEsc = e => {
-      if (e.key === 'Escape') {
-        menu.remove();
-        document.removeEventListener('click', closeMenu, true);
-        document.removeEventListener('keydown', onEsc);
-      }
-    };
-    // Use capture so the click on the menu items fires before this handler
-    setTimeout(() => {
-      document.addEventListener('click', closeMenu, true);
-      document.addEventListener('keydown', onEsc);
-    }, 0);
   }
 
   // ---------------------------------------------------------------------------
