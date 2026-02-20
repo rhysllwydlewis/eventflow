@@ -72,11 +72,6 @@ function renderTickets(tickets) {
 
   html += '</div>';
 
-  // Add "View all tickets" link when there may be more
-  if (tickets.length >= 5) {
-    html += '<a href="/tickets" class="customer-tickets-view-all">View all tickets →</a>';
-  }
-
   container.innerHTML = html;
 
   // Add click and keyboard handlers

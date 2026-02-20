@@ -757,6 +757,9 @@ async function initCustomerDashboardWidgets(preloadedPlans) {
     console.error('Error initializing dashboard widgets:', error);
   }
 }
+
+// Expose to global scope so the non-module inline script can call it
+window.initCustomerDashboardWidgets = initCustomerDashboardWidgets;
 </script>
 <script>
 window.__EF_PAGE__='dash_customer';
