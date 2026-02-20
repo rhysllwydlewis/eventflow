@@ -13,6 +13,7 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 const { writeLimiter } = require('../middleware/rateLimits');
 const MessengerV4Service = require('../services/messenger-v4.service');
+const { CONVERSATION_V4_TYPES } = require('../models/ConversationV4');
 const messengerMetrics = require('../services/messengerMetrics');
 
 // Returns true if a string looks like an email address — used to prevent
@@ -237,9 +238,8 @@ router.post(
         return res.status(400).json({ error: 'Each participant ID must be a non-empty string' });
       }
 
-      // Validate type against allowed values
-      const allowedTypes = ['direct', 'group', 'support'];
-      if (!allowedTypes.includes(type)) {
+      // Validate type against allowed values (must match ConversationV4 model schema)
+      if (!CONVERSATION_V4_TYPES.includes(type)) {
         return res.status(400).json({ error: 'Invalid conversation type' });
       }
 
