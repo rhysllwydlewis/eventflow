@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Customer dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/liquid-glass.css?v=18.2.1'><link rel='stylesheet' href='/assets/css/messaging-glass-enhancements.css?v=18.2.1'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.1.1'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Customer dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/liquid-glass.css?v=18.2.1'><link rel='stylesheet' href='/assets/css/messaging-glass-enhancements.css?v=18.2.1'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.1.1'><link rel='stylesheet' href='/assets/css/customer-dashboard-improvements.css?v=1.0.0'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
 <link rel="stylesheet" href="/messenger/css/messenger-widget-v4.css">
   </head><body>
 <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
@@ -111,13 +111,38 @@
 
 <script src="/assets/js/websocket-client.js" defer></script>
 <main id="main-content" class='section'><div class='container'>
-<h1>Your dashboard</h1>
+
+<!-- Customer Hero Section -->
+<section class="customer-hero" id="customer-hero" aria-label="Dashboard overview">
+  <div class="customer-hero__content">
+    <h1 class="customer-hero__greeting" id="customer-hero-greeting">Welcome to EventFlow!</h1>
+    <p class="customer-hero__subtitle">Plan, track, and manage your perfect event</p>
+    <div class="customer-hero__stats" id="customer-hero-stats">
+      <div class="customer-hero__stat">
+        <div class="customer-hero__stat-value" id="hero-stat-plans">–</div>
+        <div class="customer-hero__stat-label">Active Plans</div>
+      </div>
+      <div class="customer-hero__stat">
+        <div class="customer-hero__stat-value" id="hero-stat-suppliers">–</div>
+        <div class="customer-hero__stat-label">Saved Suppliers</div>
+      </div>
+      <div class="customer-hero__stat">
+        <div class="customer-hero__stat-value" id="hero-stat-days">–</div>
+        <div class="customer-hero__stat-label">Days to Event</div>
+      </div>
+      <div class="customer-hero__stat">
+        <div class="customer-hero__stat-value" id="hero-stat-messages">–</div>
+        <div class="customer-hero__stat-label">Unread Messages</div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- Welcome Section -->
-<div id="welcome-section" class="card" style="margin-bottom:1.5rem;padding:2rem;">
+<div id="welcome-section" class="customer-welcome-card card" style="margin-bottom:1.5rem;">
   <h2 id="welcome-heading" style="margin:0 0 0.75rem 0;color:#1f2937;font-size:1.75rem;">Welcome to EventFlow!</h2>
-  <p class="small" style="color:#4b5563;margin:0 0 1rem 0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
-  <div id="what-you-can-do" style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb;">
+  <p class="small customer-welcome-intro" style="color:#4b5563;margin:0 0 1rem 0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
+  <div id="what-you-can-do" class="customer-welcome-actions" style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb;">
     <h3 style="margin:0 0 0.5rem 0;color:#1f2937;font-size:1.1rem;">What you can do from here:</h3>
     <ul style="margin:0;padding-left:1.25rem;color:#4b5563;font-size:0.95rem;">
       <li style="margin-bottom:0.25rem;">Create and manage event plans with our wizard</li>
@@ -126,25 +151,27 @@
       <li style="margin-bottom:0.25rem;">Manage support tickets and conversations</li>
     </ul>
   </div>
+  <!-- Contextual prompt shown dynamically by JS -->
+  <div id="welcome-contextual-prompt" style="margin-top:1rem;"></div>
 </div>
 
 <!-- Statistics Widgets -->
-<div id="customer-stats-grid"></div>
+<div id="customer-stats-grid" aria-live="polite" aria-label="Dashboard statistics"></div>
 
 <!-- Budget Tracker and Progress Ring -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-  <div id="budget-tracker-widget"></div>
-  <div id="progress-ring-widget"></div>
+  <div id="budget-tracker-widget" aria-live="polite"></div>
+  <div id="progress-ring-widget" aria-live="polite"></div>
 </div>
 
 <!-- Budget Settings Card -->
 <div class="card" style="margin-bottom: 1.5rem;">
-  <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">💰 Budget Settings</h3>
-  <p class="small" style="color:#667085;margin:0 0 1rem 0;">Set your total event budget to track spending accurately.</p>
+  <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">💰 Budget Settings</h3>
+  <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Set your total event budget to track spending accurately.</p>
   
-  <form id="budget-settings-form" style="display:flex;gap:0.75rem;align-items:end;flex-wrap:wrap;">
-    <div style="flex:1;min-width:200px;">
-      <label for="custom-budget-input" style="display:block;margin-bottom:0.25rem;font-size:0.9rem;color:#344054;font-weight:500;">
+  <form id="budget-settings-form" class="customer-budget-form" style="display:flex;gap:0.75rem;align-items:end;flex-wrap:wrap;">
+    <div class="customer-budget-form__field" style="flex:1;min-width:200px;">
+      <label for="custom-budget-input" class="customer-budget-form__label" style="display:block;margin-bottom:0.25rem;font-size:0.9rem;color:#344054;font-weight:500;">
         Total Budget (£)
       </label>
       <input 
@@ -153,6 +180,7 @@
         min="0" 
         step="100" 
         placeholder="5000" 
+        class="customer-budget-form__input"
         style="width:100%;padding:0.75rem;border:1px solid #D0D5DD;border-radius:6px;font-size:1rem;"
       >
     </div>
@@ -161,7 +189,7 @@
     </button>
   </form>
   
-  <div id="budget-status" style="margin-top:1rem;padding:0.75rem;background:#F9FAFB;border-radius:6px;display:none;">
+  <div id="budget-status" class="customer-budget-status" style="margin-top:1rem;padding:0.75rem;background:#F9FAFB;border-radius:6px;display:none;">
     <p class="small" style="margin:0;color:#059669;">
       ✅ Budget updated successfully!
     </p>
@@ -169,12 +197,12 @@
 </div>
 
 <!-- Upcoming Events Timeline -->
-<div id="upcoming-events-timeline"></div>
+<div id="upcoming-events-timeline" aria-live="polite"></div>
 
 <!-- Calendar View Card -->
 <div class="card" style="margin-bottom: 1.5rem;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h3 style="margin: 0; font-size: 1.25rem; color: #0B1220;">📅 Events Calendar</h3>
+  <div class="customer-calendar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 class="customer-card-title" style="margin: 0; font-size: 1.25rem; color: #0B1220;">📅 Events Calendar</h3>
   </div>
   <div id="events-calendar" style="min-height: 400px;"></div>
 </div>
@@ -182,9 +210,9 @@
 <div class="cards">
   <!-- Your Plans Card -->
   <div class="card">
-    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Your Plans</h3>
-    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Event plans created with the wizard.</p>
-    <div id="customer-plans-list" style="margin-bottom:1rem;">
+    <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Your Plans</h3>
+    <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Event plans created with the wizard.</p>
+    <div id="customer-plans-list" aria-live="polite" style="margin-bottom:1rem;">
       <div class="skeleton skeleton-text skeleton-text-long"></div>
       <div class="skeleton skeleton-text skeleton-text-medium"></div>
     </div>
@@ -193,16 +221,16 @@
 
   <!-- Your Saved Suppliers Card -->
   <div class="card">
-    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Saved Suppliers</h3>
-    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Review and manage your saved suppliers.</p>
+    <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Saved Suppliers</h3>
+    <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Review and manage your saved suppliers.</p>
     <button class="cta" id="openPlanBtn" style="width:100%;">View Saved Items</button>
   </div>
   
   <!-- Quick Actions Card -->
   <div class="card">
-    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Quick Actions</h3>
-    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Common tasks to help plan your event.</p>
-    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+    <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Quick Actions</h3>
+    <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Common tasks to help plan your event.</p>
+    <div class="customer-quick-actions" style="display:flex;flex-direction:column;gap:0.75rem;">
       <a href="/suppliers" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Browse Suppliers</a>
       <a href="/budget.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Budget Calculator</a>
       <a href="/settings.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">⚙️ Account Settings</a>
@@ -212,10 +240,10 @@
   <!-- Support Tickets Card -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;">
-      <h3 style="margin:0;font-size:1.25rem;color:#0B1220;">Support Tickets</h3>
+      <h3 class="customer-card-title" style="margin:0;font-size:1.25rem;color:#0B1220;">Support Tickets</h3>
       <button class="cta" id="createTicketBtn" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;">Create Ticket</button>
     </div>
-    <div id="tickets-cust" class="section">
+    <div id="tickets-cust" class="section" aria-live="polite">
       <div class="skeleton skeleton-text skeleton-text-long"></div>
       <div class="skeleton skeleton-text skeleton-text-medium"></div>
     </div>
@@ -223,14 +251,15 @@
   
   <!-- Conversations Card -->
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
-      <h3 style="margin:0;font-size:1.25rem;color:#0B1220;">Conversations</h3>
-      <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;flex:1;">
+    <div class="customer-conversations-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
+      <h3 class="customer-card-title" style="margin:0;font-size:1.25rem;color:#0B1220;">Conversations</h3>
+      <div class="customer-conversations-controls" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;flex:1;">
         <!-- Mini search bar -->
         <input 
           type="search" 
           id="widget-search-input"
           placeholder="Search conversations..." 
+          class="customer-conversations-search"
           style="
             flex: 1;
             min-width: 150px;
@@ -242,7 +271,7 @@
         />
         
         <!-- Filter dropdown -->
-        <select id="widget-filter-select" style="
+        <select id="widget-filter-select" class="customer-conversations-filter" style="
           padding: 6px 12px;
           border: 1px solid #E5E7EB;
           border-radius: 8px;
@@ -260,12 +289,8 @@
         </a>
       </div>
     </div>
-    <!-- Messenger Dashboard Widget -->
+    <!-- Messenger Dashboard Widget (sole conversation UI) -->
     <div id="messenger-dashboard-widget" style="margin-bottom: 1.5rem;"></div>
-    <div id="threads-cust" class="section">
-      <div class="skeleton skeleton-text skeleton-text-long"></div>
-      <div class="skeleton skeleton-text skeleton-text-medium"></div>
-    </div>
   </div>
 </div>
 
@@ -763,16 +788,16 @@ async function loadCustomerPlans(preloadedPlans) {
     container.innerHTML = plans.map(plan => {
       const packageCount = (plan.packages || []).length;
       return `
-        <div style="padding:0.75rem;background:#f9fafb;border-radius:8px;margin-bottom:0.75rem;">
-          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
+        <div class="customer-plan-item">
+          <div class="customer-plan-item__header">
             <div>
-              <strong style="color:#0B1220;">${escapeHtml(plan.eventName || plan.eventType || 'Untitled Event')}</strong>
-              ${plan.eventType ? `<span class="small" style="color:#667085;display:block;">${escapeHtml(plan.eventType)}</span>` : ''}
+              <strong class="customer-plan-item__name">${escapeHtml(plan.eventName || plan.eventType || 'Untitled Event')}</strong>
+              ${plan.eventType ? `<span class="small customer-plan-item__type">${escapeHtml(plan.eventType)}</span>` : ''}
             </div>
-            <span class="small" style="color:#667085;">${packageCount} packages</span>
+            <span class="small customer-plan-item__count">${packageCount} packages</span>
           </div>
-          ${plan.location ? `<p class="small" style="color:#667085;margin:0.25rem 0;">📍 ${escapeHtml(plan.location)}</p>` : ''}
-          ${plan.date ? `<p class="small" style="color:#667085;margin:0.25rem 0;">📅 ${escapeHtml(plan.date)}</p>` : ''}
+          ${plan.location ? `<p class="small customer-plan-item__detail">📍 ${escapeHtml(plan.location)}</p>` : ''}
+          ${plan.date ? `<p class="small customer-plan-item__detail">📅 ${escapeHtml(plan.date)}</p>` : ''}
         </div>
       `;
     }).join('');
@@ -812,6 +837,20 @@ async function initDashboard() {
     // Redirect to login if not authenticated
     window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
     return;
+  }
+
+  // Time-based greeting for hero section
+  const heroGreeting = document.getElementById('customer-hero-greeting');
+  if (heroGreeting) {
+    const hour = new Date().getHours();
+    const MORNING_START = 5;
+    const AFTERNOON_START = 12;
+    const EVENING_START = 17;
+    let greeting = 'Good evening';
+    if (hour >= MORNING_START && hour < AFTERNOON_START) greeting = 'Good morning';
+    else if (hour >= AFTERNOON_START && hour < EVENING_START) greeting = 'Good afternoon';
+    const firstName = user.firstName || (user.name ? user.name.split(' ')[0] : null);
+    heroGreeting.textContent = firstName ? `${greeting}, ${firstName}!` : `${greeting}!`;
   }
 
   // Personalize welcome message
@@ -856,16 +895,108 @@ async function initDashboard() {
     }
   });
   
+  // Populate hero stats and make welcome section contextual
+  populateHeroStats(sharedPlans || []);
+  makeWelcomeContextual(sharedPlans || []);
+
   // Setup event handlers
   setupEventHandlers(sharedPlans);
   
   console.log('✅ Dashboard initialized successfully');
 }
 
+/**
+ * Populate the hero section stats from loaded data
+ */
+function populateHeroStats(plans) {
+  // Plans count
+  const heroPlans = document.getElementById('hero-stat-plans');
+  if (heroPlans) heroPlans.textContent = plans.length;
+
+  // Saved suppliers (from localStorage with server-plan cross-reference)
+  let savedCount = 0;
+  try {
+    const lsSaved = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+    savedCount = lsSaved.length;
+  } catch (_) {}
+  const heroSuppliers = document.getElementById('hero-stat-suppliers');
+  if (heroSuppliers) heroSuppliers.textContent = savedCount;
+
+  // Days to event (nearest upcoming plan with a date)
+  const heroDays = document.getElementById('hero-stat-days');
+  if (heroDays) {
+    const planWithDate = plans.find(p => p.eventDate || p.date);
+    if (planWithDate) {
+      const eventDateObj = new Date(planWithDate.eventDate || planWithDate.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const days = Math.ceil((eventDateObj - today) / (1000 * 60 * 60 * 24));
+      heroDays.textContent = days > 0 ? days : '–';
+    } else {
+      heroDays.textContent = '–';
+    }
+  }
+
+  // Unread messages count from badge
+  const heroMessages = document.getElementById('hero-stat-messages');
+  if (heroMessages) {
+    const badge = document.getElementById('unreadMessageBadge');
+    if (badge && badge.textContent) {
+      const match = badge.textContent.match(/(\d+)/);
+      heroMessages.textContent = match ? match[1] : '0';
+    } else {
+      heroMessages.textContent = '0';
+    }
+  }
+}
+
+/**
+ * Make welcome section contextual based on user data
+ */
+function makeWelcomeContextual(plans) {
+  const promptContainer = document.getElementById('welcome-contextual-prompt');
+  if (!promptContainer) return;
+
+  if (plans.length === 0) {
+    promptContainer.innerHTML = `
+      <div class="customer-welcome-prompt">
+        <span>🚀</span>
+        <span>Ready to get started? <a href="/start" style="color:inherit;font-weight:600;text-decoration:underline;">Create your first event plan</a> to kick things off!</span>
+      </div>`;
+    return;
+  }
+
+  // Check if budget is set
+  const hasBudget = plans.some(p => p.budget && parseFloat(p.budget) > 0);
+  let lsBudget = null;
+  try { lsBudget = localStorage.getItem('eventflow_custom_budget'); } catch (_) {}
+
+  if (!hasBudget && !lsBudget) {
+    promptContainer.innerHTML = `
+      <div class="customer-welcome-prompt customer-welcome-prompt--budget">
+        <span>💰</span>
+        <span>Don't forget to <a href="#budget-settings-form" style="color:inherit;font-weight:600;text-decoration:underline;">set your budget</a> so we can track your spending accurately.</span>
+      </div>`;
+    return;
+  }
+
+  // Check unread messages
+  const badge = document.getElementById('unreadMessageBadge');
+  const unreadCount = badge ? parseInt((badge.textContent.match(/(\d+)/) || [])[1] || '0', 10) : 0;
+  if (unreadCount > 0) {
+    promptContainer.innerHTML = `
+      <div class="customer-welcome-prompt customer-welcome-prompt--messages">
+        <span>💬</span>
+        <span>You have <strong>${unreadCount}</strong> unread message${unreadCount !== 1 ? 's' : ''}. <a href="/messenger/" style="color:inherit;font-weight:600;text-decoration:underline;">Check your inbox</a>.</span>
+      </div>`;
+  }
+}
+
 // Initialize calendar
 function initCalendar() {
   return new Promise((resolve) => {
-    if (window.CalendarView && document.getElementById('events-calendar')) {
+    const calendarEl = document.getElementById('events-calendar');
+    if (window.CalendarView && calendarEl) {
       try {
         window.CalendarView.init('events-calendar', {
           initialView: 'dayGridMonth',
@@ -874,7 +1005,12 @@ function initCalendar() {
         console.log('✅ Calendar initialized');
       } catch (err) {
         console.error('Calendar init failed:', err);
+        if (calendarEl) {
+          calendarEl.innerHTML = '<p class="small customer-calendar-empty" style="text-align:center;color:#667085;padding:2rem 0;">📅 Calendar could not be loaded. <a href="/start">Create an event</a> to see it here.</p>';
+        }
       }
+    } else if (calendarEl) {
+      calendarEl.innerHTML = '<p class="small customer-calendar-empty" style="text-align:center;color:#667085;padding:2rem 0;">📅 No events scheduled yet. <a href="/start">Create a plan</a> to see your calendar.</p>';
     }
     resolve();
   });
@@ -886,13 +1022,31 @@ function setupEventHandlers(latestPlans) {
   document.getElementById('openPlanBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
     
-    // Get saved suppliers from localStorage (with error handling)
+    // Get saved suppliers — prefer server-side plans, fall back to localStorage
     let saved = [];
     try {
-      saved = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+      if (latestPlans && latestPlans.length > 0) {
+        // Collect supplier IDs referenced in plans
+        latestPlans.forEach(plan => {
+          if (Array.isArray(plan.packages)) {
+            saved = saved.concat(plan.packages);
+          }
+          if (Array.isArray(plan.suppliers)) {
+            saved = saved.concat(plan.suppliers);
+          }
+        });
+      }
     } catch (err) {
-      console.error('Error reading saved suppliers from localStorage:', err);
-      // Continue with empty array
+      console.error('Error reading suppliers from plans:', err);
+    }
+
+    // Fallback: localStorage
+    if (saved.length === 0) {
+      try {
+        saved = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+      } catch (err) {
+        console.error('Error reading saved suppliers from localStorage:', err);
+      }
     }
     
     if (saved.length === 0) {
@@ -938,7 +1092,7 @@ function setupEventHandlers(latestPlans) {
       return;
     }
     
-    // Save to localStorage with error handling
+    // Save to localStorage with error handling (fast client-side access)
     try {
       localStorage.setItem('eventflow_custom_budget', budget.toString());
     } catch (err) {
@@ -947,6 +1101,24 @@ function setupEventHandlers(latestPlans) {
       budgetStatus.style.background = '#FEF2F2';
       budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Failed to save budget. Storage may be full.</p>';
       return;
+    }
+
+    // Also persist to server on the user's first/primary plan
+    if (latestPlans && latestPlans.length > 0) {
+      const primaryPlan = latestPlans[0];
+      try {
+        await fetch(`/api/me/plans/${encodeURIComponent(primaryPlan.id)}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCsrfToken(),
+          },
+          credentials: 'include',
+          body: JSON.stringify({ budget }),
+        });
+      } catch (err) {
+        console.warn('Failed to persist budget to server (will use localStorage):', err);
+      }
     }
     
     // Show success message
@@ -973,18 +1145,29 @@ function setupEventHandlers(latestPlans) {
     }, 3000);
   });
 
-  // Load saved budget on page load (with error handling)
+  // Load saved budget on page load — prefer server plan budget, fall back to localStorage
+  const budgetFromPlan = latestPlans && latestPlans.length > 0
+    ? latestPlans.find(p => p.budget && parseFloat(p.budget) > 0)
+    : null;
+
   try {
-    const savedBudget = localStorage.getItem('eventflow_custom_budget');
-    if (savedBudget) {
-      const input = document.getElementById('custom-budget-input');
-      if (input) {
-        input.value = savedBudget;
+    const input = document.getElementById('custom-budget-input');
+    if (input) {
+      if (budgetFromPlan) {
+        input.value = parseFloat(budgetFromPlan.budget);
+        // Sync server value to localStorage for fast client-side access
+        try { localStorage.setItem('eventflow_custom_budget', String(parseFloat(budgetFromPlan.budget))); } catch (storageErr) {
+          console.warn('Could not sync server budget to localStorage:', storageErr);
+        }
+      } else {
+        const savedBudget = localStorage.getItem('eventflow_custom_budget');
+        if (savedBudget) {
+          input.value = savedBudget;
+        }
       }
     }
   } catch (err) {
-    console.error('Error loading saved budget from localStorage:', err);
-    // Continue without pre-filling the input
+    console.error('Error loading saved budget:', err);
   }
 }
 

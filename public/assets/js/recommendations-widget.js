@@ -33,6 +33,7 @@
     } catch (error) {
       console.error('Error loading recommendations:', error);
       widget.style.display = 'none';
+      widget.hidden = true;
     }
   }
 
@@ -71,6 +72,7 @@
   function renderRecommendations(widget, recommendations) {
     if (!recommendations || recommendations.length === 0) {
       widget.style.display = 'none';
+      widget.hidden = true;
       return;
     }
 
@@ -103,6 +105,10 @@
           .join('')}
       </div>
     `;
+
+    // Reveal the widget now that it has content
+    widget.hidden = false;
+    widget.style.display = '';
 
     console.log(`✓ Rendered ${recommendations.length} recommendations`);
   }

@@ -7,7 +7,9 @@
   'use strict';
 
   /**
-   * Add recommendations widget to dashboard
+   * Add recommendations widget to dashboard.
+   * Called directly after initCustomerDashboardWidgets completes rather than
+   * using a MutationObserver, to avoid the 10-second timeout race condition.
    */
   function addRecommendationsWidget() {
     // Check if widget already exists
@@ -15,53 +17,26 @@
       return;
     }
 
-    let found = false;
+    const statsSection = document.querySelector('#customer-stats-grid');
+    if (!statsSection) {
+      console.warn('addRecommendationsWidget: #customer-stats-grid not found, skipping.');
+      return;
+    }
 
-    // Use MutationObserver instead of setTimeout
-    const observer = new MutationObserver(() => {
-      const statsSection = document.querySelector('#customer-stats-grid');
+    // Create widget container
+    const widgetContainer = document.createElement('div');
+    widgetContainer.id = 'recommendations-widget';
+    widgetContainer.className = 'recommendations-widget';
+    // Start hidden — RecommendationsWidget.init() will toggle visibility via its own
+    // internal logic once data is fetched (see recommendations-widget.js)
+    widgetContainer.hidden = true;
 
-      if (!statsSection) {
-        return;
-      }
+    // Insert after stats section
+    statsSection.insertAdjacentElement('afterend', widgetContainer);
 
-      // Double-check widget doesn't exist
-      if (document.getElementById('recommendations-widget')) {
-        observer.disconnect();
-        found = true;
-        return;
-      }
-
-      // Create widget container
-      const widgetContainer = document.createElement('div');
-      widgetContainer.id = 'recommendations-widget';
-      widgetContainer.className = 'recommendations-widget';
-      widgetContainer.style.display = 'none';
-
-      // Insert after stats section
-      statsSection.insertAdjacentElement('afterend', widgetContainer);
-
-      // Initialize the widget
-      if (window.RecommendationsWidget) {
-        window.RecommendationsWidget.init();
-      }
-
-      found = true;
-      observer.disconnect();
-    });
-
-    // Start observing
-    const main = document.querySelector('main, #main-content, body');
-    if (main) {
-      observer.observe(main, { childList: true, subtree: true });
-
-      // Disconnect after 10 seconds if the target element never appears
-      setTimeout(() => {
-        if (!found) {
-          observer.disconnect();
-          console.warn('addRecommendationsWidget: #customer-stats-grid not found within 10 seconds. Observer disconnected.');
-        }
-      }, 10000);
+    // Initialize the widget
+    if (window.RecommendationsWidget) {
+      window.RecommendationsWidget.init();
     }
   }
 
