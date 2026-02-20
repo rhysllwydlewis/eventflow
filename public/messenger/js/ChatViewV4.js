@@ -230,6 +230,8 @@ class ChatViewV4 {
     try {
       const data = await this.api.getMessages(conversationId, { limit: 40 });
       const messages = data.messages || data || [];
+      // Respect the server's hasMore flag; fall back to truthy when messages filled the page
+      this.hasMoreMessages = data.hasMore !== undefined ? data.hasMore : messages.length >= 40;
       this.oldestCursor = messages[0]?._id || null;
 
       this.state.setMessages(conversationId, messages);
@@ -569,8 +571,11 @@ class ChatViewV4 {
 
       loader.remove();
 
+      // Use server's authoritative hasMore flag; fall back to count heuristic for older backends
+      this.hasMoreMessages = data.hasMore !== undefined ? data.hasMore : older.length >= 30;
+
       if (!older.length) {
-        this.hasMoreMessages = false;
+        // No messages returned — regardless of hasMore, nothing to prepend
         return;
       }
 
