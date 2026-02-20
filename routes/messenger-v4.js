@@ -24,15 +24,42 @@ function looksLikeEmail(str) {
 
 // Picks the first value from candidates that is non-empty and not an email.
 function safeDisplayName(...candidates) {
+  let firstEmail = null;
   for (const c of candidates) {
     if (c && !looksLikeEmail(c)) {
       return c;
     }
+    if (c && looksLikeEmail(c) && !firstEmail) {
+      firstEmail = c;
+    }
+  }
+  if (firstEmail) {
+    return firstEmail.split('@')[0] || firstEmail;
   }
   return 'Unknown';
 }
 
 const router = express.Router();
+
+// Returns true only for 24-hex-char ObjectId strings; guards every :id param
+// before it reaches new ObjectId() in the service to prevent 500 on bad input.
+function isValidObjectId(id) {
+  return typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id);
+}
+
+// Maps an error message to the appropriate HTTP status code for messenger errors.
+function messengerErrorStatus(msg) {
+  if (msg.includes('not found')) {
+    return 404;
+  }
+  if (msg.includes('access denied') || msg.includes('not a participant')) {
+    return 403;
+  }
+  if (msg.includes('window expired') || msg.includes('Rate limit')) {
+    return 429;
+  }
+  return 500;
+}
 
 // Dependencies injected by server.js
 let authRequired;
@@ -41,9 +68,6 @@ let db;
 let wsServer;
 let postmark;
 let logger;
-
-// Messenger service instance
-let messengerService;
 
 // ---------------------------------------------------------------------------
 // Deferred middleware wrappers
@@ -125,7 +149,7 @@ function initialize(dependencies) {
   logger = dependencies.logger;
 
   // Service will be initialized lazily on first request
-  messengerService = null;
+  _messengerServicePromise = null;
 
   logger.info('Messenger v4 routes initialized');
 
@@ -145,14 +169,19 @@ async function getDbInstance() {
 }
 
 /**
- * Get or initialize messenger service
+ * Get or initialize messenger service (promise-based lock prevents TOCTOU race)
  */
+let _messengerServicePromise = null;
 async function getMessengerService() {
-  if (!messengerService) {
-    const dbInstance = await getDbInstance();
-    messengerService = new MessengerV4Service(dbInstance, logger);
+  if (!_messengerServicePromise) {
+    _messengerServicePromise = getDbInstance()
+      .then(dbInstance => new MessengerV4Service(dbInstance, logger))
+      .catch(err => {
+        _messengerServicePromise = null; // allow retry on next request
+        throw err;
+      });
   }
-  return messengerService;
+  return _messengerServicePromise;
 }
 
 /**
@@ -200,20 +229,34 @@ router.post(
         });
       }
 
+      // Validate participantIds: each must be a non-empty string, cap at 50
+      if (participantIds.length > 50) {
+        return res.status(400).json({ error: 'Too many participants (max 50)' });
+      }
+      if (participantIds.some(id => typeof id !== 'string' || !id.trim())) {
+        return res.status(400).json({ error: 'Each participant ID must be a non-empty string' });
+      }
+
+      // Validate type against allowed values
+      const allowedTypes = ['direct', 'group', 'support'];
+      if (!allowedTypes.includes(type)) {
+        return res.status(400).json({ error: 'Invalid conversation type' });
+      }
+
       // Get database instance
       const dbInstance = await getDbInstance();
 
       // Fetch user information for all participants
       // Users are keyed by their string 'id' field (from JWT auth), NOT ObjectId '_id'
       const usersCollection = dbInstance.collection('users');
-      const allUserIds = [currentUserId, ...participantIds];
+      const uniqueUserIds = [...new Set([currentUserId, ...participantIds])];
       const participantUsers = await usersCollection
         .find({
-          id: { $in: allUserIds },
+          id: { $in: uniqueUserIds },
         })
         .toArray();
 
-      if (participantUsers.length !== participantIds.length + 1) {
+      if (participantUsers.length !== uniqueUserIds.length) {
         return res.status(400).json({
           error: 'One or more participant IDs are invalid',
         });
@@ -299,15 +342,23 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
       filters.archived = archived === 'true';
     }
     if (search) {
-      filters.search = search;
+      filters.search = search.substring(0, 200);
     }
     if (status) {
-      filters.status = status;
+      const allowedStatuses = ['active', 'archived'];
+      if (allowedStatuses.includes(status)) {
+        filters.status = status;
+      }
     }
 
     const conversations = await (
       await getMessengerService()
-    ).getConversations(userId, filters, parseInt(limit, 10), parseInt(skip, 10));
+    ).getConversations(
+      userId,
+      filters,
+      Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100),
+      Math.max(parseInt(skip, 10) || 0, 0)
+    );
 
     res.json({
       success: true,
@@ -329,6 +380,9 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
 router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
 
     const conversation = await (await getMessengerService()).getConversation(id, userId);
@@ -339,8 +393,9 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching conversation:', error);
-    res.status(error.message.includes('not found') ? 404 : 500).json({
-      error: error.message || 'Failed to fetch conversation',
+    const msg = error.message || '';
+    res.status(messengerErrorStatus(msg)).json({
+      error: msg || 'Failed to fetch conversation',
     });
   }
 });
@@ -349,60 +404,80 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
  * PATCH /api/v4/messenger/conversations/:id
  * Update conversation settings
  */
-router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const updates = req.body;
+router.patch(
+  '/conversations/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
+      const userId = req.user.id;
+      const updates = req.body;
 
-    const conversation = await (
-      await getMessengerService()
-    ).updateConversation(id, userId, updates);
+      const conversation = await (
+        await getMessengerService()
+      ).updateConversation(id, userId, updates);
 
-    // Emit update event
-    emitToUser(userId, 'messenger:v4:conversation-updated', {
-      conversationId: id,
-      updates,
-    });
+      // Emit update event
+      emitToUser(userId, 'messenger:v4:conversation-updated', {
+        conversationId: id,
+        updates,
+      });
 
-    res.json({
-      success: true,
-      conversation,
-    });
-  } catch (error) {
-    logger.error('Error updating conversation:', error);
-    res.status(500).json({
-      error: error.message || 'Failed to update conversation',
-    });
+      res.json({
+        success: true,
+        conversation,
+      });
+    } catch (error) {
+      logger.error('Error updating conversation:', error);
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to update conversation',
+      });
+    }
   }
-});
+);
 
 /**
  * DELETE /api/v4/messenger/conversations/:id
  * Soft delete a conversation (archive for the user)
  */
-router.delete('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
+router.delete(
+  '/conversations/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
+      const userId = req.user.id;
 
-    await (await getMessengerService()).deleteConversation(id, userId);
+      await (await getMessengerService()).deleteConversation(id, userId);
 
-    emitToUser(userId, 'messenger:v4:conversation-deleted', {
-      conversationId: id,
-    });
+      emitToUser(userId, 'messenger:v4:conversation-deleted', {
+        conversationId: id,
+      });
 
-    res.json({
-      success: true,
-      message: 'Conversation archived',
-    });
-  } catch (error) {
-    logger.error('Error deleting conversation:', error);
-    res.status(500).json({
-      error: 'Failed to delete conversation',
-    });
+      res.json({
+        success: true,
+        message: 'Conversation archived',
+      });
+    } catch (error) {
+      logger.error('Error deleting conversation:', error);
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to delete conversation',
+      });
+    }
   }
-});
+);
 
 // ============================================================================
 // MESSAGE ENDPOINTS
@@ -422,7 +497,17 @@ router.post(
     const startMs = Date.now();
     try {
       const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
       const { content, type = 'text', replyTo } = req.body;
+
+      // Validate message type against allowed values
+      const ALLOWED_MESSAGE_TYPES = ['text', 'image', 'file', 'system'];
+      if (!ALLOWED_MESSAGE_TYPES.includes(type)) {
+        return res.status(400).json({ error: 'Invalid message type' });
+      }
+
       const userId = req.user.id;
       const userName = safeDisplayName(
         req.user.displayName,
@@ -437,6 +522,21 @@ router.post(
         });
       }
 
+      // Validate and parse replyTo before writing any attachment files,
+      // so a malformed replyTo returns 400 without orphaning uploads.
+      let parsedReplyTo = null;
+      if (replyTo) {
+        if (typeof replyTo === 'string') {
+          try {
+            parsedReplyTo = JSON.parse(replyTo);
+          } catch {
+            return res.status(400).json({ error: 'Invalid replyTo format' });
+          }
+        } else {
+          parsedReplyTo = replyTo;
+        }
+      }
+
       // Process attachments if any
       const attachments = [];
       if (req.files && req.files.length > 0) {
@@ -444,14 +544,35 @@ router.post(
         const uploadsDir = path.join(__dirname, '..', 'uploads', 'messenger');
         await fs.mkdir(uploadsDir, { recursive: true });
 
+        // Map validated MIME types to safe file extensions so the saved
+        // filename is never derived from user-controlled originalname.
+        const MIME_TO_EXT = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/gif': '.gif',
+          'image/webp': '.webp',
+          'application/pdf': '.pdf',
+          'application/msword': '.doc',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+          'application/vnd.ms-excel': '.xls',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+          'text/plain': '.txt',
+        };
+
         for (const file of req.files) {
-          const filename = `${crypto.randomBytes(16).toString('hex')}${path.extname(file.originalname)}`;
+          const ext = MIME_TO_EXT[file.mimetype];
+          if (!ext) {
+            // Should not reach here because multer fileFilter already rejects
+            // unknown MIME types, but guard defensively.
+            return res.status(400).json({ error: `Unsupported file type: ${file.mimetype}` });
+          }
+          const filename = `${crypto.randomBytes(16).toString('hex')}${ext}`;
           const filepath = path.join(uploadsDir, filename);
           await fs.writeFile(filepath, file.buffer);
 
           attachments.push({
             url: `/uploads/messenger/${filename}`,
-            filename: file.originalname,
+            filename: file.originalname.substring(0, 255),
             mimeType: file.mimetype,
             size: file.size,
           });
@@ -469,7 +590,7 @@ router.post(
         content,
         type,
         attachments,
-        replyTo: replyTo ? (typeof replyTo === 'string' ? JSON.parse(replyTo) : replyTo) : null,
+        replyTo: parsedReplyTo,
       };
 
       const message = await (await getMessengerService()).sendMessage(conversationId, messageData);
@@ -496,16 +617,19 @@ router.post(
           // For now, send email to all non-muted participants
           const dbInstance = await getDbInstance();
           const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
-          if (recipient && recipient.email) {
-            const contextInfo = conversation.context?.referenceTitle
-              ? ` (Re: ${conversation.context.referenceTitle})`
-              : '';
+          if (recipient && recipient.email && postmark && typeof postmark.sendMail === 'function') {
+            // Strip CR/LF from both userName and referenceTitle to prevent email header injection
+            const safeUserName = userName.replace(/[\r\n]/g, ' ').trim();
+            const safeTitle = (conversation.context?.referenceTitle || '')
+              .replace(/[\r\n]/g, ' ')
+              .trim();
+            const contextInfo = safeTitle ? ` (Re: ${safeTitle})` : '';
 
             await postmark
               .sendMail({
                 to: recipient.email,
-                subject: `New message from ${userName}${contextInfo}`,
-                text: `${userName} sent you a message:\n\n"${(content || '').substring(0, 200)}${(content || '').length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
+                subject: `New message from ${safeUserName}${contextInfo}`,
+                text: `${safeUserName} sent you a message:\n\n"${(content || '').substring(0, 200)}${(content || '').length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
               })
               .catch(emailError => {
                 logger.error('Failed to send email notification:', emailError);
@@ -537,16 +661,17 @@ router.post(
       });
     } catch (error) {
       messengerMetrics.increment('messenger_v4_errors_total');
-      const statusCode = error.message.includes('spam') ? 429 : 500;
+      const msg = error.message || '';
+      const statusCode = messengerErrorStatus(msg);
       logger.error('Error sending message:', {
-        error: error.message,
+        error: msg,
         userId: req.user?.id,
         conversationId: req.params.id,
         durationMs: Date.now() - startMs,
         statusCode,
       });
       res.status(statusCode).json({
-        error: error.message || 'Failed to send message',
+        error: msg || 'Failed to send message',
       });
     }
   }
@@ -559,14 +684,22 @@ router.post(
 router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
     const { cursor, limit = 50 } = req.query;
+
+    // Validate cursor format before it reaches service-level new ObjectId()
+    if (cursor && !isValidObjectId(cursor)) {
+      return res.status(400).json({ error: 'Invalid cursor' });
+    }
 
     const result = await (
       await getMessengerService()
     ).getMessages(conversationId, userId, {
       cursor,
-      limit: parseInt(limit, 10),
+      limit: Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100),
     });
 
     res.json({
@@ -575,8 +708,9 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
     });
   } catch (error) {
     logger.error('Error fetching messages:', error);
-    res.status(500).json({
-      error: 'Failed to fetch messages',
+    const msg = error.message || '';
+    res.status(messengerErrorStatus(msg)).json({
+      error: msg || 'Failed to fetch messages',
     });
   }
 });
@@ -585,124 +719,163 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
  * PATCH /api/v4/messenger/messages/:id
  * Edit a message
  */
-router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const { content } = req.body;
+router.patch(
+  '/messages/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+      const userId = req.user.id;
+      const { content } = req.body;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({
-        error: 'Message content is required',
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Message content is required',
+        });
+      }
+
+      const message = await (await getMessengerService()).editMessage(id, userId, content);
+
+      // Emit update event
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(message.conversationId.toString(), userId);
+      emitToConversation(conversation, 'messenger:v4:message-edited', {
+        messageId: id,
+        content,
+        editedAt: message.editedAt,
+      });
+
+      res.json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error('Error editing message:', error);
+      const msg = error.message || '';
+      const editStatus = msg.includes('cannot be empty') ? 400 : messengerErrorStatus(msg);
+      res.status(editStatus).json({
+        error: msg || 'Failed to edit message',
       });
     }
-
-    const message = await (await getMessengerService()).editMessage(id, userId, content);
-
-    // Emit update event
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(message.conversationId.toString(), userId);
-    emitToConversation(conversation, 'messenger:v4:message-edited', {
-      messageId: id,
-      content,
-      editedAt: message.editedAt,
-    });
-
-    res.json({
-      success: true,
-      message,
-    });
-  } catch (error) {
-    logger.error('Error editing message:', error);
-    res.status(error.message.includes('window expired') ? 403 : 500).json({
-      error: error.message || 'Failed to edit message',
-    });
   }
-});
+);
 
 /**
  * DELETE /api/v4/messenger/messages/:id
  * Delete a message
  */
-router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
+router.delete(
+  '/messages/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+      const userId = req.user.id;
 
-    const svc = await getMessengerService();
-    const message = await svc.messagesCollection.findOne({
-      _id: new ObjectId(id),
-    });
+      const svc = await getMessengerService();
+      const message = await svc.messagesCollection.findOne({
+        _id: new ObjectId(id),
+        senderId: userId,
+        isDeleted: false,
+      });
 
-    if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+
+      await svc.deleteMessage(id, userId);
+
+      // Emit delete event
+      const conversation = await svc.getConversation(message.conversationId.toString(), userId);
+      emitToConversation(conversation, 'messenger:v4:message-deleted', {
+        messageId: id,
+      });
+
+      res.json({
+        success: true,
+        message: 'Message deleted',
+      });
+    } catch (error) {
+      logger.error('Error deleting message:', error);
+      res.status(500).json({
+        error: 'Failed to delete message',
+      });
     }
-
-    await svc.deleteMessage(id, userId);
-
-    // Emit delete event
-    const conversation = await svc.getConversation(message.conversationId.toString(), userId);
-    emitToConversation(conversation, 'messenger:v4:message-deleted', {
-      messageId: id,
-    });
-
-    res.json({
-      success: true,
-      message: 'Message deleted',
-    });
-  } catch (error) {
-    logger.error('Error deleting message:', error);
-    res.status(500).json({
-      error: 'Failed to delete message',
-    });
   }
-});
+);
 
 /**
  * POST /api/v4/messenger/messages/:id/reactions
  * Toggle emoji reaction on a message
  */
-router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const userName = safeDisplayName(
-      req.user.displayName,
-      req.user.businessName,
-      req.user.name,
-      req.user.firstName
-    );
-    const { emoji } = req.body;
+router.post(
+  '/messages/:id/reactions',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+      const userId = req.user.id;
+      const userName = safeDisplayName(
+        req.user.displayName,
+        req.user.businessName,
+        req.user.name,
+        req.user.firstName
+      );
+      const { emoji } = req.body;
 
-    if (!emoji) {
-      return res.status(400).json({
-        error: 'Emoji is required',
+      if (!emoji || typeof emoji !== 'string') {
+        return res.status(400).json({
+          error: 'Emoji is required',
+        });
+      }
+
+      // Limit emoji field length to prevent storing arbitrary long strings
+      if (emoji.length > 10) {
+        return res.status(400).json({ error: 'Invalid emoji' });
+      }
+
+      const message = await (
+        await getMessengerService()
+      ).toggleReaction(id, userId, userName, emoji);
+
+      // Emit reaction event
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(message.conversationId.toString(), userId);
+      emitToConversation(conversation, 'messenger:v4:reaction', {
+        messageId: id,
+        reactions: message.reactions,
+      });
+
+      res.json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error('Error toggling reaction:', error);
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to toggle reaction',
       });
     }
-
-    const message = await (await getMessengerService()).toggleReaction(id, userId, userName, emoji);
-
-    // Emit reaction event
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(message.conversationId.toString(), userId);
-    emitToConversation(conversation, 'messenger:v4:reaction', {
-      messageId: id,
-      reactions: message.reactions,
-    });
-
-    res.json({
-      success: true,
-      message,
-    });
-  } catch (error) {
-    logger.error('Error toggling reaction:', error);
-    res.status(500).json({
-      error: 'Failed to toggle reaction',
-    });
   }
-});
+);
 
 // ============================================================================
 // UTILITY ENDPOINTS
@@ -738,9 +911,18 @@ router.get('/contacts', applyAuthRequired, async (req, res) => {
     const userId = req.user.id;
     const { q: query, role, limit = 20 } = req.query;
 
+    // Validate role to prevent admin/privileged user enumeration
+    const ALLOWED_CONTACT_ROLES = ['customer', 'supplier'];
+    const validRole = role && ALLOWED_CONTACT_ROLES.includes(role) ? role : undefined;
+
     const contacts = await (
       await getMessengerService()
-    ).searchContacts(userId, query, { role }, parseInt(limit, 10));
+    ).searchContacts(
+      userId,
+      query && query.substring(0, 200),
+      { role: validRole },
+      Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100)
+    );
 
     res.json({
       success: true,
@@ -769,9 +951,15 @@ router.get('/search', applyAuthRequired, async (req, res) => {
       });
     }
 
+    if (query.length > 200) {
+      return res.status(400).json({
+        error: 'Search query must be 200 characters or fewer',
+      });
+    }
+
     const results = await (
       await getMessengerService()
-    ).searchMessages(userId, query, parseInt(limit, 10));
+    ).searchMessages(userId, query, Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100));
 
     res.json({
       success: true,
@@ -790,80 +978,100 @@ router.get('/search', applyAuthRequired, async (req, res) => {
  * POST /api/v4/messenger/conversations/:id/typing
  * Send typing indicator
  */
-router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => {
-  try {
-    const { id: conversationId } = req.params;
-    const userId = req.user.id;
-    const userName = safeDisplayName(
-      req.user.displayName,
-      req.user.businessName,
-      req.user.name,
-      req.user.firstName
-    );
-    // isTyping defaults to true — clients may send false to indicate they stopped typing
-    const isTyping = req.body.isTyping !== false;
-
-    // Fetch conversation once — verifies participant access and provides participant list
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(conversationId, userId);
-    conversation.participants.forEach(participant => {
-      if (participant.userId !== userId) {
-        emitToUser(participant.userId, 'messenger:v4:typing', {
-          conversationId,
-          userId,
-          userName,
-          isTyping,
-        });
+router.post(
+  '/conversations/:id/typing',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
       }
-    });
+      const userId = req.user.id;
+      const userName = safeDisplayName(
+        req.user.displayName,
+        req.user.businessName,
+        req.user.name,
+        req.user.firstName
+      );
+      // isTyping defaults to true — clients may send false to indicate they stopped typing
+      const isTyping = req.body.isTyping !== false;
 
-    res.json({
-      success: true,
-    });
-  } catch (error) {
-    logger.error('Error sending typing indicator:', error);
-    res.status(500).json({
-      error: 'Failed to send typing indicator',
-    });
+      // Fetch conversation once — verifies participant access and provides participant list
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(conversationId, userId);
+      conversation.participants.forEach(participant => {
+        if (participant.userId !== userId) {
+          emitToUser(participant.userId, 'messenger:v4:typing', {
+            conversationId,
+            userId,
+            userName,
+            isTyping,
+          });
+        }
+      });
+
+      res.json({
+        success: true,
+      });
+    } catch (error) {
+      logger.error('Error sending typing indicator:', error);
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to send typing indicator',
+      });
+    }
   }
-});
+);
 
 /**
  * POST /api/v4/messenger/conversations/:id/read
  * Mark conversation as read
  */
-router.post('/conversations/:id/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const { id: conversationId } = req.params;
-    const userId = req.user.id;
-
-    await (await getMessengerService()).markAsRead(conversationId, userId);
-
-    // Emit read receipt to other participants
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(conversationId, userId);
-    conversation.participants.forEach(participant => {
-      if (participant.userId !== userId) {
-        emitToUser(participant.userId, 'messenger:v4:read', {
-          conversationId,
-          userId,
-          readAt: new Date(),
-        });
+router.post(
+  '/conversations/:id/read',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
       }
-    });
+      const userId = req.user.id;
 
-    res.json({
-      success: true,
-    });
-  } catch (error) {
-    logger.error('Error marking as read:', error);
-    res.status(500).json({
-      error: 'Failed to mark as read',
-    });
+      await (await getMessengerService()).markAsRead(conversationId, userId);
+
+      // Emit read receipt to other participants
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(conversationId, userId);
+      conversation.participants.forEach(participant => {
+        if (participant.userId !== userId) {
+          emitToUser(participant.userId, 'messenger:v4:read', {
+            conversationId,
+            userId,
+            readAt: new Date(),
+          });
+        }
+      });
+
+      res.json({
+        success: true,
+      });
+    } catch (error) {
+      logger.error('Error marking as read:', error);
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to mark as read',
+      });
+    }
   }
-});
+);
 
 // ============================================================================
 // ADMIN ENDPOINTS
@@ -887,23 +1095,31 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
 
     const query = {};
     if (search && search.trim()) {
+      const escapedSearch = search
+        .substring(0, 200)
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { 'lastMessage.content': { $regex: search.trim(), $options: 'i' } },
-        { 'participants.displayName': { $regex: search.trim(), $options: 'i' } },
-        { 'participants.businessName': { $regex: search.trim(), $options: 'i' } },
-        { 'context.title': { $regex: search.trim(), $options: 'i' } },
+        { 'lastMessage.content': { $regex: escapedSearch, $options: 'i' } },
+        { 'participants.displayName': { $regex: escapedSearch, $options: 'i' } },
+        { 'participants.businessName': { $regex: escapedSearch, $options: 'i' } },
+        { 'context.title': { $regex: escapedSearch, $options: 'i' } },
       ];
     }
     if (status) {
-      query.status = status;
+      // Admins can filter by a broader set of statuses
+      const allowedAdminStatuses = ['active', 'archived', 'deleted', 'flagged'];
+      if (allowedAdminStatuses.includes(status)) {
+        query.status = status;
+      }
     }
 
     const [conversations, total] = await Promise.all([
       collection
         .find(query)
         .sort({ updatedAt: -1 })
-        .skip(parseInt(skip, 10))
-        .limit(Math.min(parseInt(limit, 10), 100))
+        .skip(Math.max(parseInt(skip, 10) || 0, 0))
+        .limit(Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100))
         .toArray(),
       collection.countDocuments(query),
     ]);
@@ -919,17 +1135,22 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
  * GET /api/v4/messenger/admin/metrics
  * Return in-memory messenger v4 operational counters (admin only).
  */
-router.get('/admin/metrics', applyAuthRequired, async (req, res) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Forbidden: admin access required' });
-  }
+router.get('/admin/metrics', applyAuthRequired, writeLimiter, (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: admin access required' });
+    }
 
-  res.json({
-    success: true,
-    metrics: messengerMetrics.getAll(),
-    collectedAt: new Date().toISOString(),
-    note: 'Counters reset on process restart. Integrate with external monitoring for persistence.',
-  });
+    res.json({
+      success: true,
+      metrics: messengerMetrics.getAll(),
+      collectedAt: new Date().toISOString(),
+      note: 'Counters reset on process restart. Integrate with external monitoring for persistence.',
+    });
+  } catch (error) {
+    logger.error('Admin: error fetching metrics:', error);
+    next(error);
+  }
 });
 
 module.exports = { router, initialize };

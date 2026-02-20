@@ -14,7 +14,13 @@ function _cv4LooksLikeEmail(str) {
 
 // Returns str if it is non-empty and not an email, otherwise the fallback.
 function _cv4SafeName(str, fallback) {
-  return str && !_cv4LooksLikeEmail(str) ? str : fallback || 'Unknown';
+  if (str && !_cv4LooksLikeEmail(str)) {
+    return str;
+  }
+  if (str && _cv4LooksLikeEmail(str)) {
+    return str.split('@')[0] || str;
+  }
+  return fallback || 'Unknown';
 }
 
 class ChatViewV4 {
@@ -107,6 +113,15 @@ class ChatViewV4 {
         this._onLightboxClose();
       }
     });
+    // Escape key closes lightbox (WCAG 2.1 modal pattern)
+    this._onKeyDown = (e) => {
+      if (e.key === 'Escape' && this._lightboxOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._onLightboxClose();
+      }
+    };
+    document.addEventListener('keydown', this._onKeyDown);
 
     // Header action buttons
     this.container.querySelector('#v4PinBtn').addEventListener('click', () => {
@@ -310,6 +325,7 @@ class ChatViewV4 {
    * @param {string} name - The name of the typing user
    */
   showTyping(name) {
+    if (!name || typeof name !== 'string') return;
     this.hideTyping(); // remove any existing
     const el = document.createElement('div');
     el.id = 'v4TypingBubble';
@@ -338,6 +354,11 @@ class ChatViewV4 {
 
   /** Clean up all listeners. */
   destroy() {
+    this._onLightboxClose(); // restore body overflow if lightbox was open
+    if (this._onKeyDown) {
+      document.removeEventListener('keydown', this._onKeyDown);
+      this._onKeyDown = null;
+    }
     this.messagesEl.removeEventListener('scroll', this._onScroll);
     window.removeEventListener('messenger:new-message', this._onNewMessage);
     window.removeEventListener('messenger:v4:message', this._onV4Message);
@@ -551,6 +572,7 @@ class ChatViewV4 {
     this.lightboxImg.src = src;
     this.lightboxImg.alt = alt || 'Image attachment';
     this.lightbox.style.display = 'flex';
+    this._lightboxOpen = true;
     document.body.style.overflow = 'hidden';
     this.lightbox.focus();
   }
@@ -558,6 +580,7 @@ class ChatViewV4 {
   _onLightboxClose() {
     this.lightbox.style.display = 'none';
     this.lightboxImg.src = '';
+    this._lightboxOpen = false;
     document.body.style.overflow = '';
   }
 

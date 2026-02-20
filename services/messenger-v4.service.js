@@ -186,7 +186,9 @@ class MessengerV4Service {
 
     // Search filter (in participant names or last message)
     if (filters.search) {
-      const searchRegex = new RegExp(filters.search, 'i');
+      // Escape regex metacharacters to prevent ReDoS
+      const escapedSearch = filters.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
       query.$or = [
         { 'participants.displayName': searchRegex },
         { 'lastMessage.content': searchRegex },
@@ -430,6 +432,7 @@ class MessengerV4Service {
     if (options.cursor) {
       const cursorMessage = await this.messagesCollection.findOne({
         _id: new ObjectId(options.cursor),
+        conversationId: new ObjectId(conversationId),
       });
 
       if (cursorMessage) {
@@ -463,6 +466,10 @@ class MessengerV4Service {
    * @returns {Object} Updated message
    */
   async editMessage(messageId, userId, newContent) {
+    if (!newContent || typeof newContent !== 'string' || !newContent.trim()) {
+      throw new Error('Message content cannot be empty');
+    }
+
     const message = await this.messagesCollection.findOne({
       _id: new ObjectId(messageId),
       senderId: userId,
@@ -495,6 +502,7 @@ class MessengerV4Service {
     const conversation = await this.conversationsCollection.findOne({
       _id: message.conversationId,
       'lastMessage.sentAt': message.createdAt,
+      'lastMessage.senderId': message.senderId,
     });
 
     if (conversation) {
@@ -521,6 +529,7 @@ class MessengerV4Service {
     const message = await this.messagesCollection.findOne({
       _id: new ObjectId(messageId),
       senderId: userId,
+      isDeleted: false,
     });
 
     if (!message) {
@@ -552,10 +561,21 @@ class MessengerV4Service {
   async toggleReaction(messageId, userId, userName, emoji) {
     const message = await this.messagesCollection.findOne({
       _id: new ObjectId(messageId),
+      isDeleted: false,
     });
 
     if (!message) {
       throw new Error('Message not found');
+    }
+
+    // Verify the user is a participant in the conversation
+    const conversation = await this.conversationsCollection.findOne({
+      _id: message.conversationId,
+      'participants.userId': userId,
+    });
+
+    if (!conversation) {
+      throw new Error('Message not found or access denied');
     }
 
     // Check if user already reacted with this emoji
@@ -668,7 +688,9 @@ class MessengerV4Service {
     };
 
     if (query) {
-      const searchRegex = new RegExp(query, 'i');
+      // Escape regex metacharacters to prevent ReDoS
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedQuery, 'i');
       searchQuery.$or = [
         { displayName: searchRegex },
         { email: searchRegex },
@@ -697,7 +719,23 @@ class MessengerV4Service {
       // Use the string 'id' field (consistent with JWT auth and all participant lookups)
       userId: user.id,
       id: user.id,
-      displayName: user.displayName || user.businessName || user.email,
+      displayName: (() => {
+        const dn = user.displayName;
+        const bn = user.businessName;
+        const em = user.email;
+        // Prefer non-email display names; fall back to email local part
+        const looksLikeEmail = s => typeof s === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+        if (dn && !looksLikeEmail(dn)) {
+          return dn;
+        }
+        if (bn && !looksLikeEmail(bn)) {
+          return bn;
+        }
+        if (em) {
+          return em.split('@')[0] || em;
+        }
+        return 'Unknown';
+      })(),
       role: user.role || 'customer',
       avatar: user.avatar || null,
     }));
@@ -711,10 +749,11 @@ class MessengerV4Service {
    * @returns {Array} Array of messages with conversation info
    */
   async searchMessages(userId, query, limit = 50) {
-    // Get user's conversation IDs
+    // Get user's conversation IDs — exclude hard-deleted conversations from search
     const conversations = await this.conversationsCollection
       .find({
         'participants.userId': userId,
+        status: { $ne: 'deleted' },
       })
       .project({ _id: 1 })
       .toArray();
@@ -731,24 +770,32 @@ class MessengerV4Service {
       .limit(limit)
       .toArray();
 
-    // Enrich with conversation data (guard against hard-deleted conversations)
-    const enrichedMessages = await Promise.all(
-      messages.map(async msg => {
-        const conv = await this.conversationsCollection.findOne({
-          _id: msg.conversationId,
-        });
-        return {
-          ...msg,
-          conversation: conv
-            ? {
-                _id: conv._id,
-                type: conv.type,
-                participants: conv.participants,
-              }
-            : null,
-        };
-      })
-    );
+    // Enrich with conversation data — single $in query instead of N individual findOnes
+    const uniqueConvIds = [...new Set(messages.map(m => m.conversationId.toString()))];
+    const convDocs = await this.conversationsCollection
+      .find({ _id: { $in: uniqueConvIds.map(id => new ObjectId(id)) } })
+      .toArray();
+    const convMap = new Map(convDocs.map(c => [c._id.toString(), c]));
+
+    const enrichedMessages = messages.map(msg => {
+      const conv = convMap.get(msg.conversationId.toString());
+      return {
+        ...msg,
+        conversation: conv
+          ? {
+              _id: conv._id,
+              type: conv.type,
+              // Only expose non-sensitive participant fields
+              participants: (conv.participants || []).map(p => ({
+                userId: p.userId,
+                displayName: p.displayName,
+                avatar: p.avatar,
+                role: p.role,
+              })),
+            }
+          : null,
+      };
+    });
 
     return enrichedMessages;
   }

@@ -68,10 +68,17 @@
 
   // Returns the first safe (non-email) display name from the arguments, or fallback
   function safeDisplayName(...candidates) {
+    let firstEmail = null;
     for (const candidate of candidates) {
       if (candidate && !looksLikeEmail(candidate)) {
         return candidate;
       }
+      if (candidate && looksLikeEmail(candidate) && !firstEmail) {
+        firstEmail = candidate;
+      }
+    }
+    if (firstEmail) {
+      return firstEmail.split('@')[0] || firstEmail;
     }
     return 'Unknown';
   }
@@ -212,6 +219,10 @@
         clearInterval(this.refreshTimer);
         this.refreshTimer = null;
       }
+      if (this._socket) {
+        this._socket.disconnect();
+        this._socket = null;
+      }
       window.removeEventListener('online', this._onOnline);
       window.removeEventListener('offline', this._onOffline);
       window.removeEventListener('messenger:notification', this._onMessengerNotification);
@@ -291,15 +302,15 @@
     _setupWebSocket() {
       if (window.io && typeof window.io === 'function') {
         try {
-          const socket = window.io();
+          this._socket = window.io();
           const refresh = () => this._fetchConversations();
-          socket.on('messenger:v4:message', refresh);
-          socket.on('messenger:v4:conversation-updated', refresh);
-          socket.on('messenger:v4:read', refresh);
-          socket.on('connect', () => {
+          this._socket.on('messenger:v4:message', refresh);
+          this._socket.on('messenger:v4:conversation-updated', refresh);
+          this._socket.on('messenger:v4:read', refresh);
+          this._socket.on('connect', () => {
             this.wsConnected = true;
           });
-          socket.on('disconnect', () => {
+          this._socket.on('disconnect', () => {
             this.wsConnected = false;
           });
           this.wsConnected = true;
@@ -388,11 +399,14 @@
         participants[0] ||
         {};
 
-      const name = escapeHtml(safeDisplayName(other.displayName, other.businessName, other.name));
-      const initial = name.charAt(0).toUpperCase() || '?';
-      const avatarColor = getAvatarColor(name);
-      const avatarImg = other.avatar
-        ? `<img src="${escapeHtml(other.avatar)}" alt="${name}" class="mwv4__avatar-img" loading="lazy">`
+      const rawName = safeDisplayName(other.displayName, other.businessName, other.name);
+      const name = escapeHtml(rawName);
+      const initial = rawName.charAt(0).toUpperCase() || '?';
+      const avatarColor = getAvatarColor(rawName);
+      // Only allow same-origin avatar URLs (relative paths starting with /) to prevent tracking pixels
+      const safeAvatarUrl = other.avatar && /^\//.test(other.avatar) ? other.avatar : null;
+      const avatarImg = safeAvatarUrl
+        ? `<img src="${escapeHtml(safeAvatarUrl)}" alt="${name}" class="mwv4__avatar-img" loading="lazy">`
         : `<span class="mwv4__avatar-initial">${escapeHtml(initial)}</span>`;
 
       const lastMsg = conv.lastMessage || {};

@@ -13,7 +13,13 @@ function _clv4LooksLikeEmail(str) {
 
 // Returns the first candidate that is non-empty and not an email, or the fallback.
 function _clv4SafeName(str, fallback) {
-  return str && !_clv4LooksLikeEmail(str) ? str : fallback || 'Unknown';
+  if (str && !_clv4LooksLikeEmail(str)) {
+    return str;
+  }
+  if (str && _clv4LooksLikeEmail(str)) {
+    return str.split('@')[0] || str;
+  }
+  return fallback || 'Unknown';
 }
 
 // Named time constants for readability
@@ -322,7 +328,9 @@ class ConversationListV4 {
       return;
     }
     this.listEl.querySelectorAll('.messenger-v4__conversation-item').forEach(el => {
-      el.classList.toggle('messenger-v4__conversation-item--active', el.dataset.id === id);
+      const isActive = el.dataset.id === id;
+      el.classList.toggle('messenger-v4__conversation-item--active', isActive);
+      el.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
   }
 
@@ -347,6 +355,7 @@ class ConversationListV4 {
 
     // Only treat as horizontal swipe if mostly horizontal
     if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) {
+      this._touchTarget = null;
       return;
     }
 
