@@ -772,7 +772,7 @@ async function loadCustomerPlans(preloadedPlans) {
             <span class="small" style="color:#667085;">${packageCount} packages</span>
           </div>
           ${plan.location ? `<p class="small" style="color:#667085;margin:0.25rem 0;">📍 ${escapeHtml(plan.location)}</p>` : ''}
-          ${plan.date ? `<p class="small" style="color:#667085;margin:0.25rem 0;">📅 ${plan.date}</p>` : ''}
+          ${plan.date ? `<p class="small" style="color:#667085;margin:0.25rem 0;">📅 ${escapeHtml(plan.date)}</p>` : ''}
         </div>
       `;
     }).join('');
@@ -818,10 +818,10 @@ async function initDashboard() {
   const welcomeHeading = document.getElementById('welcome-heading');
   if (welcomeHeading) {
     if (user.firstName) {
-      welcomeHeading.textContent = `Welcome ${escapeHtml(user.firstName)}!`;
+      welcomeHeading.textContent = `Welcome ${user.firstName}!`;
     } else if (user.name) {
       const firstName = user.name.split(' ')[0];
-      welcomeHeading.textContent = `Welcome ${escapeHtml(firstName)}!`;
+      welcomeHeading.textContent = `Welcome ${firstName}!`;
     } else {
       welcomeHeading.textContent = `Welcome to EventFlow!`;
     }
@@ -857,7 +857,7 @@ async function initDashboard() {
   });
   
   // Setup event handlers
-  setupEventHandlers();
+  setupEventHandlers(sharedPlans);
   
   console.log('✅ Dashboard initialized successfully');
 }
@@ -881,7 +881,7 @@ function initCalendar() {
 }
 
 // Setup all event handlers
-function setupEventHandlers() {
+function setupEventHandlers(latestPlans) {
   // Setup Open My Plan button with auth-aware navigation
   document.getElementById('openPlanBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -955,7 +955,7 @@ function setupEventHandlers() {
     
     // Reload widgets with new budget - with error handling
     try {
-      await initCustomerDashboardWidgets();
+      await initCustomerDashboardWidgets(latestPlans);
     } catch (err) {
       console.error('Failed to reload widgets after budget update:', err);
       // Don't show error to user since budget was saved successfully

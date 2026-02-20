@@ -213,14 +213,14 @@ router.post(
       // Fetch user information for all participants
       // Users are keyed by their string 'id' field (from JWT auth), NOT ObjectId '_id'
       const usersCollection = dbInstance.collection('users');
-      const allUserIds = [currentUserId, ...participantIds];
+      const uniqueUserIds = [...new Set([currentUserId, ...participantIds])];
       const participantUsers = await usersCollection
         .find({
-          id: { $in: allUserIds },
+          id: { $in: uniqueUserIds },
         })
         .toArray();
 
-      if (participantUsers.length !== participantIds.length + 1) {
+      if (participantUsers.length !== uniqueUserIds.length) {
         return res.status(400).json({
           error: 'One or more participant IDs are invalid',
         });
@@ -444,6 +444,21 @@ router.post(
         });
       }
 
+      // Validate and parse replyTo before writing any attachment files,
+      // so a malformed replyTo returns 400 without orphaning uploads.
+      let parsedReplyTo = null;
+      if (replyTo) {
+        if (typeof replyTo === 'string') {
+          try {
+            parsedReplyTo = JSON.parse(replyTo);
+          } catch {
+            return res.status(400).json({ error: 'Invalid replyTo format' });
+          }
+        } else {
+          parsedReplyTo = replyTo;
+        }
+      }
+
       // Process attachments if any
       const attachments = [];
       if (req.files && req.files.length > 0) {
@@ -451,8 +466,29 @@ router.post(
         const uploadsDir = path.join(__dirname, '..', 'uploads', 'messenger');
         await fs.mkdir(uploadsDir, { recursive: true });
 
+        // Map validated MIME types to safe file extensions so the saved
+        // filename is never derived from user-controlled originalname.
+        const MIME_TO_EXT = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/gif': '.gif',
+          'image/webp': '.webp',
+          'application/pdf': '.pdf',
+          'application/msword': '.doc',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+          'application/vnd.ms-excel': '.xls',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+          'text/plain': '.txt',
+        };
+
         for (const file of req.files) {
-          const filename = `${crypto.randomBytes(16).toString('hex')}${path.extname(file.originalname)}`;
+          const ext = MIME_TO_EXT[file.mimetype];
+          if (!ext) {
+            // Should not reach here because multer fileFilter already rejects
+            // unknown MIME types, but guard defensively.
+            return res.status(400).json({ error: `Unsupported file type: ${file.mimetype}` });
+          }
+          const filename = `${crypto.randomBytes(16).toString('hex')}${ext}`;
           const filepath = path.join(uploadsDir, filename);
           await fs.writeFile(filepath, file.buffer);
 
@@ -476,7 +512,7 @@ router.post(
         content,
         type,
         attachments,
-        replyTo: replyTo ? (typeof replyTo === 'string' ? JSON.parse(replyTo) : replyTo) : null,
+        replyTo: parsedReplyTo,
       };
 
       const message = await (await getMessengerService()).sendMessage(conversationId, messageData);
@@ -797,7 +833,7 @@ router.get('/search', applyAuthRequired, async (req, res) => {
  * POST /api/v4/messenger/conversations/:id/typing
  * Send typing indicator
  */
-router.post('/conversations/:id/typing', applyAuthRequired, async (req, res) => {
+router.post('/conversations/:id/typing', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
     const userId = req.user.id;

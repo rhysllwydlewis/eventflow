@@ -316,6 +316,7 @@ class ChatViewV4 {
    * @param {string} name - The name of the typing user
    */
   showTyping(name) {
+    if (!name || typeof name !== 'string') return;
     this.hideTyping(); // remove any existing
     const el = document.createElement('div');
     el.id = 'v4TypingBubble';
