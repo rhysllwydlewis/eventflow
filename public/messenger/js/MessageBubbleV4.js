@@ -103,7 +103,8 @@ class MessageBubbleV4 {
           <img src="${MessageBubbleV4.escape(attachment.url)}"
                alt="${MessageBubbleV4.escape(fileName || 'Image attachment')}"
                loading="lazy"
-               class="messenger-v4__attachment-image" />
+               class="messenger-v4__attachment-image"
+               onerror="this.onerror=null;this.alt='Image unavailable';this.classList.add('messenger-v4__attachment-error');" />
         </div>`;
     }
 

@@ -285,6 +285,16 @@ class MessengerAPI {
   }
 
   /**
+   * Mark conversation as unread
+   */
+  async markAsUnread(conversationId) {
+    return this.request(`/conversations/${conversationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isUnread: true }),
+    });
+  }
+
+  /**
    * Toggle reaction on a message
    */
   async toggleReaction(messageId, emoji) {

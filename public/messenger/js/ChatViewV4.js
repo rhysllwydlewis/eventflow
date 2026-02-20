@@ -70,6 +70,8 @@ class ChatViewV4 {
         <div class="messenger-v4__chat-actions">
           <button class="messenger-v4__action-button" id="v4PinBtn" aria-label="Pin conversation" title="Pin">📌</button>
           <button class="messenger-v4__action-button" id="v4ArchiveBtn" aria-label="Archive conversation" title="Archive">🗂️</button>
+          <button class="messenger-v4__action-button" id="v4DeleteConvBtn" aria-label="Delete conversation" title="Delete">🗑️</button>
+          <button class="messenger-v4__action-button" id="v4MarkUnreadBtn" aria-label="Mark as unread" title="Mark as unread">✉️</button>
           <button class="messenger-v4__action-button" id="v4BackBtn" aria-label="Back to list" title="Back" style="display:none">←</button>
         </div>
       </div>
@@ -135,6 +137,20 @@ class ChatViewV4 {
       if (this.conversationId) {
         window.dispatchEvent(
           new CustomEvent('messenger:archive-conversation', { detail: { id: this.conversationId } })
+        );
+      }
+    });
+    this.container.querySelector('#v4DeleteConvBtn').addEventListener('click', () => {
+      if (this.conversationId) {
+        window.dispatchEvent(
+          new CustomEvent('messenger:delete-conversation', { detail: { id: this.conversationId } })
+        );
+      }
+    });
+    this.container.querySelector('#v4MarkUnreadBtn').addEventListener('click', () => {
+      if (this.conversationId) {
+        window.dispatchEvent(
+          new CustomEvent('messenger:mark-unread', { detail: { id: this.conversationId } })
         );
       }
     });

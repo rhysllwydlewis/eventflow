@@ -15,6 +15,7 @@ class ContactPickerV4 {
     this.options = {
       onSelect: null,
       currentUserId: null,
+      currentUserRole: null,
       ...options,
     };
 
@@ -137,7 +138,7 @@ class ContactPickerV4 {
   async search(query) {
     try {
       const data = await this.api.getContacts(query);
-      const contacts = data.contacts || data || [];
+      const contacts = this._filterByRole(data.contacts || data || []);
       this.resultsEl.innerHTML = contacts.length
         ? contacts.map(c => this._buildContactHTML(c)).join('')
         : `<div class="messenger-v4__empty-state" role="status">No contacts found for "${this.escape(query)}"</div>`;
@@ -196,6 +197,21 @@ class ContactPickerV4 {
 
   _onKeyDown(e) {
     if (e.key === 'Escape') this.close();
+  }
+
+  /**
+   * Filter contacts based on business rules:
+   * - customer → only suppliers
+   * - supplier → all (customers + suppliers)
+   * @param {Array} contacts
+   * @returns {Array}
+   */
+  _filterByRole(contacts) {
+    const myRole = this.options.currentUserRole;
+    if (myRole === 'customer') {
+      return contacts.filter(c => (c.role || 'customer') === 'supplier');
+    }
+    return contacts;
   }
 
   _buildRecentHTML() {

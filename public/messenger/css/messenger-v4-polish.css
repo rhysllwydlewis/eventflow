@@ -857,6 +857,11 @@
    The send button only has bg+color in the base CSS. It does
    NOT have the messenger-v4__composer-button class.
    ============================================================ */
+.messenger-v4__send-button svg {
+  width: 24px;
+  height: 24px;
+}
+
 .messenger-v4__send-button {
   width: 40px;
   height: 40px;

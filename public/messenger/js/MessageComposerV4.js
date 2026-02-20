@@ -84,7 +84,7 @@ class MessageComposerV4 {
             aria-multiline="true"></textarea>
 
           <button type="button" class="messenger-v4__send-button" id="v4SendBtn" aria-label="Send message" disabled>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
             </svg>
           </button>

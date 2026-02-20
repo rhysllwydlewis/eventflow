@@ -106,7 +106,10 @@ class MessengerAppV4 {
     if (pickerContainer && window.ContactPickerV4) {
       this.contactPicker = new ContactPickerV4(pickerContainer, this.api, {
         currentUserId: this._getCurrentUserId(),
+        currentUserRole: this.state.currentUser?.role || null,
       });
+    } else {
+      console.warn('[MessengerAppV4] ContactPickerV4 not initialized: container or class missing.', { pickerContainer, ContactPickerV4: !!window.ContactPickerV4 });
     }
 
     // Context banner
@@ -232,6 +235,44 @@ class MessengerAppV4 {
       const { id } = e.detail || {};
       if (id) {
         await this._toggleArchive(id);
+      }
+    });
+
+    // Delete conversation
+    window.addEventListener('messenger:delete-conversation', async e => {
+      const { id } = e.detail || {};
+      if (!id) {
+        return;
+      }
+      const confirmed = window.confirm('Are you sure you want to delete this conversation?');
+      if (!confirmed) {
+        return;
+      }
+      try {
+        await this.api.deleteConversation(id);
+        this.state.setConversations(this.state.conversations.filter(c => c._id !== id));
+        if (this._activeConversationId === id) {
+          this._activeConversationId = null;
+          this.state.setActiveConversation(null);
+          this.handleMobilePanel('sidebar');
+        }
+        this.conversationList?.render();
+      } catch (err) {
+        console.error('[MessengerAppV4] Delete conversation failed:', err);
+      }
+    });
+
+    // Mark conversation as unread
+    window.addEventListener('messenger:mark-unread', async e => {
+      const { id } = e.detail || {};
+      if (!id) {
+        return;
+      }
+      try {
+        await this.api.markAsUnread(id);
+        await this._loadConversations();
+      } catch (err) {
+        console.error('[MessengerAppV4] Mark as unread failed:', err);
       }
     });
 
