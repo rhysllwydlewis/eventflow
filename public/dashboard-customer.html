@@ -951,7 +951,11 @@ function setupEventHandlers(latestPlans) {
     // Show success message
     budgetStatus.style.display = 'block';
     budgetStatus.style.background = '#F0FDF4';
-    budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#059669;">✅ Budget set to £' + budget.toLocaleString() + '</p>';
+    const budgetP = document.createElement('p');
+    budgetP.className = 'small';
+    budgetP.style.cssText = 'margin:0;color:#059669;';
+    budgetP.textContent = `✅ Budget set to £${budget.toLocaleString()}`;
+    budgetStatus.replaceChildren(budgetP);
     
     // Reload widgets with new budget - with error handling
     try {

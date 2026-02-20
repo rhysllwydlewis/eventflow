@@ -769,24 +769,32 @@ class MessengerV4Service {
       .limit(limit)
       .toArray();
 
-    // Enrich with conversation data (guard against hard-deleted conversations)
-    const enrichedMessages = await Promise.all(
-      messages.map(async msg => {
-        const conv = await this.conversationsCollection.findOne({
-          _id: msg.conversationId,
-        });
-        return {
-          ...msg,
-          conversation: conv
-            ? {
-                _id: conv._id,
-                type: conv.type,
-                participants: conv.participants,
-              }
-            : null,
-        };
-      })
-    );
+    // Enrich with conversation data — single $in query instead of N individual findOnes
+    const uniqueConvIds = [...new Set(messages.map(m => m.conversationId.toString()))];
+    const convDocs = await this.conversationsCollection
+      .find({ _id: { $in: uniqueConvIds.map(id => new ObjectId(id)) } })
+      .toArray();
+    const convMap = new Map(convDocs.map(c => [c._id.toString(), c]));
+
+    const enrichedMessages = messages.map(msg => {
+      const conv = convMap.get(msg.conversationId.toString());
+      return {
+        ...msg,
+        conversation: conv
+          ? {
+              _id: conv._id,
+              type: conv.type,
+              // Only expose non-sensitive participant fields
+              participants: (conv.participants || []).map(p => ({
+                userId: p.userId,
+                displayName: p.displayName,
+                avatar: p.avatar,
+                role: p.role,
+              })),
+            }
+          : null,
+      };
+    });
 
     return enrichedMessages;
   }

@@ -47,6 +47,20 @@ function isValidObjectId(id) {
   return typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id);
 }
 
+// Maps an error message to the appropriate HTTP status code for messenger errors.
+function messengerErrorStatus(msg) {
+  if (msg.includes('not found')) {
+    return 404;
+  }
+  if (msg.includes('access denied') || msg.includes('not a participant')) {
+    return 403;
+  }
+  if (msg.includes('window expired') || msg.includes('Rate limit')) {
+    return 429;
+  }
+  return 500;
+}
+
 // Dependencies injected by server.js
 let authRequired;
 let csrfProtection;
@@ -54,9 +68,6 @@ let db;
 let wsServer;
 let postmark;
 let logger;
-
-// Messenger service instance
-let messengerService;
 
 // ---------------------------------------------------------------------------
 // Deferred middleware wrappers
@@ -138,7 +149,7 @@ function initialize(dependencies) {
   logger = dependencies.logger;
 
   // Service will be initialized lazily on first request
-  messengerService = null;
+  _messengerServicePromise = null;
 
   logger.info('Messenger v4 routes initialized');
 
@@ -158,14 +169,16 @@ async function getDbInstance() {
 }
 
 /**
- * Get or initialize messenger service
+ * Get or initialize messenger service (promise-based lock prevents TOCTOU race)
  */
+let _messengerServicePromise = null;
 async function getMessengerService() {
-  if (!messengerService) {
-    const dbInstance = await getDbInstance();
-    messengerService = new MessengerV4Service(dbInstance, logger);
+  if (!_messengerServicePromise) {
+    _messengerServicePromise = getDbInstance().then(
+      dbInstance => new MessengerV4Service(dbInstance, logger)
+    );
   }
-  return messengerService;
+  return _messengerServicePromise;
 }
 
 /**
@@ -417,8 +430,9 @@ router.patch(
       });
     } catch (error) {
       logger.error('Error updating conversation:', error);
-      res.status(500).json({
-        error: error.message || 'Failed to update conversation',
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to update conversation',
       });
     }
   }
@@ -453,8 +467,9 @@ router.delete(
       });
     } catch (error) {
       logger.error('Error deleting conversation:', error);
-      res.status(500).json({
-        error: 'Failed to delete conversation',
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to delete conversation',
       });
     }
   }
@@ -482,6 +497,13 @@ router.post(
         return res.status(400).json({ error: 'Invalid conversation ID' });
       }
       const { content, type = 'text', replyTo } = req.body;
+
+      // Validate message type against allowed values
+      const ALLOWED_MESSAGE_TYPES = ['text', 'image', 'file', 'system'];
+      if (!ALLOWED_MESSAGE_TYPES.includes(type)) {
+        return res.status(400).json({ error: 'Invalid message type' });
+      }
+
       const userId = req.user.id;
       const userName = safeDisplayName(
         req.user.displayName,
@@ -634,16 +656,17 @@ router.post(
       });
     } catch (error) {
       messengerMetrics.increment('messenger_v4_errors_total');
-      const statusCode = (error.message || '').includes('spam') ? 429 : 500;
+      const msg = error.message || '';
+      const statusCode = messengerErrorStatus(msg);
       logger.error('Error sending message:', {
-        error: error.message,
+        error: msg,
         userId: req.user?.id,
         conversationId: req.params.id,
         durationMs: Date.now() - startMs,
         statusCode,
       });
       res.status(statusCode).json({
-        error: error.message || 'Failed to send message',
+        error: msg || 'Failed to send message',
       });
     }
   }
@@ -728,19 +751,10 @@ router.patch(
       });
     } catch (error) {
       logger.error('Error editing message:', error);
-      let editStatus = 500;
       const msg = error.message || '';
-      if (
-        msg.includes('window expired') ||
-        msg.includes('not found') ||
-        msg.includes('access denied')
-      ) {
-        editStatus = 403;
-      } else if (msg.includes('cannot be empty')) {
-        editStatus = 400;
-      }
+      const editStatus = msg.includes('cannot be empty') ? 400 : messengerErrorStatus(msg);
       res.status(editStatus).json({
-        error: error.message || 'Failed to edit message',
+        error: msg || 'Failed to edit message',
       });
     }
   }
@@ -849,8 +863,9 @@ router.post(
       });
     } catch (error) {
       logger.error('Error toggling reaction:', error);
-      res.status(500).json({
-        error: 'Failed to toggle reaction',
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to toggle reaction',
       });
     }
   }
@@ -890,12 +905,16 @@ router.get('/contacts', applyAuthRequired, async (req, res) => {
     const userId = req.user.id;
     const { q: query, role, limit = 20 } = req.query;
 
+    // Validate role to prevent admin/privileged user enumeration
+    const ALLOWED_CONTACT_ROLES = ['customer', 'supplier'];
+    const validRole = role && ALLOWED_CONTACT_ROLES.includes(role) ? role : undefined;
+
     const contacts = await (
       await getMessengerService()
     ).searchContacts(
       userId,
       query && query.substring(0, 200),
-      { role },
+      { role: validRole },
       Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100)
     );
 
@@ -994,8 +1013,9 @@ router.post(
       });
     } catch (error) {
       logger.error('Error sending typing indicator:', error);
-      res.status(500).json({
-        error: 'Failed to send typing indicator',
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to send typing indicator',
       });
     }
   }
@@ -1039,8 +1059,9 @@ router.post(
       });
     } catch (error) {
       logger.error('Error marking as read:', error);
-      res.status(500).json({
-        error: 'Failed to mark as read',
+      const msg = error.message || '';
+      res.status(messengerErrorStatus(msg)).json({
+        error: msg || 'Failed to mark as read',
       });
     }
   }

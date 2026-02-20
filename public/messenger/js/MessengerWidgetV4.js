@@ -403,8 +403,10 @@
       const name = escapeHtml(rawName);
       const initial = rawName.charAt(0).toUpperCase() || '?';
       const avatarColor = getAvatarColor(rawName);
-      const avatarImg = other.avatar
-        ? `<img src="${escapeHtml(other.avatar)}" alt="${name}" class="mwv4__avatar-img" loading="lazy">`
+      // Only allow same-origin avatar URLs (relative paths starting with /) to prevent tracking pixels
+      const safeAvatarUrl = other.avatar && /^\//.test(other.avatar) ? other.avatar : null;
+      const avatarImg = safeAvatarUrl
+        ? `<img src="${escapeHtml(safeAvatarUrl)}" alt="${name}" class="mwv4__avatar-img" loading="lazy">`
         : `<span class="mwv4__avatar-initial">${escapeHtml(initial)}</span>`;
 
       const lastMsg = conv.lastMessage || {};
