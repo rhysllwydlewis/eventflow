@@ -167,9 +167,17 @@ class MessengerAppV4 {
       // Desktop notification if conversation is not currently open
       if (conversationId !== this._activeConversationId) {
         const uid = this._getCurrentUserId();
+        // Optimistically increment local unread count for the receiving participant
+        if (uid && conv) {
+          const me = conv.participants?.find(p => p.userId === uid);
+          if (me && me.userId !== message.senderId) {
+            me.unreadCount = (me.unreadCount || 0) + 1;
+            this.state.updateConversation(conv);
+          }
+        }
         const unread = this.state.conversations.reduce((sum, c) => {
-          const me = c.participants?.find(p => p.userId === uid);
-          return sum + (me?.unreadCount || 0);
+          const participant = c.participants?.find(p => p.userId === uid);
+          return sum + (participant?.unreadCount || 0);
         }, 0);
         this.state.setUnreadCount(unread);
         window.dispatchEvent(

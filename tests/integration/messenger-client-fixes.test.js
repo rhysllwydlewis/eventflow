@@ -199,4 +199,45 @@ describe('Messenger client-side fixes', () => {
     expect(messengerAppSrc).toContain('participant.unreadCount = 0');
     expect(messengerAppSrc).toContain('state.updateConversation(conv)');
   });
+
+  // ── Incoming message unread badge increment ─────────────────────────────────
+
+  it('MessengerAppV4 new-message handler increments local unreadCount for background convs', () => {
+    // Should optimistically update me.unreadCount when a WS message arrives for a non-active conv
+    expect(messengerAppSrc).toContain('me.unreadCount = (me.unreadCount || 0) + 1');
+  });
+
+  // ── MessengerAPI query param alignment ─────────────────────────────────────
+
+  it("MessengerAPI.getConversations sends 'unread=true' (matching server param, not 'unreadOnly')", () => {
+    expect(messengerApiSrc).toContain("params.append('unread', 'true')");
+    expect(messengerApiSrc).not.toContain("params.append('unreadOnly'");
+  });
+
+  // ── MessengerModals keyboard accessibility ──────────────────────────────────
+
+  it('MessengerModals.showConfirm Enter key only confirms when confirm button has focus', () => {
+    const modalsSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerModals.js'), 'utf8');
+    // Should guard against confirming when cancel button has focus
+    expect(modalsSrc).toContain('document.activeElement !== cancelBtn');
+  });
+
+  it('MessengerModals uses requestAnimationFrame (not setTimeout) for focus management', () => {
+    const modalsSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerModals.js'), 'utf8');
+    expect(modalsSrc).not.toMatch(/setTimeout.*focus.*100/);
+    expect(modalsSrc).toContain('requestAnimationFrame');
+  });
+
+  // ── Admin XSS hardening ─────────────────────────────────────────────────────
+
+  it('admin-init.js escapes user.name and user.email before inserting into table rows', () => {
+    const adminSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'assets', 'js', 'pages', 'admin-init.js'),
+      'utf8'
+    );
+    expect(adminSrc).toContain("escapeHtml(u.name || '')");
+    expect(adminSrc).toContain("escapeHtml(u.email || '')");
+    // Should also escape role names in analytics
+    expect(adminSrc).toContain('escapeHtml(r)');
+  });
 });

@@ -122,7 +122,8 @@ class MessengerAPI {
       params.append('status', filters.status);
     }
     if (filters.unreadOnly) {
-      params.append('unreadOnly', 'true');
+      // Server reads 'unread' (not 'unreadOnly')
+      params.append('unread', 'true');
     }
     if (filters.pinned) {
       params.append('pinned', 'true');

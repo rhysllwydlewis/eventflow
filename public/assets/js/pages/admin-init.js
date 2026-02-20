@@ -157,8 +157,8 @@
 
       rows +=
         `<tr ${isOwner ? 'style="background-color:#fef2f2;"' : ''}>` +
-        `<td>${u.name || ''}</td>` +
-        `<td>${u.email || ''}</td>` +
+        `<td>${escapeHtml(u.name || '')}</td>` +
+        `<td>${escapeHtml(u.email || '')}</td>` +
         `<td>${roleDisplay}</td>` +
         `<td>${verifiedBadge}</td>` +
         `<td>${joined}</td>` +
@@ -358,7 +358,7 @@
     const roleParts =
       Object.keys(byRole)
         .map(r => {
-          return `${r}: ${byRole[r]}`;
+          return `${escapeHtml(r)}: ${Number(byRole[r]) || 0}`;
         })
         .join(', ') || '—';
 
@@ -884,13 +884,13 @@
     content.innerHTML =
       `<div style="display: grid; gap: 1rem;">` +
       `<div><label style="display:block;margin-bottom:4px;font-weight:600;">Name</label>` +
-      `<input type="text" id="edit-user-name" value="${
+      `<input type="text" id="edit-user-name" value="${escapeHtml(
         user.name || ''
-      }" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>` +
+      )}" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>` +
       `<div><label style="display:block;margin-bottom:4px;font-weight:600;">Email</label>` +
-      `<input type="email" id="edit-user-email" value="${
+      `<input type="email" id="edit-user-email" value="${escapeHtml(
         user.email || ''
-      }" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>` +
+      )}" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>` +
       `</div>`;
 
     if (typeof Modal !== 'undefined') {
