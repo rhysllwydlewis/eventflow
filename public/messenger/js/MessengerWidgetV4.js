@@ -219,6 +219,10 @@
         clearInterval(this.refreshTimer);
         this.refreshTimer = null;
       }
+      if (this._socket) {
+        this._socket.disconnect();
+        this._socket = null;
+      }
       window.removeEventListener('online', this._onOnline);
       window.removeEventListener('offline', this._onOffline);
       window.removeEventListener('messenger:notification', this._onMessengerNotification);
@@ -298,15 +302,15 @@
     _setupWebSocket() {
       if (window.io && typeof window.io === 'function') {
         try {
-          const socket = window.io();
+          this._socket = window.io();
           const refresh = () => this._fetchConversations();
-          socket.on('messenger:v4:message', refresh);
-          socket.on('messenger:v4:conversation-updated', refresh);
-          socket.on('messenger:v4:read', refresh);
-          socket.on('connect', () => {
+          this._socket.on('messenger:v4:message', refresh);
+          this._socket.on('messenger:v4:conversation-updated', refresh);
+          this._socket.on('messenger:v4:read', refresh);
+          this._socket.on('connect', () => {
             this.wsConnected = true;
           });
-          socket.on('disconnect', () => {
+          this._socket.on('disconnect', () => {
             this.wsConnected = false;
           });
           this.wsConnected = true;

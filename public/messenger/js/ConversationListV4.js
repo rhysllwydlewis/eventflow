@@ -328,7 +328,9 @@ class ConversationListV4 {
       return;
     }
     this.listEl.querySelectorAll('.messenger-v4__conversation-item').forEach(el => {
-      el.classList.toggle('messenger-v4__conversation-item--active', el.dataset.id === id);
+      const isActive = el.dataset.id === id;
+      el.classList.toggle('messenger-v4__conversation-item--active', isActive);
+      el.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
   }
 

@@ -314,7 +314,7 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
 
     const conversations = await (
       await getMessengerService()
-    ).getConversations(userId, filters, parseInt(limit, 10), parseInt(skip, 10));
+    ).getConversations(userId, filters, Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100), Math.max(parseInt(skip, 10) || 0, 0));
 
     res.json({
       success: true,
@@ -356,7 +356,7 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
  * PATCH /api/v4/messenger/conversations/:id
  * Update conversation settings
  */
-router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -388,7 +388,7 @@ router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, async
  * DELETE /api/v4/messenger/conversations/:id
  * Soft delete a conversation (archive for the user)
  */
-router.delete('/conversations/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.delete('/conversations/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -539,7 +539,7 @@ router.post(
           // For now, send email to all non-muted participants
           const dbInstance = await getDbInstance();
           const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
-          if (recipient && recipient.email) {
+          if (recipient && recipient.email && postmark && typeof postmark.sendMail === 'function') {
             const contextInfo = conversation.context?.referenceTitle
               ? ` (Re: ${conversation.context.referenceTitle})`
               : '';
@@ -609,7 +609,7 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
       await getMessengerService()
     ).getMessages(conversationId, userId, {
       cursor,
-      limit: parseInt(limit, 10),
+      limit: Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100),
     });
 
     res.json({
@@ -628,7 +628,7 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
  * PATCH /api/v4/messenger/messages/:id
  * Edit a message
  */
-router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -658,7 +658,13 @@ router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req
     });
   } catch (error) {
     logger.error('Error editing message:', error);
-    res.status(error.message.includes('window expired') ? 403 : 500).json({
+    let editStatus = 500;
+    if (error.message.includes('window expired') || error.message.includes('not found') || error.message.includes('access denied')) {
+      editStatus = 403;
+    } else if (error.message.includes('cannot be empty')) {
+      editStatus = 400;
+    }
+    res.status(editStatus).json({
       error: error.message || 'Failed to edit message',
     });
   }
@@ -668,7 +674,7 @@ router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req
  * DELETE /api/v4/messenger/messages/:id
  * Delete a message
  */
-router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -676,6 +682,8 @@ router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (re
     const svc = await getMessengerService();
     const message = await svc.messagesCollection.findOne({
       _id: new ObjectId(id),
+      senderId: userId,
+      isDeleted: false,
     });
 
     if (!message) {
@@ -706,7 +714,7 @@ router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, async (re
  * POST /api/v4/messenger/messages/:id/reactions
  * Toggle emoji reaction on a message
  */
-router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -783,7 +791,7 @@ router.get('/contacts', applyAuthRequired, async (req, res) => {
 
     const contacts = await (
       await getMessengerService()
-    ).searchContacts(userId, query, { role }, parseInt(limit, 10));
+    ).searchContacts(userId, query, { role }, Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100));
 
     res.json({
       success: true,
@@ -814,7 +822,7 @@ router.get('/search', applyAuthRequired, async (req, res) => {
 
     const results = await (
       await getMessengerService()
-    ).searchMessages(userId, query, parseInt(limit, 10));
+    ).searchMessages(userId, query, Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100));
 
     res.json({
       success: true,
@@ -930,11 +938,12 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
 
     const query = {};
     if (search && search.trim()) {
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { 'lastMessage.content': { $regex: search.trim(), $options: 'i' } },
-        { 'participants.displayName': { $regex: search.trim(), $options: 'i' } },
-        { 'participants.businessName': { $regex: search.trim(), $options: 'i' } },
-        { 'context.title': { $regex: search.trim(), $options: 'i' } },
+        { 'lastMessage.content': { $regex: escapedSearch, $options: 'i' } },
+        { 'participants.displayName': { $regex: escapedSearch, $options: 'i' } },
+        { 'participants.businessName': { $regex: escapedSearch, $options: 'i' } },
+        { 'context.title': { $regex: escapedSearch, $options: 'i' } },
       ];
     }
     if (status) {

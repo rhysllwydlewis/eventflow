@@ -432,6 +432,7 @@ class MessengerV4Service {
     if (options.cursor) {
       const cursorMessage = await this.messagesCollection.findOne({
         _id: new ObjectId(options.cursor),
+        conversationId: new ObjectId(conversationId),
       });
 
       if (cursorMessage) {
@@ -501,6 +502,7 @@ class MessengerV4Service {
     const conversation = await this.conversationsCollection.findOne({
       _id: message.conversationId,
       'lastMessage.sentAt': message.createdAt,
+      'lastMessage.senderId': message.senderId,
     });
 
     if (conversation) {
@@ -716,7 +718,17 @@ class MessengerV4Service {
       // Use the string 'id' field (consistent with JWT auth and all participant lookups)
       userId: user.id,
       id: user.id,
-      displayName: user.displayName || user.businessName || user.email,
+      displayName: (() => {
+        const dn = user.displayName;
+        const bn = user.businessName;
+        const em = user.email;
+        // Prefer non-email display names; fall back to email local part
+        const looksLikeEmail = s => typeof s === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+        if (dn && !looksLikeEmail(dn)) return dn;
+        if (bn && !looksLikeEmail(bn)) return bn;
+        if (em) return em.split('@')[0] || em;
+        return 'Unknown';
+      })(),
       role: user.role || 'customer',
       avatar: user.avatar || null,
     }));

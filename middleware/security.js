@@ -214,7 +214,7 @@ function configureCORS(isProduction = false) {
 
       // Support Railway preview URLs in non-production
       // Railway preview URLs follow pattern: https://projectname-pr-123.railway.app
-      if (!isProduction && origin.includes('.railway.app')) {
+      if (!isProduction && origin.endsWith('.railway.app')) {
         allowedOrigins.push(origin);
       }
 

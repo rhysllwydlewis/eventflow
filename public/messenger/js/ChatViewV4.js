@@ -113,6 +113,13 @@ class ChatViewV4 {
         this._onLightboxClose();
       }
     });
+    // Escape key closes lightbox (WCAG 2.1 modal pattern)
+    this._onKeyDown = (e) => {
+      if (e.key === 'Escape' && this._lightboxOpen) {
+        this._onLightboxClose();
+      }
+    };
+    document.addEventListener('keydown', this._onKeyDown);
 
     // Header action buttons
     this.container.querySelector('#v4PinBtn').addEventListener('click', () => {
@@ -345,6 +352,11 @@ class ChatViewV4 {
 
   /** Clean up all listeners. */
   destroy() {
+    this._onLightboxClose(); // restore body overflow if lightbox was open
+    if (this._onKeyDown) {
+      document.removeEventListener('keydown', this._onKeyDown);
+      this._onKeyDown = null;
+    }
     this.messagesEl.removeEventListener('scroll', this._onScroll);
     window.removeEventListener('messenger:new-message', this._onNewMessage);
     window.removeEventListener('messenger:v4:message', this._onV4Message);
@@ -558,6 +570,7 @@ class ChatViewV4 {
     this.lightboxImg.src = src;
     this.lightboxImg.alt = alt || 'Image attachment';
     this.lightbox.style.display = 'flex';
+    this._lightboxOpen = true;
     document.body.style.overflow = 'hidden';
     this.lightbox.focus();
   }
@@ -565,6 +578,7 @@ class ChatViewV4 {
   _onLightboxClose() {
     this.lightbox.style.display = 'none';
     this.lightboxImg.src = '';
+    this._lightboxOpen = false;
     document.body.style.overflow = '';
   }
 

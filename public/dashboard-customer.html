@@ -387,7 +387,7 @@ async function calculateRealBudget(plans) {
       // Fetch packages in batches to avoid overwhelming the API
       const packagePromises = packageIds.map(async (pkgId) => {
         try {
-          const response = await fetch(`/api/packages/${pkgId}`, { 
+          const response = await fetch(`/api/packages/${encodeURIComponent(pkgId)}`, { 
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
           });
@@ -1032,7 +1032,7 @@ function getCsrfToken() {
     return meta.getAttribute('content');
   }
   // Try cookie
-  const match = document.cookie.match(/csrfToken=([^;]+)/);
+  const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
   if (match) {
     try {
       return decodeURIComponent(match[1]);
