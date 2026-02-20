@@ -561,13 +561,9 @@ async function initCustomerDashboardWidgets(preloadedPlans) {
       // Continue with empty array
     }
     
-    // Count messages/conversations - updated by MessengerWidgetV4
-    let unreadMessages = 0;
-    const unreadBadge = document.getElementById('unreadMessageBadge');
-    if (unreadBadge && unreadBadge.textContent) {
-      const match = unreadBadge.textContent.match(/(\d+)/);
-      if (match) unreadMessages = parseInt(match[1], 10);
-    }
+    // Count messages/conversations — start at 0; the stats widget will be updated
+    // dynamically once UnreadBadgeManager receives real data (unreadCountUpdated event).
+    const unreadMessages = 0;
     
     // Count upcoming tasks from plans (suppliers that need action)
     const upcomingTasks = plans.length > 0 ? plans.length : 0;
@@ -597,13 +593,36 @@ async function initCustomerDashboardWidgets(preloadedPlans) {
       },
       {
         icon: '💬',
-        value: unreadMessages,
+        value: 0,
         label: 'Messages',
         format: 'number',
         color: 'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)',
-        pulse: unreadMessages > 0,
+        pulse: false,
       },
     ], 'customer-stats-grid');
+
+    // Update Messages stat card as soon as UnreadBadgeManager fires the real count
+    window.addEventListener('unreadCountUpdated', function onUnreadForStats(e) {
+      window.removeEventListener('unreadCountUpdated', onUnreadForStats);
+      const count = typeof e.detail?.count === 'number' ? Math.max(0, Math.floor(e.detail.count)) : 0;
+      if (count <= 0) return;
+      // Find the stat card that has the "Messages" label and update its displayed number
+      const statsGrid = document.getElementById('customer-stats-grid');
+      if (!statsGrid) return;
+      statsGrid.querySelectorAll('.stat-widget').forEach(card => {
+        const label = card.querySelector('.stat-label');
+        if (label && label.textContent.trim() === 'Messages') {
+          const num = card.querySelector('.stat-number');
+          if (num) {
+            num.textContent = count;
+            num.dataset.target = count;
+          }
+          // Add pulse class to the icon container to draw attention
+          const icon = card.querySelector('.icon-with-gradient');
+          if (icon) icon.classList.add('pulse');
+        }
+      });
+    });
     
     // Calculate real budget from plans
     const budgetData = await calculateRealBudget(plans);
@@ -1337,7 +1356,7 @@ if (document.readyState === 'loading') {
 <script src="/assets/js/calendar-view.js"></script>
 <script src="/assets/js/recommendations-widget.js" defer></script>
 <script src="/assets/js/keyboard-shortcuts.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script src="/assets/js/vendor/confetti-safe.js?v=18.3.0"></script>
 <script src="/assets/js/utils/p3-features.js" defer></script>
 <script src="/assets/js/customer-dashboard-enhancements.js" defer></script>
 
