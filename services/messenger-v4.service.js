@@ -561,6 +561,7 @@ class MessengerV4Service {
   async toggleReaction(messageId, userId, userName, emoji) {
     const message = await this.messagesCollection.findOne({
       _id: new ObjectId(messageId),
+      isDeleted: false,
     });
 
     if (!message) {
@@ -724,9 +725,15 @@ class MessengerV4Service {
         const em = user.email;
         // Prefer non-email display names; fall back to email local part
         const looksLikeEmail = s => typeof s === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-        if (dn && !looksLikeEmail(dn)) return dn;
-        if (bn && !looksLikeEmail(bn)) return bn;
-        if (em) return em.split('@')[0] || em;
+        if (dn && !looksLikeEmail(dn)) {
+          return dn;
+        }
+        if (bn && !looksLikeEmail(bn)) {
+          return bn;
+        }
+        if (em) {
+          return em.split('@')[0] || em;
+        }
         return 'Unknown';
       })(),
       role: user.role || 'customer',

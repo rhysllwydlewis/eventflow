@@ -213,6 +213,20 @@ router.post(
         });
       }
 
+      // Validate participantIds: each must be a non-empty string, cap at 50
+      if (participantIds.length > 50) {
+        return res.status(400).json({ error: 'Too many participants (max 50)' });
+      }
+      if (participantIds.some(id => typeof id !== 'string' || !id.trim())) {
+        return res.status(400).json({ error: 'Each participant ID must be a non-empty string' });
+      }
+
+      // Validate type against allowed values
+      const allowedTypes = ['direct', 'group', 'support'];
+      if (!allowedTypes.includes(type)) {
+        return res.status(400).json({ error: 'Invalid conversation type' });
+      }
+
       // Get database instance
       const dbInstance = await getDbInstance();
 
@@ -312,15 +326,23 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
       filters.archived = archived === 'true';
     }
     if (search) {
-      filters.search = search;
+      filters.search = search.substring(0, 200);
     }
     if (status) {
-      filters.status = status;
+      const allowedStatuses = ['active', 'archived'];
+      if (allowedStatuses.includes(status)) {
+        filters.status = status;
+      }
     }
 
     const conversations = await (
       await getMessengerService()
-    ).getConversations(userId, filters, Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100), Math.max(parseInt(skip, 10) || 0, 0));
+    ).getConversations(
+      userId,
+      filters,
+      Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100),
+      Math.max(parseInt(skip, 10) || 0, 0)
+    );
 
     res.json({
       success: true,
@@ -365,66 +387,78 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
  * PATCH /api/v4/messenger/conversations/:id
  * Update conversation settings
  */
-router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid conversation ID' });
+router.patch(
+  '/conversations/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
+      const userId = req.user.id;
+      const updates = req.body;
+
+      const conversation = await (
+        await getMessengerService()
+      ).updateConversation(id, userId, updates);
+
+      // Emit update event
+      emitToUser(userId, 'messenger:v4:conversation-updated', {
+        conversationId: id,
+        updates,
+      });
+
+      res.json({
+        success: true,
+        conversation,
+      });
+    } catch (error) {
+      logger.error('Error updating conversation:', error);
+      res.status(500).json({
+        error: error.message || 'Failed to update conversation',
+      });
     }
-    const userId = req.user.id;
-    const updates = req.body;
-
-    const conversation = await (
-      await getMessengerService()
-    ).updateConversation(id, userId, updates);
-
-    // Emit update event
-    emitToUser(userId, 'messenger:v4:conversation-updated', {
-      conversationId: id,
-      updates,
-    });
-
-    res.json({
-      success: true,
-      conversation,
-    });
-  } catch (error) {
-    logger.error('Error updating conversation:', error);
-    res.status(500).json({
-      error: error.message || 'Failed to update conversation',
-    });
   }
-});
+);
 
 /**
  * DELETE /api/v4/messenger/conversations/:id
  * Soft delete a conversation (archive for the user)
  */
-router.delete('/conversations/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid conversation ID' });
+router.delete(
+  '/conversations/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
+      const userId = req.user.id;
+
+      await (await getMessengerService()).deleteConversation(id, userId);
+
+      emitToUser(userId, 'messenger:v4:conversation-deleted', {
+        conversationId: id,
+      });
+
+      res.json({
+        success: true,
+        message: 'Conversation archived',
+      });
+    } catch (error) {
+      logger.error('Error deleting conversation:', error);
+      res.status(500).json({
+        error: 'Failed to delete conversation',
+      });
     }
-    const userId = req.user.id;
-
-    await (await getMessengerService()).deleteConversation(id, userId);
-
-    emitToUser(userId, 'messenger:v4:conversation-deleted', {
-      conversationId: id,
-    });
-
-    res.json({
-      success: true,
-      message: 'Conversation archived',
-    });
-  } catch (error) {
-    logger.error('Error deleting conversation:', error);
-    res.status(500).json({
-      error: 'Failed to delete conversation',
-    });
   }
-});
+);
 
 // ============================================================================
 // MESSAGE ENDPOINTS
@@ -512,7 +546,7 @@ router.post(
 
           attachments.push({
             url: `/uploads/messenger/${filename}`,
-            filename: file.originalname,
+            filename: file.originalname.substring(0, 255),
             mimeType: file.mimetype,
             size: file.size,
           });
@@ -558,9 +592,11 @@ router.post(
           const dbInstance = await getDbInstance();
           const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.email && postmark && typeof postmark.sendMail === 'function') {
-            const contextInfo = conversation.context?.referenceTitle
-              ? ` (Re: ${conversation.context.referenceTitle})`
-              : '';
+            // Strip CR/LF from referenceTitle to prevent email header injection
+            const safeTitle = (conversation.context?.referenceTitle || '')
+              .replace(/[\r\n]/g, ' ')
+              .trim();
+            const contextInfo = safeTitle ? ` (Re: ${safeTitle})` : '';
 
             await postmark
               .sendMail({
@@ -654,147 +690,171 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
  * PATCH /api/v4/messenger/messages/:id
  * Edit a message
  */
-router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
-    }
-    const userId = req.user.id;
-    const { content } = req.body;
+router.patch(
+  '/messages/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+      const userId = req.user.id;
+      const { content } = req.body;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({
-        error: 'Message content is required',
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Message content is required',
+        });
+      }
+
+      const message = await (await getMessengerService()).editMessage(id, userId, content);
+
+      // Emit update event
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(message.conversationId.toString(), userId);
+      emitToConversation(conversation, 'messenger:v4:message-edited', {
+        messageId: id,
+        content,
+        editedAt: message.editedAt,
+      });
+
+      res.json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error('Error editing message:', error);
+      let editStatus = 500;
+      const msg = error.message || '';
+      if (
+        msg.includes('window expired') ||
+        msg.includes('not found') ||
+        msg.includes('access denied')
+      ) {
+        editStatus = 403;
+      } else if (msg.includes('cannot be empty')) {
+        editStatus = 400;
+      }
+      res.status(editStatus).json({
+        error: error.message || 'Failed to edit message',
       });
     }
-
-    const message = await (await getMessengerService()).editMessage(id, userId, content);
-
-    // Emit update event
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(message.conversationId.toString(), userId);
-    emitToConversation(conversation, 'messenger:v4:message-edited', {
-      messageId: id,
-      content,
-      editedAt: message.editedAt,
-    });
-
-    res.json({
-      success: true,
-      message,
-    });
-  } catch (error) {
-    logger.error('Error editing message:', error);
-    let editStatus = 500;
-    const msg = error.message || '';
-    if (msg.includes('window expired') || msg.includes('not found') || msg.includes('access denied')) {
-      editStatus = 403;
-    } else if (msg.includes('cannot be empty')) {
-      editStatus = 400;
-    }
-    res.status(editStatus).json({
-      error: error.message || 'Failed to edit message',
-    });
   }
-});
+);
 
 /**
  * DELETE /api/v4/messenger/messages/:id
  * Delete a message
  */
-router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
+router.delete(
+  '/messages/:id',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+      const userId = req.user.id;
+
+      const svc = await getMessengerService();
+      const message = await svc.messagesCollection.findOne({
+        _id: new ObjectId(id),
+        senderId: userId,
+        isDeleted: false,
+      });
+
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+
+      await svc.deleteMessage(id, userId);
+
+      // Emit delete event
+      const conversation = await svc.getConversation(message.conversationId.toString(), userId);
+      emitToConversation(conversation, 'messenger:v4:message-deleted', {
+        messageId: id,
+      });
+
+      res.json({
+        success: true,
+        message: 'Message deleted',
+      });
+    } catch (error) {
+      logger.error('Error deleting message:', error);
+      res.status(500).json({
+        error: 'Failed to delete message',
+      });
     }
-    const userId = req.user.id;
-
-    const svc = await getMessengerService();
-    const message = await svc.messagesCollection.findOne({
-      _id: new ObjectId(id),
-      senderId: userId,
-      isDeleted: false,
-    });
-
-    if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    await svc.deleteMessage(id, userId);
-
-    // Emit delete event
-    const conversation = await svc.getConversation(message.conversationId.toString(), userId);
-    emitToConversation(conversation, 'messenger:v4:message-deleted', {
-      messageId: id,
-    });
-
-    res.json({
-      success: true,
-      message: 'Message deleted',
-    });
-  } catch (error) {
-    logger.error('Error deleting message:', error);
-    res.status(500).json({
-      error: 'Failed to delete message',
-    });
   }
-});
+);
 
 /**
  * POST /api/v4/messenger/messages/:id/reactions
  * Toggle emoji reaction on a message
  */
-router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
-    }
-    const userId = req.user.id;
-    const userName = safeDisplayName(
-      req.user.displayName,
-      req.user.businessName,
-      req.user.name,
-      req.user.firstName
-    );
-    const { emoji } = req.body;
+router.post(
+  '/messages/:id/reactions',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+      const userId = req.user.id;
+      const userName = safeDisplayName(
+        req.user.displayName,
+        req.user.businessName,
+        req.user.name,
+        req.user.firstName
+      );
+      const { emoji } = req.body;
 
-    if (!emoji || typeof emoji !== 'string') {
-      return res.status(400).json({
-        error: 'Emoji is required',
+      if (!emoji || typeof emoji !== 'string') {
+        return res.status(400).json({
+          error: 'Emoji is required',
+        });
+      }
+
+      // Limit emoji field length to prevent storing arbitrary long strings
+      if (emoji.length > 10) {
+        return res.status(400).json({ error: 'Invalid emoji' });
+      }
+
+      const message = await (
+        await getMessengerService()
+      ).toggleReaction(id, userId, userName, emoji);
+
+      // Emit reaction event
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(message.conversationId.toString(), userId);
+      emitToConversation(conversation, 'messenger:v4:reaction', {
+        messageId: id,
+        reactions: message.reactions,
+      });
+
+      res.json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error('Error toggling reaction:', error);
+      res.status(500).json({
+        error: 'Failed to toggle reaction',
       });
     }
-
-    // Limit emoji field length to prevent storing arbitrary long strings
-    if (emoji.length > 10) {
-      return res.status(400).json({ error: 'Invalid emoji' });
-    }
-
-    const message = await (await getMessengerService()).toggleReaction(id, userId, userName, emoji);
-
-    // Emit reaction event
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(message.conversationId.toString(), userId);
-    emitToConversation(conversation, 'messenger:v4:reaction', {
-      messageId: id,
-      reactions: message.reactions,
-    });
-
-    res.json({
-      success: true,
-      message,
-    });
-  } catch (error) {
-    logger.error('Error toggling reaction:', error);
-    res.status(500).json({
-      error: 'Failed to toggle reaction',
-    });
   }
-});
+);
 
 // ============================================================================
 // UTILITY ENDPOINTS
@@ -832,7 +892,12 @@ router.get('/contacts', applyAuthRequired, async (req, res) => {
 
     const contacts = await (
       await getMessengerService()
-    ).searchContacts(userId, query, { role }, Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100));
+    ).searchContacts(
+      userId,
+      query && query.substring(0, 200),
+      { role },
+      Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100)
+    );
 
     res.json({
       success: true,
@@ -861,6 +926,12 @@ router.get('/search', applyAuthRequired, async (req, res) => {
       });
     }
 
+    if (query.length > 200) {
+      return res.status(400).json({
+        error: 'Search query must be 200 characters or fewer',
+      });
+    }
+
     const results = await (
       await getMessengerService()
     ).searchMessages(userId, query, Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100));
@@ -882,86 +953,98 @@ router.get('/search', applyAuthRequired, async (req, res) => {
  * POST /api/v4/messenger/conversations/:id/typing
  * Send typing indicator
  */
-router.post('/conversations/:id/typing', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const { id: conversationId } = req.params;
-    if (!isValidObjectId(conversationId)) {
-      return res.status(400).json({ error: 'Invalid conversation ID' });
-    }
-    const userId = req.user.id;
-    const userName = safeDisplayName(
-      req.user.displayName,
-      req.user.businessName,
-      req.user.name,
-      req.user.firstName
-    );
-    // isTyping defaults to true — clients may send false to indicate they stopped typing
-    const isTyping = req.body.isTyping !== false;
-
-    // Fetch conversation once — verifies participant access and provides participant list
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(conversationId, userId);
-    conversation.participants.forEach(participant => {
-      if (participant.userId !== userId) {
-        emitToUser(participant.userId, 'messenger:v4:typing', {
-          conversationId,
-          userId,
-          userName,
-          isTyping,
-        });
+router.post(
+  '/conversations/:id/typing',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
       }
-    });
+      const userId = req.user.id;
+      const userName = safeDisplayName(
+        req.user.displayName,
+        req.user.businessName,
+        req.user.name,
+        req.user.firstName
+      );
+      // isTyping defaults to true — clients may send false to indicate they stopped typing
+      const isTyping = req.body.isTyping !== false;
 
-    res.json({
-      success: true,
-    });
-  } catch (error) {
-    logger.error('Error sending typing indicator:', error);
-    res.status(500).json({
-      error: 'Failed to send typing indicator',
-    });
+      // Fetch conversation once — verifies participant access and provides participant list
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(conversationId, userId);
+      conversation.participants.forEach(participant => {
+        if (participant.userId !== userId) {
+          emitToUser(participant.userId, 'messenger:v4:typing', {
+            conversationId,
+            userId,
+            userName,
+            isTyping,
+          });
+        }
+      });
+
+      res.json({
+        success: true,
+      });
+    } catch (error) {
+      logger.error('Error sending typing indicator:', error);
+      res.status(500).json({
+        error: 'Failed to send typing indicator',
+      });
+    }
   }
-});
+);
 
 /**
  * POST /api/v4/messenger/conversations/:id/read
  * Mark conversation as read
  */
-router.post('/conversations/:id/read', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const { id: conversationId } = req.params;
-    if (!isValidObjectId(conversationId)) {
-      return res.status(400).json({ error: 'Invalid conversation ID' });
-    }
-    const userId = req.user.id;
-
-    await (await getMessengerService()).markAsRead(conversationId, userId);
-
-    // Emit read receipt to other participants
-    const conversation = await (
-      await getMessengerService()
-    ).getConversation(conversationId, userId);
-    conversation.participants.forEach(participant => {
-      if (participant.userId !== userId) {
-        emitToUser(participant.userId, 'messenger:v4:read', {
-          conversationId,
-          userId,
-          readAt: new Date(),
-        });
+router.post(
+  '/conversations/:id/read',
+  applyAuthRequired,
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
       }
-    });
+      const userId = req.user.id;
 
-    res.json({
-      success: true,
-    });
-  } catch (error) {
-    logger.error('Error marking as read:', error);
-    res.status(500).json({
-      error: 'Failed to mark as read',
-    });
+      await (await getMessengerService()).markAsRead(conversationId, userId);
+
+      // Emit read receipt to other participants
+      const conversation = await (
+        await getMessengerService()
+      ).getConversation(conversationId, userId);
+      conversation.participants.forEach(participant => {
+        if (participant.userId !== userId) {
+          emitToUser(participant.userId, 'messenger:v4:read', {
+            conversationId,
+            userId,
+            readAt: new Date(),
+          });
+        }
+      });
+
+      res.json({
+        success: true,
+      });
+    } catch (error) {
+      logger.error('Error marking as read:', error);
+      res.status(500).json({
+        error: 'Failed to mark as read',
+      });
+    }
   }
-});
+);
 
 // ============================================================================
 // ADMIN ENDPOINTS
@@ -985,7 +1068,10 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
 
     const query = {};
     if (search && search.trim()) {
-      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = search
+        .substring(0, 200)
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
         { 'lastMessage.content': { $regex: escapedSearch, $options: 'i' } },
         { 'participants.displayName': { $regex: escapedSearch, $options: 'i' } },
@@ -994,7 +1080,11 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
       ];
     }
     if (status) {
-      query.status = status;
+      // Admins can filter by a broader set of statuses
+      const allowedAdminStatuses = ['active', 'archived', 'deleted', 'flagged'];
+      if (allowedAdminStatuses.includes(status)) {
+        query.status = status;
+      }
     }
 
     const [conversations, total] = await Promise.all([
