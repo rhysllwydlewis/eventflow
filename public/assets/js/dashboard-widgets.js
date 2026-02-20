@@ -6,6 +6,17 @@
 import { animateProgressBar, animateCircularProgress, initCountUp } from './count-up-animation.js';
 
 /**
+ * Escape HTML special characters to prevent XSS when inserting user-controlled
+ * data into innerHTML template literals.
+ */
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') return '';
+  const div = document.createElement('div');
+  div.textContent = unsafe;
+  return div.innerHTML;
+}
+
+/**
  * Create statistics grid widget
  * @param {Array} stats - Array of stat objects {icon, value, label, format}
  * @param {string} containerId - ID of container element
@@ -311,10 +322,10 @@ export function createEventsTimeline(events, containerId, eventDate = null) {
               </div>
               <div style="flex: 1; padding-bottom: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;">
-                  <strong style="color: #0B1220;">${event.name || 'Task'}</strong>
+                  <strong style="color: #0B1220;">${escapeHtml(event.name || 'Task')}</strong>
                   <span class="badge" style="${getBadgeStyle(event.daysUntil)}">${getDueBadgeText(event.daysUntil)}</span>
                 </div>
-                ${event.supplier ? `<p class="small" style="color: #667085; margin: 0.25rem 0;">📍 ${event.supplier}</p>` : ''}
+                ${event.supplier ? `<p class="small" style="color: #667085; margin: 0.25rem 0;">📍 ${escapeHtml(event.supplier)}</p>` : ''}
               </div>
             </div>
           </div>

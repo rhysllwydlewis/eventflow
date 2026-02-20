@@ -8,6 +8,7 @@
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
@@ -61,7 +62,7 @@ router.get('/:id', authRequired, async (req, res) => {
  * Create a new plan
  * Body: { name, eventType, eventDate, location, guests, budget, timeline, checklist }
  */
-router.post('/', authRequired, csrfProtection, async (req, res) => {
+router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const {
@@ -130,7 +131,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
  * Update an existing plan
  * Body: { name?, eventType?, eventDate?, location?, guests?, budget?, timeline?, checklist? }
  */
-router.patch('/:id', authRequired, csrfProtection, async (req, res) => {
+router.patch('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -188,7 +189,7 @@ router.patch('/:id', authRequired, csrfProtection, async (req, res) => {
  * DELETE /api/me/plans/:id
  * Delete a plan
  */
-router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
+router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
@@ -405,7 +406,7 @@ router.get('/:id/export', authRequired, async (req, res) => {
  * Save budget items for a plan
  * Body: { budgetItems: [{ category, item, estimated, actual, paid, notes }] }
  */
-router.post('/:planId/budget', authRequired, csrfProtection, async (req, res) => {
+router.post('/:planId/budget', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const { planId } = req.params;

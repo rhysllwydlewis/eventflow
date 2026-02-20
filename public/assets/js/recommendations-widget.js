@@ -7,6 +7,38 @@
   'use strict';
 
   /**
+   * Escape HTML special characters to prevent XSS.
+   * Supplier data (businessName, category, location) is user-controlled
+   * and must be escaped before being inserted into innerHTML.
+   */
+  function escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') return '';
+    const div = document.createElement('div');
+    div.textContent = unsafe;
+    return div.innerHTML;
+  }
+
+  /**
+   * Sanitize a URL to only allow http/https schemes (blocks javascript: URIs).
+   */
+  function safeSrc(url) {
+    if (!url || typeof url !== 'string') return '';
+    try {
+      const parsed = new URL(url, window.location.origin);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return url;
+      }
+    } catch (_) {
+      // If URL is relative (no protocol), only allow if it doesn't start with a dangerous scheme
+      const lower = url.toLowerCase().replace(/\s/g, '');
+      if (!lower.startsWith('javascript:') && !lower.startsWith('data:') && !lower.startsWith('vbscript:')) {
+        return url;
+      }
+    }
+    return '';
+  }
+
+  /**
    * Initialize recommendations widget
    */
   async function initRecommendations() {
@@ -33,6 +65,7 @@
     } catch (error) {
       console.error('Error loading recommendations:', error);
       widget.style.display = 'none';
+      widget.hidden = true;
     }
   }
 
@@ -71,6 +104,7 @@
   function renderRecommendations(widget, recommendations) {
     if (!recommendations || recommendations.length === 0) {
       widget.style.display = 'none';
+      widget.hidden = true;
       return;
     }
 
@@ -81,28 +115,43 @@
       </div>
       <div class="recommendations-grid">
         ${recommendations
-          .map(
-            supplier => `
-          <a href="/supplier?id=${supplier.id}" class="recommendation-card" style="text-decoration: none; color: inherit; display: block; cursor: pointer;">
+          .map(supplier => {
+            const name = escapeHtml(supplier.businessName || 'Supplier');
+            const category = escapeHtml(supplier.category || '');
+            const location = escapeHtml(supplier.location || '');
+            const logoSrc = safeSrc(supplier.logo || '');
+            const initial = (supplier.businessName || 'S').charAt(0).toUpperCase();
+            const supplierId = (typeof supplier.id === 'string' || typeof supplier.id === 'number')
+              ? supplier.id
+              : '';
+            const href = `/supplier?id=${encodeURIComponent(supplierId)}`;
+            const ratingText = supplier.averageRating
+              ? `⭐ ${Number(supplier.averageRating).toFixed(1)} (${supplier.reviewCount || 0} reviews)`
+              : '';
+            return `
+          <a href="${href}" class="recommendation-card" style="text-decoration: none; color: inherit; display: block; cursor: pointer;">
             <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
               ${
-                supplier.logo
-                  ? `<img src="${supplier.logo}" alt="${supplier.businessName}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">`
-                  : `<div style="width: 50px; height: 50px; border-radius: 50%; background: var(--accent, #13B6A2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.25rem;">${(supplier.businessName || 'S').charAt(0).toUpperCase()}</div>`
+                logoSrc
+                  ? `<img src="${logoSrc}" alt="${name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">`
+                  : `<div style="width: 50px; height: 50px; border-radius: 50%; background: var(--accent, #13B6A2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.25rem;">${initial}</div>`
               }
               <div style="flex: 1;">
-                <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: #1f2937;">${supplier.businessName || 'Supplier'}</h4>
-                <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">${supplier.category || ''}</p>
+                <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: #1f2937;">${name}</h4>
+                <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">${category}</p>
               </div>
             </div>
-            ${supplier.location ? `<p style="margin: 0 0 0.5rem; font-size: 0.875rem; color: #6b7280;">📍 ${supplier.location}</p>` : ''}
-            ${supplier.averageRating ? `<p style="margin: 0; font-size: 0.875rem; color: #6b7280;">⭐ ${supplier.averageRating.toFixed(1)} (${supplier.reviewCount || 0} reviews)</p>` : ''}
+            ${location ? `<p style="margin: 0 0 0.5rem; font-size: 0.875rem; color: #6b7280;">📍 ${location}</p>` : ''}
+            ${ratingText ? `<p style="margin: 0; font-size: 0.875rem; color: #6b7280;">${ratingText}</p>` : ''}
           </a>
-        `
-          )
+        `})
           .join('')}
       </div>
     `;
+
+    // Reveal the widget now that it has content
+    widget.hidden = false;
+    widget.style.display = '';
 
     console.log(`✓ Rendered ${recommendations.length} recommendations`);
   }

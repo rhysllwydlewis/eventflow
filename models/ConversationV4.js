@@ -7,6 +7,9 @@
 
 const { ObjectId } = require('mongodb');
 
+/** Canonical list of valid conversation types — used by the route validator and service. */
+const CONVERSATION_V4_TYPES = ['direct', 'marketplace', 'enquiry', 'supplier_network', 'support'];
+
 /**
  * Conversation Schema for MongoDB
  */
@@ -184,7 +187,7 @@ async function createChatMessagesV4Indexes(db) {
 function validateConversation(data) {
   const errors = [];
 
-  if (!data.type || !['direct', 'marketplace', 'enquiry', 'supplier_network', 'support'].includes(data.type)) {
+  if (!data.type || !CONVERSATION_V4_TYPES.includes(data.type)) {
     errors.push('Invalid conversation type');
   }
 
@@ -241,6 +244,7 @@ function validateMessage(data) {
 }
 
 module.exports = {
+  CONVERSATION_V4_TYPES,
   ConversationV4Schema,
   createConversationV4Indexes,
   createChatMessagesV4Indexes,

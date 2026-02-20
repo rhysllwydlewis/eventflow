@@ -134,8 +134,9 @@
           backdrop-filter: blur(4px);
           -webkit-backdrop-filter: blur(4px);
           opacity: 0; transition: opacity 0.25s ease;
+          pointer-events: none;
         }
-        .qcv4-backdrop--visible { opacity: 1; }
+        .qcv4-backdrop--visible { opacity: 1; pointer-events: auto; }
 
         .qcv4-panel {
           position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;

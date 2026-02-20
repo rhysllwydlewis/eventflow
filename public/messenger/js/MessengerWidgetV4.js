@@ -476,13 +476,14 @@
             <span class="mwv4__title">💬 Messages</span>
             <a href="/messenger/" class="mwv4__view-all">View All →</a>
           </div>
-          <div class="mwv4__empty">
-            <p class="mwv4__empty-text">
-              Unable to load conversations.
-              <a href="/messenger/" style="color:#0B8073">Open inbox</a>
-            </p>
+          <div class="mwv4__empty" style="text-align:center;padding:2rem 1rem;">
+            <div style="font-size:2rem;margin-bottom:0.5rem;">⚠️</div>
+            <p class="mwv4__empty-text">Unable to load conversations.</p>
+            <button class="mwv4__retry-btn" type="button">Retry</button>
+            <p class="small" style="margin-top:0.75rem;"><a href="/messenger/" style="color:#0B8073">Open full inbox</a></p>
           </div>
         </div>`;
+      this.container.querySelector('.mwv4__retry-btn')?.addEventListener('click', () => this._fetchConversations());
     }
 
     // ── Event handling ────────────────────────────────────────────────────────

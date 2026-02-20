@@ -54,16 +54,16 @@ function renderTickets(tickets) {
     const responseCount = Array.isArray(ticket?.responses) ? ticket.responses.length : 0;
 
     html += `
-      <div class="ticket-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;" data-ticket-id="${ticket.id}">
-        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
+      <div class="customer-ticket-item ticket-item" role="button" tabindex="0" data-ticket-id="${ticket.id}" aria-label="Ticket: ${escapeHtml(ticket.subject || 'No Subject')}">
+        <div class="customer-ticket-item__header">
           <strong>${escapeHtml(ticket.subject || 'No Subject')}</strong>
-          <div style="display:flex;gap:0.5rem;">
+          <div class="customer-ticket-item__badges">
             <span class="badge ${statusClass}">${status.replace('_', ' ')}</span>
             <span class="badge ${priorityClass}">${priority}</span>
           </div>
         </div>
-        <p class="small" style="margin:0.5rem 0;color:#6b7280;">${escapeHtml(message.substring(0, 100))}${message.length > 100 ? '...' : ''}</p>
-        <div class="small" style="color:#9ca3af;">
+        <p class="small customer-ticket-item__preview">${escapeHtml(message.substring(0, 100))}${message.length > 100 ? '...' : ''}</p>
+        <div class="small customer-ticket-item__meta">
           Created ${createdAt} • ${responseCount} response${responseCount !== 1 ? 's' : ''}
         </div>
       </div>
@@ -71,13 +71,26 @@ function renderTickets(tickets) {
   });
 
   html += '</div>';
+
+  // Show "View all support tickets" link when the list is capped at the display limit (5)
+  if (tickets.length >= 5) {
+    html += '<a href="/support" class="customer-tickets-view-all">View all support tickets →</a>';
+  }
+
   container.innerHTML = html;
 
-  // Add click handlers
+  // Add click and keyboard handlers
   container.querySelectorAll('.ticket-item').forEach(item => {
-    item.addEventListener('click', () => {
+    const open = () => {
       const ticketId = item.getAttribute('data-ticket-id');
       viewTicket(ticketId);
+    };
+    item.addEventListener('click', open);
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open();
+      }
     });
   });
 }
