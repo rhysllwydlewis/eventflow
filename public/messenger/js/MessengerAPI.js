@@ -288,10 +288,7 @@ class MessengerAPI {
    * Mark conversation as unread
    */
   async markAsUnread(conversationId) {
-    return this.request(`/conversations/${conversationId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ isUnread: true }),
-    });
+    return this.updateConversation(conversationId, { isUnread: true });
   }
 
   /**

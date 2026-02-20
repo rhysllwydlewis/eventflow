@@ -163,6 +163,10 @@ class ChatViewV4 {
       // Image lightbox
       const img = e.target.closest('.messenger-v4__attachment--image img');
       if (img) {
+        // Don't open lightbox for images that failed to load
+        if (img.classList.contains('messenger-v4__attachment-error')) {
+          return;
+        }
         this._openLightbox(img.src, img.alt);
         return;
       }
@@ -379,6 +383,21 @@ class ChatViewV4 {
     window.removeEventListener('messenger:new-message', this._onNewMessage);
     window.removeEventListener('messenger:v4:message', this._onV4Message);
     this.container.innerHTML = '';
+  }
+
+  /** Reset chat view to empty state (e.g. after conversation deleted). */
+  reset() {
+    this.conversationId = null;
+    this.hasMoreMessages = true;
+    this.oldestCursor = null;
+    this.isLoadingOlder = false;
+    this.headerEl.style.display = 'none';
+    this.messagesEl.innerHTML = `
+      <div class="messenger-v4__empty-state" id="v4ChatEmpty">
+        <span class="messenger-v4__empty-icon" aria-hidden="true">💬</span>
+        <p>Select a conversation to start messaging</p>
+      </div>`;
+    this.scrollBtn.style.display = 'none';
   }
 
   // ---------------------------------------------------------------------------

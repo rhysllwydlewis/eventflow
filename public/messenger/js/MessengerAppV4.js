@@ -244,7 +244,18 @@ class MessengerAppV4 {
       if (!id) {
         return;
       }
-      const confirmed = window.confirm('Are you sure you want to delete this conversation?');
+      let confirmed;
+      if (window.MessengerModals?.showConfirm) {
+        confirmed = await window.MessengerModals.showConfirm(
+          'Delete Conversation',
+          'Are you sure you want to delete this conversation? This cannot be undone.',
+          'Delete',
+          'Cancel'
+        );
+      } else {
+        // eslint-disable-next-line no-alert
+        confirmed = window.confirm('Are you sure you want to delete this conversation?');
+      }
       if (!confirmed) {
         return;
       }
@@ -254,9 +265,14 @@ class MessengerAppV4 {
         if (this._activeConversationId === id) {
           this._activeConversationId = null;
           this.state.setActiveConversation(null);
+          this.chatView?.reset();
+          if (this.composer) {
+            this.composer.options.conversationId = null;
+          }
+          this.socket?.leaveConversation(id);
+          this.contextBanner?.hide();
           this.handleMobilePanel('sidebar');
         }
-        this.conversationList?.renderConversations(this.state.conversations);
       } catch (err) {
         console.error('[MessengerAppV4] Delete conversation failed:', err);
       }

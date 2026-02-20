@@ -629,6 +629,17 @@
     height: 100%;
   }
 
+  /* Compact action buttons on mobile to avoid header overflow with 5 buttons */
+  .messenger-v4__chat-actions {
+    gap: 4px;
+  }
+
+  .messenger-v4__action-button {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
   @keyframes mvSlideInRight {
     from { transform: translateX(100%); opacity: 0.8; }
     to   { transform: translateX(0);    opacity: 1;   }
