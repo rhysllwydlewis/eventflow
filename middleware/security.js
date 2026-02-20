@@ -333,14 +333,19 @@ function configureHTTPSRedirect(isProduction = false) {
     }
 
     // Check for non-www to www redirect (only if BASE_URL contains www)
+    // Use the canonical host from BASE_URL instead of req.headers.host to
+    // prevent Host header injection (open redirect).
     const configuredBaseUrl = process.env.BASE_URL || '';
-    if (
-      configuredBaseUrl.includes('www.') &&
-      req.headers.host &&
-      !req.headers.host.startsWith('www.')
-    ) {
-      const wwwUrl = `https://www.${req.headers.host}${req.url}`;
-      return res.redirect(301, wwwUrl);
+    if (configuredBaseUrl.includes('www.')) {
+      try {
+        const canonicalHost = new URL(configuredBaseUrl).host; // e.g. "www.eventflow.app"
+        const nonWwwHost = canonicalHost.replace(/^www\./, ''); // e.g. "eventflow.app"
+        if (req.headers.host === nonWwwHost) {
+          return res.redirect(301, `https://${canonicalHost}${req.url}`);
+        }
+      } catch {
+        // Malformed BASE_URL — skip redirect rather than use raw host header
+      }
     }
 
     next();

@@ -174,9 +174,12 @@ async function getDbInstance() {
 let _messengerServicePromise = null;
 async function getMessengerService() {
   if (!_messengerServicePromise) {
-    _messengerServicePromise = getDbInstance().then(
-      dbInstance => new MessengerV4Service(dbInstance, logger)
-    );
+    _messengerServicePromise = getDbInstance()
+      .then(dbInstance => new MessengerV4Service(dbInstance, logger))
+      .catch(err => {
+        _messengerServicePromise = null; // allow retry on next request
+        throw err;
+      });
   }
   return _messengerServicePromise;
 }
@@ -614,7 +617,8 @@ router.post(
           const dbInstance = await getDbInstance();
           const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.email && postmark && typeof postmark.sendMail === 'function') {
-            // Strip CR/LF from referenceTitle to prevent email header injection
+            // Strip CR/LF from both userName and referenceTitle to prevent email header injection
+            const safeUserName = userName.replace(/[\r\n]/g, ' ').trim();
             const safeTitle = (conversation.context?.referenceTitle || '')
               .replace(/[\r\n]/g, ' ')
               .trim();
@@ -623,8 +627,8 @@ router.post(
             await postmark
               .sendMail({
                 to: recipient.email,
-                subject: `New message from ${userName}${contextInfo}`,
-                text: `${userName} sent you a message:\n\n"${(content || '').substring(0, 200)}${(content || '').length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
+                subject: `New message from ${safeUserName}${contextInfo}`,
+                text: `${safeUserName} sent you a message:\n\n"${(content || '').substring(0, 200)}${(content || '').length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
               })
               .catch(emailError => {
                 logger.error('Failed to send email notification:', emailError);
@@ -1129,17 +1133,22 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
  * GET /api/v4/messenger/admin/metrics
  * Return in-memory messenger v4 operational counters (admin only).
  */
-router.get('/admin/metrics', applyAuthRequired, async (req, res) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Forbidden: admin access required' });
-  }
+router.get('/admin/metrics', applyAuthRequired, writeLimiter, (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: admin access required' });
+    }
 
-  res.json({
-    success: true,
-    metrics: messengerMetrics.getAll(),
-    collectedAt: new Date().toISOString(),
-    note: 'Counters reset on process restart. Integrate with external monitoring for persistence.',
-  });
+    res.json({
+      success: true,
+      metrics: messengerMetrics.getAll(),
+      collectedAt: new Date().toISOString(),
+      note: 'Counters reset on process restart. Integrate with external monitoring for persistence.',
+    });
+  } catch (error) {
+    logger.error('Admin: error fetching metrics:', error);
+    next(error);
+  }
 });
 
 module.exports = { router, initialize };
