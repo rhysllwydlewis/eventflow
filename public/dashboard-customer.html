@@ -457,27 +457,31 @@ async function calculateRealBudget(plans) {
     }
   }
   
-  // Get total budget - CHECK CUSTOM BUDGET FIRST
+  // Get total budget - server plan is source of truth, localStorage is fallback
   let totalBudget = BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET;
   const planWithBudget = plans.find(p => p.budget && parseFloat(p.budget) > 0);
   
-  // Priority 1: Check localStorage for custom budget (with error handling)
-  try {
-    const customBudget = localStorage.getItem('eventflow_custom_budget');
-    if (customBudget && parseFloat(customBudget) > 0) {
-      totalBudget = parseFloat(customBudget);
-    }
-  } catch (err) {
-    console.error('Failed to read custom budget from localStorage:', err);
-    // Continue with default budget
-  }
-  
-  // Priority 2: Check if user set budget in plan (only if custom budget not set)
-  if (totalBudget === BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET && planWithBudget) {
+  // Priority 1: Server plan budget (authoritative — consistent across devices)
+  if (planWithBudget) {
     totalBudget = parseFloat(planWithBudget.budget);
+    // Keep localStorage in sync with server value
+    try {
+      localStorage.setItem('eventflow_custom_budget', String(totalBudget));
+    } catch (_) {}
+  } else {
+    // Priority 2: localStorage fallback (user may have set budget without a plan,
+    // or localStorage may be more recent than this plan fetch)
+    try {
+      const customBudget = localStorage.getItem('eventflow_custom_budget');
+      if (customBudget && parseFloat(customBudget) > 0) {
+        totalBudget = parseFloat(customBudget);
+      }
+    } catch (err) {
+      console.error('Failed to read custom budget from localStorage:', err);
+    }
   }
   
-  // Priority 3: If spending but no budget set, use default
+  // If no budget found anywhere and user is spending, flag it
   let noBudgetSet = false;
   if (totalBudget === BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET && totalSpent > 0) {
     // Show warning instead of auto-expanding
@@ -940,16 +944,15 @@ function populateHeroStats(plans) {
     }
   }
 
-  // Unread messages count from badge
+  // Unread messages — start at 0; update live when UnreadBadgeManager fires
   const heroMessages = document.getElementById('hero-stat-messages');
   if (heroMessages) {
-    const badge = document.getElementById('unreadMessageBadge');
-    if (badge && badge.textContent) {
-      const match = badge.textContent.match(/(\d+)/);
-      heroMessages.textContent = match ? match[1] : '0';
-    } else {
-      heroMessages.textContent = '0';
-    }
+    heroMessages.textContent = '0';
+    // Listen for real-time unread count updates from UnreadBadgeManager
+    window.addEventListener('unreadCountUpdated', function onUnread(e) {
+      const count = typeof e.detail?.count === 'number' ? e.detail.count : 0;
+      heroMessages.textContent = count > 0 ? count : '0';
+    });
   }
 }
 
@@ -969,7 +972,7 @@ function makeWelcomeContextual(plans) {
     return;
   }
 
-  // Check if budget is set
+  // Check if budget is set (server plan is authoritative)
   const hasBudget = plans.some(p => p.budget && parseFloat(p.budget) > 0);
   let lsBudget = null;
   try { lsBudget = localStorage.getItem('eventflow_custom_budget'); } catch (_) {}
@@ -983,16 +986,27 @@ function makeWelcomeContextual(plans) {
     return;
   }
 
-  // Check unread messages
-  const badge = document.getElementById('unreadMessageBadge');
-  const unreadCount = badge ? parseInt((badge.textContent.match(/(\d+)/) || [])[1] || '0', 10) : 0;
-  if (unreadCount > 0) {
-    promptContainer.innerHTML = `
-      <div class="customer-welcome-prompt customer-welcome-prompt--messages">
-        <span>💬</span>
-        <span>You have <strong>${unreadCount}</strong> unread message${unreadCount !== 1 ? 's' : ''}. <a href="/messenger/" style="color:inherit;font-weight:600;text-decoration:underline;">Check your inbox</a>.</span>
-      </div>`;
-  }
+  // Listen for unread count once it arrives from the messaging system (async)
+  window.addEventListener('unreadCountUpdated', function onUnreadForPrompt(e) {
+    window.removeEventListener('unreadCountUpdated', onUnreadForPrompt);
+    const unreadCount = typeof e.detail?.count === 'number' ? Math.max(0, Math.floor(e.detail.count)) : 0;
+    if (unreadCount > 0 && !promptContainer.querySelector('.customer-welcome-prompt--messages')) {
+      const prompt = document.createElement('div');
+      prompt.className = 'customer-welcome-prompt customer-welcome-prompt--messages';
+      const icon = document.createElement('span');
+      icon.textContent = '💬';
+      const text = document.createElement('span');
+      text.textContent = `You have ${unreadCount} unread message${unreadCount !== 1 ? 's' : ''}. `;
+      const link = document.createElement('a');
+      link.href = '/messenger/';
+      link.style.cssText = 'color:inherit;font-weight:600;text-decoration:underline;';
+      link.textContent = 'Check your inbox';
+      text.appendChild(link);
+      prompt.appendChild(icon);
+      prompt.appendChild(text);
+      promptContainer.replaceChildren(prompt);
+    }
+  });
 }
 
 // Initialize calendar
