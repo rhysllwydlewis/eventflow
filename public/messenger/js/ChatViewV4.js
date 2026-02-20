@@ -116,6 +116,8 @@ class ChatViewV4 {
     // Escape key closes lightbox (WCAG 2.1 modal pattern)
     this._onKeyDown = (e) => {
       if (e.key === 'Escape' && this._lightboxOpen) {
+        e.preventDefault();
+        e.stopPropagation();
         this._onLightboxClose();
       }
     };
