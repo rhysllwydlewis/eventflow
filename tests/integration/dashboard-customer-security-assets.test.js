@@ -8,10 +8,15 @@ const path = require('path');
 
 describe('Dashboard customer security-oriented script loading', () => {
   let dashboardContent;
+  let ticketsJs;
 
   beforeAll(() => {
     dashboardContent = fs.readFileSync(
       path.resolve(__dirname, '..', '..', 'public', 'dashboard-customer.html'),
+      'utf8'
+    );
+    ticketsJs = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'assets', 'js', 'customer-tickets.js'),
       'utf8'
     );
   });
@@ -19,6 +24,15 @@ describe('Dashboard customer security-oriented script loading', () => {
   it('uses local confetti script instead of jsdelivr CDN', () => {
     expect(dashboardContent).toContain('/assets/js/vendor/confetti-safe.js');
     expect(dashboardContent).not.toContain('canvas-confetti@1.9.2/dist/confetti.browser.min.js');
+  });
+
+  it('confetti-safe.js script has defer so it does not block page rendering', () => {
+    // Extract the script tag for confetti-safe.js and verify it has a defer attribute.
+    // The tag must be a <script> element with both the src and the standalone 'defer' attribute.
+    const match = dashboardContent.match(/<script\s[^>]*confetti-safe\.js[^>]*>/);
+    expect(match).not.toBeNull();
+    // 'defer' must appear as a standalone attribute token (not inside a quoted value)
+    expect(match[0]).toMatch(/\bdefer\b/);
   });
 
   it('has customer-dashboard-improvements.css linked', () => {
@@ -69,5 +83,10 @@ describe('Dashboard customer security-oriented script loading', () => {
     expect(dashboardContent).toContain('id="customer-plans-list" aria-live="polite"');
     expect(dashboardContent).toContain('id="tickets-cust"');
     expect(dashboardContent).toMatch(/id="tickets-cust"[^>]*aria-live="polite"/);
+  });
+
+  it('customer-tickets.js renders a "View all" link when the display limit (5) is reached', () => {
+    expect(ticketsJs).toContain('customer-tickets-view-all');
+    expect(ticketsJs).toContain('tickets.length >= 5');
   });
 });

@@ -72,6 +72,11 @@ function renderTickets(tickets) {
 
   html += '</div>';
 
+  // Show "View all support tickets" link when the list is capped at the display limit (5)
+  if (tickets.length >= 5) {
+    html += '<a href="/support" class="customer-tickets-view-all">View all support tickets →</a>';
+  }
+
   container.innerHTML = html;
 
   // Add click and keyboard handlers
