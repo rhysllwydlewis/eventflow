@@ -82,6 +82,10 @@ class MessengerSocket {
       window.dispatchEvent(new CustomEvent('messenger:conversation-updated', { detail: data }));
     });
 
+    this.socket.on('messenger:v4:conversation-deleted', data => {
+      window.dispatchEvent(new CustomEvent('messenger:conversation-deleted', { detail: data }));
+    });
+
     this.socket.on('messenger:v4:message-edited', data => {
       window.dispatchEvent(new CustomEvent('messenger:message-edited', { detail: data }));
     });

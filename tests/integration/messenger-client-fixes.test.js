@@ -240,4 +240,51 @@ describe('Messenger client-side fixes', () => {
     // Should also escape role names in analytics
     expect(adminSrc).toContain('escapeHtml(r)');
   });
+
+  // ── CSRF token base64 safety ────────────────────────────────────────────────
+
+  it('MessengerAPI.getCsrfToken uses indexOf (not split) so base64 tokens with = work', () => {
+    expect(messengerApiSrc).toContain("trimmed.indexOf('=')");
+    // Should NOT use the broken split('=') destructuring (outside comments)
+    const codeWithoutComments = messengerApiSrc.replace(/\/\/[^\n]*/g, '');
+    expect(codeWithoutComments).not.toContain("split('=')");
+  });
+
+  it('MessengerAPI.getCsrfToken falls back to window.__CSRF_TOKEN__ and window.csrfToken', () => {
+    expect(messengerApiSrc).toContain('window.__CSRF_TOKEN__');
+    expect(messengerApiSrc).toContain('window.csrfToken');
+  });
+
+  // ── Archive active conversation navigates back ──────────────────────────────
+
+  it('MessengerAppV4 archive handler resets chat view when active conversation is archived', () => {
+    expect(messengerAppSrc).toContain("'messenger:archive-conversation'");
+    // Should check if the archived id matches the active conversation
+    expect(messengerAppSrc).toContain('id === this._activeConversationId');
+  });
+
+  // ── Optimistic pin/archive state update ─────────────────────────────────────
+
+  it('_togglePin does optimistic local state update (me.isPinned) instead of full reload', () => {
+    expect(messengerAppSrc).toContain('me.isPinned = newPinned');
+  });
+
+  it('_toggleArchive does optimistic local state update (me.isArchived) instead of full reload', () => {
+    expect(messengerAppSrc).toContain('me.isArchived = newArchived');
+  });
+
+  // ── conversation-deleted WebSocket event ────────────────────────────────────
+
+  it('MessengerSocket forwards messenger:v4:conversation-deleted to window event', () => {
+    const socketSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'MessengerSocket.js'),
+      'utf8'
+    );
+    expect(socketSrc).toContain("'messenger:v4:conversation-deleted'");
+    expect(socketSrc).toContain("'messenger:conversation-deleted'");
+  });
+
+  it('MessengerAppV4 handles messenger:conversation-deleted event from other sessions', () => {
+    expect(messengerAppSrc).toContain("'messenger:conversation-deleted'");
+  });
 });

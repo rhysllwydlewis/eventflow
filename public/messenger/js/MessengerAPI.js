@@ -14,18 +14,33 @@ class MessengerAPI {
    * Get CSRF token from cookies or meta tag (read fresh on each call)
    */
   getCsrfToken() {
-    // Try cookie first (EventFlow pattern)
+    // Try cookie first (EventFlow pattern).
+    // Use indexOf('=') rather than split('=') so that base64 values containing '='
+    // are captured in full (split truncates after the first '=').
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
+      const trimmed = cookie.trim();
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex === -1) continue;
+      const name = trimmed.substring(0, eqIndex);
       if (name === 'csrf' || name === 'csrfToken') {
-        return decodeURIComponent(value);
+        try {
+          return decodeURIComponent(trimmed.substring(eqIndex + 1));
+        } catch (_) {
+          continue;
+        }
       }
     }
 
     // Fallback to meta tag
     const metaTag = document.querySelector('meta[name="csrf-token"]');
-    return metaTag ? metaTag.content : '';
+    if (metaTag && metaTag.content) return metaTag.content;
+
+    // Fallback to globals set by csrf-handler.js
+    if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
+    if (window.csrfToken) return window.csrfToken;
+
+    return '';
   }
 
   /**

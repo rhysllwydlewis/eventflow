@@ -241,8 +241,17 @@ class MessengerAppV4 {
     });
     window.addEventListener('messenger:archive-conversation', async e => {
       const { id } = e.detail || {};
-      if (id) {
-        await this._toggleArchive(id);
+      if (!id) return;
+      await this._toggleArchive(id);
+      // If the user just archived the currently-open conversation, navigate back to the list
+      if (id === this._activeConversationId) {
+        this._activeConversationId = null;
+        this.state.setActiveConversation(null);
+        this.chatView?.reset();
+        if (this.composer) this.composer.options.conversationId = null;
+        this.socket?.leaveConversation(id);
+        this.contextBanner?.hide();
+        this.handleMobilePanel('sidebar');
       }
     });
 
@@ -427,6 +436,22 @@ class MessengerAppV4 {
       const conv = this.state.conversations.find(c => c._id === conversationId);
       if (conv) {
         this.state.updateConversation({ ...conv, ...updates });
+      }
+    });
+
+    // Another session deleted this conversation — remove from local state and reset chat if active
+    window.addEventListener('messenger:conversation-deleted', e => {
+      const { conversationId } = e.detail || {};
+      if (!conversationId) return;
+      this.state.setConversations(this.state.conversations.filter(c => c._id !== conversationId));
+      if (this._activeConversationId === conversationId) {
+        this._activeConversationId = null;
+        this.state.setActiveConversation(null);
+        this.chatView?.reset();
+        if (this.composer) this.composer.options.conversationId = null;
+        this.socket?.leaveConversation(conversationId);
+        this.contextBanner?.hide();
+        this.handleMobilePanel('sidebar');
       }
     });
 
@@ -780,16 +805,19 @@ class MessengerAppV4 {
 
   async _togglePin(conversationId) {
     try {
-      // No dedicated /pin endpoint; backend uses PATCH /conversations/:id with body
       const uid = this._getCurrentUserId();
-      if (!uid) {
-        return;
-      }
+      if (!uid) return;
       const conv = this.state.conversations.find(c => c._id === conversationId);
       const me = conv?.participants?.find(p => p.userId === uid);
       const newPinned = !(me?.isPinned || false);
       await this.api.updateConversation(conversationId, { isPinned: newPinned });
-      await this._loadConversations();
+      // Optimistic local state update — avoids full reload round-trip
+      if (conv && me) {
+        me.isPinned = newPinned;
+        this.state.updateConversation(conv);
+      } else {
+        await this._loadConversations();
+      }
     } catch (err) {
       console.error('[MessengerAppV4] Pin failed:', err);
     }
@@ -797,16 +825,19 @@ class MessengerAppV4 {
 
   async _toggleArchive(conversationId) {
     try {
-      // No dedicated /archive endpoint; backend uses PATCH /conversations/:id with body
       const uid = this._getCurrentUserId();
-      if (!uid) {
-        return;
-      }
+      if (!uid) return;
       const conv = this.state.conversations.find(c => c._id === conversationId);
       const me = conv?.participants?.find(p => p.userId === uid);
       const newArchived = !(me?.isArchived || false);
       await this.api.updateConversation(conversationId, { isArchived: newArchived });
-      await this._loadConversations();
+      // Optimistic local state update — avoids full reload round-trip
+      if (conv && me) {
+        me.isArchived = newArchived;
+        this.state.updateConversation(conv);
+      } else {
+        await this._loadConversations();
+      }
     } catch (err) {
       console.error('[MessengerAppV4] Archive failed:', err);
     }
