@@ -41,6 +41,12 @@ function safeDisplayName(...candidates) {
 
 const router = express.Router();
 
+// Returns true only for 24-hex-char ObjectId strings; guards every :id param
+// before it reaches new ObjectId() in the service to prevent 500 on bad input.
+function isValidObjectId(id) {
+  return typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id);
+}
+
 // Dependencies injected by server.js
 let authRequired;
 let csrfProtection;
@@ -336,6 +342,9 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
 router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
 
     const conversation = await (await getMessengerService()).getConversation(id, userId);
@@ -346,7 +355,7 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching conversation:', error);
-    res.status(error.message.includes('not found') ? 404 : 500).json({
+    res.status((error.message || '').includes('not found') ? 404 : 500).json({
       error: error.message || 'Failed to fetch conversation',
     });
   }
@@ -359,6 +368,9 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
 router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
     const updates = req.body;
 
@@ -391,6 +403,9 @@ router.patch('/conversations/:id', applyAuthRequired, applyCsrfProtection, write
 router.delete('/conversations/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
 
     await (await getMessengerService()).deleteConversation(id, userId);
@@ -429,6 +444,9 @@ router.post(
     const startMs = Date.now();
     try {
       const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
       const { content, type = 'text', replyTo } = req.body;
       const userId = req.user.id;
       const userName = safeDisplayName(
@@ -580,7 +598,7 @@ router.post(
       });
     } catch (error) {
       messengerMetrics.increment('messenger_v4_errors_total');
-      const statusCode = error.message.includes('spam') ? 429 : 500;
+      const statusCode = (error.message || '').includes('spam') ? 429 : 500;
       logger.error('Error sending message:', {
         error: error.message,
         userId: req.user?.id,
@@ -602,8 +620,16 @@ router.post(
 router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
     const { cursor, limit = 50 } = req.query;
+
+    // Validate cursor format before it reaches service-level new ObjectId()
+    if (cursor && !isValidObjectId(cursor)) {
+      return res.status(400).json({ error: 'Invalid cursor' });
+    }
 
     const result = await (
       await getMessengerService()
@@ -631,6 +657,9 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
 router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
     const userId = req.user.id;
     const { content } = req.body;
 
@@ -659,9 +688,10 @@ router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimit
   } catch (error) {
     logger.error('Error editing message:', error);
     let editStatus = 500;
-    if (error.message.includes('window expired') || error.message.includes('not found') || error.message.includes('access denied')) {
+    const msg = error.message || '';
+    if (msg.includes('window expired') || msg.includes('not found') || msg.includes('access denied')) {
       editStatus = 403;
-    } else if (error.message.includes('cannot be empty')) {
+    } else if (msg.includes('cannot be empty')) {
       editStatus = 400;
     }
     res.status(editStatus).json({
@@ -677,6 +707,9 @@ router.patch('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimit
 router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
     const userId = req.user.id;
 
     const svc = await getMessengerService();
@@ -717,6 +750,9 @@ router.delete('/messages/:id', applyAuthRequired, applyCsrfProtection, writeLimi
 router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
     const userId = req.user.id;
     const userName = safeDisplayName(
       req.user.displayName,
@@ -726,10 +762,15 @@ router.post('/messages/:id/reactions', applyAuthRequired, applyCsrfProtection, w
     );
     const { emoji } = req.body;
 
-    if (!emoji) {
+    if (!emoji || typeof emoji !== 'string') {
       return res.status(400).json({
         error: 'Emoji is required',
       });
+    }
+
+    // Limit emoji field length to prevent storing arbitrary long strings
+    if (emoji.length > 10) {
+      return res.status(400).json({ error: 'Invalid emoji' });
     }
 
     const message = await (await getMessengerService()).toggleReaction(id, userId, userName, emoji);
@@ -844,6 +885,9 @@ router.get('/search', applyAuthRequired, async (req, res) => {
 router.post('/conversations/:id/typing', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
     const userName = safeDisplayName(
       req.user.displayName,
@@ -884,9 +928,12 @@ router.post('/conversations/:id/typing', applyAuthRequired, applyCsrfProtection,
  * POST /api/v4/messenger/conversations/:id/read
  * Mark conversation as read
  */
-router.post('/conversations/:id/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
+router.post('/conversations/:id/read', applyAuthRequired, applyCsrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
     const userId = req.user.id;
 
     await (await getMessengerService()).markAsRead(conversationId, userId);
@@ -954,8 +1001,8 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
       collection
         .find(query)
         .sort({ updatedAt: -1 })
-        .skip(parseInt(skip, 10))
-        .limit(Math.min(parseInt(limit, 10), 100))
+        .skip(Math.max(parseInt(skip, 10) || 0, 0))
+        .limit(Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100))
         .toArray(),
       collection.countDocuments(query),
     ]);

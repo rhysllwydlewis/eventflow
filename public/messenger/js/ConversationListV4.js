@@ -355,6 +355,7 @@ class ConversationListV4 {
 
     // Only treat as horizontal swipe if mostly horizontal
     if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) {
+      this._touchTarget = null;
       return;
     }
 
