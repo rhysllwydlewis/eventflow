@@ -233,23 +233,30 @@ class MessengerState {
    * Get filtered conversations
    */
   getFilteredConversations() {
+    const uid = this.currentUser?.id || this.currentUser?._id;
     let filtered = [...this.conversations];
 
     // Apply active filter
     if (this.filters.active === 'unread') {
       filtered = filtered.filter(conv => {
-        const participant = conv.participants?.find(p => p.userId === this.currentUser?.id);
+        const participant = conv.participants?.find(p => p.userId === uid);
         return participant && participant.unreadCount > 0;
       });
     } else if (this.filters.active === 'pinned') {
       filtered = filtered.filter(conv => {
-        const participant = conv.participants?.find(p => p.userId === this.currentUser?.id);
+        const participant = conv.participants?.find(p => p.userId === uid);
         return participant && participant.isPinned;
       });
     } else if (this.filters.active === 'archived') {
       filtered = filtered.filter(conv => {
-        const participant = conv.participants?.find(p => p.userId === this.currentUser?.id);
+        const participant = conv.participants?.find(p => p.userId === uid);
         return participant && participant.isArchived;
+      });
+    } else {
+      // 'all' tab — exclude archived conversations (mirroring server-side default behaviour)
+      filtered = filtered.filter(conv => {
+        const participant = conv.participants?.find(p => p.userId === uid);
+        return !participant?.isArchived;
       });
     }
 
@@ -257,7 +264,7 @@ class MessengerState {
     if (this.filters.search) {
       const searchLower = this.filters.search.toLowerCase();
       filtered = filtered.filter(conv => {
-        const otherParticipant = conv.participants?.find(p => p.userId !== this.currentUser?.id);
+        const otherParticipant = conv.participants?.find(p => p.userId !== uid);
         const nameMatch = otherParticipant?.displayName?.toLowerCase().includes(searchLower);
         const contentMatch = conv.lastMessage?.content?.toLowerCase().includes(searchLower);
         return nameMatch || contentMatch;

@@ -536,9 +536,32 @@ class MessengerAppV4 {
     // Focus composer
     this.composer?.focus();
 
-    // Mark as read via API (non-blocking)
+    // Mark as read via API (non-blocking) and update local state immediately
+    const uid = this._getCurrentUserId();
     this.api
       .request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' })
+      .then(() => {
+        // Update local participant unreadCount so the badge clears immediately
+        if (uid) {
+          const conv = this.state.conversations.find(c => c._id === id);
+          if (conv) {
+            const participant = conv.participants?.find(p => p.userId === uid);
+            if (participant && participant.unreadCount > 0) {
+              participant.unreadCount = 0;
+              this.state.updateConversation(conv);
+              // Recalculate global unread count
+              const totalUnread = this.state.conversations.reduce((sum, c) => {
+                const me = c.participants?.find(p => p.userId === uid);
+                return sum + (me?.unreadCount || 0);
+              }, 0);
+              this.state.setUnreadCount(totalUnread);
+              window.dispatchEvent(
+                new CustomEvent('messenger:unread-count', { detail: { count: totalUnread } })
+              );
+            }
+          }
+        }
+      })
       .catch(err => console.warn('[MessengerAppV4] mark-read failed:', err));
   }
 

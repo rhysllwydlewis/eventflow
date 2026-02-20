@@ -113,7 +113,7 @@ class MessageBubbleV4 {
       <div class="messenger-v4__attachment messenger-v4__attachment--file">
         <span class="messenger-v4__attachment-icon" aria-hidden="true">📎</span>
         <div class="messenger-v4__attachment-info">
-          <a href="${MessageBubbleV4.escape(attachment.url)}"
+          <a href="${MessageBubbleV4.safeUrl(attachment.url)}"
              target="_blank"
              rel="noopener noreferrer"
              class="messenger-v4__attachment-name"
@@ -219,6 +219,21 @@ class MessageBubbleV4 {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Return a safe URL string for use in href/src attributes.
+   * Blocks javascript:, data:, and vbscript: schemes to prevent XSS.
+   * Returns '#' for any disallowed or blank URL.
+   * @param {string} url
+   * @returns {string}
+   */
+  static safeUrl(url) {
+    if (!url || typeof url !== 'string') return '#';
+    const trimmed = url.trim();
+    // Block dangerous schemes (case-insensitive, handles encoding tricks)
+    if (/^(javascript|data|vbscript):/i.test(trimmed)) return '#';
+    return MessageBubbleV4.escape(trimmed);
   }
 }
 

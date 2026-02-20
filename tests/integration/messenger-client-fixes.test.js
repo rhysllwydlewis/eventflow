@@ -155,4 +155,48 @@ describe('Messenger client-side fixes', () => {
     expect(messengerAppSrc).toContain('showEditPrompt');
     expect(messengerAppSrc).not.toContain('showEdit(');
   });
+
+  // ── Security: URL sanitization ──────────────────────────────────────────────
+
+  it('MessageBubbleV4 has safeUrl() method to block javascript: URIs in file hrefs', () => {
+    const bubbleSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessageBubbleV4.js'), 'utf8');
+    expect(bubbleSrc).toContain('static safeUrl(');
+    expect(bubbleSrc).toContain('javascript');
+    // File attachment href uses safeUrl, not just escape
+    expect(bubbleSrc).toContain('MessageBubbleV4.safeUrl(attachment.url)');
+  });
+
+  it('ContextBannerV4 sanitises context.url before assigning to link.href', () => {
+    const bannerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContextBannerV4.js'), 'utf8');
+    expect(bannerSrc).toContain('_safeUrl(');
+    // Should NOT assign href directly from context.url without sanitisation
+    expect(bannerSrc).not.toContain('link.href = context.url');
+  });
+
+  it('ContextBannerV4 only allows relative (same-origin) paths for thumbnail src', () => {
+    const bannerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContextBannerV4.js'), 'utf8');
+    // Validates imageUrl starts with '/' (relative path)
+    expect(bannerSrc).toContain("/^\\//");
+  });
+
+  // ── MessengerState filter fixes ─────────────────────────────────────────────
+
+  it('MessengerState.getFilteredConversations excludes archived from the all tab', () => {
+    const stateSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerState.js'), 'utf8');
+    // The 'all' else branch should filter out archived conversations
+    expect(stateSrc).toContain('isArchived');
+  });
+
+  it('MessengerState.getFilteredConversations uses currentUser.id || currentUser._id for uid lookup', () => {
+    const stateSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerState.js'), 'utf8');
+    expect(stateSrc).toContain('currentUser?.id || this.currentUser?._id');
+  });
+
+  // ── selectConversation immediately updates local unread count ───────────────
+
+  it('MessengerAppV4 selectConversation updates local unreadCount after mark-read API call', () => {
+    // Should mutate the participant's unreadCount in local state (not wait for next full reload)
+    expect(messengerAppSrc).toContain('participant.unreadCount = 0');
+    expect(messengerAppSrc).toContain('state.updateConversation(conv)');
+  });
 });

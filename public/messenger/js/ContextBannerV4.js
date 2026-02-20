@@ -63,18 +63,23 @@ class ContextBannerV4 {
     this.bannerEl.querySelector('#v4BannerTitle').textContent = context.title || '';
     this.bannerEl.querySelector('#v4BannerSubtitle').textContent = context.subtitle || '';
 
-    // Update the "View" link
+    // Update the "View" link — sanitise to block javascript: / data: URIs
     const link = this.bannerEl.querySelector('#v4BannerLink');
     if (context.url) {
-      link.href = context.url;
-      link.style.display = 'inline-flex';
+      const safeHref = this._safeUrl(context.url);
+      if (safeHref !== '#') {
+        link.href = safeHref;
+        link.style.display = 'inline-flex';
+      } else {
+        link.style.display = 'none';
+      }
     } else {
       link.style.display = 'none';
     }
 
-    // Show thumbnail if provided
+    // Show thumbnail if provided — only allow relative paths (same-origin)
     const thumb = this.bannerEl.querySelector('#v4BannerThumb');
-    if (context.imageUrl) {
+    if (context.imageUrl && /^\//.test(context.imageUrl)) {
       thumb.src = context.imageUrl;
       thumb.alt = this.escape(context.title || 'Context image');
       thumb.style.display = 'block';
@@ -112,6 +117,14 @@ class ContextBannerV4 {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  /** Block javascript: / data: / vbscript: href values. Returns '#' for unsafe URLs. */
+  _safeUrl(url) {
+    if (!url || typeof url !== 'string') return '#';
+    const trimmed = url.trim();
+    if (/^(javascript|data|vbscript):/i.test(trimmed)) return '#';
+    return this.escape(trimmed);
   }
 }
 
