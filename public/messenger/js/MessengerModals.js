@@ -59,10 +59,10 @@ class MessengerModals {
       document.body.appendChild(modal);
 
       // Focus first emoji
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const firstEmoji = modal.querySelector('.messenger-emoji-picker__item');
         if (firstEmoji) firstEmoji.focus();
-      }, 100);
+      });
 
       // Handle emoji selection
       modal.querySelectorAll('.messenger-emoji-picker__item').forEach(btn => {
@@ -156,10 +156,10 @@ class MessengerModals {
       const overlay = modal.querySelector('.messenger-modal__overlay');
 
       // Focus and select text
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         textarea.focus();
         textarea.setSelectionRange(0, textarea.value.length);
-      }, 100);
+      });
 
       // Handle save
       const save = () => {
@@ -251,9 +251,9 @@ class MessengerModals {
       const overlay = modal.querySelector('.messenger-modal__overlay');
 
       // Focus confirm button
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         confirmBtn.focus();
-      }, 100);
+      });
 
       // Handle confirm
       const confirm = () => {
@@ -272,10 +272,15 @@ class MessengerModals {
       closeBtn.addEventListener('click', cancel);
       overlay.addEventListener('click', cancel);
 
-      // Handle keyboard
+      // Handle keyboard: Enter activates focused button; Escape cancels
       modal.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-          confirm();
+          // Only confirm when focus is on the confirm button or somewhere outside the cancel button
+          if (document.activeElement !== cancelBtn) {
+            e.preventDefault();
+            confirm();
+          }
+          // If cancel button is focused, let the button's native click fire
         } else if (e.key === 'Escape') {
           cancel();
         }

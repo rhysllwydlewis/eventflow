@@ -97,10 +97,6 @@
         return true;
       }
     }
-    // Fallback property check
-    if (window.AuthState && window.AuthState.isAuthenticated) {
-      return true;
-    }
     try {
       const res = await fetch('/api/v1/auth/me', {
         credentials: 'include',
@@ -329,7 +325,7 @@
         ? `<div class="qcv4-context-card" aria-label="Context: ${escapeHtml(contextTitle)}">
            ${
              contextImage
-               ? `<img src="${escapeHtml(contextImage)}" alt="" class="qcv4-context-img" loading="lazy">`
+               ? `<img src="${escapeHtml(contextImage)}" alt="" class="qcv4-context-img" loading="lazy" onerror="this.style.display='none'">`
                : `<div class="qcv4-context-placeholder">${contextEmoji}</div>`
            }
            <div class="qcv4-context-info">

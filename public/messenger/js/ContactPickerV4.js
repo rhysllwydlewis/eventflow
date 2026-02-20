@@ -15,6 +15,7 @@ class ContactPickerV4 {
     this.options = {
       onSelect: null,
       currentUserId: null,
+      currentUserRole: null,
       ...options,
     };
 
@@ -136,8 +137,12 @@ class ContactPickerV4 {
    */
   async search(query) {
     try {
-      const data = await this.api.getContacts(query);
-      const contacts = data.contacts || data || [];
+      // For customers, pass role=supplier to the server to avoid fetching unauthorised contacts
+      const myRole = this.options.currentUserRole;
+      const apiOptions = myRole === 'customer' ? { role: 'supplier' } : {};
+      const data = await this.api.getContacts(query, apiOptions);
+      // _filterByRole provides client-side enforcement as a defence-in-depth layer
+      const contacts = this._filterByRole(data.contacts || data || []);
       this.resultsEl.innerHTML = contacts.length
         ? contacts.map(c => this._buildContactHTML(c)).join('')
         : `<div class="messenger-v4__empty-state" role="status">No contacts found for "${this.escape(query)}"</div>`;
@@ -198,11 +203,30 @@ class ContactPickerV4 {
     if (e.key === 'Escape') this.close();
   }
 
+  /**
+   * Filter contacts based on business rules:
+   * - customer → only suppliers
+   * - supplier → all (customers + suppliers)
+   * @param {Array} contacts
+   * @returns {Array}
+   */
+  _filterByRole(contacts) {
+    const myRole = this.options.currentUserRole;
+    if (myRole === 'customer') {
+      return contacts.filter(c => (c.role || 'customer') === 'supplier');
+    }
+    return contacts;
+  }
+
   _buildRecentHTML() {
     if (!this._recentContacts.length) {
       return '<div class="messenger-v4__empty-state" role="status">Search for a contact to start a conversation</div>';
     }
-    const items = this._recentContacts.slice(0, 5).map(c => this._buildContactHTML(c)).join('');
+    const filtered = this._filterByRole(this._recentContacts.slice(0, 5));
+    if (!filtered.length) {
+      return '<div class="messenger-v4__empty-state" role="status">Search for a contact to start a conversation</div>';
+    }
+    const items = filtered.map(c => this._buildContactHTML(c)).join('');
     return `<div class="messenger-v4__recent-label">Recent</div>${items}`;
   }
 

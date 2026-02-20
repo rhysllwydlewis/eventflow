@@ -8,25 +8,39 @@
 class MessengerAPI {
   constructor() {
     this.baseUrl = '/api/v4/messenger';
-    this.csrfToken = this.getCsrfToken();
   }
 
   /**
-   * Get CSRF token from cookies or meta tag
+   * Get CSRF token from cookies or meta tag (read fresh on each call)
    */
   getCsrfToken() {
-    // Try cookie first (EventFlow pattern)
+    // Try cookie first (EventFlow pattern).
+    // Use indexOf('=') rather than split('=') so that base64 values containing '='
+    // are captured in full (split truncates after the first '=').
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
+      const trimmed = cookie.trim();
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex === -1) continue;
+      const name = trimmed.substring(0, eqIndex);
       if (name === 'csrf' || name === 'csrfToken') {
-        return decodeURIComponent(value);
+        try {
+          return decodeURIComponent(trimmed.substring(eqIndex + 1));
+        } catch (_) {
+          continue;
+        }
       }
     }
 
     // Fallback to meta tag
     const metaTag = document.querySelector('meta[name="csrf-token"]');
-    return metaTag ? metaTag.content : '';
+    if (metaTag && metaTag.content) return metaTag.content;
+
+    // Fallback to globals set by csrf-handler.js
+    if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
+    if (window.csrfToken) return window.csrfToken;
+
+    return '';
   }
 
   /**
@@ -49,7 +63,7 @@ class MessengerAPI {
 
     // Add CSRF token to POST/PATCH/DELETE requests
     if (['POST', 'PATCH', 'DELETE'].includes(options.method?.toUpperCase())) {
-      config.headers['X-CSRF-Token'] = this.csrfToken;
+      config.headers['X-CSRF-Token'] = this.getCsrfToken();
     }
 
     try {
@@ -123,7 +137,8 @@ class MessengerAPI {
       params.append('status', filters.status);
     }
     if (filters.unreadOnly) {
-      params.append('unreadOnly', 'true');
+      // Server reads 'unread' (not 'unreadOnly')
+      params.append('unread', 'true');
     }
     if (filters.pinned) {
       params.append('pinned', 'true');
@@ -196,7 +211,7 @@ class MessengerAPI {
 
       // Add CSRF token as custom header
       config.headers = {
-        'X-CSRF-Token': this.csrfToken,
+        'X-CSRF-Token': this.getCsrfToken(),
       };
 
       try {
@@ -285,6 +300,13 @@ class MessengerAPI {
   }
 
   /**
+   * Mark conversation as unread
+   */
+  async markAsUnread(conversationId) {
+    return this.updateConversation(conversationId, { markUnread: true });
+  }
+
+  /**
    * Toggle reaction on a message
    */
   async toggleReaction(messageId, emoji) {
@@ -310,16 +332,23 @@ class MessengerAPI {
   /**
    * Get contacts for new conversation
    */
-  async getContacts(searchQuery = '') {
-    const params = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : '';
-    return this.request(`/contacts${params}`);
+  async getContacts(searchQuery = '', options = {}) {
+    const params = new URLSearchParams();
+    if (searchQuery) {
+      params.append('q', searchQuery);
+    }
+    if (options.role) {
+      params.append('role', options.role);
+    }
+    const qs = params.toString();
+    return this.request(`/contacts${qs ? `?${qs}` : ''}`);
   }
 
   /**
    * Search contacts (alias for getContacts)
    */
-  async searchContacts(query = '') {
-    return this.getContacts(query);
+  async searchContacts(query = '', options = {}) {
+    return this.getContacts(query, options);
   }
 
   /**

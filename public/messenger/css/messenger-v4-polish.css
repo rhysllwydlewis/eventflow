@@ -629,6 +629,17 @@
     height: 100%;
   }
 
+  /* Compact action buttons on mobile to avoid header overflow with 5 buttons */
+  .messenger-v4__chat-actions {
+    gap: 4px;
+  }
+
+  .messenger-v4__action-button {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
   @keyframes mvSlideInRight {
     from { transform: translateX(100%); opacity: 0.8; }
     to   { transform: translateX(0);    opacity: 1;   }
@@ -857,6 +868,11 @@
    The send button only has bg+color in the base CSS. It does
    NOT have the messenger-v4__composer-button class.
    ============================================================ */
+.messenger-v4__send-button svg {
+  width: 24px;
+  height: 24px;
+}
+
 .messenger-v4__send-button {
   width: 40px;
   height: 40px;
@@ -1044,6 +1060,20 @@
 .messenger-v4__attachment--image .messenger-v4__attachment-image:hover {
   opacity: 0.92;
   transform: scale(0.99);
+}
+
+/* Broken/unavailable image fallback */
+.messenger-v4__attachment--image .messenger-v4__attachment-image.messenger-v4__attachment-error {
+  display: none;
+}
+
+.messenger-v4__attachment-error-label {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ef-text-muted, #888);
+  font-size: 0.8125rem;
 }
 
 /* File attachment card */
@@ -1895,4 +1925,51 @@ body:has(.messenger-v4) {
   gap: 8px;
   padding: 4px 16px 8px;
   min-height: 36px;
+}
+
+/* ============================================================
+   66. CONVERSATION LIST CONTEXT MENU (right-click)
+   ============================================================ */
+.messenger-v4__conv-context-menu {
+  z-index: var(--messenger-z-modal, 400);
+  min-width: 180px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(11, 128, 115, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(11, 128, 115, 0.18), 0 2px 8px rgba(0, 0, 0, 0.10);
+  overflow: hidden;
+  padding: 4px 0;
+  animation: mvContextMenuIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: top left;
+}
+
+.messenger-v4__conv-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #374151;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.messenger-v4__conv-context-menu-item:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: var(--messenger-primary, #0B8073);
+}
+
+.messenger-v4__conv-context-menu-item--danger {
+  color: #ef4444;
+}
+
+.messenger-v4__conv-context-menu-item--danger:hover {
+  background: rgba(239, 68, 68, 0.06);
+  color: #dc2626;
 }

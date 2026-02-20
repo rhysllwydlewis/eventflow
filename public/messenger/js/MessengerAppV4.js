@@ -106,7 +106,10 @@ class MessengerAppV4 {
     if (pickerContainer && window.ContactPickerV4) {
       this.contactPicker = new ContactPickerV4(pickerContainer, this.api, {
         currentUserId: this._getCurrentUserId(),
+        currentUserRole: this.state.currentUser?.role || null,
       });
+    } else {
+      console.warn('[MessengerAppV4] ContactPickerV4 not initialized: container or class missing.', { pickerContainer, ContactPickerV4: !!window.ContactPickerV4 });
     }
 
     // Context banner
@@ -164,9 +167,17 @@ class MessengerAppV4 {
       // Desktop notification if conversation is not currently open
       if (conversationId !== this._activeConversationId) {
         const uid = this._getCurrentUserId();
+        // Optimistically increment local unread count for the receiving participant
+        if (uid && conv) {
+          const me = conv.participants?.find(p => p.userId === uid);
+          if (me && me.userId !== message.senderId) {
+            me.unreadCount = (me.unreadCount || 0) + 1;
+            this.state.updateConversation(conv);
+          }
+        }
         const unread = this.state.conversations.reduce((sum, c) => {
-          const me = c.participants?.find(p => p.userId === uid);
-          return sum + (me?.unreadCount || 0);
+          const participant = c.participants?.find(p => p.userId === uid);
+          return sum + (participant?.unreadCount || 0);
         }, 0);
         this.state.setUnreadCount(unread);
         window.dispatchEvent(
@@ -230,13 +241,101 @@ class MessengerAppV4 {
     });
     window.addEventListener('messenger:archive-conversation', async e => {
       const { id } = e.detail || {};
-      if (id) {
-        await this._toggleArchive(id);
+      if (!id) return;
+      await this._toggleArchive(id);
+      // If the user just archived the currently-open conversation, navigate back to the list
+      if (id === this._activeConversationId) {
+        this._activeConversationId = null;
+        this.state.setActiveConversation(null);
+        this.chatView?.reset();
+        if (this.composer) this.composer.options.conversationId = null;
+        this.socket?.leaveConversation(id);
+        this.contextBanner?.hide();
+        this.handleMobilePanel('sidebar');
+      }
+    });
+
+    // Delete conversation
+    window.addEventListener('messenger:delete-conversation', async e => {
+      const { id } = e.detail || {};
+      if (!id) {
+        return;
+      }
+      let confirmed;
+      if (window.MessengerModals?.showConfirm) {
+        confirmed = await window.MessengerModals.showConfirm(
+          'Delete Conversation',
+          'Are you sure you want to delete this conversation? This cannot be undone.',
+          'Delete',
+          'Cancel'
+        );
+      } else {
+        // eslint-disable-next-line no-alert
+        confirmed = window.confirm('Are you sure you want to delete this conversation?');
+      }
+      if (!confirmed) {
+        return;
+      }
+      try {
+        await this.api.deleteConversation(id);
+        this.state.setConversations(this.state.conversations.filter(c => c._id !== id));
+        if (this._activeConversationId === id) {
+          this._activeConversationId = null;
+          this.state.setActiveConversation(null);
+          this.chatView?.reset();
+          if (this.composer) {
+            this.composer.options.conversationId = null;
+          }
+          this.socket?.leaveConversation(id);
+          this.contextBanner?.hide();
+          this.handleMobilePanel('sidebar');
+        }
+      } catch (err) {
+        console.error('[MessengerAppV4] Delete conversation failed:', err);
+      }
+    });
+
+    // Mark conversation as unread
+    window.addEventListener('messenger:mark-unread', async e => {
+      const { id } = e.detail || {};
+      if (!id) {
+        return;
+      }
+      try {
+        await this.api.markAsUnread(id);
+        await this._loadConversations();
+      } catch (err) {
+        console.error('[MessengerAppV4] Mark as unread failed:', err);
       }
     });
 
     // Open contact picker
     window.addEventListener('messenger:open-contact-picker', () => this.contactPicker?.open());
+
+    // Deep-link: open contact picker pre-targeted at a specific userId (from MessengerTrigger ?recipientId=)
+    window.addEventListener('messenger:open-contact-by-id', async e => {
+      const { userId, context, prefill } = e.detail || {};
+      if (!userId) {
+        return;
+      }
+      // Try to find and open an existing conversation with this user first
+      const existing = this.state.conversations.find(c =>
+        c.participants?.some(p => p.userId === userId)
+      );
+      if (existing) {
+        await this.selectConversation(existing._id);
+      } else {
+        // No existing conversation — create one directly
+        await this.createConversation([userId], context?.type || 'direct');
+      }
+      // After conversation is open and composer is ready, apply prefill text
+      if (prefill && this.composer?.textarea) {
+        const ta = this.composer.textarea;
+        ta.value = prefill;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        ta.focus();
+      }
+    });
 
     // Mobile back
     window.addEventListener('messenger:mobile-back', () => this.handleMobilePanel('sidebar'));
@@ -337,6 +436,22 @@ class MessengerAppV4 {
       const conv = this.state.conversations.find(c => c._id === conversationId);
       if (conv) {
         this.state.updateConversation({ ...conv, ...updates });
+      }
+    });
+
+    // Another session deleted this conversation — remove from local state and reset chat if active
+    window.addEventListener('messenger:conversation-deleted', e => {
+      const { conversationId } = e.detail || {};
+      if (!conversationId) return;
+      this.state.setConversations(this.state.conversations.filter(c => c._id !== conversationId));
+      if (this._activeConversationId === conversationId) {
+        this._activeConversationId = null;
+        this.state.setActiveConversation(null);
+        this.chatView?.reset();
+        if (this.composer) this.composer.options.conversationId = null;
+        this.socket?.leaveConversation(conversationId);
+        this.contextBanner?.hide();
+        this.handleMobilePanel('sidebar');
       }
     });
 
@@ -454,9 +569,32 @@ class MessengerAppV4 {
     // Focus composer
     this.composer?.focus();
 
-    // Mark as read via API (non-blocking)
+    // Mark as read via API (non-blocking) and update local state immediately
+    const uid = this._getCurrentUserId();
     this.api
       .request(`/conversations/${encodeURIComponent(id)}/read`, { method: 'POST' })
+      .then(() => {
+        // Update local participant unreadCount so the badge clears immediately
+        if (uid) {
+          const conv = this.state.conversations.find(c => c._id === id);
+          if (conv) {
+            const participant = conv.participants?.find(p => p.userId === uid);
+            if (participant && participant.unreadCount > 0) {
+              participant.unreadCount = 0;
+              this.state.updateConversation(conv);
+              // Recalculate global unread count
+              const totalUnread = this.state.conversations.reduce((sum, c) => {
+                const me = c.participants?.find(p => p.userId === uid);
+                return sum + (me?.unreadCount || 0);
+              }, 0);
+              this.state.setUnreadCount(totalUnread);
+              window.dispatchEvent(
+                new CustomEvent('messenger:unread-count', { detail: { count: totalUnread } })
+              );
+            }
+          }
+        }
+      })
       .catch(err => console.warn('[MessengerAppV4] mark-read failed:', err));
   }
 
@@ -532,18 +670,34 @@ class MessengerAppV4 {
 
   /**
    * Parse URL parameters and act on them.
-   * Supports: ?conversation=ID, ?new=1, ?contact=userId
+   * Supports: ?conversation=ID, ?new=true|1, ?recipientId=userId, ?contact=userId, ?prefill=msg, ?contextType, ?contextId, ?contextTitle
    */
   handleDeepLink() {
     const params = new URLSearchParams(window.location.search);
     const conversationId = params.get('conversation');
     const openNew = params.get('new');
-    const contactId = params.get('contact');
+    const contactId = params.get('contact') || params.get('recipientId');
+    const prefill = params.get('prefill') || null;
+    const contextType = params.get('contextType');
+    const contextId = params.get('contextId');
+    const contextTitle = params.get('contextTitle');
+
+    // Build a context object if context params are present
+    const context = contextType
+      ? { type: contextType, id: contextId || null, title: contextTitle || null }
+      : null;
 
     if (conversationId) {
       this.selectConversation(conversationId);
-    } else if (openNew === '1' || contactId) {
-      this.contactPicker?.open();
+    } else if ((openNew === 'true' || openNew === '1') || contactId) {
+      if (contactId) {
+        // Dispatch event so _setupEventBus can create/find the conversation
+        window.dispatchEvent(
+          new CustomEvent('messenger:open-contact-by-id', { detail: { userId: contactId, context, prefill } })
+        );
+      } else {
+        this.contactPicker?.open();
+      }
     }
   }
 
@@ -651,16 +805,19 @@ class MessengerAppV4 {
 
   async _togglePin(conversationId) {
     try {
-      // No dedicated /pin endpoint; backend uses PATCH /conversations/:id with body
       const uid = this._getCurrentUserId();
-      if (!uid) {
-        return;
-      }
+      if (!uid) return;
       const conv = this.state.conversations.find(c => c._id === conversationId);
       const me = conv?.participants?.find(p => p.userId === uid);
       const newPinned = !(me?.isPinned || false);
       await this.api.updateConversation(conversationId, { isPinned: newPinned });
-      await this._loadConversations();
+      // Optimistic local state update — avoids full reload round-trip
+      if (conv && me) {
+        me.isPinned = newPinned;
+        this.state.updateConversation(conv);
+      } else {
+        await this._loadConversations();
+      }
     } catch (err) {
       console.error('[MessengerAppV4] Pin failed:', err);
     }
@@ -668,16 +825,19 @@ class MessengerAppV4 {
 
   async _toggleArchive(conversationId) {
     try {
-      // No dedicated /archive endpoint; backend uses PATCH /conversations/:id with body
       const uid = this._getCurrentUserId();
-      if (!uid) {
-        return;
-      }
+      if (!uid) return;
       const conv = this.state.conversations.find(c => c._id === conversationId);
       const me = conv?.participants?.find(p => p.userId === uid);
       const newArchived = !(me?.isArchived || false);
       await this.api.updateConversation(conversationId, { isArchived: newArchived });
-      await this._loadConversations();
+      // Optimistic local state update — avoids full reload round-trip
+      if (conv && me) {
+        me.isArchived = newArchived;
+        this.state.updateConversation(conv);
+      } else {
+        await this._loadConversations();
+      }
     } catch (err) {
       console.error('[MessengerAppV4] Archive failed:', err);
     }
@@ -691,8 +851,8 @@ class MessengerAppV4 {
       const currentContent = msg?.content || '';
 
       let newContent;
-      if (window.MessengerModals && typeof window.MessengerModals.showEdit === 'function') {
-        newContent = await window.MessengerModals.showEdit(currentContent);
+      if (window.MessengerModals && typeof window.MessengerModals.showEditPrompt === 'function') {
+        newContent = await window.MessengerModals.showEditPrompt(currentContent);
       } else {
         // eslint-disable-next-line no-alert
         newContent = window.prompt('Edit message:', currentContent);
@@ -726,8 +886,8 @@ class MessengerAppV4 {
   async _deleteMessage(messageId) {
     try {
       const confirmed =
-        window.MessengerModals && typeof window.MessengerModals.showDelete === 'function'
-          ? await window.MessengerModals.showDelete()
+        window.MessengerModals && typeof window.MessengerModals.showConfirm === 'function'
+          ? await window.MessengerModals.showConfirm('Delete Message', 'Are you sure you want to delete this message?', 'Delete', 'Cancel')
           : // eslint-disable-next-line no-alert
             window.confirm('Delete this message?');
 

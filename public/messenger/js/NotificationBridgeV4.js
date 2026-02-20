@@ -181,7 +181,7 @@ class NotificationBridgeV4 {
     try {
       const notification = new Notification(title, {
         body,
-        icon: opts.icon || '/img/logo-192.png',
+        icon: opts.icon || '/favicon.svg',
         tag: opts.tag || 'messenger-v4',
         ...opts,
       });

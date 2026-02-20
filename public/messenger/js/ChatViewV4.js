@@ -70,6 +70,8 @@ class ChatViewV4 {
         <div class="messenger-v4__chat-actions">
           <button class="messenger-v4__action-button" id="v4PinBtn" aria-label="Pin conversation" title="Pin">📌</button>
           <button class="messenger-v4__action-button" id="v4ArchiveBtn" aria-label="Archive conversation" title="Archive">🗂️</button>
+          <button class="messenger-v4__action-button" id="v4DeleteConvBtn" aria-label="Delete conversation" title="Delete">🗑️</button>
+          <button class="messenger-v4__action-button" id="v4MarkUnreadBtn" aria-label="Mark as unread" title="Mark as unread">✉️</button>
           <button class="messenger-v4__action-button" id="v4BackBtn" aria-label="Back to list" title="Back" style="display:none">←</button>
         </div>
       </div>
@@ -138,6 +140,20 @@ class ChatViewV4 {
         );
       }
     });
+    this.container.querySelector('#v4DeleteConvBtn').addEventListener('click', () => {
+      if (this.conversationId) {
+        window.dispatchEvent(
+          new CustomEvent('messenger:delete-conversation', { detail: { id: this.conversationId } })
+        );
+      }
+    });
+    this.container.querySelector('#v4MarkUnreadBtn').addEventListener('click', () => {
+      if (this.conversationId) {
+        window.dispatchEvent(
+          new CustomEvent('messenger:mark-unread', { detail: { id: this.conversationId } })
+        );
+      }
+    });
     this.container.querySelector('#v4BackBtn').addEventListener('click', () => {
       window.dispatchEvent(new CustomEvent('messenger:mobile-back'));
     });
@@ -147,6 +163,10 @@ class ChatViewV4 {
       // Image lightbox
       const img = e.target.closest('.messenger-v4__attachment--image img');
       if (img) {
+        // Don't open lightbox for images that failed to load
+        if (img.classList.contains('messenger-v4__attachment-error')) {
+          return;
+        }
         this._openLightbox(img.src, img.alt);
         return;
       }
@@ -210,6 +230,8 @@ class ChatViewV4 {
     try {
       const data = await this.api.getMessages(conversationId, { limit: 40 });
       const messages = data.messages || data || [];
+      // Respect the server's hasMore flag; fall back to truthy when messages filled the page
+      this.hasMoreMessages = data.hasMore !== undefined ? data.hasMore : messages.length >= 40;
       this.oldestCursor = messages[0]?._id || null;
 
       this.state.setMessages(conversationId, messages);
@@ -363,6 +385,21 @@ class ChatViewV4 {
     window.removeEventListener('messenger:new-message', this._onNewMessage);
     window.removeEventListener('messenger:v4:message', this._onV4Message);
     this.container.innerHTML = '';
+  }
+
+  /** Reset chat view to empty state (e.g. after conversation deleted). */
+  reset() {
+    this.conversationId = null;
+    this.hasMoreMessages = true;
+    this.oldestCursor = null;
+    this.isLoadingOlder = false;
+    this.headerEl.style.display = 'none';
+    this.messagesEl.innerHTML = `
+      <div class="messenger-v4__empty-state" id="v4ChatEmpty">
+        <span class="messenger-v4__empty-icon" aria-hidden="true">💬</span>
+        <p>Select a conversation to start messaging</p>
+      </div>`;
+    this.scrollBtn.style.display = 'none';
   }
 
   // ---------------------------------------------------------------------------
@@ -534,8 +571,11 @@ class ChatViewV4 {
 
       loader.remove();
 
+      // Use server's authoritative hasMore flag; fall back to count heuristic for older backends
+      this.hasMoreMessages = data.hasMore !== undefined ? data.hasMore : older.length >= 30;
+
       if (!older.length) {
-        this.hasMoreMessages = false;
+        // No messages returned — regardless of hasMore, nothing to prepend
         return;
       }
 

@@ -262,6 +262,12 @@ class MessengerV4Service {
       updateOps[`participants.${participantIndex}.lastReadAt`] = now;
     }
 
+    if (updates.markUnread) {
+      // Increment unread count by 1 so the badge reflects this each time
+      const currentUnread = conversation.participants[participantIndex]?.unreadCount || 0;
+      updateOps[`participants.${participantIndex}.unreadCount`] = currentUnread + 1;
+    }
+
     updateOps.updatedAt = now;
 
     await this.conversationsCollection.updateOne(
