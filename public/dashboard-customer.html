@@ -139,39 +139,39 @@
 </section>
 
 <!-- Welcome Section -->
-<div id="welcome-section" class="customer-welcome-card card" style="margin-bottom:1.5rem;">
-  <h2 id="welcome-heading" style="margin:0 0 0.75rem 0;color:#1f2937;font-size:1.75rem;">Welcome to EventFlow!</h2>
-  <p class="small customer-welcome-intro" style="color:#4b5563;margin:0 0 1rem 0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
-  <div id="what-you-can-do" class="customer-welcome-actions" style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb;">
-    <h3 style="margin:0 0 0.5rem 0;color:#1f2937;font-size:1.1rem;">What you can do from here:</h3>
-    <ul style="margin:0;padding-left:1.25rem;color:#4b5563;font-size:0.95rem;">
-      <li style="margin-bottom:0.25rem;">Create and manage event plans with our wizard</li>
-      <li style="margin-bottom:0.25rem;">Browse and save suppliers for your events</li>
-      <li style="margin-bottom:0.25rem;">Track your budget with our calculator</li>
-      <li style="margin-bottom:0.25rem;">Manage support tickets and conversations</li>
+<div id="welcome-section" class="customer-welcome-card card">
+  <h2 id="welcome-heading" class="customer-welcome-heading">Welcome to EventFlow!</h2>
+  <p class="small customer-welcome-intro">Plan your perfect event with our curated suppliers.</p>
+  <div id="what-you-can-do" class="customer-welcome-actions">
+    <h3 class="customer-welcome-actions__title">What you can do from here:</h3>
+    <ul class="customer-welcome-actions__list">
+      <li>Create and manage event plans with our wizard</li>
+      <li>Browse and save suppliers for your events</li>
+      <li>Track your budget with our calculator</li>
+      <li>Manage support tickets and conversations</li>
     </ul>
   </div>
   <!-- Contextual prompt shown dynamically by JS -->
-  <div id="welcome-contextual-prompt" style="margin-top:1rem;"></div>
+  <div id="welcome-contextual-prompt" class="customer-welcome-contextual-prompt"></div>
 </div>
 
 <!-- Statistics Widgets -->
 <div id="customer-stats-grid" aria-live="polite" aria-label="Dashboard statistics"></div>
 
 <!-- Budget Tracker and Progress Ring -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+<div class="customer-widgets-grid">
   <div id="budget-tracker-widget" aria-live="polite"></div>
   <div id="progress-ring-widget" aria-live="polite"></div>
 </div>
 
 <!-- Budget Settings Card -->
-<div class="card" style="margin-bottom: 1.5rem;">
-  <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">💰 Budget Settings</h3>
-  <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Set your total event budget to track spending accurately.</p>
+<div class="card customer-budget-card">
+  <h3 class="customer-card-title">💰 Budget Settings</h3>
+  <p class="small customer-card-subtitle">Set your total event budget to track spending accurately.</p>
   
-  <form id="budget-settings-form" class="customer-budget-form" style="display:flex;gap:0.75rem;align-items:end;flex-wrap:wrap;">
-    <div class="customer-budget-form__field" style="flex:1;min-width:200px;">
-      <label for="custom-budget-input" class="customer-budget-form__label" style="display:block;margin-bottom:0.25rem;font-size:0.9rem;color:#344054;font-weight:500;">
+  <form id="budget-settings-form" class="customer-budget-form">
+    <div class="customer-budget-form__field">
+      <label for="custom-budget-input" class="customer-budget-form__label">
         Total Budget (£)
       </label>
       <input 
@@ -181,16 +181,15 @@
         step="100" 
         placeholder="5000" 
         class="customer-budget-form__input"
-        style="width:100%;padding:0.75rem;border:1px solid #D0D5DD;border-radius:6px;font-size:1rem;"
       >
     </div>
-    <button type="submit" class="cta" style="white-space:nowrap;padding:0.75rem 1.5rem;">
+    <button type="submit" class="cta customer-budget-form__submit">
       Update Budget
     </button>
   </form>
   
-  <div id="budget-status" class="customer-budget-status" style="margin-top:1rem;padding:0.75rem;background:#F9FAFB;border-radius:6px;display:none;">
-    <p class="small" style="margin:0;color:#059669;">
+  <div id="budget-status" class="customer-budget-status">
+    <p class="small customer-budget-status__message">
       ✅ Budget updated successfully!
     </p>
   </div>
@@ -200,48 +199,48 @@
 <div id="upcoming-events-timeline" aria-live="polite"></div>
 
 <!-- Calendar View Card -->
-<div class="card" style="margin-bottom: 1.5rem;">
-  <div class="customer-calendar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h3 class="customer-card-title" style="margin: 0; font-size: 1.25rem; color: #0B1220;">📅 Events Calendar</h3>
+<div class="card customer-calendar-card">
+  <div class="customer-calendar-header">
+    <h3 class="customer-card-title">📅 Events Calendar</h3>
   </div>
-  <div id="events-calendar" style="min-height: 400px;"></div>
+  <div id="events-calendar" class="customer-calendar-viewport"></div>
 </div>
 
 <div class="cards">
   <!-- Your Plans Card -->
   <div class="card">
-    <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Your Plans</h3>
-    <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Event plans created with the wizard.</p>
-    <div id="customer-plans-list" aria-live="polite" style="margin-bottom:1rem;">
+    <h3 class="customer-card-title">Your Plans</h3>
+    <p class="small customer-card-subtitle">Event plans created with the wizard.</p>
+    <div id="customer-plans-list" aria-live="polite" class="customer-plans-list-container">
       <div class="skeleton skeleton-text skeleton-text-long"></div>
       <div class="skeleton skeleton-text skeleton-text-medium"></div>
     </div>
-    <a href="/start" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;display:inline-block;">Create New Plan</a>
+    <a href="/start" class="cta secondary customer-card-action">Create New Plan</a>
   </div>
 
   <!-- Your Saved Suppliers Card -->
   <div class="card">
-    <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Saved Suppliers</h3>
-    <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Review and manage your saved suppliers.</p>
-    <button class="cta" id="openPlanBtn" style="width:100%;">View Saved Items</button>
+    <h3 class="customer-card-title">Saved Suppliers</h3>
+    <p class="small customer-card-subtitle">Review and manage your saved suppliers.</p>
+    <button class="cta customer-card-action--full" id="openPlanBtn">View Saved Items</button>
   </div>
   
   <!-- Quick Actions Card -->
   <div class="card">
-    <h3 class="customer-card-title" style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Quick Actions</h3>
-    <p class="small customer-card-subtitle" style="color:#667085;margin:0 0 1rem 0;">Common tasks to help plan your event.</p>
-    <div class="customer-quick-actions" style="display:flex;flex-direction:column;gap:0.75rem;">
-      <a href="/suppliers" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Browse Suppliers</a>
-      <a href="/budget.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Budget Calculator</a>
-      <a href="/settings.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">⚙️ Account Settings</a>
+    <h3 class="customer-card-title">Quick Actions</h3>
+    <p class="small customer-card-subtitle">Common tasks to help plan your event.</p>
+    <div class="customer-quick-actions">
+      <a href="/suppliers" class="cta secondary customer-card-action">Browse Suppliers</a>
+      <a href="/budget.html" class="cta secondary customer-card-action">Budget Calculator</a>
+      <a href="/settings.html" class="cta secondary customer-card-action">⚙️ Account Settings</a>
     </div>
   </div>
   
   <!-- Support Tickets Card -->
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;">
-      <h3 class="customer-card-title" style="margin:0;font-size:1.25rem;color:#0B1220;">Support Tickets</h3>
-      <button class="cta" id="createTicketBtn" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;">Create Ticket</button>
+    <div class="customer-tickets-header">
+      <h3 class="customer-card-title">Support Tickets</h3>
+      <button class="cta customer-tickets-create-btn" id="createTicketBtn">Create Ticket</button>
     </div>
     <div id="tickets-cust" class="section" aria-live="polite">
       <div class="skeleton skeleton-text skeleton-text-long"></div>
@@ -251,46 +250,32 @@
   
   <!-- Conversations Card -->
   <div class="card">
-    <div class="customer-conversations-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
-      <h3 class="customer-card-title" style="margin:0;font-size:1.25rem;color:#0B1220;">Conversations</h3>
-      <div class="customer-conversations-controls" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;flex:1;">
+    <div class="customer-conversations-header">
+      <h3 class="customer-card-title">Conversations</h3>
+      <div class="customer-conversations-controls">
         <!-- Mini search bar -->
         <input 
           type="search" 
           id="widget-search-input"
           placeholder="Search conversations..." 
           class="customer-conversations-search"
-          style="
-            flex: 1;
-            min-width: 150px;
-            padding: 6px 12px;
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-            font-size: 14px;
-          "
         />
         
         <!-- Filter dropdown -->
-        <select id="widget-filter-select" class="customer-conversations-filter" style="
-          padding: 6px 12px;
-          border: 1px solid #E5E7EB;
-          border-radius: 8px;
-          font-size: 14px;
-          background: white;
-        ">
+        <select id="widget-filter-select" class="customer-conversations-filter">
           <option value="all">All</option>
           <option value="unread">Unread</option>
           <option value="starred">Starred</option>
         </select>
         
-        <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:0.85rem;background:#DBEAFE;color:#1E40AF;padding:6px 12px;border-radius:12px;">0 unread</span>
-        <a href="/messenger/" class="cta" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;text-decoration:none;display:inline-block;">
+        <span id="unreadMessageBadge" class="badge badge-info customer-unread-badge">0 unread</span>
+        <a href="/messenger/" class="cta customer-inbox-btn">
           📧 View Inbox
         </a>
       </div>
     </div>
     <!-- Messenger Dashboard Widget (sole conversation UI) -->
-    <div id="messenger-dashboard-widget" style="margin-bottom: 1.5rem;"></div>
+    <div id="messenger-dashboard-widget" class="customer-messenger-widget"></div>
   </div>
 </div>
 

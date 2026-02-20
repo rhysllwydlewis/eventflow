@@ -120,6 +120,12 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
+.customer-welcome-heading {
+  margin: 0 0 0.75rem;
+  color: #1f2937;
+  font-size: 1.75rem;
+}
+
 .customer-welcome-card h2 {
   margin: 0 0 0.75rem;
   color: #1f2937;
@@ -132,10 +138,33 @@
   font-size: 1rem;
 }
 
+.customer-welcome-intro {
+  color: #4b5563;
+  margin: 0 0 var(--ef-space-4);
+  font-size: 1rem;
+}
+
 .customer-welcome-actions {
   margin-top: var(--ef-space-4);
   padding-top: var(--ef-space-4);
   border-top: 1px solid var(--ef-border);
+}
+
+.customer-welcome-actions__title {
+  margin: 0 0 0.5rem;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.customer-welcome-actions__list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.customer-welcome-actions__list li {
+  margin-bottom: 0.25rem;
 }
 
 .customer-welcome-actions h3 {
@@ -153,6 +182,10 @@
 
 .customer-welcome-actions li {
   margin-bottom: 0.25rem;
+}
+
+.customer-welcome-contextual-prompt {
+  margin-top: var(--ef-space-4);
 }
 
 /* Contextual prompt variants */
@@ -591,4 +624,103 @@
   .customer-stat-card {
     transition: none;
   }
+}
+
+/* ===========================================
+   19. LAYOUT UTILITIES (replaces remaining inline styles)
+   =========================================== */
+
+/* Budget tracker / progress ring two-column grid */
+.customer-widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Budget card spacing */
+.customer-budget-card {
+  margin-bottom: 1.5rem;
+}
+
+/* Budget form submit button */
+.customer-budget-form__submit {
+  white-space: nowrap;
+  padding: 0.75rem 1.5rem;
+}
+
+/* Calendar card spacing */
+.customer-calendar-card {
+  margin-bottom: 1.5rem;
+}
+
+/* Plans list container bottom margin */
+.customer-plans-list-container {
+  margin-bottom: 1rem;
+}
+
+/* Full-width card action button */
+.customer-card-action--full {
+  width: 100%;
+}
+
+/* Card action links (Create New Plan, Browse Suppliers, etc.) */
+.customer-card-action {
+  text-decoration: none;
+  width: 100%;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Support Tickets card header row */
+.customer-tickets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 0.75rem;
+}
+
+/* Create Ticket button sizing */
+.customer-tickets-create-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  min-width: auto;
+  white-space: nowrap;
+}
+
+/* Budget status success message */
+.customer-budget-status__message {
+  margin: 0;
+  color: #059669;
+}
+
+/* Calendar viewport */
+.customer-calendar-viewport {
+  min-height: 400px;
+}
+
+/* Unread badge — hidden by default; shown by UnreadBadgeManager */
+.customer-unread-badge {
+  display: none;
+  font-size: 0.85rem;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+/* View Inbox CTA in conversations header */
+.customer-inbox-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  min-width: auto;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
+}
+
+/* Messenger widget bottom spacing */
+.customer-messenger-widget {
+  margin-bottom: 1.5rem;
 }
