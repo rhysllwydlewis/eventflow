@@ -66,6 +66,15 @@
   --messenger-z-overlay: 300;
   --messenger-z-modal: 400;
   --messenger-z-toast: 500;
+
+  /* EventFlow shared tokens — defined here so messenger-v4.css is self-contained
+     and works correctly even when the host page does not load styles.css.
+     Values must stay in sync with:
+       --ef-text-base  → styles.css (body color: #1f2937) and eventflow-17.0.0.css
+       --ef-text-muted → tokens.css / customer-dashboard-improvements.css (#667085)
+     Used by conversation subtitles, timestamps, empty states, and search placeholder. */
+  --ef-text-base: #1a202c;
+  --ef-text-muted: #6b7280;
 }
 
 /* ============================================================================
