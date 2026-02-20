@@ -137,7 +137,11 @@ class ContactPickerV4 {
    */
   async search(query) {
     try {
-      const data = await this.api.getContacts(query);
+      // For customers, pass role=supplier to the server to avoid fetching unauthorised contacts
+      const myRole = this.options.currentUserRole;
+      const apiOptions = myRole === 'customer' ? { role: 'supplier' } : {};
+      const data = await this.api.getContacts(query, apiOptions);
+      // _filterByRole provides client-side enforcement as a defence-in-depth layer
       const contacts = this._filterByRole(data.contacts || data || []);
       this.resultsEl.innerHTML = contacts.length
         ? contacts.map(c => this._buildContactHTML(c)).join('')

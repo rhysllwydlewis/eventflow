@@ -204,6 +204,11 @@ class MessageComposerV4 {
     const content = this.textarea.value.trim();
     if ((!content && !this.attachedFiles.length) || this.isSending) return;
 
+    // Guard: don't send if no conversation is active
+    if (!this.options.conversationId) {
+      return;
+    }
+
     this.isSending = true;
     this.sendBtn.disabled = true;
     this.sendBtn.classList.add('messenger-v4__send-button--loading');

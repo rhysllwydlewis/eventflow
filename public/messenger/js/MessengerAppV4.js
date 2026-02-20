@@ -295,6 +295,31 @@ class MessengerAppV4 {
     // Open contact picker
     window.addEventListener('messenger:open-contact-picker', () => this.contactPicker?.open());
 
+    // Deep-link: open contact picker pre-targeted at a specific userId (from MessengerTrigger ?recipientId=)
+    window.addEventListener('messenger:open-contact-by-id', async e => {
+      const { userId, context, prefill } = e.detail || {};
+      if (!userId) {
+        return;
+      }
+      // Try to find and open an existing conversation with this user first
+      const existing = this.state.conversations.find(c =>
+        c.participants?.some(p => p.userId === userId)
+      );
+      if (existing) {
+        await this.selectConversation(existing._id);
+      } else {
+        // No existing conversation — create one directly
+        await this.createConversation([userId], context?.type || 'direct');
+      }
+      // After conversation is open and composer is ready, apply prefill text
+      if (prefill && this.composer?.textarea) {
+        const ta = this.composer.textarea;
+        ta.value = prefill;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        ta.focus();
+      }
+    });
+
     // Mobile back
     window.addEventListener('messenger:mobile-back', () => this.handleMobilePanel('sidebar'));
 
@@ -589,18 +614,34 @@ class MessengerAppV4 {
 
   /**
    * Parse URL parameters and act on them.
-   * Supports: ?conversation=ID, ?new=1, ?contact=userId
+   * Supports: ?conversation=ID, ?new=true|1, ?recipientId=userId, ?contact=userId, ?prefill=msg, ?contextType, ?contextId, ?contextTitle
    */
   handleDeepLink() {
     const params = new URLSearchParams(window.location.search);
     const conversationId = params.get('conversation');
     const openNew = params.get('new');
-    const contactId = params.get('contact');
+    const contactId = params.get('contact') || params.get('recipientId');
+    const prefill = params.get('prefill') || null;
+    const contextType = params.get('contextType');
+    const contextId = params.get('contextId');
+    const contextTitle = params.get('contextTitle');
+
+    // Build a context object if context params are present
+    const context = contextType
+      ? { type: contextType, id: contextId || null, title: contextTitle || null }
+      : null;
 
     if (conversationId) {
       this.selectConversation(conversationId);
-    } else if (openNew === '1' || contactId) {
-      this.contactPicker?.open();
+    } else if ((openNew === 'true' || openNew === '1') || contactId) {
+      if (contactId) {
+        // Dispatch event so _setupEventBus can create/find the conversation
+        window.dispatchEvent(
+          new CustomEvent('messenger:open-contact-by-id', { detail: { userId: contactId, context, prefill } })
+        );
+      } else {
+        this.contactPicker?.open();
+      }
     }
   }
 

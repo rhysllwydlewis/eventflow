@@ -97,10 +97,6 @@
         return true;
       }
     }
-    // Fallback property check
-    if (window.AuthState && window.AuthState.isAuthenticated) {
-      return true;
-    }
     try {
       const res = await fetch('/api/v1/auth/me', {
         credentials: 'include',
