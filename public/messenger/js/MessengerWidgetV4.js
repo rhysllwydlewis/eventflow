@@ -395,9 +395,10 @@
         participants[0] ||
         {};
 
-      const name = escapeHtml(safeDisplayName(other.displayName, other.businessName, other.name));
-      const initial = name.charAt(0).toUpperCase() || '?';
-      const avatarColor = getAvatarColor(name);
+      const rawName = safeDisplayName(other.displayName, other.businessName, other.name);
+      const name = escapeHtml(rawName);
+      const initial = rawName.charAt(0).toUpperCase() || '?';
+      const avatarColor = getAvatarColor(rawName);
       const avatarImg = other.avatar
         ? `<img src="${escapeHtml(other.avatar)}" alt="${name}" class="mwv4__avatar-img" loading="lazy">`
         : `<span class="mwv4__avatar-initial">${escapeHtml(initial)}</span>`;

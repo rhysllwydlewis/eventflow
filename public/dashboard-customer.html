@@ -1033,7 +1033,14 @@ function getCsrfToken() {
   }
   // Try cookie
   const match = document.cookie.match(/csrfToken=([^;]+)/);
-  return match ? match[1] : '';
+  if (match) {
+    try {
+      return decodeURIComponent(match[1]);
+    } catch (_) {
+      return match[1];
+    }
+  }
+  return '';
 }
 
 // Single initialization call - use readyState check for reliability

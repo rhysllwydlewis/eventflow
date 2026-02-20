@@ -186,7 +186,9 @@ class MessengerV4Service {
 
     // Search filter (in participant names or last message)
     if (filters.search) {
-      const searchRegex = new RegExp(filters.search, 'i');
+      // Escape regex metacharacters to prevent ReDoS
+      const escapedSearch = filters.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
       query.$or = [
         { 'participants.displayName': searchRegex },
         { 'lastMessage.content': searchRegex },
@@ -463,6 +465,10 @@ class MessengerV4Service {
    * @returns {Object} Updated message
    */
   async editMessage(messageId, userId, newContent) {
+    if (!newContent || typeof newContent !== 'string' || !newContent.trim()) {
+      throw new Error('Message content cannot be empty');
+    }
+
     const message = await this.messagesCollection.findOne({
       _id: new ObjectId(messageId),
       senderId: userId,
@@ -521,6 +527,7 @@ class MessengerV4Service {
     const message = await this.messagesCollection.findOne({
       _id: new ObjectId(messageId),
       senderId: userId,
+      isDeleted: false,
     });
 
     if (!message) {
@@ -556,6 +563,16 @@ class MessengerV4Service {
 
     if (!message) {
       throw new Error('Message not found');
+    }
+
+    // Verify the user is a participant in the conversation
+    const conversation = await this.conversationsCollection.findOne({
+      _id: message.conversationId,
+      'participants.userId': userId,
+    });
+
+    if (!conversation) {
+      throw new Error('Message not found or access denied');
     }
 
     // Check if user already reacted with this emoji
@@ -668,7 +685,9 @@ class MessengerV4Service {
     };
 
     if (query) {
-      const searchRegex = new RegExp(query, 'i');
+      // Escape regex metacharacters to prevent ReDoS
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedQuery, 'i');
       searchQuery.$or = [
         { displayName: searchRegex },
         { email: searchRegex },
