@@ -749,10 +749,11 @@ class MessengerV4Service {
    * @returns {Array} Array of messages with conversation info
    */
   async searchMessages(userId, query, limit = 50) {
-    // Get user's conversation IDs
+    // Get user's conversation IDs — exclude hard-deleted conversations from search
     const conversations = await this.conversationsCollection
       .find({
         'participants.userId': userId,
+        status: { $ne: 'deleted' },
       })
       .project({ _id: 1 })
       .toArray();

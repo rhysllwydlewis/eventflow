@@ -537,7 +537,7 @@ async function initCustomerDashboardWidgets(preloadedPlans) {
     const unreadBadge = document.getElementById('unreadMessageBadge');
     if (unreadBadge && unreadBadge.textContent) {
       const match = unreadBadge.textContent.match(/(\d+)/);
-      if (match) unreadMessages = parseInt(match[1]);
+      if (match) unreadMessages = parseInt(match[1], 10);
     }
     
     // Count upcoming tasks from plans (suppliers that need action)
@@ -930,10 +930,11 @@ function setupEventHandlers(latestPlans) {
     const budget = parseFloat(input.value);
     
     // Validate budget (also enforce in JS, not just HTML)
-    if (isNaN(budget) || budget <= 0) {
+    // isFinite() guard rejects Infinity and -Infinity which pass isNaN/<=0
+    if (isNaN(budget) || !isFinite(budget) || budget <= 0 || budget > 1_000_000_000) {
       budgetStatus.style.display = 'block';
       budgetStatus.style.background = '#FEF2F2';
-      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Please enter a valid budget amount greater than £0</p>';
+      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Please enter a valid budget between £1 and £1,000,000,000</p>';
       return;
     }
     

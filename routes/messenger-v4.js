@@ -393,8 +393,9 @@ router.get('/conversations/:id', applyAuthRequired, async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching conversation:', error);
-    res.status((error.message || '').includes('not found') ? 404 : 500).json({
-      error: error.message || 'Failed to fetch conversation',
+    const msg = error.message || '';
+    res.status(messengerErrorStatus(msg)).json({
+      error: msg || 'Failed to fetch conversation',
     });
   }
 });
@@ -707,8 +708,9 @@ router.get('/conversations/:id/messages', applyAuthRequired, async (req, res) =>
     });
   } catch (error) {
     logger.error('Error fetching messages:', error);
-    res.status(500).json({
-      error: 'Failed to fetch messages',
+    const msg = error.message || '';
+    res.status(messengerErrorStatus(msg)).json({
+      error: msg || 'Failed to fetch messages',
     });
   }
 });
