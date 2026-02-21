@@ -487,3 +487,58 @@ test.describe('Admin Shared JavaScript Module', () => {
     expect(hasEssentialMethods).toBe(true);
   });
 });
+
+test.describe('Admin CSS Scoping and Theming', () => {
+  test.beforeEach(async ({ page }) => {
+    // Mock admin auth
+    await page.route('**/api/auth/me', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: { id: 'admin1', role: 'admin', name: 'Admin User', email: 'admin@test.com' },
+        }),
+      });
+    });
+
+    await page.route('**/api/admin/**', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({}),
+      });
+    });
+  });
+
+  ADMIN_PAGES.forEach(adminPage => {
+    test(`${adminPage} should have body.admin scoping class`, async ({ page, browserName }) => {
+      await page.goto(adminPage);
+      await page.waitForLoadState('networkidle');
+
+      const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
+      await page.waitForTimeout(waitTime);
+
+      const hasAdminClass = await page.evaluate(() => document.body.classList.contains('admin'));
+      expect(hasAdminClass).toBe(true);
+    });
+  });
+
+  test('admin body background should be light without !important override', async ({
+    page,
+    browserName,
+  }) => {
+    await page.goto('/admin.html');
+    await page.waitForLoadState('networkidle');
+
+    const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
+    await page.waitForTimeout(waitTime);
+
+    // Verify the computed background is the expected light gray
+    const bgColor = await page.evaluate(
+      () => window.getComputedStyle(document.body).backgroundColor
+    );
+
+    // rgb(248, 249, 250) is #f8f9fa
+    expect(bgColor).toBe('rgb(248, 249, 250)');
+  });
+});
