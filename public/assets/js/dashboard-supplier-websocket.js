@@ -55,7 +55,7 @@
         reconnectAttempts = 0;
         fallbackNotificationShown = false;
 
-        const user = window.AuthState?.getUser?.();
+        const user = window.AuthStateManager?.getUser?.();
         if (user?.uid) {
           ws.send(
             JSON.stringify({

@@ -925,12 +925,12 @@
     createBtn.innerHTML = '<span class="wizard-loading"></span> Creating...';
 
     try {
-      // Check authentication using AuthState if available
+      // Check authentication using AuthStateManager if available
       let user = null;
       let isLoggedIn = false;
 
-      if (window.AuthState && typeof window.AuthState.getUser === 'function') {
-        user = window.AuthState.getUser();
+      if (window.AuthStateManager && typeof window.AuthStateManager.getUser === 'function') {
+        user = window.AuthStateManager.getUser();
         isLoggedIn = !!user;
       }
 
@@ -955,8 +955,8 @@
         }
 
         // Redirect to auth with return URL
-        const returnUrl = encodeURIComponent('/start.html?restore=true');
-        location.href = `/auth.html?returnTo=${returnUrl}`;
+        const returnUrl = encodeURIComponent('/start?restore=true');
+        location.href = `/auth?returnTo=${returnUrl}`;
         return;
       }
 
@@ -1049,7 +1049,7 @@
 
       const planData = JSON.parse(pendingData);
 
-      if (window.AuthState && window.AuthState.getUser && window.AuthState.getUser()) {
+      if (window.AuthStateManager && window.AuthStateManager.getUser && window.AuthStateManager.getUser()) {
         savePlanToBackend(planData)
           .then(() => {
             localStorage.removeItem('eventflow_wizard_pending');

@@ -466,7 +466,7 @@
       statusEl.innerText = 'Checking admin…';
     }
 
-    api('/api/auth/me')
+    api('/api/v1/auth/me')
       .then(me => {
         // Handle both wrapped ({ user: {...} }) and unwrapped formats for backward compatibility
         const user = me.user || me;
