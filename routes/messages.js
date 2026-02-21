@@ -73,7 +73,7 @@ function applyCsrfProtection(req, res, next) {
 function getMessageText(recipientName, senderName, text, baseUrl) {
   const msgPreview = text.trim().substring(0, 200);
   const ellipsis = text.trim().length > 200 ? '...' : '';
-  const url = baseUrl || 'https://eventflow.com';
+  const url = baseUrl || 'https://event-flow.co.uk';
   return `Hello ${recipientName},
 
 You have received a new message from ${senderName}:
@@ -89,7 +89,7 @@ EventFlow Team`;
 function getMessageHtml(recipientName, senderName, text, baseUrl) {
   const msgPreview = text.trim().substring(0, 200);
   const ellipsis = text.trim().length > 200 ? '...' : '';
-  const url = baseUrl || 'https://eventflow.com';
+  const url = baseUrl || 'https://event-flow.co.uk';
   return [
     `<p>Hello ${recipientName},</p>`,
     `<p>You have received a new message from <strong>${senderName}</strong>:</p>`,

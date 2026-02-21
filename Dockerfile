@@ -15,8 +15,18 @@ RUN npm install --omit=dev --ignore-scripts
 # Bundle app source
 COPY . .
 
+# Ensure the uploads directory exists and all files are owned by the node user
+# (must be done as root before USER node switch)
+RUN mkdir -p uploads && chown -R node:node /app
+
+# Run as non-root user for security
+USER node
+
 # Default port (Railway will override PORT at runtime)
 ENV PORT=3000
+# This Dockerfile is for production deployments only.
+# NODE_ENV is set at build time; override via Railway/Docker environment variables if needed.
+ENV NODE_ENV=production
 
 # Expose the port for documentation purposes
 EXPOSE 3000

@@ -520,13 +520,13 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
         await postmark.sendEmail({
           to: ticket.senderEmail,
           subject: `Reply to your support ticket: ${ticket.subject}`,
-          text: `You have received a reply to your support ticket.\n\nTicket: ${ticket.subject}\n\nReply: ${message}\n\nView your ticket at: ${process.env.BASE_URL || 'https://eventflow.com'}/tickets/${ticket.id}`,
+          text: `You have received a reply to your support ticket.\n\nTicket: ${ticket.subject}\n\nReply: ${message}\n\nView your ticket at: ${process.env.BASE_URL || 'https://event-flow.co.uk'}/tickets/${ticket.id}`,
           html: `
             <h2>Reply to Your Support Ticket</h2>
             <p><strong>Ticket:</strong> ${ticket.subject}</p>
             <p><strong>Reply:</strong></p>
             <p>${message.replace(/\n/g, '<br>')}</p>
-            <p><a href="${process.env.BASE_URL || 'https://eventflow.com'}/tickets/${ticket.id}">View Ticket</a></p>
+            <p><a href="${process.env.BASE_URL || 'https://event-flow.co.uk'}/tickets/${ticket.id}">View Ticket</a></p>
           `,
         });
       } catch (emailError) {
