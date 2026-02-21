@@ -805,7 +805,7 @@
     html += '</div>';
 
     if (packages.length > 6) {
-      html += `<p class="small">Showing 6 of ${packages.length} packages. <a href="/suppliers.html?category=${categoryKey}">View all</a></p>`;
+      html += `<p class="small">Showing 6 of ${packages.length} packages. <a href="/suppliers?category=${categoryKey}">View all</a></p>`;
     }
 
     container.innerHTML = html;

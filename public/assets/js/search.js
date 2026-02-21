@@ -389,7 +389,7 @@ class GlobalSearch {
         </div>
         <div id="search-suggestions">
           <div class="small mb-2" style="color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">Quick Links</div>
-          <a href="/suppliers.html" class="search-result-item">
+          <a href="/suppliers" class="search-result-item">
             <span>Browse All Suppliers</span>
             <span style="color: var(--muted);">→</span>
           </a>

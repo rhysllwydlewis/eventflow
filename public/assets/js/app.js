@@ -550,7 +550,7 @@ async function initSupplier() {
     const c = document.getElementById('supplier-container');
     if (c) {
       c.innerHTML =
-        '<div class="card"><p>No supplier ID provided. Please return to the <a href="/suppliers.html">suppliers page</a>.</p></div>';
+        '<div class="card"><p>No supplier ID provided. Please return to the <a href="/suppliers">suppliers page</a>.</p></div>';
     }
     return;
   }
@@ -562,7 +562,7 @@ async function initSupplier() {
     const c = document.getElementById('supplier-container');
     if (c) {
       c.innerHTML =
-        '<div class="card"><p>Supplier not found. Please return to the <a href="/suppliers.html">suppliers page</a>.</p></div>';
+        '<div class="card"><p>Supplier not found. Please return to the <a href="/suppliers">suppliers page</a>.</p></div>';
     }
     return;
   }
