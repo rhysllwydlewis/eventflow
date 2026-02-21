@@ -6,6 +6,7 @@
 'use strict';
 
 const cache = require('../cache');
+const logger = require('./logger');
 
 const POSTCODES_IO_BASE = 'https://api.postcodes.io';
 const CACHE_TTL = 86400; // 24 hours in seconds
@@ -42,7 +43,7 @@ async function geocodePostcode(postcode) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn(`Postcode lookup failed for ${normalized}: ${response.status}`);
+      logger.warn(`Postcode lookup failed for ${normalized}: ${response.status}`);
       return null;
     }
 
@@ -64,9 +65,9 @@ async function geocodePostcode(postcode) {
     return null;
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error('Postcode lookup timeout:', normalized);
+      logger.error('Postcode lookup timeout:', normalized);
     } else {
-      console.error('Postcode lookup error:', error.message);
+      logger.error('Postcode lookup error:', error.message);
     }
     return null;
   }
@@ -120,7 +121,7 @@ async function geocodeLocation(location) {
   // postcodes.io doesn't support place name lookups directly
   // We could use their "nearest" endpoint with known coordinates for major cities
   // For now, return null and let the API return all venues
-  console.warn(`Could not geocode location: ${location}`);
+  logger.warn(`Could not geocode location: ${location}`);
   return null;
 }
 

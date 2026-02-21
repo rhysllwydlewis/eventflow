@@ -38,15 +38,15 @@ function validateToken(options = {}) {
   return (req, res, next) => {
     const token = extractToken(req);
 
-    console.log('🔍 Token validation middleware invoked');
-    console.log(`   Required: ${required}`);
-    console.log(`   Token present: ${!!token}`);
-    console.log(`   Expected type: ${expectedType}`);
+    logger.info('🔍 Token validation middleware invoked');
+    logger.info(`   Required: ${required}`);
+    logger.info(`   Token present: ${!!token}`);
+    logger.info(`   Expected type: ${expectedType}`);
 
     // Handle missing token
     if (!token) {
       if (required) {
-        console.error('❌ Token validation failed: Missing token');
+        logger.error('❌ Token validation failed: Missing token');
         return res.status(400).json({
           error: 'Missing verification token',
           code: 'MISSING_TOKEN',
@@ -64,12 +64,12 @@ function validateToken(options = {}) {
 
     // Check if it's a JWT token
     const isJWT = isJWTToken(token);
-    console.log(`   Token type: ${isJWT ? 'JWT' : 'Legacy'}`);
+    logger.info(`   Token type: ${isJWT ? 'JWT' : 'Legacy'}`);
 
     // Debug token in development
     if (process.env.NODE_ENV !== 'production') {
       const debug = debugToken(token);
-      console.log('   Debug info:', JSON.stringify(debug, null, 2));
+      logger.info('   Debug info:', JSON.stringify(debug, null, 2));
     }
 
     // Validate JWT token
@@ -80,8 +80,8 @@ function validateToken(options = {}) {
       });
 
       if (!validation.valid) {
-        console.error(`❌ Token validation failed: ${validation.error}`);
-        console.error(`   Message: ${validation.message}`);
+        logger.error(`❌ Token validation failed: ${validation.error}`);
+        logger.error(`   Message: ${validation.message}`);
 
         return res.status(400).json({
           error: validation.message,
@@ -91,7 +91,7 @@ function validateToken(options = {}) {
         });
       }
 
-      console.log('✅ JWT token validated successfully');
+      logger.info('✅ JWT token validated successfully');
       req.tokenValidation = {
         present: true,
         valid: true,
@@ -108,7 +108,7 @@ function validateToken(options = {}) {
     }
 
     // Handle legacy tokens
-    console.log('⚠️ Legacy token detected - will be validated by route handler');
+    logger.info('⚠️ Legacy token detected - will be validated by route handler');
     req.tokenValidation = {
       present: true,
       valid: false, // Route handler will validate
@@ -139,7 +139,7 @@ function requireJWTToken(options = {}) {
     }
 
     if (!isJWTToken(token)) {
-      console.warn('⚠️ Legacy token rejected - JWT required');
+      logger.warn('⚠️ Legacy token rejected - JWT required');
       return res.status(400).json({
         error:
           'This verification link format is no longer supported. Please request a new verification email.',
@@ -188,10 +188,10 @@ function debugTokenMiddleware(req, res, next) {
 
   const token = extractToken(req);
   if (token) {
-    console.log('🔍 Token Debug Middleware');
-    console.log('   Token:', `${token.substring(0, 30)}...`);
-    console.log('   Is JWT:', isJWTToken(token));
-    console.log('   Debug:', JSON.stringify(debugToken(token), null, 2));
+    logger.info('🔍 Token Debug Middleware');
+    logger.info('   Token:', `${token.substring(0, 30)}...`);
+    logger.info('   Is JWT:', isJWTToken(token));
+    logger.info('   Debug:', JSON.stringify(debugToken(token), null, 2));
   }
 
   next();

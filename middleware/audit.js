@@ -6,6 +6,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 
 /**
  * Log an admin action to the audit log
@@ -53,13 +54,13 @@ async function auditLog(params) {
     logs.push(logEntry);
     await dbUnified.write('audit_logs', logs);
 
-    console.log(`[AUDIT] ${adminEmail} performed ${action} on ${targetType} ${targetId}`);
+    logger.info(`[AUDIT] ${adminEmail} performed ${action} on ${targetType} ${targetId}`);
 
     return logEntry;
   } catch (error) {
     // Log error but don't throw - audit logging should never break the main flow
-    console.error('[AUDIT ERROR] Failed to write audit log:', error.message);
-    console.error('[AUDIT ERROR] Failed log entry:', logEntry);
+    logger.error('[AUDIT ERROR] Failed to write audit log:', error.message);
+    logger.error('[AUDIT ERROR] Failed log entry:', logEntry);
     return null;
   }
 }
@@ -195,7 +196,7 @@ async function getAuditLogs(filters = {}) {
     // Apply limit
     return logs.slice(0, limit);
   } catch (error) {
-    console.error('Error fetching audit logs:', error.message);
+    logger.error('Error fetching audit logs:', error.message);
     // Return empty array on error - don't fail the request
     return [];
   }

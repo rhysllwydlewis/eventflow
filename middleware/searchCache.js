@@ -6,6 +6,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 const cache = require('../cache');
 
 // Cache TTL configuration (in seconds)
@@ -94,7 +95,7 @@ async function getQueryPopularity(queryText) {
 
     return result;
   } catch (error) {
-    console.error('Error getting query popularity:', error);
+    logger.error('Error getting query popularity:', error);
     return { ttl: CACHE_TTL.regular, popularity: 'regular' };
   }
 }
@@ -133,7 +134,7 @@ async function updateQueryPopularity(queryText) {
     const popKey = `search:popularity:${queryText.toLowerCase()}`;
     await cache.set(popKey, { ttl, popularity, count: newCount }, 3600);
   } catch (error) {
-    console.error('Error updating query popularity:', error);
+    logger.error('Error updating query popularity:', error);
   }
 }
 
@@ -195,7 +196,7 @@ function searchCacheMiddleware(options = {}) {
             // Update popularity counter
             if (queryText) {
               updateQueryPopularity(queryText).catch(err =>
-                console.error('Failed to update popularity:', err)
+                logger.error('Failed to update popularity:', err)
               );
             }
           }
@@ -214,7 +215,7 @@ function searchCacheMiddleware(options = {}) {
           // Add cache control header
           res.set('Cache-Control', `public, max-age=${ttl}`);
         } catch (error) {
-          console.error('Error caching search response:', error);
+          logger.error('Error caching search response:', error);
         }
 
         return originalJson(data);
@@ -222,7 +223,7 @@ function searchCacheMiddleware(options = {}) {
 
       next();
     } catch (error) {
-      console.error('Search cache middleware error:', error);
+      logger.error('Search cache middleware error:', error);
       next();
     }
   };
@@ -250,7 +251,7 @@ function invalidateSearchCacheMiddleware(options = {}) {
       // Invalidate cache after successful response
       if (res.statusCode >= 200 && res.statusCode < 300) {
         cache.delPattern(pattern).catch(err => {
-          console.error('Cache invalidation error:', err);
+          logger.error('Cache invalidation error:', err);
         });
       }
 
@@ -287,7 +288,7 @@ async function getCacheStats() {
       totalRequests,
     };
   } catch (error) {
-    console.error('Error getting cache stats:', error);
+    logger.error('Error getting cache stats:', error);
     return {
       hits: 0,
       misses: 0,
@@ -313,7 +314,7 @@ async function clearSearchCache() {
     await cache.delPattern('search:trending:*');
     await cache.delPattern('search:autocomplete:*');
   } catch (error) {
-    console.error('Error clearing search cache:', error);
+    logger.error('Error clearing search cache:', error);
     throw error;
   }
 }

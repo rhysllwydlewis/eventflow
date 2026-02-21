@@ -6,6 +6,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const logger = require('./logger');
 const dbUnified = require('../db-unified');
 const cache = require('../cache');
 
@@ -55,10 +56,10 @@ async function trackSearch(searchData) {
 
     // Update popular searches asynchronously
     updatePopularSearches(searchData.queryText).catch(err =>
-      console.error('Failed to update popular searches:', err)
+      logger.error('Failed to update popular searches:', err)
     );
   } catch (error) {
-    console.error('Failed to track search:', error);
+    logger.error('Failed to track search:', error);
     // Don't throw - tracking should not break the search flow
   }
 }
@@ -81,7 +82,7 @@ async function trackClick(searchId, resultId, position) {
       await dbUnified.write('searchHistory', searchHistory);
     }
   } catch (error) {
-    console.error('Failed to track click:', error);
+    logger.error('Failed to track click:', error);
   }
 }
 

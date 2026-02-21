@@ -4,6 +4,7 @@
  */
 
 const mongoSanitize = require('express-mongo-sanitize');
+const logger = require('../utils/logger');
 
 /**
  * Configure sanitization middleware
@@ -18,7 +19,7 @@ function configureSanitization() {
     // Sanitize both req.body, req.query, and req.params
     onSanitize: ({ req, key }) => {
       if (process.env.NODE_ENV !== 'production') {
-        console.warn(`⚠️  Sanitized key: ${key} in request from ${req.ip}`);
+        logger.warn(`⚠️  Sanitized key: ${key} in request from ${req.ip}`);
       }
     },
   });

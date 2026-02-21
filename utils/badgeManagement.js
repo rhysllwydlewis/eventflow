@@ -6,6 +6,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
+const logger = require('./logger');
 
 /**
  * Badge type definitions with auto-award criteria
@@ -108,13 +109,13 @@ async function initializeDefaultBadges() {
           updatedAt: new Date().toISOString(),
         };
         badges.push(badge);
-        console.log(`✓ Initialized badge: ${badge.name}`);
+        logger.info(`✓ Initialized badge: ${badge.name}`);
       }
     }
 
     await dbUnified.write('badges', badges);
   } catch (error) {
-    console.error('Error initializing default badges:', error);
+    logger.error('Error initializing default badges:', error);
   }
 }
 
@@ -252,7 +253,7 @@ async function calculateSupplierStats(supplierId) {
       completedEvents: supplier?.completedEvents || 0, // Get from supplier record
     };
   } catch (error) {
-    console.error('Error calculating supplier stats:', error);
+    logger.error('Error calculating supplier stats:', error);
     return {
       messages: 0,
       reviews: 0,
@@ -300,12 +301,12 @@ async function evaluateSupplierBadges(supplierId) {
         // Award badge
         supplier.badges.push(badge.id);
         awarded.push(badge.id);
-        console.log(`✓ Awarded badge "${badge.name}" to supplier ${supplier.name}`);
+        logger.info(`✓ Awarded badge "${badge.name}" to supplier ${supplier.name}`);
       } else if (!meetsRequirements && hasBadge) {
         // Revoke badge if no longer meets criteria
         supplier.badges = supplier.badges.filter(b => b !== badge.id);
         revoked.push(badge.id);
-        console.log(`✗ Revoked badge "${badge.name}" from supplier ${supplier.name}`);
+        logger.info(`✗ Revoked badge "${badge.name}" from supplier ${supplier.name}`);
       }
     }
 
@@ -317,7 +318,7 @@ async function evaluateSupplierBadges(supplierId) {
 
     return { awarded, revoked };
   } catch (error) {
-    console.error('Error evaluating supplier badges:', error);
+    logger.error('Error evaluating supplier badges:', error);
     throw error;
   }
 }
@@ -344,14 +345,14 @@ async function evaluateAllSupplierBadges() {
         results.awarded += awarded.length;
         results.revoked += revoked.length;
       } catch (error) {
-        console.error(`Error evaluating badges for supplier ${supplier.id}:`, error);
+        logger.error(`Error evaluating badges for supplier ${supplier.id}:`, error);
         results.errors++;
       }
     }
 
     return results;
   } catch (error) {
-    console.error('Error evaluating all supplier badges:', error);
+    logger.error('Error evaluating all supplier badges:', error);
     throw error;
   }
 }

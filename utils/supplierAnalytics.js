@@ -6,6 +6,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const logger = require('./logger');
 const dbUnified = require('../db-unified');
 
 /**
@@ -54,7 +55,7 @@ async function trackEvent(eventData) {
 
     await dbUnified.write('events', events);
   } catch (error) {
-    console.error('Failed to track supplier event:', error);
+    logger.error('Failed to track supplier event:', error);
     // Don't throw - tracking should not break the main flow
   }
 }
@@ -178,7 +179,7 @@ async function getSupplierAnalytics(supplierId, days = 7) {
       dailyData,
     };
   } catch (error) {
-    console.error('Failed to get supplier analytics:', error);
+    logger.error('Failed to get supplier analytics:', error);
     // Return empty analytics on error
     return {
       period: days,

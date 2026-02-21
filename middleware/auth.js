@@ -140,7 +140,7 @@ async function authRequired(req, res, next) {
         userAgent: req.get('user-agent'),
       });
     } else {
-      console.warn('Auth required - 401:', {
+      logger.warn('Auth required - 401:', {
         path: req.path,
         method: req.method,
       });
@@ -182,7 +182,7 @@ async function authRequired(req, res, next) {
     req.userId = u.id;
     next();
   } catch (error) {
-    console.error('Error verifying user in authRequired:', error);
+    logger.error('Error verifying user in authRequired:', error);
     // If database is unavailable, return service unavailable instead of bypassing security
     return res.status(503).json({
       error: 'Service temporarily unavailable',

@@ -18,6 +18,7 @@
 'use strict';
 
 const jwt = require('jsonwebtoken');
+const logger = require('./logger');
 const crypto = require('crypto');
 
 // Configuration
@@ -29,7 +30,7 @@ const PENDING_USER_ID = 'pending'; // Used for email verification tokens when us
 
 // Warn if using default secret in production
 if (JWT_SECRET === 'change_me_in_production' && process.env.NODE_ENV === 'production') {
-  console.error(
+  logger.error(
     '❌ CRITICAL: JWT_SECRET is not set! Using default secret is INSECURE in production!'
   );
 }
@@ -71,10 +72,10 @@ function generateVerificationToken(user, options = {}) {
     algorithm: 'HS256',
   });
 
-  console.log(`🔐 Generated ${type} token for ${maskEmail(user.email)}`);
-  console.log(`   User ID: ${user.id}`);
-  console.log(`   Expires: ${expiresInHours}h`);
-  console.log(`   Version: ${TOKEN_VERSION}`);
+  logger.info(`🔐 Generated ${type} token for ${maskEmail(user.email)}`);
+  logger.info(`   User ID: ${user.id}`);
+  logger.info(`   Expires: ${expiresInHours}h`);
+  logger.info(`   Version: ${TOKEN_VERSION}`);
 
   return token;
 }
@@ -104,7 +105,7 @@ function validateVerificationToken(token, options = {}) {
     const decoded = jwt.decode(token);
 
     if (!decoded) {
-      console.error('❌ Token validation failed: Invalid token format');
+      logger.error('❌ Token validation failed: Invalid token format');
       return {
         valid: false,
         error: 'INVALID_FORMAT',
@@ -114,7 +115,7 @@ function validateVerificationToken(token, options = {}) {
 
     // Check token version
     if (decoded.ver !== TOKEN_VERSION) {
-      console.warn(`⚠️ Token version mismatch: got ${decoded.ver}, expected ${TOKEN_VERSION}`);
+      logger.warn(`⚠️ Token version mismatch: got ${decoded.ver}, expected ${TOKEN_VERSION}`);
       return {
         valid: false,
         error: 'TOKEN_REVOKED',
@@ -124,7 +125,7 @@ function validateVerificationToken(token, options = {}) {
 
     // Check token type
     if (decoded.type !== expectedType) {
-      console.error(`❌ Token type mismatch: got ${decoded.type}, expected ${expectedType}`);
+      logger.error(`❌ Token type mismatch: got ${decoded.type}, expected ${expectedType}`);
       return {
         valid: false,
         error: 'WRONG_TOKEN_TYPE',
@@ -137,10 +138,10 @@ function validateVerificationToken(token, options = {}) {
       algorithms: ['HS256'],
     });
 
-    console.log(`✅ Token validated successfully for ${maskEmail(verified.email)}`);
-    console.log(`   User ID: ${verified.sub}`);
-    console.log(`   Issued: ${new Date(verified.iat * 1000).toISOString()}`);
-    console.log(`   Expires: ${new Date(verified.exp * 1000).toISOString()}`);
+    logger.info(`✅ Token validated successfully for ${maskEmail(verified.email)}`);
+    logger.info(`   User ID: ${verified.sub}`);
+    logger.info(`   Issued: ${new Date(verified.iat * 1000).toISOString()}`);
+    logger.info(`   Expires: ${new Date(verified.exp * 1000).toISOString()}`);
 
     return {
       valid: true,
@@ -158,13 +159,13 @@ function validateVerificationToken(token, options = {}) {
       const now = new Date();
       const minutesSinceExpiry = (now - expiredAt) / 1000 / 60;
 
-      console.warn(`⚠️ Token expired: ${maskEmail(decoded?.email || 'unknown')}`);
-      console.warn(`   Expired at: ${expiredAt.toISOString()}`);
-      console.warn(`   Minutes since expiry: ${minutesSinceExpiry.toFixed(1)}`);
+      logger.warn(`⚠️ Token expired: ${maskEmail(decoded?.email || 'unknown')}`);
+      logger.warn(`   Expired at: ${expiredAt.toISOString()}`);
+      logger.warn(`   Minutes since expiry: ${minutesSinceExpiry.toFixed(1)}`);
 
       // Check if within grace period
       if (allowGracePeriod && minutesSinceExpiry <= TOKEN_GRACE_PERIOD_MINUTES) {
-        console.log(`✅ Token within grace period (${TOKEN_GRACE_PERIOD_MINUTES} minutes)`);
+        logger.info(`✅ Token within grace period (${TOKEN_GRACE_PERIOD_MINUTES} minutes)`);
         return {
           valid: true,
           userId: decoded.sub,
@@ -186,7 +187,7 @@ function validateVerificationToken(token, options = {}) {
     }
 
     if (err.name === 'JsonWebTokenError') {
-      console.error(`❌ Token validation failed: ${err.message}`);
+      logger.error(`❌ Token validation failed: ${err.message}`);
       return {
         valid: false,
         error: 'INVALID_SIGNATURE',
@@ -195,7 +196,7 @@ function validateVerificationToken(token, options = {}) {
     }
 
     if (err.name === 'NotBeforeError') {
-      console.error(`❌ Token not yet valid: ${err.message}`);
+      logger.error(`❌ Token not yet valid: ${err.message}`);
       return {
         valid: false,
         error: 'TOKEN_NOT_YET_VALID',
@@ -204,7 +205,7 @@ function validateVerificationToken(token, options = {}) {
     }
 
     // Unknown error
-    console.error(`❌ Unexpected token validation error: ${err.message}`);
+    logger.error(`❌ Unexpected token validation error: ${err.message}`);
     return {
       valid: false,
       error: 'VALIDATION_ERROR',
@@ -403,9 +404,9 @@ function generatePasswordResetToken(email, options = {}) {
     algorithm: 'HS256',
   });
 
-  console.log(`🔐 Generated password reset token for ${maskEmail(email)}`);
-  console.log(`   Expires: ${expiresInHours}h`);
-  console.log(`   Version: ${TOKEN_VERSION}`);
+  logger.info(`🔐 Generated password reset token for ${maskEmail(email)}`);
+  logger.info(`   Expires: ${expiresInHours}h`);
+  logger.info(`   Version: ${TOKEN_VERSION}`);
 
   return token;
 }

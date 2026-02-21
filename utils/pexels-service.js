@@ -13,6 +13,7 @@
 'use strict';
 
 const https = require('https');
+const logger = require('./logger');
 const { getRandomFallbackPhotos, getRandomFallbackVideos } = require('../config/pexels-fallback');
 
 class PexelsService {
@@ -52,7 +53,7 @@ class PexelsService {
     this.startCacheCleanup();
 
     if (!this.getApiKey()) {
-      console.warn('⚠️  Pexels API key not configured. Stock photo features will be disabled.');
+      logger.warn('⚠️  Pexels API key not configured. Stock photo features will be disabled.');
     }
   }
 
@@ -84,7 +85,7 @@ class PexelsService {
     }
 
     if (removedCount > 0) {
-      console.log(`🗑️  Cleaned ${removedCount} expired cache entries`);
+      logger.info(`🗑️  Cleaned ${removedCount} expired cache entries`);
     }
   }
 
@@ -134,7 +135,7 @@ class PexelsService {
     }
 
     this.metrics.cacheHits++;
-    console.log(`💾 Cache hit for: ${cacheKey}`);
+    logger.info(`💾 Cache hit for: ${cacheKey}`);
     return cached.data;
   }
 
@@ -150,7 +151,7 @@ class PexelsService {
       const firstKey = this.cache.keys().next().value;
       if (firstKey) {
         this.cache.delete(firstKey);
-        console.log(`💾 Cache full, evicted oldest entry: ${firstKey}`);
+        logger.info(`💾 Cache full, evicted oldest entry: ${firstKey}`);
       }
     }
 
@@ -160,7 +161,7 @@ class PexelsService {
       expiresAt: now + this.cacheTTL,
       createdAt: now,
     });
-    console.log(`💾 Cached response for: ${cacheKey} (TTL: ${this.cacheTTL / 1000}s)`);
+    logger.info(`💾 Cached response for: ${cacheKey} (TTL: ${this.cacheTTL / 1000}s)`);
   }
 
   /**
@@ -170,7 +171,7 @@ class PexelsService {
     const size = this.cache.size;
     this.cache.clear();
     this.pendingRequests.clear(); // Also clear pending requests
-    console.log(`🗑️  Cleared ${size} cached responses`);
+    logger.info(`🗑️  Cleared ${size} cached responses`);
   }
 
   /**
@@ -183,7 +184,7 @@ class PexelsService {
       if (now > this.circuitBreaker.nextRetry) {
         // Transition to half-open state
         this.circuitBreaker.state = 'half-open';
-        console.log('🔄 Circuit breaker transitioning to half-open state');
+        logger.info('🔄 Circuit breaker transitioning to half-open state');
         return false;
       }
       return true;
@@ -200,7 +201,7 @@ class PexelsService {
       // Reset circuit breaker on success in half-open state
       this.circuitBreaker.state = 'closed';
       this.circuitBreaker.failures = 0;
-      console.log('✅ Circuit breaker reset to closed state');
+      logger.info('✅ Circuit breaker reset to closed state');
     } else if (this.circuitBreaker.state === 'closed') {
       // Reset failure count completely on success
       this.circuitBreaker.failures = 0;
@@ -218,7 +219,7 @@ class PexelsService {
       // Open circuit breaker
       this.circuitBreaker.state = 'open';
       this.circuitBreaker.nextRetry = Date.now() + this.circuitBreaker.timeout;
-      console.error(
+      logger.error(
         `🚨 Circuit breaker opened after ${this.circuitBreaker.failures} failures (cooldown: ${this.circuitBreaker.timeout / 1000}s)`
       );
     }
@@ -303,7 +304,7 @@ class PexelsService {
   async makeRequest(path, retryCount = 0, maxRetries = 3, cacheKey = null) {
     // Request deduplication: if same request is in flight, wait for it
     if (cacheKey && this.pendingRequests.has(cacheKey)) {
-      console.log(`⏳ Request already in flight, waiting: ${cacheKey}`);
+      logger.info(`⏳ Request already in flight, waiting: ${cacheKey}`);
       return await this.pendingRequests.get(cacheKey);
     }
 
@@ -332,7 +333,7 @@ class PexelsService {
         timeout: 10000, // 10 second timeout
       };
 
-      console.log(
+      logger.info(
         `🌐 Pexels API Request: GET ${path} (attempt ${retryCount + 1}/${maxRetries + 1})`
       );
       const startTime = Date.now();
@@ -348,9 +349,9 @@ class PexelsService {
           reset: res.headers['x-ratelimit-reset'],
         };
 
-        console.log(`📊 Pexels API Response: ${res.statusCode} (${duration}ms)`);
+        logger.info(`📊 Pexels API Response: ${res.statusCode} (${duration}ms)`);
         if (rateLimit.remaining) {
-          console.log(
+          logger.info(
             `⏱️  Rate Limit: ${rateLimit.remaining}/${rateLimit.limit} remaining (resets: ${rateLimit.reset})`
           );
         }
@@ -366,7 +367,7 @@ class PexelsService {
 
               // Debug: Log response structure to track schema
               if (process.env.PEXELS_DEBUG === 'true') {
-                console.log('🔍 [DEBUG] Pexels API Response Structure:', {
+                logger.info('🔍 [DEBUG] Pexels API Response Structure:', {
                   endpoint: path,
                   hasPhotos: !!parsedData.photos,
                   hasMedia: !!parsedData.media,
@@ -384,9 +385,9 @@ class PexelsService {
                 if (parsedData.photos && parsedData.photos[0]) {
                   const validation = this.validatePhotoSchema(parsedData.photos[0]);
                   if (!validation.valid) {
-                    console.warn('⚠️  [DEBUG] Schema validation warnings:', validation.errors);
+                    logger.warn('⚠️  [DEBUG] Schema validation warnings:', validation.errors);
                   } else {
-                    console.log('✅ [DEBUG] Schema validation passed');
+                    logger.info('✅ [DEBUG] Schema validation passed');
                   }
                 }
               }
@@ -401,8 +402,8 @@ class PexelsService {
                 rateLimit,
               });
             } catch (e) {
-              console.error('❌ Failed to parse Pexels API response:', e.message);
-              console.error('📝 Raw response data (first 200 chars):', data.substring(0, 200));
+              logger.error('❌ Failed to parse Pexels API response:', e.message);
+              logger.error('📝 Raw response data (first 200 chars):', data.substring(0, 200));
 
               this.recordFailure();
 
@@ -432,22 +433,22 @@ class PexelsService {
               errorMessage = 'Unauthorized: Invalid API key';
               userFriendlyMessage =
                 'API authentication failed. Please check your API key configuration.';
-              console.error('❌ Pexels API: Invalid API key');
-              console.error('💡 Hint: Verify PEXELS_API_KEY environment variable is set correctly');
+              logger.error('❌ Pexels API: Invalid API key');
+              logger.error('💡 Hint: Verify PEXELS_API_KEY environment variable is set correctly');
             } else if (res.statusCode === 403) {
               errorType = 'authentication';
               errorMessage = 'Forbidden: API key lacks required permissions';
               userFriendlyMessage =
                 'API key lacks necessary permissions. Please check your Pexels account settings.';
-              console.error('❌ Pexels API: Insufficient permissions');
-              console.error('💡 Hint: Check if your API key has access to collections endpoint');
+              logger.error('❌ Pexels API: Insufficient permissions');
+              logger.error('💡 Hint: Check if your API key has access to collections endpoint');
             } else if (res.statusCode === 404) {
               errorType = 'not_found';
               errorMessage = 'Not Found: Resource does not exist';
               userFriendlyMessage =
                 'The requested resource was not found. Please verify the collection ID or search query.';
-              console.error('❌ Pexels API: Resource not found');
-              console.error(
+              logger.error('❌ Pexels API: Resource not found');
+              logger.error(
                 '💡 Hint: Verify collection IDs and ensure they exist in your Pexels account'
               );
             } else if (res.statusCode === 429) {
@@ -455,8 +456,8 @@ class PexelsService {
               errorMessage = 'Rate Limit Exceeded: Too many requests';
               userFriendlyMessage = 'API rate limit exceeded. Please try again later.';
               shouldRetry = true; // Retry on rate limit
-              console.error(`❌ Pexels API: Rate limit exceeded (resets: ${rateLimit.reset})`);
-              console.error(
+              logger.error(`❌ Pexels API: Rate limit exceeded (resets: ${rateLimit.reset})`);
+              logger.error(
                 '💡 Hint: Consider implementing caching or reducing API call frequency'
               );
             } else if (res.statusCode >= 500) {
@@ -465,21 +466,21 @@ class PexelsService {
               userFriendlyMessage =
                 'Pexels API is temporarily unavailable. Fallback images will be used.';
               shouldRetry = true; // Retry on server errors
-              console.error('❌ Pexels API: Server error');
-              console.error(
+              logger.error('❌ Pexels API: Server error');
+              logger.error(
                 '💡 Hint: This is a Pexels service issue, fallback mechanism should activate'
               );
             }
 
-            console.error(`📝 Error details: ${errorDetails}`);
-            console.error(`🔖 Error type: ${errorType}`);
+            logger.error(`📝 Error details: ${errorDetails}`);
+            logger.error(`🔖 Error type: ${errorType}`);
 
             this.recordFailure();
 
             // Retry logic for transient errors
             if (shouldRetry && retryCount < maxRetries) {
               const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10s
-              console.log(`🔄 Retrying in ${backoffTime}ms...`);
+              logger.info(`🔄 Retrying in ${backoffTime}ms...`);
 
               setTimeout(async () => {
                 try {
@@ -502,15 +503,15 @@ class PexelsService {
       });
 
       req.on('error', async error => {
-        console.error('❌ Pexels API request error:', error.message);
-        console.error('💡 Hint: Check network connectivity and DNS resolution');
+        logger.error('❌ Pexels API request error:', error.message);
+        logger.error('💡 Hint: Check network connectivity and DNS resolution');
 
         this.recordFailure();
 
         // Retry on network errors
         if (retryCount < maxRetries) {
           const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 10000);
-          console.log(`🔄 Retrying in ${backoffTime}ms...`);
+          logger.info(`🔄 Retrying in ${backoffTime}ms...`);
 
           setTimeout(async () => {
             try {
@@ -535,15 +536,15 @@ class PexelsService {
 
       req.on('timeout', async () => {
         req.destroy();
-        console.error('❌ Pexels API request timeout (10s)');
-        console.error('💡 Hint: Consider increasing timeout or checking API responsiveness');
+        logger.error('❌ Pexels API request timeout (10s)');
+        logger.error('💡 Hint: Consider increasing timeout or checking API responsiveness');
 
         this.recordFailure();
 
         // Retry on timeout
         if (retryCount < maxRetries) {
           const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 10000);
-          console.log(`🔄 Retrying in ${backoffTime}ms...`);
+          logger.info(`🔄 Retrying in ${backoffTime}ms...`);
 
           setTimeout(async () => {
             try {
@@ -1124,7 +1125,7 @@ class PexelsService {
         }
 
         // Unknown type - log warning and return raw item
-        console.warn(`⚠️  Unknown media type in collection: ${item.type}`);
+        logger.warn(`⚠️  Unknown media type in collection: ${item.type}`);
         return item;
       }),
       nextPage: data.next_page,
@@ -1150,7 +1151,7 @@ class PexelsService {
     }
 
     try {
-      console.log('🔍 Testing Pexels API connection...');
+      logger.info('🔍 Testing Pexels API connection...');
       const startTime = Date.now();
 
       // Make a minimal request to test the API key
@@ -1158,7 +1159,7 @@ class PexelsService {
       const testResult = await this.searchPhotos('nature', 1, 1);
 
       const duration = Date.now() - startTime;
-      console.log(`✅ Pexels API connection successful (${duration}ms)`);
+      logger.info(`✅ Pexels API connection successful (${duration}ms)`);
 
       return {
         success: true,
@@ -1172,7 +1173,7 @@ class PexelsService {
         },
       };
     } catch (error) {
-      console.error('❌ Pexels API connection failed:', error.message);
+      logger.error('❌ Pexels API connection failed:', error.message);
 
       // Parse error to provide helpful feedback
       let message = 'Pexels API connection failed';
@@ -1233,24 +1234,24 @@ class PexelsService {
     // Try API if configured
     if (this.isConfigured()) {
       try {
-        console.log('🔍 Attempting to fetch photos from Pexels API...');
+        logger.info('🔍 Attempting to fetch photos from Pexels API...');
         const result = await this.searchPhotos('wedding', count, 1);
-        console.log(`✅ Successfully fetched ${result.photos.length} photos from API`);
+        logger.info(`✅ Successfully fetched ${result.photos.length} photos from API`);
         return {
           photos: result.photos,
           mode: 'api',
           fromCache: false,
         };
       } catch (error) {
-        console.warn(`⚠️  Pexels API failed: ${error.message}, falling back to hardcoded URLs`);
+        logger.warn(`⚠️  Pexels API failed: ${error.message}, falling back to hardcoded URLs`);
       }
     } else {
-      console.log('ℹ️  Pexels API not configured, using fallback URLs');
+      logger.info('ℹ️  Pexels API not configured, using fallback URLs');
     }
 
     // Fallback to hardcoded URLs
     const fallbackPhotos = getRandomFallbackPhotos(count);
-    console.log(`📦 Using ${fallbackPhotos.length} fallback photos`);
+    logger.info(`📦 Using ${fallbackPhotos.length} fallback photos`);
     return {
       photos: fallbackPhotos,
       mode: 'fallback',
@@ -1268,24 +1269,24 @@ class PexelsService {
     // Try API if configured
     if (this.isConfigured()) {
       try {
-        console.log('🔍 Attempting to fetch videos from Pexels API...');
+        logger.info('🔍 Attempting to fetch videos from Pexels API...');
         const result = await this.searchVideos('wedding', count, 1);
-        console.log(`✅ Successfully fetched ${result.videos.length} videos from API`);
+        logger.info(`✅ Successfully fetched ${result.videos.length} videos from API`);
         return {
           videos: result.videos,
           mode: 'api',
           fromCache: false,
         };
       } catch (error) {
-        console.warn(`⚠️  Pexels API failed: ${error.message}, falling back to hardcoded URLs`);
+        logger.warn(`⚠️  Pexels API failed: ${error.message}, falling back to hardcoded URLs`);
       }
     } else {
-      console.log('ℹ️  Pexels API not configured, using fallback URLs');
+      logger.info('ℹ️  Pexels API not configured, using fallback URLs');
     }
 
     // Fallback to hardcoded URLs
     const fallbackVideos = getRandomFallbackVideos(count);
-    console.log(`📦 Using ${fallbackVideos.length} fallback videos`);
+    logger.info(`📦 Using ${fallbackVideos.length} fallback videos`);
     return {
       videos: fallbackVideos,
       mode: 'fallback',
@@ -1303,17 +1304,17 @@ class PexelsService {
     // Try API if configured
     if (this.isConfigured()) {
       try {
-        console.log(`🔍 Attempting to fetch photos from collection ${collectionId}...`);
+        logger.info(`🔍 Attempting to fetch photos from collection ${collectionId}...`);
         const result = await this.getCollectionMedia(collectionId, count, 1, 'photos');
         const photos = result.media.filter(item => item.type === 'Photo');
-        console.log(`✅ Successfully fetched ${photos.length} photos from collection`);
+        logger.info(`✅ Successfully fetched ${photos.length} photos from collection`);
         return {
           photos,
           mode: 'api',
           collectionId,
         };
       } catch (error) {
-        console.warn(
+        logger.warn(
           `⚠️  Failed to fetch collection ${collectionId}: ${error.message}, using fallback`
         );
       }
@@ -1321,7 +1322,7 @@ class PexelsService {
 
     // Fallback to hardcoded URLs
     const fallbackPhotos = getRandomFallbackPhotos(count);
-    console.log(`📦 Using ${fallbackPhotos.length} fallback photos (collection unavailable)`);
+    logger.info(`📦 Using ${fallbackPhotos.length} fallback photos (collection unavailable)`);
     return {
       photos: fallbackPhotos,
       mode: 'fallback',
@@ -1347,7 +1348,7 @@ function getPexelsService(apiKey) {
 
   // If instance was created without a key but a key is now available, recreate
   if (wasCreatedWithoutKey && currentKey) {
-    console.log('🔄 Recreating Pexels service with newly available API key');
+    logger.info('🔄 Recreating Pexels service with newly available API key');
     pexelsInstance = new PexelsService(currentKey);
     wasCreatedWithoutKey = false;
   }

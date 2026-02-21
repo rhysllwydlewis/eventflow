@@ -6,6 +6,7 @@
 'use strict';
 
 const path = require('path');
+const logger = require('./logger');
 const fs = require('fs').promises;
 const { getPlaceholders } = require('../config/content-config');
 
@@ -183,7 +184,7 @@ function templateMiddleware() {
         return next();
       }
       // Other errors - log and pass to error handler
-      console.error('Template rendering error:', error);
+      logger.error('Template rendering error:', error);
       return next(error);
     }
   };

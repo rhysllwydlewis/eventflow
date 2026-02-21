@@ -48,7 +48,7 @@ function createDeprecationMiddleware({ version, sunset, logger }) {
     );
 
     const logFn =
-      typeof logger === 'function' ? logger : msg => console.warn(`[DEPRECATED API] ${msg}`); // eslint-disable-line no-console
+      typeof logger === 'function' ? logger : msg => logger.warn(`[DEPRECATED API] ${msg}`); // eslint-disable-line no-console
 
     // Re-read mode every request so env-var changes in tests take effect
     const currentMode = (process.env.LEGACY_MESSAGING_MODE || 'read-only').toLowerCase();

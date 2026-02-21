@@ -1,3 +1,4 @@
+const logger = require('./logger');
 /**
  * Analytics Utility
  * Client-side event tracking for user behavior analytics
@@ -35,7 +36,7 @@ export async function trackEvent(event, properties = {}) {
     // Fail silently - analytics should never block UX
     // Don't log to console in production to avoid noise
     if (process.env.NODE_ENV === 'development') {
-      console.debug('Analytics tracking failed:', error);
+      logger.debug('Analytics tracking failed:', error);
     }
   }
 }
