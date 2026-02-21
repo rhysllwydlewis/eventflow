@@ -107,7 +107,7 @@ describe('Auth State Fixes', () => {
     });
 
     it('dashboard-guard.js should fetch user with cache-busting', () => {
-      expect(dashboardGuardContent).toContain('/api/auth/me');
+      expect(dashboardGuardContent).toContain('/api/v1/auth/me');
       expect(dashboardGuardContent).toContain('Date.now()');
       expect(dashboardGuardContent).toContain('Cache-Control');
       expect(dashboardGuardContent).toContain('no-cache');

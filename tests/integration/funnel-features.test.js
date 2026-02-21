@@ -258,7 +258,7 @@ describe('Analytics API Integration Tests', () => {
       );
 
       expect(routeContent).toContain('Fail silently');
-      expect(routeContent).toContain('console.debug');
+      expect(routeContent).toContain('logger.debug');
     });
 
     it('should define GET /events endpoint for admin', () => {

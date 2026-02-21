@@ -361,7 +361,7 @@ describe('Admin Enhancements', () => {
         );
         expect(operationSection).toContain('try {');
         expect(operationSection).toContain('catch (error)');
-        expect(operationSection).toContain('console.error');
+        expect(operationSection).toContain('logger.error');
         expect(operationSection).toContain('500');
       });
     });
