@@ -376,11 +376,14 @@ class SupplierCard {
 
     const badgesHtml = this.renderBadges();
 
+    // Build inline tier icon (small symbol) for next to the name via shared EFTierIcon helper
+    const tierIcon = typeof EFTierIcon !== 'undefined' ? EFTierIcon.render(this.supplier) : '';
+
     card.innerHTML = `
       <div class="supplier-card-header">
         ${logoHtml}
         <div class="supplier-card-info">
-          <h2 class="supplier-card-name">${this.supplier.name || 'Supplier'}</h2>
+          <h2 class="supplier-card-name">${this.supplier.name || 'Supplier'}${tierIcon}</h2>
           <p class="supplier-card-blurb">${this.supplier.blurb || this.supplier.description_short || ''}</p>
           ${badgesHtml}
         </div>

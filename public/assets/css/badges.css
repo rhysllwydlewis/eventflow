@@ -87,31 +87,86 @@
   margin-right: 0.375rem;
 }
 
-/* Pro Badge */
+/* Pro Badge — Gold */
 .badge-pro {
-  background: #0B8073;
-  color: #ffffff;
-  border: 1px solid #0a6d61;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #78350f;
+  border: 1px solid #d97706;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
 }
 
 .badge-pro::before {
-  content: '◆';
+  content: '⭐';
   margin-right: 0.375rem;
 }
 
-/* Pro Plus Badge - Premium styling */
+/* Pro Plus Badge — Purple Diamond */
 .badge-pro-plus {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
   color: #ffffff;
-  border: 1px solid #5b21b6;
+  border: 1px solid #4c1d95;
   font-weight: 700;
-  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.35);
 }
 
 .badge-pro-plus::before {
-  content: '◆◆';
+  content: '💎';
   margin-right: 0.375rem;
   font-size: 0.9em;
+}
+
+/* ===== INLINE TIER ICON (next to name in cards, messages, etc.) ===== */
+
+/* Small inline symbol shown beside supplier/business name */
+.tier-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  line-height: 1;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  cursor: default;
+}
+
+/* Pro tier icon — gold star */
+.tier-icon-pro {
+  color: #d97706;
+  font-size: 0.9rem;
+}
+
+/* Pro Plus tier icon — purple diamond */
+.tier-icon-pro-plus {
+  color: #7c3aed;
+  font-size: 0.9rem;
+}
+
+/* ===== PROFILE BADGES SECTION ===== */
+
+.profile-subscription-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.badges-section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.badges-section__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.875rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
 }
 
 /* Test Data Badge */

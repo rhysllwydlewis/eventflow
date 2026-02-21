@@ -169,10 +169,20 @@
       }
     }
 
-    // Update title
+    // Update title with inline tier icon
     const heroTitle = document.getElementById('hero-title');
     if (heroTitle) {
       heroTitle.textContent = supplier.name;
+      const tierIconEl = document.getElementById('hero-tier-icon');
+      if (tierIconEl) {
+        // Prefer shared EFTierIcon helper (tier-icon.js), fall back to module-imported renderTierIcon
+        const iconFn =
+          (typeof EFTierIcon !== 'undefined' && EFTierIcon.render) ||
+          (typeof renderTierIcon !== 'undefined' && renderTierIcon);
+        if (iconFn) {
+          tierIconEl.innerHTML = iconFn(supplier);
+        }
+      }
     }
 
     // Update breadcrumb
@@ -238,15 +248,16 @@
         const recipientId = supplier.ownerUserId;
         if (!recipientId) {
           if (window.EventFlowNotifications) {
-            window.EventFlowNotifications.info('This supplier cannot receive messages at this time.');
+            window.EventFlowNotifications.info(
+              'This supplier cannot receive messages at this time.'
+            );
           }
           return;
         }
         // Sanitize supplier name for safe use in prefill message
         // Remove potentially harmful characters while preserving readability
-        const supplierName = (supplier.name || 'Supplier')
-          .replace(/[<>'"&]/g, '')
-          .trim() || 'Supplier';
+        const supplierName =
+          (supplier.name || 'Supplier').replace(/[<>'"&]/g, '').trim() || 'Supplier';
 
         // Use QuickComposeV4 slide-up panel if available
         if (window.QuickComposeV4) {
@@ -267,7 +278,7 @@
           contextType: 'supplier',
           contextId: supplier.id,
           contextTitle: supplier.name,
-          prefill: `Hi ${supplierName}! I'd like to enquire about your services.`
+          prefill: `Hi ${supplierName}! I'd like to enquire about your services.`,
         });
         window.location.href = `/messenger/?${params.toString()}`;
       };
@@ -338,6 +349,83 @@
   }
 
   /**
+   * Render the dedicated "Badges & Recognition" section on the profile page.
+   * Subscription tier badges are pinned at the top; other badges follow.
+   */
+  function renderBadgesSection(supplier) {
+    const container = document.getElementById('supplier-badges-section');
+    if (!container || !supplier) {
+      return;
+    }
+
+    const allBadges = [];
+
+    // --- Subscription tier badges (always first) ---
+    // Use the shared EFTierIcon helper (loaded via tier-icon.js) for consistent resolution.
+    const tier =
+      typeof EFTierIcon !== 'undefined'
+        ? EFTierIcon.resolve(supplier)
+        : supplier.subscriptionTier ||
+          supplier.subscription?.tier ||
+          (supplier.isPro ? 'pro' : 'free');
+
+    if (tier === 'pro_plus') {
+      allBadges.push(
+        `<span class="badge badge-pro-plus" title="Professional Plus — Premium subscription" aria-label="Pro Plus subscriber">Pro Plus</span>`
+      );
+    } else if (tier === 'pro') {
+      allBadges.push(
+        `<span class="badge badge-pro" title="Professional — Enhanced subscription" aria-label="Pro subscriber">Pro</span>`
+      );
+    }
+
+    // --- Founding badge ---
+    if (supplier.isFoundingSupplier || supplier.isFounding || supplier.founding) {
+      allBadges.push(
+        `<span class="badge badge-founding" title="Founding Supplier" aria-label="Founding supplier">⭐ Founding</span>`
+      );
+    }
+
+    // --- Featured badge ---
+    if (supplier.featured || supplier.featuredSupplier) {
+      allBadges.push(
+        `<span class="badge badge-featured" title="Featured Supplier" aria-label="Featured supplier">★ Featured</span>`
+      );
+    }
+
+    // --- Verification badges ---
+    if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {
+      allBadges.push(
+        `<span class="badge badge-email-verified" title="Email address verified" aria-label="Email verified">✓ Email</span>`
+      );
+    }
+    if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
+      allBadges.push(
+        `<span class="badge badge-phone-verified" title="Phone number verified" aria-label="Phone verified">✓ Phone</span>`
+      );
+    }
+    if (supplier.businessVerified || supplier.verifications?.business?.verified) {
+      allBadges.push(
+        `<span class="badge badge-business-verified" title="Business documents verified" aria-label="Business verified">✓ Business</span>`
+      );
+    }
+
+    if (allBadges.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="badges-section">
+        <h2 class="badges-section__title">Badges &amp; Recognition</h2>
+        <div class="profile-badges">
+          ${allBadges.join('\n          ')}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Load supplier data and render hero
    */
   async function loadSupplierData() {
@@ -361,6 +449,9 @@
 
       // Render hero section
       renderHeroSection(supplierData);
+
+      // Render dedicated badges section
+      renderBadgesSection(supplierData);
     } catch (error) {
       console.error('Error loading supplier data:', error);
       const heroTitle = document.getElementById('hero-title');

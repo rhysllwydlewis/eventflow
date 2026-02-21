@@ -166,7 +166,7 @@
       </div>
       
       <div class="hero-content">
-        <h1 id="hero-title">Loading Supplier...</h1>
+        <h1 id="hero-title">Loading Supplier...<span id="hero-tier-icon"></span></h1>
         <p class="supplier-tagline" id="hero-tagline"></p>
         
         <div class="supplier-meta" id="hero-meta">
@@ -204,14 +204,17 @@
 <main id="main-content" class='section'><div class='container'>
 <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;">Supplier Profile</h1>
 <div id="supplier-container"><div class="card"><p>Loading supplier…</p></div></div>
+<div id="supplier-badges-section"></div>
 <script src="/assets/js/app.js"></script>
+<script src="/assets/js/utils/tier-icon.js"></script>
 <script type="module">
   // Import verification badges utility
-  import { renderVerificationBadges, renderVerificationSection } from '/assets/js/utils/verification-badges.js';
+  import { renderVerificationBadges, renderVerificationSection, renderTierIcon } from '/assets/js/utils/verification-badges.js';
   // Make available globally for supplier-profile.js (non-module script)
   // TODO: Refactor supplier-profile.js to use ES6 modules to remove global exposure
   window.renderVerificationBadges = renderVerificationBadges;
   window.renderVerificationSection = renderVerificationSection;
+  window.renderTierIcon = renderTierIcon;
 </script>
 <script src="/assets/js/supplier-profile.js"></script>
 <script>window.__EF_PAGE__='supplier'</script>
