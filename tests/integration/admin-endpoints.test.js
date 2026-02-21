@@ -180,7 +180,7 @@ describe('Admin API Integration Tests', () => {
       // Verify error handling patterns
       expect(supplierRoutesSection).toContain('try {');
       expect(supplierRoutesSection).toContain('catch (error)');
-      expect(supplierRoutesSection).toContain('console.error');
+      expect(supplierRoutesSection).toContain('logger.error');
       expect(supplierRoutesSection).toContain('res.status(500).json({ error:');
     });
 

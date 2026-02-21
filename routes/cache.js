@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -87,7 +88,7 @@ router.get('/stats', applyAuthRequired, applyRoleRequired('admin'), async (_req,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error getting cache stats:', error);
+    logger.error('Error getting cache stats:', error);
     sentry.captureException(error);
     res.status(500).json({ error: 'Failed to get cache statistics' });
   }
@@ -102,7 +103,7 @@ router.get('/database/metrics', applyAuthRequired, applyRoleRequired('admin'), a
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error getting query metrics:', error);
+    logger.error('Error getting query metrics:', error);
     sentry.captureException(error);
     res.status(500).json({ error: 'Failed to get database metrics' });
   }
@@ -118,7 +119,7 @@ router.post('/clear', applyAuthRequired, applyRoleRequired('admin'), applyCsrfPr
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    logger.error('Error clearing cache:', error);
     sentry.captureException(error);
     res.status(500).json({ error: 'Failed to clear cache' });
   }

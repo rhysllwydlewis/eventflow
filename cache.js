@@ -5,6 +5,7 @@
  */
 
 'use strict';
+const logger = require('./utils/logger');
 
 let redis = null;
 let redisClient = null;
@@ -38,7 +39,7 @@ async function initializeCache() {
     const redisUrl = process.env.REDIS_URL || process.env.REDIS_URI;
 
     if (!redisUrl) {
-      console.log('ℹ️  No Redis configuration found, using in-memory cache');
+      logger.info('ℹ️  No Redis configuration found, using in-memory cache');
       cacheType = 'memory';
       cacheEnabled = true;
       return cacheType;
@@ -60,24 +61,24 @@ async function initializeCache() {
       redisClient = redis.createClient({ url: redisUrl });
       await redisClient.connect();
       redisClient.on('error', err => {
-        console.error('Redis error:', err);
+        logger.error('Redis error:', err);
         cacheStats.errors++;
       });
     } else {
       // Using ioredis package
       redisClient = new redis(redisUrl);
       redisClient.on('error', err => {
-        console.error('Redis error:', err);
+        logger.error('Redis error:', err);
         cacheStats.errors++;
       });
     }
 
     cacheType = 'redis';
     cacheEnabled = true;
-    console.log('✅ Redis cache initialized');
+    logger.info('✅ Redis cache initialized');
     return cacheType;
   } catch (error) {
-    console.log('⚠️  Redis not available, using in-memory cache:', error.message);
+    logger.info('⚠️  Redis not available, using in-memory cache:', error.message);
     cacheType = 'memory';
     cacheEnabled = true;
     return cacheType;
@@ -121,7 +122,7 @@ async function get(key) {
     cacheStats.misses++;
     return null;
   } catch (error) {
-    console.error('Cache get error:', error);
+    logger.error('Cache get error:', error);
     cacheStats.errors++;
     return null;
   }
@@ -150,7 +151,7 @@ async function set(key, value, ttl = 300) {
     cacheExpiry.set(key, Date.now() + ttl * 1000);
     return true;
   } catch (error) {
-    console.error('Cache set error:', error);
+    logger.error('Cache set error:', error);
     cacheStats.errors++;
     return false;
   }
@@ -177,7 +178,7 @@ async function del(key) {
     cacheExpiry.delete(key);
     return true;
   } catch (error) {
-    console.error('Cache delete error:', error);
+    logger.error('Cache delete error:', error);
     cacheStats.errors++;
     return false;
   }
@@ -212,7 +213,7 @@ async function delPattern(pattern) {
     }
     return count;
   } catch (error) {
-    console.error('Cache delete pattern error:', error);
+    logger.error('Cache delete pattern error:', error);
     cacheStats.errors++;
     return 0;
   }
@@ -236,7 +237,7 @@ async function clear() {
     cacheExpiry.clear();
     return true;
   } catch (error) {
-    console.error('Cache clear error:', error);
+    logger.error('Cache clear error:', error);
     cacheStats.errors++;
     return false;
   }
@@ -285,7 +286,7 @@ async function close() {
         await redisClient.disconnect();
       }
     } catch (error) {
-      console.error('Cache close error:', error);
+      logger.error('Cache close error:', error);
     }
   }
 }

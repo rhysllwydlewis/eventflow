@@ -389,23 +389,23 @@ class GlobalSearch {
         </div>
         <div id="search-suggestions">
           <div class="small mb-2" style="color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">Quick Links</div>
-          <a href="/suppliers.html" class="search-result-item">
+          <a href="/suppliers" class="search-result-item">
             <span>Browse All Suppliers</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/start.html" class="search-result-item">
+          <a href="/start" class="search-result-item">
             <span>Start Planning</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/budget.html" class="search-result-item">
+          <a href="/budget" class="search-result-item">
             <span>Budget Tracker</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/guests.html" class="search-result-item">
+          <a href="/guests" class="search-result-item">
             <span>Guest List Manager</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/faq.html" class="search-result-item">
+          <a href="/faq" class="search-result-item">
             <span>Help & FAQ</span>
             <span style="color: var(--muted);">→</span>
           </a>
@@ -561,13 +561,13 @@ class GlobalSearch {
         type: 'page',
         title: 'Budget Tracker',
         description: 'Manage your event budget',
-        url: '/budget.html',
+        url: '/budget',
       },
       {
         type: 'page',
         title: 'Guest List Manager',
         description: 'Track RSVPs and guests',
-        url: '/guests.html',
+        url: '/guests',
       },
       {
         type: 'help',

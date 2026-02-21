@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const PDFDocument = require('pdfkit');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { writeLimiter } = require('../middleware/rateLimits');
@@ -32,7 +33,7 @@ try {
     STRIPE_ENABLED = true;
   }
 } catch (err) {
-  console.error('Failed to initialize Stripe:', err.message);
+  logger.error('Failed to initialize Stripe:', err.message);
 }
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -68,7 +69,7 @@ router.get('/plans', async (req, res) => {
       plans,
     });
   } catch (error) {
-    console.error('Error fetching plans:', error);
+    logger.error('Error fetching plans:', error);
     res.status(500).json({
       error: 'Failed to fetch plans',
       message: error.message,
@@ -145,7 +146,7 @@ router.post(
 
       res.json({ success: true, url: session.url, sessionId: session.id });
     } catch (error) {
-      console.error('Error creating checkout session (v2):', error);
+      logger.error('Error creating checkout session (v2):', error);
       const statusCode = error.type === 'StripeInvalidRequestError' ? 400 : 500;
       res.status(statusCode).json({
         error: 'Failed to create checkout session',
@@ -176,7 +177,7 @@ router.get('/me', authRequired, async (req, res) => {
     const plan = subscription ? subscription.plan : 'free';
     res.json({ success: true, subscription, plan });
   } catch (error) {
-    console.error('Error fetching current user subscription:', error);
+    logger.error('Error fetching current user subscription:', error);
     res.status(500).json({ error: 'Failed to fetch subscription', message: error.message });
   }
 });
@@ -285,7 +286,7 @@ router.post(
         clientSecret: stripeSubscription.latest_invoice?.payment_intent?.client_secret,
       });
     } catch (error) {
-      console.error('Error creating subscription:', error);
+      logger.error('Error creating subscription:', error);
       res.status(500).json({
         error: 'Failed to create subscription',
         message: error.message,
@@ -389,7 +390,7 @@ router.post(
         subscription: updatedSubscription,
       });
     } catch (error) {
-      console.error('Error upgrading subscription:', error);
+      logger.error('Error upgrading subscription:', error);
       res.status(500).json({
         error: 'Failed to upgrade subscription',
         message: error.message,
@@ -486,7 +487,7 @@ router.post(
         message: 'Downgrade scheduled for end of billing period',
       });
     } catch (error) {
-      console.error('Error downgrading subscription:', error);
+      logger.error('Error downgrading subscription:', error);
       res.status(500).json({
         error: 'Failed to downgrade subscription',
         message: error.message,
@@ -571,7 +572,7 @@ router.post('/:id/cancel', authRequired, csrfProtection, writeLimiter, async (re
         : 'Subscription will cancel at period end',
     });
   } catch (error) {
-    console.error('Error canceling subscription:', error);
+    logger.error('Error canceling subscription:', error);
     res.status(500).json({
       error: 'Failed to cancel subscription',
       message: error.message,
@@ -619,7 +620,7 @@ router.get('/:id/status', authRequired, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching subscription status:', error);
+    logger.error('Error fetching subscription status:', error);
     res.status(500).json({
       error: 'Failed to fetch subscription status',
       message: error.message,
@@ -662,7 +663,7 @@ router.get('/:id/features', authRequired, async (req, res) => {
       features: features.features,
     });
   } catch (error) {
-    console.error('Error fetching features:', error);
+    logger.error('Error fetching features:', error);
     res.status(500).json({
       error: 'Failed to fetch features',
       message: error.message,
@@ -692,7 +693,7 @@ router.get('/invoices', authRequired, async (req, res) => {
       invoices: userInvoices,
     });
   } catch (error) {
-    console.error('Error fetching invoices:', error);
+    logger.error('Error fetching invoices:', error);
     res.status(500).json({
       error: 'Failed to fetch invoices',
       message: error.message,
@@ -756,7 +757,7 @@ router.post(
         invoice: formatInvoice(invoice),
       });
     } catch (error) {
-      console.error('Error retrying invoice payment:', error);
+      logger.error('Error retrying invoice payment:', error);
       res.status(500).json({
         error: 'Failed to retry payment',
         message: error.message,
@@ -845,7 +846,7 @@ router.get('/invoices/:id/download', authRequired, async (req, res) => {
 
     doc.end();
   } catch (error) {
-    console.error('Error downloading invoice:', error);
+    logger.error('Error downloading invoice:', error);
     res.status(500).json({
       error: 'Failed to download invoice',
       message: error.message,
@@ -894,7 +895,7 @@ router.get('/admin/subscriptions', authRequired, roleRequired('admin'), async (r
       },
     });
   } catch (error) {
-    console.error('Error fetching subscriptions:', error);
+    logger.error('Error fetching subscriptions:', error);
     res.status(500).json({
       error: 'Failed to fetch subscriptions',
       message: error.message,
@@ -930,7 +931,7 @@ router.get('/admin/revenue', authRequired, roleRequired('admin'), async (req, re
       subscriptionStats: stats,
     });
   } catch (error) {
-    console.error('Error fetching revenue analytics:', error);
+    logger.error('Error fetching revenue analytics:', error);
     res.status(500).json({
       error: 'Failed to fetch revenue analytics',
       message: error.message,
@@ -955,7 +956,7 @@ router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err.message);
+      logger.error('Webhook signature verification failed:', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
   } else {
@@ -963,7 +964,7 @@ router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async
     try {
       event = JSON.parse(req.body.toString());
     } catch (err) {
-      console.error('Failed to parse webhook body:', err.message);
+      logger.error('Failed to parse webhook body:', err.message);
       return res.status(400).send('Invalid request body');
     }
   }
@@ -972,7 +973,7 @@ router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async
     await processWebhookEvent(event);
     res.json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    logger.error('Error processing webhook:', error);
     res.status(500).json({
       error: 'Webhook processing failed',
       message: error.message,

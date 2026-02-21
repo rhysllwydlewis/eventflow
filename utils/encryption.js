@@ -6,6 +6,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const logger = require('./logger');
 
 // Encryption settings
 const ALGORITHM = 'aes-256-gcm';
@@ -51,7 +52,7 @@ function encrypt(text) {
     // Return format: iv:tag:encrypted
     return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted}`;
   } catch (error) {
-    console.error('Encryption error:', error.message);
+    logger.error('Encryption error:', error.message);
     throw new Error('Failed to encrypt data');
   }
 }
@@ -86,7 +87,7 @@ function decrypt(encryptedText) {
 
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error.message);
+    logger.error('Decryption error:', error.message);
     throw new Error('Failed to decrypt data');
   }
 }

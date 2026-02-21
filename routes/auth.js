@@ -10,6 +10,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 
+const logger = require('../utils/logger');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 const {
@@ -56,7 +57,7 @@ async function updateLastLogin(userId) {
       await dbUnified.write('users', allUsers);
     }
   } catch (e) {
-    console.error('Failed to update lastLoginAt', e);
+    logger.error('Failed to update lastLoginAt', e);
   }
 }
 
@@ -211,7 +212,7 @@ router.post(
       } else {
         // Owner doesn't exist yet - this shouldn't happen normally (seed creates it)
         // But we'll allow it and create them as owner
-        console.warn('⚠️  Owner account being created through registration (should use seed)');
+        logger.warn('Owner account being created through registration (should use seed)');
       }
     } else if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
       return res.status(409).json({ error: 'Email already registered' });
@@ -253,7 +254,7 @@ router.post(
     const badges = [];
     if (now <= founderEndDate) {
       badges.push('founder');
-      console.log(`🏆 Founder badge awarded to ${email} (registered within 6 months of launch)`);
+      logger.info('Founder badge awarded (new user registered within 6 months of launch)');
     }
 
     // Determine role using domain-admin logic
@@ -265,13 +266,11 @@ router.post(
 
     // Log admin domain detection
     if (roleDecision.willUpgradeOnVerification) {
-      console.log(
-        `🔐 Admin domain detected: ${email} will be promoted to admin after verification`
-      );
+      logger.info('Admin domain detected: user will be promoted to admin after verification');
     }
 
     if (isOwner) {
-      console.log(`👑 Owner account registration: ${email}`);
+      logger.info('Owner account registration');
     }
 
     // Create user object first (needed for JWT token generation)
@@ -313,11 +312,11 @@ router.post(
     // EXCEPT for owner email - skip verification email for owner
     if (!isOwner) {
       try {
-        console.log(`📧 Attempting to send verification email to ${user.email}`);
+        logger.info('Attempting to send verification email');
         await postmark.sendVerificationEmail(user, verificationToken);
-        console.log(`✅ Verification email sent successfully to ${user.email}`);
+        logger.info('Verification email sent successfully');
       } catch (emailError) {
-        console.error('❌ Failed to send verification email:', emailError.message);
+        logger.error('Failed to send verification email:', emailError.message);
 
         // If email sending fails, don't create the user account
         // This prevents orphaned unverified accounts
@@ -327,7 +326,7 @@ router.post(
         });
       }
     } else {
-      console.log(`✅ Owner account - skipping verification email`);
+      logger.info('Owner account - skipping verification email');
     }
 
     // Only save user after email is successfully sent
@@ -425,10 +424,10 @@ router.post(
 router.post('/login', authLimiter, async (req, res) => {
   const { email, password, remember } = req.body || {};
 
-  console.log(`[LOGIN] Attempt for email: ${email}`);
+  logger.info('[LOGIN] Attempt');
 
   if (!email || !password) {
-    console.warn('[LOGIN] Missing email or password');
+    logger.warn('[LOGIN] Missing email or password');
     return res.status(400).json({ error: 'Missing fields' });
   }
 
@@ -436,17 +435,15 @@ router.post('/login', authLimiter, async (req, res) => {
   const user = users.find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (!user) {
-    console.warn(`[LOGIN] User not found: ${email}`);
+    logger.warn('[LOGIN] User not found');
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
-  console.log(
-    `[LOGIN] Found user: ${user.email}, verified: ${user.verified}, hasHash: ${!!user.passwordHash}`
-  );
+  logger.debug('[LOGIN] User found', { verified: user.verified, hasHash: !!user.passwordHash });
 
   // Check password hash exists and is valid
   if (!user.passwordHash) {
-    console.error(`[LOGIN] ❌ No password hash for user: ${email}`);
+    logger.error('[LOGIN] No password hash found');
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
@@ -454,25 +451,25 @@ router.post('/login', authLimiter, async (req, res) => {
   let passwordMatches = false;
   try {
     passwordMatches = bcrypt.compareSync(password, user.passwordHash);
-    console.log(`[LOGIN] Password match: ${passwordMatches}`);
+    logger.debug('[LOGIN] Password check complete', { match: passwordMatches });
   } catch (error) {
-    console.error(`[LOGIN] Password comparison error for ${email}:`, error.message);
+    logger.error('[LOGIN] Password comparison error:', error.message);
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
   if (!passwordMatches) {
-    console.warn(`[LOGIN] ❌ Invalid password for user: ${email}`);
+    logger.warn('[LOGIN] Invalid password attempt');
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
   if (user.verified === false) {
-    console.warn(`[LOGIN] ❌ Email not verified for user: ${email}`);
+    logger.warn('[LOGIN] Email not verified');
     return res.status(403).json({ error: 'Please verify your email address before signing in.' });
   }
 
   // Check if 2FA is enabled
   if (user.twoFactorEnabled) {
-    console.log(`[LOGIN] 2FA required for user: ${email}`);
+    logger.info('[LOGIN] 2FA required');
     // Generate temporary token for 2FA step
     const tempToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role, requires2FA: true },
@@ -488,7 +485,7 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 
   // Update last login timestamp
-  console.log(`[LOGIN] ✅ Successful login for: ${email}`);
+  logger.info('[LOGIN] Successful login');
   await updateLastLogin(user.id);
 
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
@@ -511,7 +508,7 @@ router.post('/login', authLimiter, async (req, res) => {
 router.post('/login-2fa', authLimiter, async (req, res) => {
   const { tempToken, token: tfaToken, backupCode, remember } = req.body || {};
 
-  console.log('[LOGIN-2FA] 2FA verification attempt');
+  logger.info('[LOGIN-2FA] 2FA verification attempt');
 
   if (!tempToken) {
     return res.status(400).json({ error: 'Temporary token is required' });
@@ -529,7 +526,7 @@ router.post('/login-2fa', authLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Invalid token' });
     }
   } catch (error) {
-    console.error('[LOGIN-2FA] Token verification error:', error.message);
+    logger.error('[LOGIN-2FA] Token verification error:', error.message);
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
@@ -558,7 +555,7 @@ router.post('/login-2fa', authLimiter, async (req, res) => {
         window: 2,
       });
     } catch (error) {
-      console.error('[LOGIN-2FA] Token verification error:', error);
+      logger.error('[LOGIN-2FA] Token verification error:', error);
     }
   }
 
@@ -576,19 +573,19 @@ router.post('/login-2fa', authLimiter, async (req, res) => {
             $set: { twoFactorBackupCodes: updatedCodes },
           }
         );
-        console.log('[LOGIN-2FA] Backup code used and removed');
+        logger.info('[LOGIN-2FA] Backup code used and removed');
         break;
       }
     }
   }
 
   if (!verified) {
-    console.warn('[LOGIN-2FA] ❌ Invalid 2FA token/code');
+    logger.warn('[LOGIN-2FA] Invalid 2FA token/code');
     return res.status(401).json({ error: 'Invalid 2FA token or backup code' });
   }
 
   // Update last login timestamp
-  console.log(`[LOGIN-2FA] ✅ Successful 2FA login for: ${user.email}`);
+  logger.info('[LOGIN-2FA] Successful 2FA login');
   await updateLastLogin(user.id);
 
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
@@ -611,10 +608,10 @@ router.post('/login-2fa', authLimiter, async (req, res) => {
 router.post('/forgot', authLimiter, async (req, res) => {
   const { email } = req.body || {};
 
-  console.log(`[PASSWORD RESET] Request for email: ${email}`);
+  logger.info('[PASSWORD RESET] Request received');
 
   if (!email) {
-    console.warn('[PASSWORD RESET] Missing email in request');
+    logger.warn('[PASSWORD RESET] Missing email in request');
     return res.status(400).json({ error: 'Missing email' });
   }
 
@@ -623,7 +620,7 @@ router.post('/forgot', authLimiter, async (req, res) => {
   const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
-    console.warn(`[PASSWORD RESET] User not found: ${email}`);
+    logger.warn('[PASSWORD RESET] User not found');
     // Always respond success so we don't leak which emails exist
     return res.json({
       ok: true,
@@ -632,31 +629,31 @@ router.post('/forgot', authLimiter, async (req, res) => {
   }
 
   const user = users[idx];
-  console.log(`[PASSWORD RESET] Found user: ${user.email}, verified: ${user.verified}`);
+  logger.debug('[PASSWORD RESET] Found user', { verified: user.verified });
 
   // Generate password reset token with JWT for better security
   try {
     const resetToken = tokenUtils.generatePasswordResetToken(user.email);
-    console.log(`[PASSWORD RESET] Generated token for ${user.email}`);
+    logger.debug('[PASSWORD RESET] Token generated');
 
     // Save token with expiration (1 hour)
     const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     users[idx].resetToken = resetToken;
     users[idx].resetTokenExpiresAt = expires;
     await dbUnified.write('users', users);
-    console.log(`[PASSWORD RESET] Token saved for ${user.email}, expires: ${expires}`);
+    logger.debug('[PASSWORD RESET] Token saved', { expires });
 
     // Send password reset email
-    console.log(`[PASSWORD RESET] Sending email to ${user.email}...`);
+    logger.info('[PASSWORD RESET] Sending email');
     await postmark.sendPasswordResetEmail(user, resetToken);
-    console.log(`[PASSWORD RESET] ✅ Email sent successfully to ${user.email}`);
+    logger.info('[PASSWORD RESET] Email sent successfully');
 
     res.json({
       ok: true,
       message: 'Password reset email sent if account exists',
     });
   } catch (emailError) {
-    console.error(`[PASSWORD RESET] ❌ Failed to send email to ${user.email}:`, emailError.message);
+    logger.error('[PASSWORD RESET] Failed to send email:', emailError.message);
 
     // Still return success to prevent email enumeration
     res.json({
@@ -673,18 +670,16 @@ router.post('/forgot', authLimiter, async (req, res) => {
  */
 router.get('/verify', async (req, res) => {
   const { token } = req.query || {};
-  console.log(
-    `📧 Verification request received with token: ${token ? `${token.substring(0, 10)}...` : 'NONE'}`
-  );
+  logger.debug('Verification request received', { hasToken: !!token });
 
   if (!token) {
-    console.error('❌ Verification failed: Missing token');
+    logger.error('Verification failed: Missing token');
     return res.status(400).json({ error: 'Missing token' });
   }
 
   // Check if it's a JWT token
   const isJWT = tokenUtils.isJWTToken(token);
-  console.log(`   Token type: ${isJWT ? 'JWT' : 'Legacy'}`);
+  logger.debug('Verification token type', { type: isJWT ? 'JWT' : 'Legacy' });
 
   if (isJWT) {
     // Validate JWT token
@@ -694,7 +689,7 @@ router.get('/verify', async (req, res) => {
     });
 
     if (!validation.valid) {
-      console.error(`❌ JWT validation failed: ${validation.error}`);
+      logger.error('JWT validation failed', { error: validation.error });
       return res.status(400).json({
         error: validation.message,
         code: validation.error,
@@ -707,7 +702,7 @@ router.get('/verify', async (req, res) => {
     const idx = users.findIndex(u => u.email.toLowerCase() === validation.email.toLowerCase());
 
     if (idx === -1) {
-      console.error(`❌ User not found for email: ${validation.email}`);
+      logger.error('User not found during email verification');
       return res.status(400).json({ error: 'Invalid verification token - user not found' });
     }
 
@@ -715,7 +710,7 @@ router.get('/verify', async (req, res) => {
 
     // Check if already verified
     if (user.verified === true) {
-      console.log(`ℹ️ User already verified: ${user.email}`);
+      logger.info('User already verified');
       return res.json({
         ok: true,
         message: 'Email already verified',
@@ -732,22 +727,20 @@ router.get('/verify', async (req, res) => {
     if (domainAdmin.shouldUpgradeToAdminOnVerification(user.email)) {
       const previousRole = users[idx].role;
       users[idx].role = 'admin';
-      console.log(
-        `🔐 Auto-promoted ${user.email} from ${previousRole} to admin (admin domain verified)`
-      );
+      logger.info('User auto-promoted to admin (admin domain verified)', { previousRole });
     }
 
     await dbUnified.write('users', users);
-    console.log(`✅ User verified successfully via JWT: ${user.email}`);
+    logger.info('User verified successfully via JWT');
 
     // Send welcome email (non-blocking)
     (async () => {
       try {
-        console.log(`📧 Sending welcome email to newly verified user: ${user.email}`);
+        logger.info('Sending welcome email to newly verified user');
         await postmark.sendWelcomeEmail(user);
-        console.log(`✅ Welcome email sent to ${user.email}`);
+        logger.info('Welcome email sent');
       } catch (emailError) {
-        console.error('❌ Failed to send welcome email:', emailError.message);
+        logger.error('Failed to send welcome email:', emailError.message);
       }
     })();
 
@@ -763,23 +756,23 @@ router.get('/verify', async (req, res) => {
   }
 
   // Handle legacy tokens
-  console.log('⚠️ Processing legacy verification token');
+  logger.info('Processing legacy verification token');
   const legacyUsers = await dbUnified.read('users');
   const legacyIdx = legacyUsers.findIndex(u => u.verificationToken === token);
 
   if (legacyIdx === -1) {
-    console.error(`❌ Verification failed: Invalid token - ${token.substring(0, 10)}...`);
+    logger.error('Verification failed: Invalid token');
     return res.status(400).json({ error: 'Invalid or expired token' });
   }
 
   const legacyUser = legacyUsers[legacyIdx];
-  console.log(`📧 Found user for verification: ${legacyUser.email}`);
+  logger.debug('Found user for legacy verification');
 
   // Check if token has expired
   if (legacyUser.verificationTokenExpiresAt) {
     const expiresAt = new Date(legacyUser.verificationTokenExpiresAt);
     if (expiresAt < new Date()) {
-      console.error(`❌ Verification failed: Token expired for ${legacyUser.email}`);
+      logger.error('Verification failed: Token expired');
       return res
         .status(400)
         .json({ error: 'Verification token has expired. Please request a new one.' });
@@ -795,23 +788,21 @@ router.get('/verify', async (req, res) => {
   if (domainAdmin.shouldUpgradeToAdminOnVerification(legacyUser.email)) {
     const previousRole = legacyUsers[legacyIdx].role;
     legacyUsers[legacyIdx].role = 'admin';
-    console.log(
-      `🔐 Auto-promoted ${legacyUser.email} from ${previousRole} to admin (admin domain verified)`
-    );
+    logger.info('User auto-promoted to admin (admin domain verified)', { previousRole });
   }
 
   await dbUnified.write('users', legacyUsers);
-  console.log(`✅ User verified successfully: ${legacyUser.email}`);
+  logger.info('User verified successfully (legacy)');
 
   // Send welcome email after successful verification (non-blocking)
   (async () => {
     try {
-      console.log(`📧 Sending welcome email to newly verified user: ${legacyUser.email}`);
+      logger.info('Sending welcome email to newly verified user');
       await postmark.sendWelcomeEmail(legacyUser);
-      console.log(`✅ Welcome email sent to ${legacyUser.email}`);
+      logger.info('Welcome email sent');
     } catch (emailError) {
       // Don't fail verification if welcome email fails - just log it
-      console.error('❌ Failed to send welcome email:', emailError.message);
+      logger.error('Failed to send welcome email:', emailError.message);
     }
   })();
 
@@ -824,8 +815,8 @@ router.get('/verify', async (req, res) => {
  * Supports both query params and body, with comprehensive logging
  */
 router.post('/verify-email', authLimiter, validateToken({ required: true }), async (req, res) => {
-  console.log('📧 POST /api/auth/verify-email called');
-  console.log(`   Token validation:`, req.tokenValidation);
+  logger.debug('POST /api/auth/verify-email called');
+  logger.debug('Token validation', { tokenValidation: req.tokenValidation });
 
   const validation = req.tokenValidation;
 
@@ -835,7 +826,7 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
     const idx = users.findIndex(u => u.email.toLowerCase() === validation.email.toLowerCase());
 
     if (idx === -1) {
-      console.error(`❌ User not found for email: ${validation.email}`);
+      logger.error('User not found during email verification');
       return res.status(400).json({
         ok: false,
         error: 'Invalid verification token - user not found',
@@ -847,7 +838,7 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
 
     // Check if already verified
     if (user.verified === true) {
-      console.log(`ℹ️ User already verified: ${user.email}`);
+      logger.info('User already verified');
       return res.json({
         ok: true,
         message: 'Your email address is already verified',
@@ -867,15 +858,15 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
     delete users[idx].verificationTokenExpiresAt;
     await dbUnified.write('users', users);
 
-    console.log(`✅ User verified successfully via POST: ${user.email}`);
+    logger.info('User verified successfully via POST');
 
     // Send welcome email (non-blocking)
     (async () => {
       try {
         await postmark.sendWelcomeEmail(user);
-        console.log(`✅ Welcome email sent to ${user.email}`);
+        logger.info('Welcome email sent');
       } catch (emailError) {
-        console.error('❌ Failed to send welcome email:', emailError.message);
+        logger.error('Failed to send welcome email:', emailError.message);
       }
     })();
 
@@ -894,7 +885,7 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
 
   // Handle legacy tokens
   if (!validation.isJWT && validation.legacyToken) {
-    console.log('⚠️ Processing legacy token via POST endpoint');
+    logger.info('Processing legacy token via POST endpoint');
 
     const users = await dbUnified.read('users');
     const idx = users.findIndex(u => u.verificationToken === validation.legacyToken);
@@ -929,14 +920,14 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
     delete users[idx].verificationTokenExpiresAt;
     await dbUnified.write('users', users);
 
-    console.log(`✅ User verified via legacy token: ${user.email}`);
+    logger.info('User verified via legacy token');
 
     // Send welcome email (non-blocking)
     (async () => {
       try {
         await postmark.sendWelcomeEmail(user);
       } catch (err) {
-        console.error('Failed to send welcome email:', err.message);
+        logger.error('Failed to send welcome email:', err.message);
       }
     })();
 
@@ -968,10 +959,10 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
 router.post('/reset-password', authLimiter, async (req, res) => {
   const { token, password } = req.body || {};
 
-  console.log(`[PASSWORD RESET VERIFY] Request with token: ${token?.substring(0, 20)}...`);
+  logger.debug('[PASSWORD RESET VERIFY] Request received', { hasToken: !!token });
 
   if (!token || !password) {
-    console.warn('[PASSWORD RESET VERIFY] Missing token or password');
+    logger.warn('[PASSWORD RESET VERIFY] Missing token or password');
     return res.status(400).json({ error: 'Missing token or password' });
   }
 
@@ -988,28 +979,28 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     let userIdx = -1;
 
     // Try JWT token first
-    console.log('[PASSWORD RESET VERIFY] Checking if JWT token...');
+    logger.debug('[PASSWORD RESET VERIFY] Checking if JWT token');
     const validation = tokenUtils.validatePasswordResetToken(token);
 
     if (validation.valid) {
-      console.log(`[PASSWORD RESET VERIFY] Valid JWT token for: ${validation.email}`);
+      logger.info('[PASSWORD RESET VERIFY] Valid JWT token found');
       userIdx = users.findIndex(
         u => (u.email || '').toLowerCase() === String(validation.email).toLowerCase()
       );
     } else {
-      console.log('[PASSWORD RESET VERIFY] Not a valid JWT, trying legacy token...');
+      logger.debug('[PASSWORD RESET VERIFY] Not a valid JWT, trying legacy token');
       // Try legacy reset token
       userIdx = users.findIndex(u => u.resetToken === token);
 
       if (userIdx !== -1) {
         user = users[userIdx];
-        console.log(`[PASSWORD RESET VERIFY] Found legacy token for: ${user.email}`);
+        logger.info('[PASSWORD RESET VERIFY] Found legacy token');
 
         // Check if expired
         if (user.resetTokenExpiresAt) {
           const expiresAt = new Date(user.resetTokenExpiresAt);
           if (expiresAt < new Date()) {
-            console.warn(`[PASSWORD RESET VERIFY] Legacy token expired for: ${user.email}`);
+            logger.warn('[PASSWORD RESET VERIFY] Legacy token expired');
             return res.status(400).json({
               error: 'Password reset link has expired. Please request a new one.',
               canRequestNew: true,
@@ -1017,21 +1008,21 @@ router.post('/reset-password', authLimiter, async (req, res) => {
           }
         } else {
           // If no expiry set, reject for security
-          console.warn(`[PASSWORD RESET VERIFY] Legacy token without expiry for: ${user.email}`);
+          logger.warn('[PASSWORD RESET VERIFY] Legacy token without expiry');
           return res.status(400).json({ error: 'Invalid reset token format' });
         }
       }
     }
 
     if (userIdx === -1) {
-      console.warn('[PASSWORD RESET VERIFY] Invalid or expired token');
+      logger.warn('[PASSWORD RESET VERIFY] Invalid or expired token');
       return res.status(400).json({
         error: 'Invalid or expired password reset link',
       });
     }
 
     user = users[userIdx];
-    console.log(`[PASSWORD RESET VERIFY] Resetting password for: ${user.email}`);
+    logger.info('[PASSWORD RESET VERIFY] Resetting password');
 
     // Hash new password
     const hashedPassword = bcrypt.hashSync(password, 10);
@@ -1044,14 +1035,14 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     delete users[userIdx].resetTokenExpiresAt;
     await dbUnified.write('users', users);
 
-    console.log(`[PASSWORD RESET VERIFY] ✅ Password updated for: ${user.email}`);
+    logger.info('[PASSWORD RESET VERIFY] Password updated successfully');
 
     // Send confirmation email
     try {
       await postmark.sendPasswordResetConfirmation(user);
-      console.log(`[PASSWORD RESET VERIFY] Confirmation email sent to: ${user.email}`);
+      logger.info('[PASSWORD RESET VERIFY] Confirmation email sent');
     } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError.message);
+      logger.error('Failed to send confirmation email:', emailError.message);
       // Don't fail the reset if confirmation email fails
     }
 
@@ -1061,7 +1052,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
       user: { id: user.id, email: user.email },
     });
   } catch (error) {
-    console.error('[PASSWORD RESET VERIFY] Unexpected error:', error);
+    logger.error('[PASSWORD RESET VERIFY] Unexpected error:', error);
     res.status(500).json({ error: 'Failed to reset password' });
   }
 });
@@ -1265,11 +1256,11 @@ router.post('/resend-verification', resendEmailLimiter, async (req, res) => {
 
   // Send verification email via Postmark BEFORE saving token
   try {
-    console.log(`📧 Resending verification email to ${user.email}`);
+    logger.info('Resending verification email');
     await postmark.sendVerificationEmail(user, verificationToken);
-    console.log(`✅ Verification email resent successfully to ${user.email}`);
+    logger.info('Verification email resent successfully');
   } catch (emailError) {
-    console.error('❌ Failed to resend verification email:', emailError.message);
+    logger.error('Failed to resend verification email:', emailError.message);
 
     // Return generic success to prevent email enumeration
     return res.json({
@@ -1332,7 +1323,7 @@ router.put('/profile', authRequired, csrfProtection, async (req, res) => {
 
     // Send verification email asynchronously
     postmark.sendVerificationEmail(user, user.verificationToken).catch(err => {
-      console.error('Failed to send verification email:', err);
+      logger.error('Failed to send verification email:', err);
     });
   }
 

@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 const dbUnified = require('../db-unified');
 const { getUserFromCookie, authRequired } = require('../middleware/auth');
@@ -159,7 +160,7 @@ router.post('/event', writeLimiter, csrfProtection, async (req, res) => {
     });
   } catch (error) {
     // Fail silently - analytics should never break UX
-    console.debug('Analytics tracking error:', error);
+    logger.debug('Analytics tracking error:', error);
     res.json({
       success: true,
       message: 'Event received',
@@ -211,7 +212,7 @@ router.get('/events', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get analytics events error:', error);
+    logger.error('Get analytics events error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve analytics events',
@@ -321,7 +322,7 @@ router.post('/lead-score', authRequired, csrfProtection, async (req, res) => {
       recommendations: getLeadRecommendations(score, quality, enquiry),
     });
   } catch (error) {
-    console.error('Lead scoring error:', error);
+    logger.error('Lead scoring error:', error);
     res.status(500).json({ error: 'Failed to calculate lead score', details: error.message });
   }
 });

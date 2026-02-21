@@ -14,7 +14,7 @@ describe('Marketplace own listing edit button', () => {
 
   it('displays View My Listings link as secondary action', () => {
     expect(marketplaceJs).toContain('View My Listings');
-    expect(marketplaceJs).toContain('/my-marketplace-listings.html');
+    expect(marketplaceJs).toContain('/my-marketplace-listings');
   });
 
   it('wraps actions in listing-own-notice-actions div', () => {

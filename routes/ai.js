@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { aiLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
@@ -190,7 +191,7 @@ router.post('/suggestions', aiLimiter, authRequired, applyCsrfProtection, async 
 
     res.json(response);
   } catch (error) {
-    console.error('AI suggestions error:', error);
+    logger.error('AI suggestions error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate suggestions',
@@ -439,7 +440,7 @@ router.post('/plan', aiLimiter, authRequired, applyCsrfProtection, async (req, r
     }
     return res.json({ from: 'openai', data: parsed });
   } catch (err) {
-    console.error('OpenAI planning error', err);
+    logger.error('OpenAI planning error', err);
     return res.status(500).json({ error: 'AI planning request failed.' });
   }
 });

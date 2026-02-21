@@ -141,7 +141,7 @@ function createEmptyState(filters) {
       <p>${hasFilters ? 'No suppliers match your current filters.' : 'No suppliers available at the moment.'}</p>
       <div class="empty-state-actions">
         ${hasFilters ? '<button class="btn btn-secondary" id="clear-filters-btn">Clear filters</button>' : ''}
-        <a href="/start.html" class="btn btn-primary">Start planning</a>
+        <a href="/start" class="btn btn-primary">Start planning</a>
       </div>
     </div>
   `;

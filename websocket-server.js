@@ -18,6 +18,7 @@
  */
 
 'use strict';
+const logger = require('./utils/logger.js');
 
 const { Server } = require('socket.io');
 
@@ -28,14 +29,14 @@ const WS_SERVER_INITIALIZED = Symbol.for('eventflow.wsServerInitialized');
 class WebSocketServer {
   constructor(httpServer) {
     // Show deprecation warning
-    console.warn('⚠️  DEPRECATION WARNING: WebSocket Server v1 is deprecated');
-    console.warn('   Please migrate to v2 by setting WEBSOCKET_MODE=v2');
-    console.warn('   v1 will be removed in a future major version');
-    console.warn('   See REALTIME_MESSAGING.md for migration guide');
+    logger.warn('⚠️  DEPRECATION WARNING: WebSocket Server v1 is deprecated');
+    logger.warn('   Please migrate to v2 by setting WEBSOCKET_MODE=v2');
+    logger.warn('   v1 will be removed in a future major version');
+    logger.warn('   See REALTIME_MESSAGING.md for migration guide');
 
     // Guard against multiple instantiations on the same server (v1 or v2)
     if (httpServer[WS_SERVER_INITIALIZED]) {
-      console.warn('⚠️  WebSocket Server already initialized for this HTTP server');
+      logger.warn('⚠️  WebSocket Server already initialized for this HTTP server');
       throw new Error('WebSocket Server already initialized for this HTTP server');
     }
 
@@ -64,11 +65,11 @@ class WebSocketServer {
 
   init() {
     this.io.on('connection', socket => {
-      console.log(`WebSocket connected: ${socket.id}`);
+      logger.info(`WebSocket connected: ${socket.id}`);
 
       // Handle connection errors
       socket.on('error', error => {
-        console.error(`WebSocket error on socket ${socket.id}:`, error.message);
+        logger.error(`WebSocket error on socket ${socket.id}:`, error.message);
       });
 
       // Handle user authentication
@@ -84,20 +85,20 @@ class WebSocketServer {
           socket.join(`user:${data.userId}`);
           socket.emit('auth:success', { userId: data.userId });
 
-          console.log(`User ${data.userId} authenticated on socket ${socket.id}`);
+          logger.info(`User ${data.userId} authenticated on socket ${socket.id}`);
         }
       });
 
       // Handle joining rooms (for suppliers, events, etc.)
       socket.on('join', room => {
         socket.join(room);
-        console.log(`Socket ${socket.id} joined room: ${room}`);
+        logger.info(`Socket ${socket.id} joined room: ${room}`);
       });
 
       // Handle leaving rooms
       socket.on('leave', room => {
         socket.leave(room);
-        console.log(`Socket ${socket.id} left room: ${room}`);
+        logger.info(`Socket ${socket.id} left room: ${room}`);
       });
 
       // Handle real-time messaging
@@ -140,12 +141,12 @@ class WebSocketServer {
       });
 
       // ===== V3 Messenger Events =====
-      
+
       // Join messenger conversation room
       socket.on('messenger:join', ({ conversationId }) => {
         if (conversationId) {
           socket.join(`messenger:${conversationId}`);
-          console.log(`Socket ${socket.id} joined messenger conversation: ${conversationId}`);
+          logger.info(`Socket ${socket.id} joined messenger conversation: ${conversationId}`);
         }
       });
 
@@ -153,7 +154,7 @@ class WebSocketServer {
       socket.on('messenger:leave', ({ conversationId }) => {
         if (conversationId) {
           socket.leave(`messenger:${conversationId}`);
-          console.log(`Socket ${socket.id} left messenger conversation: ${conversationId}`);
+          logger.info(`Socket ${socket.id} left messenger conversation: ${conversationId}`);
         }
       });
 
@@ -188,7 +189,7 @@ class WebSocketServer {
             }
           }
         }
-        console.log(`WebSocket disconnected: ${socket.id}`);
+        logger.info(`WebSocket disconnected: ${socket.id}`);
       });
     });
   }

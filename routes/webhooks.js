@@ -23,6 +23,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 /**
@@ -51,7 +52,7 @@ router.post('/postmark', express.json(), async (req, res) => {
     if (webhookUser && webhookPass) {
       // Verify basic auth if credentials are configured
       if (!authHeader || !authHeader.startsWith('Basic ')) {
-        console.warn('⚠️  Webhook request missing authentication');
+        logger.warn('⚠️  Webhook request missing authentication');
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -60,19 +61,19 @@ router.post('/postmark', express.json(), async (req, res) => {
       const [username, password] = credentials.split(':');
 
       if (username !== webhookUser || password !== webhookPass) {
-        console.warn('⚠️  Webhook request with invalid credentials');
+        logger.warn('⚠️  Webhook request with invalid credentials');
         return res.status(401).json({ error: 'Invalid credentials' });
       }
     } else if (process.env.NODE_ENV === 'production') {
-      console.warn('⚠️  WARNING: Webhook authentication not configured in production!');
-      console.warn('   Set POSTMARK_WEBHOOK_USER and POSTMARK_WEBHOOK_PASS environment variables');
+      logger.warn('⚠️  WARNING: Webhook authentication not configured in production!');
+      logger.warn('   Set POSTMARK_WEBHOOK_USER and POSTMARK_WEBHOOK_PASS environment variables');
     }
 
     const event = req.body;
     const db = req.app.locals.db || global.mongoDb?.db;
 
     // Log the webhook event for monitoring
-    console.log('📬 Postmark webhook received:', {
+    logger.info('📬 Postmark webhook received:', {
       type: event.RecordType,
       messageId: event.MessageID,
       recipient: event.Recipient || event.Email,
@@ -106,13 +107,13 @@ router.post('/postmark', express.json(), async (req, res) => {
         break;
 
       default:
-        console.log(`⚠️  Unknown webhook event type: ${event.RecordType}`);
+        logger.info(`⚠️  Unknown webhook event type: ${event.RecordType}`);
     }
 
     // Always respond with 200 to acknowledge receipt
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error('❌ Error processing Postmark webhook:', err);
+    logger.error('❌ Error processing Postmark webhook:', err);
     // Still respond with 200 to prevent Postmark from retrying
     res.status(200).json({ ok: true, error: err.message });
   }

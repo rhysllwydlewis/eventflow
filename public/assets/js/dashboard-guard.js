@@ -93,7 +93,7 @@
       const linkPara = document.createElement('p');
       linkPara.style.cssText = 'margin: 30px 0;';
       const link = document.createElement('a');
-      link.href = '/auth.html';
+      link.href = '/auth';
       link.style.cssText =
         'display: inline-block; padding: 12px 24px; background: #0b8073; color: white; text-decoration: none; border-radius: 6px;';
       link.textContent = 'Return to Login';
@@ -144,7 +144,7 @@
     // Fetch current user with cache-busting
     // Using timestamp + random value for better cache-busting
     const cacheBuster = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const response = await fetch(`/api/auth/me?t=${cacheBuster}`, {
+    const response = await fetch(`/api/v1/auth/me?t=${cacheBuster}`, {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache',
@@ -161,7 +161,7 @@
         );
       }
       // Failed to check auth - redirect to login
-      window.location.replace(`/auth.html?redirect=${encodeURIComponent(currentPath)}`);
+      window.location.replace(`/auth?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -184,7 +184,7 @@
       if (window.location.hostname === 'localhost') {
         console.warn('Dashboard guard: User not authenticated, redirecting to login');
       }
-      window.location.replace(`/auth.html?redirect=${encodeURIComponent(currentPath)}`);
+      window.location.replace(`/auth?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -226,6 +226,6 @@
   } catch (error) {
     console.error('Dashboard guard error:', error);
     // On error, redirect to login to be safe (fail closed)
-    window.location.replace(`/auth.html?redirect=${encodeURIComponent(currentPath)}`);
+    window.location.replace(`/auth?redirect=${encodeURIComponent(currentPath)}`);
   }
 })();

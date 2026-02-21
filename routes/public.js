@@ -7,6 +7,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 const crypto = require('crypto');
 const dbUnified = require('../db-unified');
@@ -88,7 +89,7 @@ router.get('/homepage-settings', async (req, res) => {
         collageWidget.fallbackToPexels !== undefined ? collageWidget.fallbackToPexels : true,
     };
     if (isCollageDebugEnabled()) {
-      console.log('[Homepage Settings] Returning collage config:', {
+      logger.info('[Homepage Settings] Returning collage config:', {
         collageEnabled,
         collageWidgetEnabled: collageWidget.enabled,
         legacyPexelsEnabled,
@@ -104,7 +105,7 @@ router.get('/homepage-settings', async (req, res) => {
     });
   } catch (error) {
     if (!res.headersSent) {
-      console.error('[ERROR] Failed to read homepage settings:', error.message);
+      logger.error('[ERROR] Failed to read homepage settings:', error.message);
       res.status(500).json({ error: 'Failed to read homepage settings' });
     }
   }
@@ -136,7 +137,7 @@ router.get('/stats', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=300');
     res.json(stats);
   } catch (error) {
-    console.error('[ERROR] Failed to read public stats:', error.message);
+    logger.error('[ERROR] Failed to read public stats:', error.message);
     res.status(500).json({
       error: 'Failed to read public stats',
       suppliersVerified: 0,
@@ -214,7 +215,7 @@ router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
 
     res.json({ success: true, message: 'Thank you for your feedback!' });
   } catch (error) {
-    console.error('Error recording FAQ vote:', error);
+    logger.error('Error recording FAQ vote:', error);
     res.status(500).json({ error: 'Failed to record vote', details: error.message });
   }
 });
@@ -296,7 +297,7 @@ router.get('/recommendations', async (req, res) => {
       total: recommended.length,
     });
   } catch (error) {
-    console.error('Error fetching recommendations:', error);
+    logger.error('Error fetching recommendations:', error);
     res.status(500).json({ error: 'Failed to fetch recommendations', details: error.message });
   }
 });

@@ -629,7 +629,7 @@ router.post(
               .sendMail({
                 to: recipient.email,
                 subject: `New message from ${safeUserName}${contextInfo}`,
-                text: `${safeUserName} sent you a message:\n\n"${(content || '').substring(0, 200)}${(content || '').length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://eventflow.app'}/messenger/?conversation=${conversationId}`,
+                text: `${safeUserName} sent you a message:\n\n"${(content || '').substring(0, 200)}${(content || '').length > 200 ? '...' : ''}"\n\nView conversation: ${process.env.BASE_URL || 'https://event-flow.co.uk'}/messenger/?conversation=${conversationId}`,
               })
               .catch(emailError => {
                 logger.error('Failed to send email notification:', emailError);

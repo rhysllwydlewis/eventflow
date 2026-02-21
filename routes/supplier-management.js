@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Dependencies injected by server.js
@@ -127,7 +128,7 @@ router.get('/:id/analytics', applyAuthRequired, applyRoleRequired('supplier'), a
       avgResponseTime: analytics.avgResponseTime,
     });
   } catch (error) {
-    console.error('Error fetching supplier analytics:', error);
+    logger.error('Error fetching supplier analytics:', error);
     res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 });
@@ -161,7 +162,7 @@ router.post(
         results,
       });
     } catch (error) {
-      console.error('Error evaluating supplier badges:', error);
+      logger.error('Error evaluating supplier badges:', error);
       res.status(500).json({ error: 'Failed to evaluate badges' });
     }
   }
@@ -236,12 +237,12 @@ router.post(
           s.latitude = coords.latitude;
           s.longitude = coords.longitude;
           s.venuePostcode = coords.postcode; // Use normalized postcode from API
-          console.log(`✅ Geocoded venue ${s.name}: ${coords.latitude}, ${coords.longitude}`);
+          logger.info(`✅ Geocoded venue ${s.name}: ${coords.latitude}, ${coords.longitude}`);
         } else {
-          console.warn(`⚠️ Could not geocode postcode ${s.venuePostcode} for venue ${s.name}`);
+          logger.warn(`⚠️ Could not geocode postcode ${s.venuePostcode} for venue ${s.name}`);
         }
       } catch (error) {
-        console.error('Geocoding error:', error);
+        logger.error('Geocoding error:', error);
         // Continue without coordinates - validation already passed
       }
     }
@@ -288,12 +289,12 @@ router.patch(
           all[i].latitude = coords.latitude;
           all[i].longitude = coords.longitude;
           all[i].venuePostcode = coords.postcode;
-          console.log(`✅ Geocoded venue ${all[i].name}: ${coords.latitude}, ${coords.longitude}`);
+          logger.info(`✅ Geocoded venue ${all[i].name}: ${coords.latitude}, ${coords.longitude}`);
         } else {
-          console.warn(`⚠️ Could not geocode postcode ${all[i].venuePostcode}`);
+          logger.warn(`⚠️ Could not geocode postcode ${all[i].venuePostcode}`);
         }
       } catch (error) {
-        console.error('Geocoding error:', error);
+        logger.error('Geocoding error:', error);
       }
     }
 
@@ -369,7 +370,7 @@ router.patch(
             }
           } catch (err) {
             // Invalid URL, skip it
-            console.warn(`Invalid social link URL for ${platform}: ${url}`);
+            logger.warn(`Invalid social link URL for ${platform}: ${url}`);
           }
         }
       }

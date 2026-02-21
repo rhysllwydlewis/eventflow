@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimits');
@@ -163,7 +164,7 @@ router.post(
 
       res.status(201).json({ ticketId: newTicket.id, ticket: newTicket });
     } catch (error) {
-      console.error('Error creating ticket:', error);
+      logger.error('Error creating ticket:', error);
       res.status(500).json({ error: 'Failed to create ticket', details: error.message });
     }
   }
@@ -251,7 +252,7 @@ router.get('/', authRequired, async (req, res) => {
       summary,
     });
   } catch (error) {
-    console.error('Error fetching tickets:', error);
+    logger.error('Error fetching tickets:', error);
     res.status(500).json({ error: 'Failed to fetch tickets', details: error.message });
   }
 });
@@ -280,7 +281,7 @@ router.get('/:id', authRequired, async (req, res) => {
 
     res.json({ ticket });
   } catch (error) {
-    console.error('Error fetching ticket:', error);
+    logger.error('Error fetching ticket:', error);
     res.status(500).json({ error: 'Failed to fetch ticket', details: error.message });
   }
 });
@@ -392,7 +393,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
 
     res.json({ ticket });
   } catch (error) {
-    console.error('Error updating ticket:', error);
+    logger.error('Error updating ticket:', error);
     res.status(500).json({ error: 'Failed to update ticket', details: error.message });
   }
 });
@@ -436,7 +437,7 @@ router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, re
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting ticket:', error);
+    logger.error('Error deleting ticket:', error);
     res.status(500).json({ error: 'Failed to delete ticket', details: error.message });
   }
 });
@@ -519,17 +520,17 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
         await postmark.sendEmail({
           to: ticket.senderEmail,
           subject: `Reply to your support ticket: ${ticket.subject}`,
-          text: `You have received a reply to your support ticket.\n\nTicket: ${ticket.subject}\n\nReply: ${message}\n\nView your ticket at: ${process.env.BASE_URL || 'https://eventflow.com'}/tickets/${ticket.id}`,
+          text: `You have received a reply to your support ticket.\n\nTicket: ${ticket.subject}\n\nReply: ${message}\n\nView your ticket at: ${process.env.BASE_URL || 'https://event-flow.co.uk'}/tickets/${ticket.id}`,
           html: `
             <h2>Reply to Your Support Ticket</h2>
             <p><strong>Ticket:</strong> ${ticket.subject}</p>
             <p><strong>Reply:</strong></p>
             <p>${message.replace(/\n/g, '<br>')}</p>
-            <p><a href="${process.env.BASE_URL || 'https://eventflow.com'}/tickets/${ticket.id}">View Ticket</a></p>
+            <p><a href="${process.env.BASE_URL || 'https://event-flow.co.uk'}/tickets/${ticket.id}">View Ticket</a></p>
           `,
         });
       } catch (emailError) {
-        console.error('Failed to send reply notification email:', emailError);
+        logger.error('Failed to send reply notification email:', emailError);
       }
     }
 
@@ -549,7 +550,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
       ticket,
     });
   } catch (error) {
-    console.error('Error adding ticket reply:', error);
+    logger.error('Error adding ticket reply:', error);
     res.status(500).json({ error: 'Failed to add reply', details: error.message });
   }
 });

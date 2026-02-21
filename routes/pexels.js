@@ -7,6 +7,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 const { getPexelsService } = require('../utils/pexels-service');
 const { authRequired, roleRequired } = require('../middleware/auth');
@@ -55,7 +56,7 @@ router.get('/search', authRequired, roleRequired(['admin', 'supplier']), async (
       filters.locale = locale;
     }
 
-    console.log(`🔍 Admin searching photos: "${q}" with filters:`, filters);
+    logger.info(`🔍 Admin searching photos: "${q}" with filters:`, filters);
     const results = await pexels.searchPhotos(q, parseInt(perPage), parseInt(page), filters);
 
     res.json({
@@ -65,7 +66,7 @@ router.get('/search', authRequired, roleRequired(['admin', 'supplier']), async (
       ...results,
     });
   } catch (error) {
-    console.error('Pexels search error:', error);
+    logger.error('Pexels search error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to search photos',
@@ -102,7 +103,7 @@ router.get('/curated', authRequired, roleRequired(['admin', 'supplier']), async 
       ...results,
     });
   } catch (error) {
-    console.error('Pexels curated error:', error);
+    logger.error('Pexels curated error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch curated photos',
@@ -145,7 +146,7 @@ router.get('/photo/:id', authRequired, roleRequired('admin'), async (req, res) =
       photo,
     });
   } catch (error) {
-    console.error('Pexels photo error:', error);
+    logger.error('Pexels photo error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch photo',
@@ -196,7 +197,7 @@ router.get('/test', authRequired, roleRequired('admin'), async (req, res) => {
     const pexels = getPexelsService();
     const { getFallbackPhotos, getFallbackVideos } = require('../config/pexels-fallback');
 
-    console.log('🔍 Admin testing Pexels API connection...');
+    logger.info('🔍 Admin testing Pexels API connection...');
     const testResult = await pexels.testConnection();
 
     // Add fallback information
@@ -231,7 +232,7 @@ router.get('/test', authRequired, roleRequired('admin'), async (req, res) => {
 
     res.status(statusCode).json(enhancedResult);
   } catch (error) {
-    console.error('Pexels test error:', error);
+    logger.error('Pexels test error:', error);
 
     // Even on error, check if fallback is available
     try {
@@ -307,7 +308,7 @@ router.get('/videos/search', authRequired, roleRequired('admin'), async (req, re
       filters.locale = locale;
     }
 
-    console.log(`🎥 Admin searching videos: "${q}" with filters:`, filters);
+    logger.info(`🎥 Admin searching videos: "${q}" with filters:`, filters);
     const results = await pexels.searchVideos(q, parseInt(perPage), parseInt(page), filters);
 
     res.json({
@@ -317,7 +318,7 @@ router.get('/videos/search', authRequired, roleRequired('admin'), async (req, re
       ...results,
     });
   } catch (error) {
-    console.error('Pexels video search error:', error);
+    logger.error('Pexels video search error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to search videos',
@@ -347,7 +348,7 @@ router.get('/videos/popular', authRequired, roleRequired('admin'), async (req, r
 
     const { page = 1, perPage = 15 } = req.query;
 
-    console.log(`🎥 Admin fetching popular videos`);
+    logger.info(`🎥 Admin fetching popular videos`);
     const results = await pexels.getPopularVideos(parseInt(perPage), parseInt(page));
 
     res.json({
@@ -355,7 +356,7 @@ router.get('/videos/popular', authRequired, roleRequired('admin'), async (req, r
       ...results,
     });
   } catch (error) {
-    console.error('Pexels popular videos error:', error);
+    logger.error('Pexels popular videos error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch popular videos',
@@ -391,7 +392,7 @@ router.get('/videos/:id', authRequired, roleRequired('admin'), async (req, res) 
       });
     }
 
-    console.log(`🎥 Admin fetching video: ${id}`);
+    logger.info(`🎥 Admin fetching video: ${id}`);
     const video = await pexels.getVideoById(parseInt(id));
 
     res.json({
@@ -399,7 +400,7 @@ router.get('/videos/:id', authRequired, roleRequired('admin'), async (req, res) 
       video,
     });
   } catch (error) {
-    console.error('Pexels video error:', error);
+    logger.error('Pexels video error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch video',
@@ -429,7 +430,7 @@ router.get('/collections/featured', authRequired, roleRequired('admin'), async (
 
     const { page = 1, perPage = 15 } = req.query;
 
-    console.log(`📚 Admin fetching featured collections`);
+    logger.info(`📚 Admin fetching featured collections`);
     const results = await pexels.getFeaturedCollections(parseInt(perPage), parseInt(page));
 
     res.json({
@@ -437,7 +438,7 @@ router.get('/collections/featured', authRequired, roleRequired('admin'), async (
       ...results,
     });
   } catch (error) {
-    console.error('Pexels featured collections error:', error);
+    logger.error('Pexels featured collections error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch featured collections',
@@ -467,7 +468,7 @@ router.get('/collections', authRequired, roleRequired('admin'), async (req, res)
 
     const { page = 1, perPage = 15 } = req.query;
 
-    console.log(`📚 Admin fetching user collections`);
+    logger.info(`📚 Admin fetching user collections`);
     const results = await pexels.getUserCollections(parseInt(perPage), parseInt(page));
 
     res.json({
@@ -475,7 +476,7 @@ router.get('/collections', authRequired, roleRequired('admin'), async (req, res)
       ...results,
     });
   } catch (error) {
-    console.error('Pexels user collections error:', error);
+    logger.error('Pexels user collections error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch user collections',
@@ -506,7 +507,7 @@ router.get('/collections/:id', authRequired, roleRequired('admin'), async (req, 
     const { id } = req.params;
     const { page = 1, perPage = 15, type } = req.query;
 
-    console.log(`📚 Admin fetching collection media: ${id}`);
+    logger.info(`📚 Admin fetching collection media: ${id}`);
     const results = await pexels.getCollectionMedia(id, parseInt(perPage), parseInt(page), type);
 
     res.json({
@@ -514,7 +515,7 @@ router.get('/collections/:id', authRequired, roleRequired('admin'), async (req, 
       ...results,
     });
   } catch (error) {
-    console.error('Pexels collection media error:', error);
+    logger.error('Pexels collection media error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch collection media',
@@ -545,7 +546,7 @@ router.get('/collection/:id/media', authRequired, roleRequired('admin'), async (
     const { id } = req.params;
     const { page = 1, perPage = 15, type } = req.query;
 
-    console.log(`📚 Admin fetching collection media: ${id}`);
+    logger.info(`📚 Admin fetching collection media: ${id}`);
     const results = await pexels.getCollectionMedia(id, parseInt(perPage), parseInt(page), type);
 
     res.json({
@@ -553,7 +554,7 @@ router.get('/collection/:id/media', authRequired, roleRequired('admin'), async (
       ...results,
     });
   } catch (error) {
-    console.error('Pexels collection media error:', error);
+    logger.error('Pexels collection media error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       error: 'Failed to fetch collection media',

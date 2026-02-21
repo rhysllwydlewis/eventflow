@@ -75,7 +75,7 @@ router.post('/trial/activate', authRequired, csrfProtection, async (req, res) =>
       },
     });
   } catch (error) {
-    console.error('Error activating trial:', error);
+    logger.error('Error activating trial:', error);
     res.status(500).json({ error: 'Failed to activate trial', details: error.message });
   }
 });
@@ -115,7 +115,7 @@ router.get('/analytics', authRequired, async (req, res) => {
       analytics,
     });
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    logger.error('Error fetching analytics:', error);
     res.status(500).json({ error: 'Failed to fetch analytics', details: error.message });
   }
 });
@@ -231,7 +231,7 @@ router.get('/analytics/legacy', authRequired, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    logger.error('Error fetching analytics:', error);
     res.status(500).json({ error: 'Failed to fetch analytics', details: error.message });
   }
 });
@@ -289,7 +289,7 @@ router.get('/invoices', authRequired, async (req, res) => {
 
     res.json({ invoices: formattedInvoices });
   } catch (error) {
-    console.error('Error fetching invoices:', error);
+    logger.error('Error fetching invoices:', error);
     res.status(500).json({ error: 'Failed to fetch invoices', details: error.message });
   }
 });
@@ -336,7 +336,7 @@ router.get('/invoices/:id/download', authRequired, async (req, res) => {
       number: invoice.number,
     });
   } catch (error) {
-    console.error('Error fetching invoice download:', error);
+    logger.error('Error fetching invoice download:', error);
     res.status(500).json({ error: 'Failed to fetch invoice', details: error.message });
   }
 });
@@ -413,7 +413,7 @@ router.get('/enquiries/export', authRequired, async (req, res) => {
     );
     res.send(csv);
   } catch (error) {
-    console.error('Error exporting enquiries:', error);
+    logger.error('Error exporting enquiries:', error);
     res.status(500).json({ error: 'Failed to export enquiries', details: error.message });
   }
 });
@@ -491,7 +491,7 @@ router.get('/lead-quality', authRequired, async (req, res) => {
       breakdown,
     });
   } catch (error) {
-    console.error('Error fetching lead quality:', error);
+    logger.error('Error fetching lead quality:', error);
     res.status(500).json({ error: 'Failed to fetch lead quality', details: error.message });
   }
 });

@@ -8,7 +8,7 @@ const DEFAULT_WAIT_TIMEOUT = 10000;
 
 test.describe('Supplier Reviews Widget Integration @backend', () => {
   test('should display review widget on supplier profile page', async ({ page }) => {
-    await page.goto('/suppliers.html');
+    await page.goto('/suppliers');
     await page.waitForLoadState('networkidle');
     const supplierLink = page.locator('a[href*="/supplier.html?id="]').first();
     if ((await supplierLink.count()) > 0) {
@@ -44,7 +44,7 @@ test.describe('Supplier Reviews Widget Integration @backend', () => {
   });
 
   test('should have proper accessibility attributes', async ({ page }) => {
-    await page.goto('/suppliers.html');
+    await page.goto('/suppliers');
     await page.waitForLoadState('networkidle');
     const supplierLink = page.locator('a[href*="/supplier.html?id="]').first();
     if ((await supplierLink.count()) > 0) {

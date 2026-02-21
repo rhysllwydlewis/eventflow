@@ -6,6 +6,7 @@
 'use strict';
 
 const path = require('path');
+const logger = require('../utils/logger');
 const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
@@ -43,15 +44,15 @@ try {
       const stripeLib = require('stripe');
       stripe = stripeLib(stripeSecretKey);
       STRIPE_ENABLED = true;
-      console.info('Stripe initialized successfully for admin routes');
+      logger.info('Stripe initialized successfully for admin routes');
     } catch (requireErr) {
-      console.warn('Stripe package not available:', requireErr.message);
+      logger.warn('Stripe package not available:', requireErr.message);
     }
   } else {
-    console.info('Stripe secret key not configured, Stripe features will be disabled');
+    logger.info('Stripe secret key not configured, Stripe features will be disabled');
   }
 } catch (err) {
-  console.error('Failed to initialize Stripe in admin routes:', err.message);
+  logger.error('Failed to initialize Stripe in admin routes:', err.message);
 }
 
 // This will be set by the main server.js when mounting these routes
@@ -319,7 +320,7 @@ router.get('/dashboard/stats', authRequired, roleRequired('admin'), async (req, 
 
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    logger.error('Error fetching dashboard stats:', error);
     res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
   }
 });
@@ -351,7 +352,7 @@ router.get('/dashboard/recent-activity', authRequired, roleRequired('admin'), as
 
     res.json({ activities: enrichedLogs });
   } catch (error) {
-    console.error('Error fetching recent activity:', error);
+    logger.error('Error fetching recent activity:', error);
     res.status(500).json({ error: 'Failed to fetch recent activity' });
   }
 });
@@ -493,7 +494,7 @@ router.get('/metrics', authRequired, roleRequired('admin'), (_req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching metrics:', error);
+    logger.error('Error fetching metrics:', error);
     res.status(500).json({
       error: 'Failed to fetch metrics',
       counts: {
@@ -532,7 +533,7 @@ router.post('/reset-demo', authRequired, roleRequired('admin'), csrfProtection, 
     }
     res.json({ ok: true });
   } catch (err) {
-    console.error('Reset demo failed', err);
+    logger.error('Reset demo failed', err);
     res.status(500).json({ error: 'Reset demo failed' });
   }
 });
@@ -553,7 +554,7 @@ router.get('/suppliers', authRequired, roleRequired('admin'), async (_req, res) 
     );
     res.json({ items });
   } catch (error) {
-    console.error('Error reading suppliers:', error);
+    logger.error('Error reading suppliers:', error);
     res.status(500).json({ error: 'Failed to load suppliers' });
   }
 });
@@ -580,7 +581,7 @@ router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, re
 
     res.json({ supplier: enrichedSupplier });
   } catch (error) {
-    console.error('Error reading supplier:', error);
+    logger.error('Error reading supplier:', error);
     res.status(500).json({ error: 'Failed to load supplier' });
   }
 });
@@ -606,7 +607,7 @@ router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtect
       });
       res.json({ success: true });
     } catch (error) {
-      console.error('Error deleting supplier:', error);
+      logger.error('Error deleting supplier:', error);
       res.status(500).json({ error: 'Failed to delete supplier' });
     }
   }
@@ -628,7 +629,7 @@ router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfP
       await dbUnified.write('suppliers', all);
       res.json({ ok: true, supplier: all[i] });
     } catch (error) {
-      console.error('Error approving supplier:', error);
+      logger.error('Error approving supplier:', error);
       res.status(500).json({ error: 'Failed to approve supplier' });
     }
   }
@@ -709,7 +710,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error updating supplier Pro status:', error);
+      logger.error('Error updating supplier Pro status:', error);
       res.status(500).json({ error: 'Failed to update supplier Pro status' });
     }
   }
@@ -741,7 +742,7 @@ router.post(
         const fileContent = fs.readFileSync(demoSuppliersPath, 'utf8');
         demoSuppliers = JSON.parse(fileContent);
       } catch (parseError) {
-        console.error('Error parsing suppliers.json:', parseError);
+        logger.error('Error parsing suppliers.json:', parseError);
         return res.status(500).json({
           error: `Failed to parse demo suppliers file: ${parseError.message}`,
         });
@@ -768,7 +769,7 @@ router.post(
       // Process each demo supplier (idempotent upsert)
       for (const demoSupplier of demoSuppliers) {
         if (!demoSupplier.id) {
-          console.warn('Skipping supplier without ID:', demoSupplier);
+          logger.warn('Skipping supplier without ID:', demoSupplier);
           continue;
         }
 
@@ -818,7 +819,7 @@ router.post(
         message: `Successfully imported ${demoSuppliers.length} demo supplier(s): ${insertedCount} new, ${updatedCount} updated`,
       });
     } catch (error) {
-      console.error('Error importing demo suppliers:', error);
+      logger.error('Error importing demo suppliers:', error);
       res.status(500).json({
         error: `Failed to import demo suppliers: ${error.message}`,
       });
@@ -921,7 +922,7 @@ router.post('/packages', authRequired, roleRequired('admin'), csrfProtection, as
 
     res.status(201).json({ success: true, package: newPackage });
   } catch (error) {
-    console.error('Error creating package:', error);
+    logger.error('Error creating package:', error);
     res.status(500).json({ error: 'Failed to create package' });
   }
 });
@@ -1029,7 +1030,7 @@ router.post(
         updatedCount,
       });
     } catch (error) {
-      console.error('Error bulk approving packages:', error);
+      logger.error('Error bulk approving packages:', error);
       res.status(500).json({ error: 'Failed to bulk approve packages' });
     }
   }
@@ -1088,7 +1089,7 @@ router.post(
         updatedCount,
       });
     } catch (error) {
-      console.error('Error bulk featuring packages:', error);
+      logger.error('Error bulk featuring packages:', error);
       res.status(500).json({ error: 'Failed to bulk feature packages' });
     }
   }
@@ -1149,7 +1150,7 @@ router.post(
         deletedCount,
       });
     } catch (error) {
-      console.error('Error bulk deleting packages:', error);
+      logger.error('Error bulk deleting packages:', error);
       res.status(500).json({ error: 'Failed to bulk delete packages' });
     }
   }
@@ -1185,7 +1186,7 @@ router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), csrf
       });
       res.json({ success: true, count });
     } catch (error) {
-      console.error('Bulk approve suppliers error:', error);
+      logger.error('Bulk approve suppliers error:', error);
       res.status(500).json({ error: 'Failed to bulk approve suppliers' });
     }
   }
@@ -1219,7 +1220,7 @@ router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), csrfP
       });
       res.json({ success: true, count });
     } catch (error) {
-      console.error('Bulk reject suppliers error:', error);
+      logger.error('Bulk reject suppliers error:', error);
       res.status(500).json({ error: 'Failed to bulk reject suppliers' });
     }
   }
@@ -1247,7 +1248,7 @@ router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), csrfP
       });
       res.json({ success: true, deleted: before - all.length });
     } catch (error) {
-      console.error('Bulk delete suppliers error:', error);
+      logger.error('Bulk delete suppliers error:', error);
       res.status(500).json({ error: 'Failed to bulk delete suppliers' });
     }
   }
@@ -1287,7 +1288,7 @@ router.post(
       });
       res.json({ success: true, count, BULK_USERS_VERIFIED: AUDIT_ACTIONS.BULK_USERS_VERIFIED });
     } catch (error) {
-      console.error('Bulk verify users error:', error);
+      logger.error('Bulk verify users error:', error);
       res.status(500).json({ error: 'Failed to bulk verify users' });
     }
   }
@@ -1332,7 +1333,7 @@ router.post(
       });
       res.json({ success: true, count, BULK_USERS_SUSPENDED: AUDIT_ACTIONS.BULK_USERS_SUSPENDED });
     } catch (error) {
-      console.error('Bulk suspend users error:', error);
+      logger.error('Bulk suspend users error:', error);
       res.status(500).json({ error: 'Failed to bulk suspend users' });
     }
   }
@@ -1393,7 +1394,7 @@ router.get('/users/search', authRequired, roleRequired('admin'), async (req, res
 
     res.json({ users: sanitizedUsers, total, hasMore, offset: startIndex, limit: Number(limit) });
   } catch (error) {
-    console.error('Users search error:', error);
+    logger.error('Users search error:', error);
     res.status(500).json({ error: 'Failed to search users' });
   }
 });
@@ -1422,7 +1423,7 @@ router.get('/photos/pending', authRequired, roleRequired('admin'), async (req, r
 
     res.json({ photos: enrichedPhotos });
   } catch (error) {
-    console.error('Error fetching pending photos:', error);
+    logger.error('Error fetching pending photos:', error);
     res.status(500).json({ error: 'Failed to fetch pending photos' });
   }
 });
@@ -1483,7 +1484,7 @@ router.post(
 
       res.json({ success: true, message: 'Photo approved successfully', photo });
     } catch (error) {
-      console.error('Error approving photo:', error);
+      logger.error('Error approving photo:', error);
       res.status(500).json({ error: 'Failed to approve photo' });
     }
   }
@@ -1537,7 +1538,7 @@ router.post(
 
       res.json({ success: true, message: 'Photo rejected successfully', photo });
     } catch (error) {
-      console.error('Error rejecting photo:', error);
+      logger.error('Error rejecting photo:', error);
       res.status(500).json({ error: 'Failed to reject photo' });
     }
   }
@@ -1657,7 +1658,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error in batch photo approval:', error);
+      logger.error('Error in batch photo approval:', error);
       res.status(500).json({ error: 'Failed to batch approve photos' });
     }
   }
@@ -1784,7 +1785,7 @@ router.post(
         taggedCount,
       });
     } catch (error) {
-      console.error('Error generating smart tags:', error);
+      logger.error('Error generating smart tags:', error);
       res.status(500).json({ error: 'Failed to generate smart tags', details: error.message });
     }
   }
@@ -1870,7 +1871,7 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
       },
     });
   } catch (error) {
-    console.error('Error fetching badge counts:', error);
+    logger.error('Error fetching badge counts:', error);
     // Return zeroed counts instead of crashing
     res.status(500).json({
       error: 'Failed to fetch badge counts',
@@ -1921,7 +1922,7 @@ router.get('/dashboard/counts', authRequired, roleRequired('admin'), async (req,
       },
     });
   } catch (error) {
-    console.error('Error fetching dashboard counts:', error);
+    logger.error('Error fetching dashboard counts:', error);
     res.status(500).json({
       error: 'Failed to fetch dashboard counts',
       counts: {
@@ -2044,7 +2045,7 @@ router.post(
         fs.renameSync(`${outputPath}.optimized`, outputPath);
       } catch (sharpError) {
         // Sharp not available or error, use original image
-        console.log('Sharp not available for image optimization:', sharpError.message);
+        logger.info('Sharp not available for image optimization:', sharpError.message);
       }
 
       // Save to homepage settings
@@ -2073,7 +2074,7 @@ router.post(
         filename: req.file.filename,
       });
     } catch (error) {
-      console.error('Hero image upload error:', error);
+      logger.error('Hero image upload error:', error);
       res.status(500).json({
         error: 'Failed to upload hero image',
         message: error.message,
@@ -2395,7 +2396,7 @@ router.get('/settings/site', authRequired, roleRequired('admin'), async (req, re
     };
     res.json(site);
   } catch (error) {
-    console.error('Error reading site settings:', error);
+    logger.error('Error reading site settings:', error);
     res.status(500).json({ error: 'Failed to read settings' });
   }
 });
@@ -2438,7 +2439,7 @@ router.put(
       // Return verified data from database
       res.json({ success: true, site: result.data.site });
     } catch (error) {
-      console.error('Error updating site settings:', error);
+      logger.error('Error updating site settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
     }
   }
@@ -2475,7 +2476,7 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
 
     res.json(response);
   } catch (error) {
-    console.error('Error reading feature settings:', error);
+    logger.error('Error reading feature settings:', error);
     res.status(500).json({ error: 'Failed to read settings' });
   }
 });
@@ -2493,7 +2494,7 @@ router.put(
     const startTime = Date.now();
     const requestId = `features-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-    console.log(`[${requestId}] Starting feature flags update by ${req.user.email}`);
+    logger.info(`[${requestId}] Starting feature flags update by ${req.user.email}`);
 
     try {
       const {
@@ -2505,7 +2506,7 @@ router.put(
         pexelsCollage,
       } = req.body;
 
-      console.log(`[${requestId}] Request body validated, reading current settings...`);
+      logger.info(`[${requestId}] Request body validated, reading current settings...`);
 
       // Helper function to create timeout promise
       const createTimeout = (ms, operation) => {
@@ -2520,7 +2521,7 @@ router.put(
         createTimeout(5000, 'Read operation'),
       ]).then(result => result || {});
 
-      console.log(`[${requestId}] Current settings read in ${Date.now() - startTime}ms`);
+      logger.info(`[${requestId}] Current settings read in ${Date.now() - startTime}ms`);
 
       // Validate all request data (all should be boolean or undefined)
       const featureFlags = [
@@ -2535,7 +2536,7 @@ router.put(
       for (const flag of featureFlags) {
         const value = req.body[flag];
         if (value !== undefined && typeof value !== 'boolean') {
-          console.error(`[${requestId}] Invalid ${flag} value:`, value);
+          logger.error(`[${requestId}] Invalid ${flag} value:`, value);
           return res.status(400).json({
             error: `Invalid feature flag value: ${flag} must be boolean`,
             field: flag,
@@ -2556,7 +2557,7 @@ router.put(
 
       settings.features = newFeatures;
 
-      console.log(`[${requestId}] Writing new feature flags to database...`, {
+      logger.info(`[${requestId}] Writing new feature flags to database...`, {
         pexelsCollage: newFeatures.pexelsCollage,
         registration: newFeatures.registration,
       });
@@ -2568,13 +2569,13 @@ router.put(
         createTimeout(5000, 'Write and verify operation'),
       ]);
 
-      console.log(
+      logger.info(
         `[${requestId}] Database write and verify completed in ${Date.now() - writeStart}ms`
       );
 
       // Log Pexels feature flag changes specifically
       if (pexelsCollage !== undefined) {
-        console.log(
+        logger.info(
           `[${requestId}] Pexels collage feature flag ${pexelsCollage ? 'ENABLED' : 'DISABLED'} by ${req.user.email}`
         );
       }
@@ -2589,17 +2590,17 @@ router.put(
       });
 
       const totalTime = Date.now() - startTime;
-      console.log(`[${requestId}] Feature flags update completed successfully in ${totalTime}ms`);
+      logger.info(`[${requestId}] Feature flags update completed successfully in ${totalTime}ms`);
 
       // Return verified data from database
       res.json({ success: true, features: result.data.features });
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      console.error(
+      logger.error(
         `[${requestId}] Error updating feature settings after ${totalTime}ms:`,
         error.message
       );
-      console.error(`[${requestId}] Stack trace:`, error.stack);
+      logger.error(`[${requestId}] Stack trace:`, error.stack);
 
       // Provide detailed error message based on error type
       if (error.message.includes('timed out')) {
@@ -2632,7 +2633,7 @@ router.get('/settings/maintenance', authRequired, roleRequired('admin'), async (
     };
     res.json(maintenance);
   } catch (error) {
-    console.error('Error reading maintenance settings:', error);
+    logger.error('Error reading maintenance settings:', error);
     res.status(500).json({ error: 'Failed to read settings' });
   }
 });
@@ -2679,7 +2680,7 @@ router.put('/settings/maintenance', authRequired, roleRequired('admin'), csrfPro
       // Return verified data from database
       res.json({ success: true, maintenance: result.data.maintenance });
     } catch (error) {
-      console.error('Error updating maintenance settings:', error);
+      logger.error('Error updating maintenance settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
     }
   }
@@ -2725,7 +2726,7 @@ router.get(
 
       res.json(template);
     } catch (error) {
-      console.error('Error reading email template:', error);
+      logger.error('Error reading email template:', error);
       res.status(500).json({ error: 'Failed to read settings' });
     }
   }
@@ -2775,7 +2776,7 @@ router.put(
       // Return verified data from database
       res.json({ success: true, template: result.data.emailTemplates[req.params.name] });
     } catch (error) {
-      console.error('Error updating email template:', error);
+      logger.error('Error updating email template:', error);
       res.status(500).json({ error: 'Failed to update settings' });
     }
   }
@@ -2812,7 +2813,7 @@ router.post(
 
       res.json({ success: true, message: 'Template reset to default' });
     } catch (error) {
-      console.error('Error resetting email template:', error);
+      logger.error('Error resetting email template:', error);
       res.status(500).json({ error: 'Failed to reset template' });
     }
   }
@@ -2857,7 +2858,7 @@ router.get('/public/features', async (req, res) => {
       pexelsCollage: features.pexelsCollage === true,
     });
   } catch (error) {
-    console.error('Error reading feature flags:', error);
+    logger.error('Error reading feature flags:', error);
     // Return all features enabled as fallback
     res.json({
       registration: true,
@@ -2894,7 +2895,7 @@ router.get('/tickets', authRequired, roleRequired('admin'), async (_req, res) =>
 
     res.json({ items: tickets });
   } catch (error) {
-    console.error('Error loading admin tickets:', error);
+    logger.error('Error loading admin tickets:', error);
     res.status(500).json({ error: 'Failed to load tickets' });
   }
 });
@@ -2916,7 +2917,7 @@ router.get('/tickets/:id', authRequired, roleRequired('admin'), async (req, res)
 
     res.json({ ticket });
   } catch (error) {
-    console.error('Error loading admin ticket:', error);
+    logger.error('Error loading admin ticket:', error);
     res.status(500).json({ error: 'Failed to load ticket' });
   }
 });
@@ -2968,7 +2969,7 @@ router.put(
 
       res.json({ ticket });
     } catch (error) {
-      console.error('Error updating admin ticket:', error);
+      logger.error('Error updating admin ticket:', error);
       res.status(500).json({ error: 'Failed to update ticket' });
     }
   }
@@ -3026,7 +3027,7 @@ router.post(
 
       res.json({ ticket, reply });
     } catch (error) {
-      console.error('Error replying to admin ticket:', error);
+      logger.error('Error replying to admin ticket:', error);
       res.status(500).json({ error: 'Failed to reply to ticket' });
     }
   }
@@ -3125,7 +3126,7 @@ router.get('/stripe-analytics', authRequired, roleRequired('admin'), async (_req
 
     res.json(analytics);
   } catch (error) {
-    console.error('Error fetching Stripe analytics:', error);
+    logger.error('Error fetching Stripe analytics:', error);
     res.status(500).json({
       error: 'Failed to fetch Stripe analytics',
       available: false,
@@ -3243,7 +3244,7 @@ router.get('/marketplace/listings', authRequired, roleRequired('admin'), async (
 
     res.json({ listings: enrichedListings });
   } catch (error) {
-    console.error('Error fetching admin marketplace listings:', error);
+    logger.error('Error fetching admin marketplace listings:', error);
     res.status(500).json({ error: 'Failed to fetch listings' });
   }
 });
@@ -3287,7 +3288,7 @@ router.post(
 
       res.json({ ok: true, listing });
     } catch (error) {
-      console.error('Error approving marketplace listing:', error);
+      logger.error('Error approving marketplace listing:', error);
       res.status(500).json({ error: 'Failed to approve listing' });
     }
   }
@@ -3335,7 +3336,7 @@ router.delete(
 
       res.json({ ok: true, deletedImageCount });
     } catch (error) {
-      console.error('Error deleting marketplace listing:', error);
+      logger.error('Error deleting marketplace listing:', error);
       res.status(500).json({ error: 'Failed to delete listing' });
     }
   }
@@ -3446,7 +3447,7 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
 
     res.json(collageWidget);
   } catch (error) {
-    console.error('Error reading collage widget config:', error);
+    logger.error('Error reading collage widget config:', error);
     res.status(500).json({ error: 'Failed to read collage widget configuration' });
   }
 });
@@ -3620,7 +3621,7 @@ router.put(
         collageWidget: result.data.collageWidget,
       });
     } catch (error) {
-      console.error('Error updating collage widget config:', error);
+      logger.error('Error updating collage widget config:', error);
       res.status(500).json({ error: 'Failed to update collage widget configuration' });
     }
   }
@@ -3660,7 +3661,7 @@ router.get('/homepage/collage-media', authRequired, roleRequired('admin'), async
 
     res.json({ media });
   } catch (error) {
-    console.error('Error listing collage media:', error);
+    logger.error('Error listing collage media:', error);
     res.status(500).json({ error: 'Failed to list collage media' });
   }
 });
@@ -3708,7 +3709,7 @@ router.post(
         media: uploadedMedia,
       });
     } catch (error) {
-      console.error('Error uploading collage media:', error);
+      logger.error('Error uploading collage media:', error);
       res.status(500).json({ error: 'Failed to upload collage media' });
     }
   }
@@ -3769,7 +3770,7 @@ router.delete(
         message: 'Media file deleted successfully',
       });
     } catch (error) {
-      console.error('Error deleting collage media:', error);
+      logger.error('Error deleting collage media:', error);
       res.status(500).json({ error: 'Failed to delete collage media' });
     }
   }
@@ -3796,7 +3797,7 @@ router.get('/maintenance/message', async (req, res) => {
       message: maintenance.message,
     });
   } catch (error) {
-    console.error('Error reading maintenance message:', error);
+    logger.error('Error reading maintenance message:', error);
     // Return default message on error
     res.json({
       enabled: false,
@@ -3822,7 +3823,7 @@ router.get('/public/pexels-collage', async (req, res) => {
 
     // Debug logging to help diagnose configuration issues
     if (isCollageDebugEnabled()) {
-      console.log('[Pexels Collage Endpoint] Configuration check:', {
+      logger.info('[Pexels Collage Endpoint] Configuration check:', {
         isEnabled,
         collageWidgetEnabled: collageWidget.enabled,
         legacyPexelsEnabled: settings.features?.pexelsCollage,
@@ -3904,7 +3905,7 @@ router.get('/public/pexels-collage', async (req, res) => {
 
         if (collectionId) {
           // Use collection-based fetching
-          console.log(`📚 Fetching media from collection ${collectionId} for ${category}`);
+          logger.info(`📚 Fetching media from collection ${collectionId} for ${category}`);
           const results = await pexels.getCollectionMedia(collectionId, 8, 1, 'all');
 
           // Filter based on media type settings
@@ -3917,7 +3918,7 @@ router.get('/public/pexels-collage', async (req, res) => {
           }
 
           if (media.length === 0) {
-            console.warn(
+            logger.warn(
               `⚠️  No media found in collection ${collectionId}, falling back to search`
             );
             // Fall through to search-based approach
@@ -3939,7 +3940,7 @@ router.get('/public/pexels-collage', async (req, res) => {
 
         if (shouldFetchPhotos) {
           const photoQuery = pexelsQueries[category] || category;
-          console.log(`🔍 Searching photos with query: "${photoQuery}" for ${category}`);
+          logger.info(`🔍 Searching photos with query: "${photoQuery}" for ${category}`);
           fetchPromises.push(
             pexels.searchPhotos(photoQuery, 4, 1).then(results => ({
               type: 'photos',
@@ -3950,7 +3951,7 @@ router.get('/public/pexels-collage', async (req, res) => {
 
         if (shouldFetchVideos) {
           const videoQuery = pexelsVideoQueries[category] || category;
-          console.log(`🎥 Searching videos with query: "${videoQuery}" for ${category}`);
+          logger.info(`🎥 Searching videos with query: "${videoQuery}" for ${category}`);
           fetchPromises.push(
             pexels.searchVideos(videoQuery, 4, 1).then(results => ({
               type: 'videos',
@@ -3966,7 +3967,7 @@ router.get('/public/pexels-collage', async (req, res) => {
                   // Add validation before using
                   if (!hdFile || !hdFile.link) {
                     if (isCollageDebugEnabled()) {
-                      console.warn(
+                      logger.warn(
                         `[Pexels Collage] No valid video file found for video ${video.id}`
                       );
                     }
@@ -4009,14 +4010,14 @@ router.get('/public/pexels-collage', async (req, res) => {
           source: 'search',
         });
       } catch (apiError) {
-        console.warn(
+        logger.warn(
           `⚠️  Pexels API failed for ${category} (${apiError.type || 'unknown'}): ${apiError.message}`
         );
-        console.warn('💡 Falling back to curated URLs');
+        logger.warn('💡 Falling back to curated URLs');
         // Fall through to fallback logic below
       }
     } else {
-      console.log('ℹ️  Pexels API not configured, using fallback URLs');
+      logger.info('ℹ️  Pexels API not configured, using fallback URLs');
     }
 
     // If API not configured or failed, use fallback URLs from config
@@ -4079,8 +4080,8 @@ router.get('/public/pexels-collage', async (req, res) => {
       message: 'Using curated fallback media from Pexels collection',
     });
   } catch (error) {
-    console.error('❌ Error fetching Pexels collage images:', error);
-    console.error('🔖 Error type:', error.type || 'unknown');
+    logger.error('❌ Error fetching Pexels collage images:', error);
+    logger.error('🔖 Error type:', error.type || 'unknown');
 
     // Return appropriate status code based on error type
     const statusCode = error.statusCode || 500;
@@ -4111,7 +4112,7 @@ router.get('/public/pexels-video', async (req, res) => {
 
     // Debug logging
     if (isCollageDebugEnabled()) {
-      console.log('[Pexels Video Endpoint] Configuration check:', {
+      logger.info('[Pexels Video Endpoint] Configuration check:', {
         isEnabled,
         collageWidgetEnabled: collageWidget.enabled,
         legacyPexelsEnabled: settings.features?.pexelsCollage,
@@ -4163,7 +4164,7 @@ router.get('/public/pexels-video', async (req, res) => {
     if (pexels.isConfigured()) {
       try {
         if (isCollageDebugEnabled()) {
-          console.log(`🎥 Searching videos with query: "${query}"`);
+          logger.info(`🎥 Searching videos with query: "${query}"`);
         }
 
         const results = await pexels.searchVideos(query, 5, 1);
@@ -4199,16 +4200,16 @@ router.get('/public/pexels-video', async (req, res) => {
         }
 
         // If no videos found, fall through to fallback
-        console.warn(`⚠️  No videos found for query "${query}", using fallback`);
+        logger.warn(`⚠️  No videos found for query "${query}", using fallback`);
       } catch (apiError) {
-        console.warn(
+        logger.warn(
           `⚠️  Pexels API failed for video query "${query}" (${apiError.type || 'unknown'}): ${apiError.message}`
         );
-        console.warn('💡 Falling back to curated video URLs');
+        logger.warn('💡 Falling back to curated video URLs');
         // Fall through to fallback logic below
       }
     } else {
-      console.log('ℹ️  Pexels API not configured, using fallback video URLs');
+      logger.info('ℹ️  Pexels API not configured, using fallback video URLs');
     }
 
     // If API not configured or failed, use fallback URLs from config
@@ -4249,8 +4250,8 @@ router.get('/public/pexels-video', async (req, res) => {
       message: 'Using curated fallback videos from Pexels collection',
     });
   } catch (error) {
-    console.error('❌ Error fetching Pexels videos:', error);
-    console.error('🔖 Error type:', error.type || 'unknown');
+    logger.error('❌ Error fetching Pexels videos:', error);
+    logger.error('🔖 Error type:', error.type || 'unknown');
 
     // Return appropriate status code based on error type
     const statusCode = error.statusCode || 500;
@@ -4364,9 +4365,9 @@ router.put(
       try {
         const { clearCache } = require('../utils/template-renderer');
         clearCache();
-        console.log('✅ Template cache cleared successfully');
+        logger.info('✅ Template cache cleared successfully');
       } catch (err) {
-        console.error('❌ Failed to clear template cache:', err);
+        logger.error('❌ Failed to clear template cache:', err);
         // Return error since cache clearing is critical
         return res.status(500).json({
           error: 'Configuration updated but cache clearing failed',
@@ -4390,7 +4391,7 @@ router.put(
         legalEffectiveDate,
       });
     } catch (error) {
-      console.error('Error updating content config:', error);
+      logger.error('Error updating content config:', error);
       res.status(500).json({
         error: 'Failed to update content configuration',
         message: error.message,
@@ -4481,7 +4482,7 @@ router.get('/audit/export', authRequired, roleRequired('admin'), async (req, res
       res.json({ logs, count: logs.length, exportedAt: new Date().toISOString() });
     }
   } catch (error) {
-    console.error('Error exporting audit logs:', error);
+    logger.error('Error exporting audit logs:', error);
     res.status(500).json({ error: 'Failed to export audit logs', details: error.message });
   }
 });
@@ -4542,7 +4543,7 @@ router.post(
         try {
           backup.data[collection] = await dbUnified.read(collection);
         } catch (error) {
-          console.warn(`Warning: Could not backup collection ${collection}:`, error.message);
+          logger.warn(`Warning: Could not backup collection ${collection}:`, error.message);
           backup.data[collection] = [];
         }
       }
@@ -4572,7 +4573,7 @@ router.post(
         createdAt: backup.createdAt,
       });
     } catch (error) {
-      console.error('Error creating backup:', error);
+      logger.error('Error creating backup:', error);
       res.status(500).json({ error: 'Failed to create backup', details: error.message });
     }
   }
@@ -4606,7 +4607,7 @@ router.get('/backup/list', authRequired, roleRequired('admin'), writeLimiter, as
 
     res.json({ backups: files });
   } catch (error) {
-    console.error('Error listing backups:', error);
+    logger.error('Error listing backups:', error);
     res.status(500).json({ error: 'Failed to list backups', details: error.message });
   }
 });
@@ -4651,7 +4652,7 @@ router.post(
           await dbUnified.write(collection, data);
           restoredCount++;
         } catch (error) {
-          console.warn(`Warning: Could not restore collection ${collection}:`, error.message);
+          logger.warn(`Warning: Could not restore collection ${collection}:`, error.message);
         }
       }
 
@@ -4672,7 +4673,7 @@ router.post(
         backupDate: backupData.createdAt,
       });
     } catch (error) {
-      console.error('Error restoring backup:', error);
+      logger.error('Error restoring backup:', error);
       res.status(500).json({ error: 'Failed to restore backup', details: error.message });
     }
   }
@@ -4736,7 +4737,7 @@ router.post(
         package: duplicatePkg,
       });
     } catch (error) {
-      console.error('Error duplicating package:', error);
+      logger.error('Error duplicating package:', error);
       res.status(500).json({ error: 'Failed to duplicate package', details: error.message });
     }
   }
@@ -4790,7 +4791,7 @@ router.get('/pexels/test', authRequired, roleRequired('admin'), async (req, res)
       totalResults: data.total_results || 0,
     });
   } catch (error) {
-    console.error('Error testing Pexels API:', error);
+    logger.error('Error testing Pexels API:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to test Pexels API',
@@ -4861,7 +4862,7 @@ router.get('/analytics/competitors', authRequired, roleRequired('admin'), async 
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error analyzing competitors:', error);
+    logger.error('Error analyzing competitors:', error);
     res.status(500).json({ error: 'Failed to analyze competitors', details: error.message });
   }
 });
@@ -4907,7 +4908,7 @@ router.get('/content-dates', authRequired, roleRequired('admin'), async (req, re
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error getting content dates:', error);
+    logger.error('Error getting content dates:', error);
     res.status(500).json({
       error: 'Failed to get content dates',
       message: error.message,
@@ -5004,7 +5005,7 @@ router.post(
         });
       }
     } catch (error) {
-      console.error('Error updating content dates:', error);
+      logger.error('Error updating content dates:', error);
       res.status(500).json({
         error: 'Failed to update dates',
         message: error.message,
@@ -5036,7 +5037,7 @@ router.get('/content-dates/articles', authRequired, roleRequired('admin'), async
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error getting article dates:', error);
+    logger.error('Error getting article dates:', error);
     res.status(500).json({
       error: 'Failed to get article dates',
       message: error.message,
@@ -5112,7 +5113,7 @@ router.post(
         schedule: scheduleResult,
       });
     } catch (error) {
-      console.error('Error updating schedule:', error);
+      logger.error('Error updating schedule:', error);
       res.status(500).json({
         error: 'Failed to update schedule',
         message: error.message,
@@ -5176,7 +5177,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Error checking health:', error);
+      logger.error('Error checking health:', error);
       res.status(500).json({
         success: false,
         error: error.message,
@@ -5225,7 +5226,7 @@ router.post(
         result,
       });
     } catch (error) {
-      console.error('Error performing date check:', error);
+      logger.error('Error performing date check:', error);
       res.status(500).json({
         error: 'Failed to perform date check',
         message: error.message,

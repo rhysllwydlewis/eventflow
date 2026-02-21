@@ -38,7 +38,7 @@ test.describe('Admin Client-Side Access Control - Logged Out User', () => {
   });
 
   ADMIN_PAGES.forEach(adminPage => {
-    test(`client-side guard should redirect ${adminPage} to /auth.html`, async ({
+    test(`client-side guard should redirect ${adminPage} to /auth`, async ({
       page,
       browserName,
     }) => {
@@ -52,7 +52,7 @@ test.describe('Admin Client-Side Access Control - Logged Out User', () => {
 
       // Client-side guard should redirect to auth page
       const url = page.url();
-      expect(url).toContain('/auth.html');
+      expect(url).toContain('/auth');
       expect(url).toContain('redirect=');
     });
   });

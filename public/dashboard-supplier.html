@@ -200,7 +200,7 @@
             >Dashboard</a
           >
           <a
-            href="/settings.html"
+            href="/settings"
             id="ef-mobile-settings"
             class="ef-mobile-link"
             style="display: none"
@@ -221,7 +221,7 @@
       </div>
       <div class="notification-list"></div>
       <div class="notification-footer">
-        <a href="/notifications.html" class="notification-view-all">View all</a>
+        <a href="/notifications" class="notification-view-all">View all</a>
       </div>
     </div>
 
@@ -2214,7 +2214,7 @@
               let emailVerified = false;
 
               try {
-                const userResponse = await fetch('/api/auth/me', { credentials: 'include' });
+                const userResponse = await fetch('/api/v1/auth/me', { credentials: 'include' });
                 if (userResponse.ok) {
                   const userData = await userResponse.json();
                   emailVerified = userData.user?.emailVerified || false;
@@ -2549,11 +2549,11 @@
           // Check auth and personalize dashboard
           (async function () {
             try {
-              const response = await fetch('/api/auth/me', { credentials: 'include' });
+              const response = await fetch('/api/v1/auth/me', { credentials: 'include' });
               if (!response.ok) {
                 // Redirect to login if not authenticated
                 window.location.href =
-                  '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+                  '/auth?redirect=' + encodeURIComponent(window.location.pathname);
                 return;
               }
               const data = await response.json();

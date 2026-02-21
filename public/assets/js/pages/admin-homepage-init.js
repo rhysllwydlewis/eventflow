@@ -7,11 +7,11 @@
     const data = await response.json();
     const user = data.user;
     if (!user || user.role !== 'admin') {
-      window.location.href = '/auth.html';
+      window.location.href = '/auth';
       return;
     }
   } catch (err) {
-    window.location.href = '/auth.html';
+    window.location.href = '/auth';
     return;
   }
 

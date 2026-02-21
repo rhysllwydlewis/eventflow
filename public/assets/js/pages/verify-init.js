@@ -326,7 +326,7 @@
 
         if (actionsEl) {
           actionsEl.innerHTML = `
-            <a href="/auth.html" class="cta secondary">Go to Sign In</a>
+            <a href="/auth" class="cta secondary">Go to Sign In</a>
           `;
         }
       } else {
@@ -353,7 +353,7 @@
 
         // Get user to determine redirect destination
         const user = data.user || (await getCurrentUser());
-        let redirectUrl = '/auth.html'; // Default fallback
+        let redirectUrl = '/auth'; // Default fallback
 
         if (user) {
           console.log(`📧 Current user role: ${user.role}`);
@@ -408,7 +408,7 @@
       if (actionsEl) {
         actionsEl.innerHTML = `
           <button onclick="location.reload()" class="cta">Try Again</button>
-          <a href="/auth.html" class="cta secondary">Go to Sign In</a>
+          <a href="/auth" class="cta secondary">Go to Sign In</a>
         `;
       }
 

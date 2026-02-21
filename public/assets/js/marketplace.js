@@ -126,7 +126,7 @@
       if (sellBtn) {
         sellBtn.onclick = () => {
           showToast('Please log in to list items');
-          setTimeout(() => (window.location.href = '/auth.html'), 1500);
+          setTimeout(() => (window.location.href = '/auth'), 1500);
         };
       }
       if (myListingsLink) {
@@ -274,7 +274,7 @@
           <p class="empty-state-message">
             ${currentUser ? 'Be the first to list a pre-loved event item and help others save money!' : 'Check back soon for new listings or create an account to list your items.'}
           </p>
-          ${currentUser ? '<a href="/supplier/marketplace-new-listing.html" class="btn btn-primary">List Your First Item</a>' : '<a href="/auth.html" class="btn btn-primary">Create Account</a>'}
+          ${currentUser ? '<a href="/supplier/marketplace-new-listing.html" class="btn btn-primary">List Your First Item</a>' : '<a href="/auth" class="btn btn-primary">Create Account</a>'}
         </div>
       `;
       return;
@@ -490,10 +490,10 @@
                        <p>This is your listing</p>
                        <div class="listing-own-notice-actions">
                          <a href="/supplier/marketplace-new-listing.html?edit=${listing.id}" class="btn btn-secondary">Edit Listing</a>
-                         <a href="/my-marketplace-listings.html" class="btn btn-secondary">View My Listings</a>
+                         <a href="/my-marketplace-listings" class="btn btn-secondary">View My Listings</a>
                        </div>
                      </div>`
-                  : `<a href="/auth.html?redirect=${encodeURIComponent(`/marketplace?listing=${listing.id}`)}" class="cta">Log in to message seller</a>`
+                  : `<a href="/auth?redirect=${encodeURIComponent(`/marketplace?listing=${listing.id}`)}" class="cta">Log in to message seller</a>`
             }
           </div>
         </div>
@@ -956,11 +956,11 @@
           // Handle specific error cases
           if (res.status === 401) {
             showToast('Please log in to list items', 'error');
-            setTimeout(() => (window.location.href = '/auth.html'), 1500);
+            setTimeout(() => (window.location.href = '/auth'), 1500);
             return;
           } else if (res.status === 403) {
             showToast('Session expired. Please log in again.', 'error');
-            setTimeout(() => (window.location.href = '/auth.html'), 1500);
+            setTimeout(() => (window.location.href = '/auth'), 1500);
             return;
           }
 
@@ -1104,7 +1104,7 @@
     if (!currentUser) {
       showToast('Please log in to save items', 'error');
       setTimeout(() => {
-        window.location.href = `/auth.html?redirect=${encodeURIComponent('/marketplace')}`;
+        window.location.href = `/auth?redirect=${encodeURIComponent('/marketplace')}`;
       }, 1200);
       return;
     }
@@ -1127,7 +1127,7 @@
       if (res.status === 401) {
         showToast('Session expired. Please log in again.', 'error');
         setTimeout(() => {
-          window.location.href = `/auth.html?redirect=${encodeURIComponent('/marketplace')}`;
+          window.location.href = `/auth?redirect=${encodeURIComponent('/marketplace')}`;
         }, 1200);
         return;
       }

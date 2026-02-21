@@ -233,7 +233,7 @@
       </div>
       <div class="notification-list"></div>
       <div class="notification-footer">
-        <a href="/notifications.html" class="notification-view-all">View all</a>
+        <a href="/notifications" class="notification-view-all">View all</a>
       </div>
     </div>
 
@@ -302,14 +302,14 @@
 (async function() {
   // Check admin authentication - using AdminShared if available, otherwise fall back to fetch
   try {
-    const data = await AdminShared.api('/api/auth/me');
+    const data = await AdminShared.api('/api/v1/auth/me');
     const user = data.user; // Extract user from response
     if (!user || user.role !== 'admin') {
-      window.location.href = '/auth.html';
+      window.location.href = '/auth';
       return;
     }
   } catch (err) {
-    window.location.href = '/auth.html';
+    window.location.href = '/auth';
     return;
   }
   

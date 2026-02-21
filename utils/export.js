@@ -6,6 +6,7 @@
 'use strict';
 
 const PDFDocument = require('pdfkit');
+const logger = require('./logger');
 
 /**
  * Convert array of objects to CSV string
@@ -101,7 +102,7 @@ function exportToExcel(data, options = {}) {
       buffer,
     };
   } catch (error) {
-    console.error('Excel export error:', error);
+    logger.error('Excel export error:', error);
     // Fallback to CSV if Excel export fails
     return exportToCSV(data, { filename: filename.replace('.xlsx', '.csv'), headers });
   }
@@ -271,7 +272,7 @@ function exportMiddleware(dataFetcher, defaultOptions = {}) {
       // Send file
       res.send(result.buffer);
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       next(error);
     }
   };

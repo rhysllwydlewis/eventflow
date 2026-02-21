@@ -188,10 +188,11 @@ describe('Pricing and payment system fixes', () => {
     });
   });
 
-  // Fix 4: pricing.html uses redirect param (not returnTo) for post-login redirect
+  // Fix 4: pricing CTA handler uses redirect param (not returnTo) for post-login redirect
   describe('pricing.html: uses redirect param for post-login flow', () => {
     it('uses redirect= parameter (not returnTo=) when redirecting unauthenticated users', () => {
-      const src = readSrc('public', 'pricing.html');
+      // The CTA handler lives in pricing.js (inline script was removed from pricing.html)
+      const src = readSrc('public', 'assets', 'js', 'pricing.js');
       expect(src).toContain('redirect=');
       expect(src).not.toContain('returnTo=');
     });

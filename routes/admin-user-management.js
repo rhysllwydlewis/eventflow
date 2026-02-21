@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
@@ -123,7 +124,7 @@ router.get('/users', authRequired, roleRequired('admin'), async (req, res) => {
     });
     res.json({ items: users });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    logger.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users', items: [] });
   }
 });
@@ -385,7 +386,7 @@ router.get('/users/search', authRequired, roleRequired('admin'), async (req, res
       });
     }
   } catch (error) {
-    console.error('Error searching users:', error);
+    logger.error('Error searching users:', error);
     res.status(500).json({ error: 'Failed to search users' });
   }
 });
@@ -657,11 +658,11 @@ router.post(
 
     // Send password reset email via Postmark BEFORE saving changes
     try {
-      console.log(`📧 Admin ${req.user.email} initiating password reset for ${user.email}`);
+      logger.info(`📧 Admin ${req.user.email} initiating password reset for ${user.email}`);
       await postmark.sendPasswordResetEmail(user, resetToken);
-      console.log(`✅ Password reset email sent to ${user.email}`);
+      logger.info(`✅ Password reset email sent to ${user.email}`);
     } catch (emailError) {
-      console.error('❌ Failed to send password reset email:', emailError.message);
+      logger.error('❌ Failed to send password reset email:', emailError.message);
 
       // If email fails, don't update user record
       return res.status(500).json({
@@ -760,7 +761,7 @@ router.post(
         totalRequested: userIds.length,
       });
     } catch (error) {
-      console.error('Error bulk verifying users:', error);
+      logger.error('Error bulk verifying users:', error);
       res.status(500).json({ error: 'Failed to bulk verify users' });
     }
   }
@@ -837,7 +838,7 @@ router.post(
         totalRequested: userIds.length,
       });
     } catch (error) {
-      console.error('Error bulk suspending users:', error);
+      logger.error('Error bulk suspending users:', error);
       res.status(500).json({ error: 'Failed to bulk suspend users' });
     }
   }
@@ -911,7 +912,7 @@ router.post(
         totalRequested: userIds.length,
       });
     } catch (error) {
-      console.error('Error bulk deleting users:', error);
+      logger.error('Error bulk deleting users:', error);
       res.status(500).json({ error: 'Failed to bulk delete users' });
     }
   }
@@ -970,7 +971,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error verifying supplier:', error);
+      logger.error('Error verifying supplier:', error);
       res.status(500).json({ error: 'Failed to verify supplier' });
     }
   }
@@ -1052,7 +1053,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error granting subscription:', error);
+      logger.error('Error granting subscription:', error);
       res.status(500).json({ error: 'Failed to grant subscription' });
     }
   }
@@ -1117,7 +1118,7 @@ router.delete(
         },
       });
     } catch (error) {
-      console.error('Error removing subscription:', error);
+      logger.error('Error removing subscription:', error);
       res.status(500).json({ error: 'Failed to remove subscription' });
     }
   }
@@ -1150,7 +1151,7 @@ router.get(
         count: pending.length,
       });
     } catch (error) {
-      console.error('Error fetching pending suppliers:', error);
+      logger.error('Error fetching pending suppliers:', error);
       res.status(500).json({ error: 'Failed to fetch pending suppliers' });
     }
   }
@@ -1215,7 +1216,7 @@ router.post(
         updatedCount,
       });
     } catch (error) {
-      console.error('Error bulk approving suppliers:', error);
+      logger.error('Error bulk approving suppliers:', error);
       res.status(500).json({ error: 'Failed to bulk approve suppliers' });
     }
   }
@@ -1281,7 +1282,7 @@ router.post(
         updatedCount,
       });
     } catch (error) {
-      console.error('Error bulk rejecting suppliers:', error);
+      logger.error('Error bulk rejecting suppliers:', error);
       res.status(500).json({ error: 'Failed to bulk reject suppliers' });
     }
   }
@@ -1347,7 +1348,7 @@ router.post(
         deletedCount,
       });
     } catch (error) {
-      console.error('Error bulk deleting suppliers:', error);
+      logger.error('Error bulk deleting suppliers:', error);
       res.status(500).json({ error: 'Failed to bulk delete suppliers' });
     }
   }
@@ -1533,7 +1534,7 @@ router.put(
 
       res.json({ success: true, supplier });
     } catch (error) {
-      console.error('Error updating supplier:', error);
+      logger.error('Error updating supplier:', error);
       res.status(500).json({ error: 'Failed to update supplier' });
     }
   }
@@ -1717,7 +1718,7 @@ router.delete(
 
       res.json({ success: true, message: 'Supplier and associated packages deleted successfully' });
     } catch (error) {
-      console.error('Error deleting supplier:', error);
+      logger.error('Error deleting supplier:', error);
       res.status(500).json({ error: 'Failed to delete supplier' });
     }
   }
@@ -1823,7 +1824,7 @@ router.patch(
         package: packages[pkgIndex],
       });
     } catch (error) {
-      console.error('Error updating seasonal tags:', error);
+      logger.error('Error updating seasonal tags:', error);
       res.status(500).json({ error: 'Failed to update seasonal tags', details: error.message });
     }
   }
@@ -2016,11 +2017,11 @@ router.post(
 
     // Send password reset email via Postmark BEFORE saving token
     try {
-      console.log(`📧 Admin ${req.user.email} sending password reset to ${user.email}`);
+      logger.info(`📧 Admin ${req.user.email} sending password reset to ${user.email}`);
       await postmark.sendPasswordResetEmail(user, token);
-      console.log(`✅ Password reset email sent to ${user.email}`);
+      logger.info(`✅ Password reset email sent to ${user.email}`);
     } catch (emailError) {
-      console.error('❌ Failed to send password reset email:', emailError.message);
+      logger.error('❌ Failed to send password reset email:', emailError.message);
 
       // Log the failure in audit log
       auditLog({
@@ -2136,11 +2137,11 @@ router.post(
 
     // Send verification email via Postmark BEFORE saving token
     try {
-      console.log(`📧 Admin ${req.user.email} resending verification email to ${user.email}`);
+      logger.info(`📧 Admin ${req.user.email} resending verification email to ${user.email}`);
       await postmark.sendVerificationEmail(user, verificationToken);
-      console.log(`✅ Verification email resent successfully to ${user.email}`);
+      logger.info(`✅ Verification email resent successfully to ${user.email}`);
     } catch (emailError) {
-      console.error('❌ Failed to resend verification email:', emailError.message);
+      logger.error('❌ Failed to resend verification email:', emailError.message);
       return res.status(500).json({
         error: 'Failed to send verification email. Please try again later.',
         details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
@@ -2273,7 +2274,7 @@ router.post(
         subscription: user.subscription,
       });
     } catch (error) {
-      console.error('Error granting subscription:', error);
+      logger.error('Error granting subscription:', error);
       res.status(500).json({ error: 'Failed to grant subscription' });
     }
   }
@@ -2358,7 +2359,7 @@ router.delete(
         message: 'Subscription removed successfully',
       });
     } catch (error) {
-      console.error('Error removing subscription:', error);
+      logger.error('Error removing subscription:', error);
       res.status(500).json({ error: 'Failed to remove subscription' });
     }
   }
@@ -2387,7 +2388,7 @@ router.get('/users/:id/subscription-history', authRequired, roleRequired('admin'
       currentSubscription: user.subscription || null,
     });
   } catch (error) {
-    console.error('Error fetching subscription history:', error);
+    logger.error('Error fetching subscription history:', error);
     res.status(500).json({ error: 'Failed to fetch subscription history' });
   }
 });
@@ -2525,7 +2526,7 @@ router.post(
         failedUserIds,
       });
     } catch (error) {
-      console.error('Error granting bulk subscriptions:', error);
+      logger.error('Error granting bulk subscriptions:', error);
       res.status(500).json({ error: 'Failed to grant bulk subscriptions' });
     }
   }
@@ -2616,7 +2617,7 @@ router.post(
         originalUser: req.session.originalUser,
       });
     } catch (error) {
-      console.error('Error starting impersonation:', error);
+      logger.error('Error starting impersonation:', error);
       res.status(500).json({ error: 'Failed to start impersonation', details: error.message });
     }
   }
@@ -2677,7 +2678,7 @@ router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req,
       user: originalUser,
     });
   } catch (error) {
-    console.error('Error stopping impersonation:', error);
+    logger.error('Error stopping impersonation:', error);
     res.status(500).json({ error: 'Failed to stop impersonation', details: error.message });
   }
 });
@@ -2810,7 +2811,7 @@ router.get('/users/segments', authRequired, roleRequired('admin'), async (req, r
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error generating user segments:', error);
+    logger.error('Error generating user segments:', error);
     res.status(500).json({ error: 'Failed to generate user segments', details: error.message });
   }
 });

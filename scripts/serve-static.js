@@ -78,6 +78,19 @@ const canonicalPages = [
   'contact',
   'legal',
   'credits',
+  'checkout',
+  'privacy',
+  'terms',
+  'payment-success',
+  'payment-cancel',
+  'my-marketplace-listings',
+  'budget',
+  'plan',
+  'settings',
+  'timeline',
+  'notifications',
+  'guests',
+  'messages',
 ];
 
 canonicalPages.forEach(page => {
@@ -85,9 +98,10 @@ canonicalPages.forEach(page => {
   app.get(`/${page}`, (req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, `${page}.html`));
   });
-  // Redirect .html to canonical
+  // Redirect .html to canonical, preserving any query string
   app.get(`/${page}.html`, (req, res) => {
-    res.redirect(301, `/${page}`);
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    res.redirect(301, `/${page}${qs}`);
   });
 });
 

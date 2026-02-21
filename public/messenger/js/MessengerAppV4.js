@@ -41,7 +41,7 @@ class MessengerAppV4 {
       // 1. Load current user
       this.currentUser = await this._loadCurrentUser();
       if (!this.currentUser) {
-        window.location.href = '/login.html';
+        window.location.href = '/auth';
         return;
       }
       this.state.setCurrentUser(this.currentUser);
@@ -808,9 +808,9 @@ class MessengerAppV4 {
       }
     }
 
-    // Legacy fallback: AuthState
-    if (window.AuthState?.getUser) {
-      const user = window.AuthState.getUser();
+    // Legacy fallback: AuthStateManager
+    if (window.AuthStateManager?.getUser) {
+      const user = window.AuthStateManager.getUser();
       if (user) {
         return user;
       }

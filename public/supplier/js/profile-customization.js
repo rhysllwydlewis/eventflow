@@ -306,9 +306,9 @@
   async function init() {
     // Check authentication
     try {
-      const response = await fetch('/api/auth/me', { credentials: 'include' });
+      const response = await fetch('/api/v1/auth/me', { credentials: 'include' });
       if (!response.ok) {
-        window.location.href = `/auth.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+        window.location.href = `/auth?redirect=${encodeURIComponent(window.location.pathname)}`;
         return;
       }
       const data = await response.json();
@@ -318,7 +318,7 @@
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      window.location.href = '/auth.html';
+      window.location.href = '/auth';
       return;
     }
 

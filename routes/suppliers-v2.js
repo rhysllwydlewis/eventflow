@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Dependencies injected by server.js
@@ -140,7 +141,7 @@ router.get('/:id/photos', applyAuthRequired, async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('List photos error:', error);
+    logger.error('List photos error:', error);
     res.status(500).json({ error: 'Failed to list photos', details: error.message });
   }
 });
@@ -233,10 +234,10 @@ router.delete('/:id/photos/:photoId', applyAuthRequired, applyCsrfProtection, as
           await require('fs').promises.unlink(filePath);
         } catch (err) {
           // File may not exist, log but don't fail
-          console.warn('Could not delete photo file:', err.message);
+          logger.warn('Could not delete photo file:', err.message);
         }
       } else {
-        console.error('Path traversal attempt detected:', removedPhoto.url);
+        logger.error('Path traversal attempt detected:', removedPhoto.url);
       }
     }
 
@@ -246,7 +247,7 @@ router.delete('/:id/photos/:photoId', applyAuthRequired, applyCsrfProtection, as
       remainingPhotos: supplier.photosGallery.length,
     });
   } catch (error) {
-    console.error('Delete photo error:', error);
+    logger.error('Delete photo error:', error);
     res.status(500).json({ error: 'Failed to delete photo', details: error.message });
   }
 });

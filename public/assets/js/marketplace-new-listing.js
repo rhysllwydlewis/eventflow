@@ -53,14 +53,14 @@
 
       if (res.status === 401) {
         // Not logged in - redirect to auth
-        window.location.href = '/auth.html?redirect=/supplier/marketplace-new-listing.html';
+        window.location.href = '/auth?redirect=/supplier/marketplace-new-listing';
         return false;
       }
 
       if (!res.ok) {
         showToast('Unable to verify authentication', 'error');
         setTimeout(() => {
-          window.location.href = '/auth.html';
+          window.location.href = '/auth';
         }, 2000);
         return false;
       }
@@ -77,7 +77,7 @@
       }
 
       if (!currentUser) {
-        window.location.href = '/auth.html?redirect=/supplier/marketplace-new-listing.html';
+        window.location.href = '/auth?redirect=/supplier/marketplace-new-listing';
         return false;
       }
 
@@ -131,7 +131,7 @@
       console.error('Error loading listing:', error);
       showToast('Failed to load listing for editing', 'error');
       setTimeout(() => {
-        window.location.href = '/my-marketplace-listings.html';
+        window.location.href = '/my-marketplace-listings';
       }, 2000);
     }
   }
@@ -632,7 +632,7 @@
 
         // Redirect to my listings page after a short delay
         setTimeout(() => {
-          window.location.href = '/my-marketplace-listings.html';
+          window.location.href = '/my-marketplace-listings';
         }, 1500);
       } catch (error) {
         console.error('Error submitting listing:', error);

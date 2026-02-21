@@ -6,6 +6,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
@@ -114,7 +115,7 @@ router.post('/', csrfProtection, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Create quote request error:', error);
+    logger.error('Create quote request error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to submit quote request',
@@ -147,7 +148,7 @@ router.get('/', async (req, res) => {
       data: { requests: userRequests },
     });
   } catch (error) {
-    console.error('Get quote requests error:', error);
+    logger.error('Get quote requests error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve quote requests',
@@ -194,7 +195,7 @@ router.get('/:id', async (req, res) => {
       data: { request },
     });
   } catch (error) {
-    console.error('Get quote request error:', error);
+    logger.error('Get quote request error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve quote request',

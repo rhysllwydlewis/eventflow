@@ -6,6 +6,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 
 // Health check endpoints that should remain accessible during maintenance
 // for platform health checks (Railway, Kubernetes, etc.)
@@ -30,7 +31,7 @@ async function maintenanceMode(req, res, next) {
 
       if (now >= expiresAt) {
         // Maintenance period has expired - auto-disable
-        console.log('Maintenance mode expired, auto-disabling...');
+        logger.info('Maintenance mode expired, auto-disabling...');
         maintenance.enabled = false;
         maintenance.autoDisabledAt = now.toISOString();
         settings.maintenance = maintenance;
@@ -103,7 +104,7 @@ async function maintenanceMode(req, res, next) {
     // For HTML requests from non-admin users, redirect to maintenance page
     res.redirect('/maintenance.html');
   } catch (error) {
-    console.error('Error in maintenance middleware:', error);
+    logger.error('Error in maintenance middleware:', error);
     // On error, allow access (fail-open for safety)
     next();
   }

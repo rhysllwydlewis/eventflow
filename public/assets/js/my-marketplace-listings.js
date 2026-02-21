@@ -107,7 +107,7 @@
         <p class="small" style="margin-top: 8px;">
           You need to be logged in to view and manage your marketplace listings.
         </p>
-        <a href="/auth.html?redirect=/my-marketplace-listings.html" class="cta" style="margin-top: 12px; display: inline-block;">
+        <a href="/auth?redirect=/my-marketplace-listings" class="cta" style="margin-top: 12px; display: inline-block;">
           Log in or Sign up
         </a>
       `;
@@ -128,8 +128,8 @@
         <p><strong>Supplier account required</strong></p>
         <p class="small" style="margin-top: 8px;">
           You need a supplier account to manage marketplace listings. 
-          <a href="/for-suppliers.html">Learn more about becoming a supplier</a> or 
-          <a href="/contact.html">contact support</a> for help.
+          <a href="/for-suppliers">Learn more about becoming a supplier</a> or 
+          <a href="/contact">contact support</a> for help.
         </p>
       `;
     }
@@ -175,7 +175,7 @@
         // Logged out - show toast and redirect to auth
         showToast('Please log in to list items');
         setTimeout(() => {
-          window.location.href = '/auth.html?redirect=/my-marketplace-listings.html';
+          window.location.href = '/auth?redirect=/my-marketplace-listings';
         }, 1500);
         return;
       }
@@ -311,7 +311,7 @@
         <div class="card" style="text-align: center; padding: 3rem;">
           <h3>No saved items yet</h3>
           <p class="small">Tap the heart icon on marketplace listings to save items here.</p>
-          <a href="/marketplace.html" class="cta" style="margin-top: 1rem; display: inline-flex;">Browse Marketplace</a>
+          <a href="/marketplace" class="cta" style="margin-top: 1rem; display: inline-flex;">Browse Marketplace</a>
         </div>
       `;
       return;
@@ -420,7 +420,7 @@
           </div>
         </div>
         <div class="listing-card-actions">
-          <a class="cta secondary" href="/marketplace.html">View in Marketplace</a>
+          <a class="cta secondary" href="/marketplace">View in Marketplace</a>
           <button class="cta ghost" onclick="window.MyListings.unsaveListing('${savedItem.id}')">Remove Saved</button>
         </div>
       </div>

@@ -6,6 +6,8 @@
 'use strict';
 
 const express = require('express');
+const { randomInt } = require('crypto');
+const logger = require('../utils/logger');
 
 const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
@@ -46,8 +48,8 @@ router.post('/send-code', csrfProtection, writeLimiter, authRequired, async (req
       });
     }
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate cryptographically secure 6-digit code
+    const code = randomInt(100000, 1000000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Save code to database
@@ -78,7 +80,7 @@ router.post('/send-code', csrfProtection, writeLimiter, authRequired, async (req
           expiresIn: 600, // 10 minutes in seconds
         });
       } catch (twilioError) {
-        console.error('Twilio SMS error:', twilioError);
+        logger.error('Twilio SMS error:', twilioError);
 
         // In development, return the code for testing
         if (process.env.NODE_ENV !== 'production') {
@@ -114,7 +116,7 @@ router.post('/send-code', csrfProtection, writeLimiter, authRequired, async (req
       });
     }
   } catch (error) {
-    console.error('Phone verification send error:', error);
+    logger.error('Phone verification send error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to send verification code',
@@ -191,7 +193,7 @@ router.post('/verify-code', csrfProtection, authRequired, async (req, res) => {
       phoneNumber: user.phoneNumberToVerify,
     });
   } catch (error) {
-    console.error('Phone verification verify error:', error);
+    logger.error('Phone verification verify error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to verify phone number',
@@ -224,7 +226,7 @@ router.delete('/', csrfProtection, authRequired, async (req, res) => {
       message: 'Phone number removed successfully',
     });
   } catch (error) {
-    console.error('Phone removal error:', error);
+    logger.error('Phone removal error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to remove phone number',
@@ -248,7 +250,7 @@ router.get('/status', authRequired, async (req, res) => {
       verified: !!user?.phoneVerified,
     });
   } catch (error) {
-    console.error('Phone status error:', error);
+    logger.error('Phone status error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to get phone status',

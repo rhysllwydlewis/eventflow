@@ -366,7 +366,7 @@ async function init() {
       title: 'Sign in to view tickets',
       description: 'Log in to see your support tickets.',
       actionText: 'Sign In',
-      actionHref: '/auth.html',
+      actionHref: '/auth',
     });
     return;
   }

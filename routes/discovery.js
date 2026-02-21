@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { searchLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
@@ -103,7 +104,7 @@ router.get('/trending', searchLimiter, async (req, res) => {
       suppliers: trending,
     });
   } catch (error) {
-    console.error('Get trending error:', error);
+    logger.error('Get trending error:', error);
     res.status(500).json({ error: 'Failed to get trending suppliers', details: error.message });
   }
 });
@@ -162,7 +163,7 @@ router.get('/new', searchLimiter, async (req, res) => {
       suppliers: newSuppliers,
     });
   } catch (error) {
-    console.error('Get new arrivals error:', error);
+    logger.error('Get new arrivals error:', error);
     res.status(500).json({ error: 'Failed to get new suppliers', details: error.message });
   }
 });
@@ -221,7 +222,7 @@ router.get('/popular-packages', searchLimiter, async (req, res) => {
       packages,
     });
   } catch (error) {
-    console.error('Get popular packages error:', error);
+    logger.error('Get popular packages error:', error);
     res.status(500).json({ error: 'Failed to get popular packages', details: error.message });
   }
 });
@@ -241,7 +242,7 @@ router.get('/recommendations', searchLimiter, applyAuthRequired, async (req, res
       suppliers: recommendations,
     });
   } catch (error) {
-    console.error('Get recommendations error:', error);
+    logger.error('Get recommendations error:', error);
     res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
   }
 });

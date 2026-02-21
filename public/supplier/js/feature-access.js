@@ -46,7 +46,7 @@ let currentSupplierId = null;
 export async function initializeFeatureAccess() {
   try {
     // Check if user is authenticated via cookie-based auth
-    const authResponse = await fetch('/api/auth/me', {
+    const authResponse = await fetch('/api/v1/auth/me', {
       credentials: 'include',
     });
 

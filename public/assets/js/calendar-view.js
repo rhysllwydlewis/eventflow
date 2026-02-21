@@ -44,7 +44,7 @@
         description: plan.description || '',
         type: plan.eventType || plan.type || 'event',
         location: plan.location || '',
-        url: `/plan.html?id=${plan.id}`,
+        url: `/plan?id=${plan.id}`,
         backgroundColor: getEventColor(plan.eventType || plan.type),
         borderColor: getEventColor(plan.eventType || plan.type),
       }));

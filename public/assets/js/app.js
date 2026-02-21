@@ -149,29 +149,51 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/dashboard-supplier.html',
       '/dashboard.html',
       '/settings.html',
+      '/settings',
       '/plan.html',
+      '/plan',
       '/pricing.html',
+      '/pricing',
       '/checkout.html',
+      '/checkout',
       '/supplier/subscription.html',
       '/my-marketplace-listings.html',
+      '/my-marketplace-listings',
       '/supplier/marketplace-new-listing.html',
       '/marketplace',
       '/marketplace.html',
       '/conversation.html',
       '/messenger/',
+      '/notifications.html',
+      '/notifications',
+      '/timeline.html',
+      '/timeline',
+      '/budget.html',
+      '/budget',
     ],
     customer: [
       '/dashboard-customer.html',
       '/dashboard.html',
       '/settings.html',
+      '/settings',
       '/plan.html',
+      '/plan',
       '/pricing.html',
+      '/pricing',
       '/checkout.html',
+      '/checkout',
       '/my-marketplace-listings.html',
+      '/my-marketplace-listings',
       '/marketplace',
       '/marketplace.html',
       '/conversation.html',
       '/messenger/',
+      '/notifications.html',
+      '/notifications',
+      '/timeline.html',
+      '/timeline',
+      '/budget.html',
+      '/budget',
     ],
   };
 
@@ -429,7 +451,7 @@ async function initResults() {
           <p class="empty-state-message">
             No suppliers match your search yet. Try clearing filters, searching by town or city, or starting again from the Start page.
           </p>
-          <a href="/start.html" class="btn btn-primary">Start Over</a>
+          <a href="/start" class="btn btn-primary">Start Over</a>
         </div>
       `;
       return;
@@ -546,7 +568,7 @@ async function initSupplier() {
     const c = document.getElementById('supplier-container');
     if (c) {
       c.innerHTML =
-        '<div class="card"><p>No supplier ID provided. Please return to the <a href="/suppliers.html">suppliers page</a>.</p></div>';
+        '<div class="card"><p>No supplier ID provided. Please return to the <a href="/suppliers">suppliers page</a>.</p></div>';
     }
     return;
   }
@@ -558,7 +580,7 @@ async function initSupplier() {
     const c = document.getElementById('supplier-container');
     if (c) {
       c.innerHTML =
-        '<div class="card"><p>Supplier not found. Please return to the <a href="/suppliers.html">suppliers page</a>.</p></div>';
+        '<div class="card"><p>Supplier not found. Please return to the <a href="/suppliers">suppliers page</a>.</p></div>';
     }
     return;
   }
@@ -3933,7 +3955,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ? 'admin_users'
       : location.pathname.endsWith('admin.html')
         ? 'admin'
-        : location.pathname.endsWith('auth.html')
+        : location.pathname.endsWith('auth.html') || location.pathname === '/auth'
           ? 'auth'
           : location.pathname.endsWith('verify.html') || location.pathname === '/verify'
             ? 'verify'
@@ -3945,7 +3967,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   ? 'results'
                   : location.pathname.endsWith('supplier.html')
                     ? 'supplier'
-                    : location.pathname.endsWith('plan.html')
+                    : location.pathname.endsWith('plan.html') || location.pathname === '/plan'
                       ? 'plan'
                       : '');
 
@@ -4060,15 +4082,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (existing && loginStatus) {
           const label = existing.name || existing.email || existing.role || 'your account';
           loginStatus.textContent = `You are already signed in as ${label}. Redirecting…`;
+
+          // Honour a valid redirect param (e.g. coming from the pricing page)
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          let destination = null;
+
+          if (redirectParam && validateRedirectForRole(redirectParam, existing.role)) {
+            destination = redirectParam;
+          } else if (existing.role === 'admin') {
+            destination = '/admin.html';
+          } else if (existing.role === 'supplier') {
+            destination = '/dashboard-supplier.html';
+          } else {
+            destination = '/dashboard-customer.html';
+          }
+
           setTimeout(() => {
-            // Use role-based routing, ignore any redirect params if already logged in
-            if (existing.role === 'admin') {
-              location.href = '/admin.html';
-            } else if (existing.role === 'supplier') {
-              location.href = '/dashboard-supplier.html';
-            } else {
-              location.href = '/dashboard-customer.html';
-            }
+            location.href = destination;
           }, 600);
         }
       } catch (_) {
@@ -5126,7 +5157,7 @@ async function initVerify() {
       }
       // Auto-redirect to login after 3 seconds
       setTimeout(() => {
-        window.location.href = '/auth.html';
+        window.location.href = '/auth';
       }, 3000);
     }
   } catch (err) {

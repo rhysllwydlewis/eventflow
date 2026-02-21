@@ -196,11 +196,10 @@
           return this._currentUserId;
         }
       }
-      // AuthState (legacy global used by some modules)
-      if (window.AuthState) {
-        const uid =
-          window.AuthState.userId ||
-          (window.AuthState.user && (window.AuthState.user.id || window.AuthState.user._id));
+      // AuthState (legacy global - dead code path, kept for safety)
+      if (window.AuthStateManager) {
+        const u2 = window.AuthStateManager.getUser();
+        const uid = u2 && (u2.id || u2._id);
         if (uid) {
           this._currentUserId = String(uid);
           return this._currentUserId;

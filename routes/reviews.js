@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -149,7 +150,7 @@ router.post(
         message,
       });
     } catch (error) {
-      console.error('Create review error:', error);
+      logger.error('Create review error:', error);
       res.status(400).json({ error: error.message });
     }
   }
@@ -210,7 +211,7 @@ router.post(
           : 'Review submitted successfully.',
       });
     } catch (error) {
-      console.error('Create review error:', error);
+      logger.error('Create review error:', error);
       res.status(400).json({ error: error.message });
     }
   }
@@ -242,7 +243,7 @@ router.get('/suppliers/:supplierId/reviews', async (req, res) => {
       ...result,
     });
   } catch (error) {
-    console.error('Get reviews error:', error);
+    logger.error('Get reviews error:', error);
     res.status(500).json({ error: 'Failed to get reviews', details: error.message });
   }
 });
@@ -268,7 +269,7 @@ router.get('/reviews/supplier/:supplierId', async (req, res) => {
       reviews: result.reviews,
     });
   } catch (error) {
-    console.error('Get reviews error:', error);
+    logger.error('Get reviews error:', error);
     res.status(500).json({ error: 'Failed to get reviews', details: error.message });
   }
 });
@@ -287,7 +288,7 @@ router.get('/reviews/supplier/:supplierId/distribution', async (req, res) => {
       ...distribution,
     });
   } catch (error) {
-    console.error('Get rating distribution error:', error);
+    logger.error('Get rating distribution error:', error);
     res.status(500).json({ error: 'Failed to get rating distribution', details: error.message });
   }
 });
@@ -322,7 +323,7 @@ router.post('/reviews/:reviewId/vote', applyCsrfProtection, async (req, res) => 
       message: `Marked as ${voteType}. Thank you for your feedback!`,
     });
   } catch (error) {
-    console.error('Vote on review error:', error);
+    logger.error('Vote on review error:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -349,7 +350,7 @@ router.post('/reviews/:reviewId/helpful', applyCsrfProtection, async (req, res) 
       message: 'Thank you for your feedback!',
     });
   } catch (error) {
-    console.error('Mark helpful error:', error);
+    logger.error('Mark helpful error:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -396,7 +397,7 @@ router.post(
         message: 'Response posted successfully',
       });
     } catch (error) {
-      console.error('Add supplier response error:', error);
+      logger.error('Add supplier response error:', error);
       res.status(400).json({ error: error.message });
     }
   }
@@ -429,7 +430,7 @@ router.get(
         ...dashboard,
       });
     } catch (error) {
-      console.error('Get supplier dashboard reviews error:', error);
+      logger.error('Get supplier dashboard reviews error:', error);
       res.status(500).json({ error: 'Failed to get dashboard data', details: error.message });
     }
   }
@@ -460,7 +461,7 @@ router.get('/admin/reviews', applyAuthRequired, applyRoleRequired('admin'), asyn
       reviews: result.reviews,
     });
   } catch (error) {
-    console.error('Get admin reviews error:', error);
+    logger.error('Get admin reviews error:', error);
     res.status(500).json({ error: 'Failed to get reviews', details: error.message });
   }
 });
@@ -483,7 +484,7 @@ router.get(
         reviews: flagged,
       });
     } catch (error) {
-      console.error('Get flagged reviews error:', error);
+      logger.error('Get flagged reviews error:', error);
       res.status(500).json({ error: 'Failed to get flagged reviews', details: error.message });
     }
   }
@@ -507,7 +508,7 @@ router.get(
         reviews: flagged,
       });
     } catch (error) {
-      console.error('Get pending reviews error:', error);
+      logger.error('Get pending reviews error:', error);
       res.status(500).json({ error: 'Failed to get pending reviews', details: error.message });
     }
   }
@@ -545,7 +546,7 @@ router.post(
         message: action === 'approve' ? 'Review approved' : 'Review rejected',
       });
     } catch (error) {
-      console.error('Moderate review error:', error);
+      logger.error('Moderate review error:', error);
       res.status(400).json({ error: error.message });
     }
   }
@@ -579,7 +580,7 @@ router.post(
         message: approved ? 'Review approved' : 'Review rejected',
       });
     } catch (error) {
-      console.error('Approve review error:', error);
+      logger.error('Approve review error:', error);
       res.status(400).json({ error: error.message });
     }
   }
@@ -601,7 +602,7 @@ router.delete('/reviews/:reviewId', applyAuthRequired, applyCsrfProtection, asyn
       message: 'Review deleted successfully',
     });
   } catch (error) {
-    console.error('Delete review error:', error);
+    logger.error('Delete review error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const logger = require('./utils/logger');
 const path = require('path');
 
 const DATA_DIR = path.join(__dirname, 'data');
@@ -45,7 +46,7 @@ function read(name) {
   // Safety check: if the collection name is not registered, return empty array/object
   if (!files[name]) {
     if (process.env.NODE_ENV === 'test') {
-      console.warn(
+      logger.warn(
         `Warning: Attempted to read unknown collection '${name}' - returning empty array in test mode`
       );
       return [];
@@ -80,7 +81,7 @@ function write(name, data) {
   // Safety check: if the collection name is not registered, skip the write in test environment
   if (!file) {
     if (process.env.NODE_ENV === 'test') {
-      console.warn(
+      logger.warn(
         `Warning: Attempted to write unknown collection '${name}' - skipping in test mode`
       );
       return;

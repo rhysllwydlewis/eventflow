@@ -8,6 +8,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
+const logger = require('./logger');
 const { uid } = require('../store');
 const { getPexelsService } = require('./pexels-service');
 
@@ -428,7 +429,7 @@ async function fetchPexelsPhoto(category) {
   const pexels = getPexelsService();
 
   if (!pexels.isConfigured()) {
-    console.warn('⚠️  Pexels not configured, using placeholder images');
+    logger.warn('⚠️  Pexels not configured, using placeholder images');
     return null;
   }
 
@@ -452,7 +453,7 @@ async function fetchPexelsPhoto(category) {
       return randomPhoto.src.medium; // Use medium size for profile photos
     }
   } catch (error) {
-    console.warn(`⚠️  Could not fetch Pexels photo for ${category}:`, error.message);
+    logger.warn(`⚠️  Could not fetch Pexels photo for ${category}:`, error.message);
   }
 
   return null;
@@ -489,7 +490,7 @@ async function fetchPexelsPhotos(category, count = 3) {
       return results.photos.slice(0, count).map(photo => photo.src.large);
     }
   } catch (error) {
-    console.warn(`⚠️  Could not fetch Pexels photos for ${category}:`, error.message);
+    logger.warn(`⚠️  Could not fetch Pexels photos for ${category}:`, error.message);
   }
 
   return [];
@@ -499,7 +500,7 @@ async function fetchPexelsPhotos(category, count = 3) {
  * Seed founding suppliers into database
  */
 async function seedFoundingSuppliers() {
-  console.log('🌱 Starting founding suppliers seed...');
+  logger.info('🌱 Starting founding suppliers seed...');
 
   try {
     await dbUnified.initializeDatabase();
@@ -517,14 +518,14 @@ async function seedFoundingSuppliers() {
     const usePexels = pexels.isConfigured();
 
     if (usePexels) {
-      console.log('📸 Pexels API configured - will fetch profile photos');
+      logger.info('📸 Pexels API configured - will fetch profile photos');
     } else {
-      console.log('⚠️  Pexels API not configured - using placeholder images');
+      logger.info('⚠️  Pexels API not configured - using placeholder images');
     }
 
     // Generate suppliers for each category
     for (const [category, suppliers] of Object.entries(SUPPLIER_DATA)) {
-      console.log(`\n📦 Processing ${category} suppliers...`);
+      logger.info(`\n📦 Processing ${category} suppliers...`);
 
       for (const supplierData of suppliers) {
         const supplierId = uid('sup');
@@ -536,7 +537,7 @@ async function seedFoundingSuppliers() {
           const pexelsLogo = await fetchPexelsPhoto(category);
           if (pexelsLogo) {
             logoUrl = pexelsLogo;
-            console.log(`  ✓ Fetched profile photo for ${supplierData.name}`);
+            logger.info(`  ✓ Fetched profile photo for ${supplierData.name}`);
           }
         }
 
@@ -547,7 +548,7 @@ async function seedFoundingSuppliers() {
           const pexelsPhotos = await fetchPexelsPhotos(category, 3);
           if (pexelsPhotos.length > 0) {
             photos = pexelsPhotos;
-            console.log(`  ✓ Fetched ${pexelsPhotos.length} photos for ${supplierData.name}`);
+            logger.info(`  ✓ Fetched ${pexelsPhotos.length} photos for ${supplierData.name}`);
           }
         }
 
@@ -627,7 +628,7 @@ async function seedFoundingSuppliers() {
       },
     ];
 
-    console.log('\n📦 Processing additional suppliers...');
+    logger.info('\n📦 Processing additional suppliers...');
 
     for (const supplierData of additionalSuppliers) {
       const supplierId = uid('sup');
@@ -639,7 +640,7 @@ async function seedFoundingSuppliers() {
         const pexelsLogo = await fetchPexelsPhoto(supplierData.category);
         if (pexelsLogo) {
           logoUrl = pexelsLogo;
-          console.log(`  ✓ Fetched profile photo for ${supplierData.name}`);
+          logger.info(`  ✓ Fetched profile photo for ${supplierData.name}`);
         }
       }
 
@@ -650,7 +651,7 @@ async function seedFoundingSuppliers() {
         const pexelsPhotos = await fetchPexelsPhotos(supplierData.category, 3);
         if (pexelsPhotos.length > 0) {
           photos = pexelsPhotos;
-          console.log(`  ✓ Fetched ${pexelsPhotos.length} photos for ${supplierData.name}`);
+          logger.info(`  ✓ Fetched ${pexelsPhotos.length} photos for ${supplierData.name}`);
         }
       }
 
@@ -710,13 +711,13 @@ async function seedFoundingSuppliers() {
     try {
       await dbUnified.write('reviews', updatedReviews);
     } catch (error) {
-      console.warn('Could not write reviews:', error.message);
+      logger.warn('Could not write reviews:', error.message);
     }
 
-    console.log(`✅ Created ${allSuppliers.length} founding suppliers`);
-    console.log(`✅ Created ${allPackages.length} packages`);
-    console.log(`✅ Created ${allReviews.length} reviews`);
-    console.log('🌱 Founding suppliers seed complete!');
+    logger.info(`✅ Created ${allSuppliers.length} founding suppliers`);
+    logger.info(`✅ Created ${allPackages.length} packages`);
+    logger.info(`✅ Created ${allReviews.length} reviews`);
+    logger.info('🌱 Founding suppliers seed complete!');
 
     return {
       suppliers: allSuppliers.length,
@@ -724,7 +725,7 @@ async function seedFoundingSuppliers() {
       reviews: allReviews.length,
     };
   } catch (error) {
-    console.error('❌ Error seeding founding suppliers:', error);
+    logger.error('❌ Error seeding founding suppliers:', error);
     throw error;
   }
 }
@@ -733,11 +734,11 @@ async function seedFoundingSuppliers() {
 if (require.main === module) {
   seedFoundingSuppliers()
     .then(result => {
-      console.log('Seed completed:', result);
+      logger.info('Seed completed:', result);
       process.exit(0);
     })
     .catch(error => {
-      console.error('Seed failed:', error);
+      logger.error('Seed failed:', error);
       process.exit(1);
     });
 }

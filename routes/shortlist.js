@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
@@ -79,7 +80,7 @@ router.get('/', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get shortlist error:', error);
+    logger.error('Get shortlist error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve shortlist',
@@ -161,7 +162,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
       data: { item },
     });
   } catch (error) {
-    console.error('Add to shortlist error:', error);
+    logger.error('Add to shortlist error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to add item to shortlist',
@@ -206,7 +207,7 @@ router.delete('/:type/:id', authRequired, csrfProtection, async (req, res) => {
       message: 'Item removed from shortlist',
     });
   } catch (error) {
-    console.error('Remove from shortlist error:', error);
+    logger.error('Remove from shortlist error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to remove item from shortlist',
@@ -240,7 +241,7 @@ router.delete('/', authRequired, csrfProtection, async (req, res) => {
       message: 'Shortlist cleared',
     });
   } catch (error) {
-    console.error('Clear shortlist error:', error);
+    logger.error('Clear shortlist error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to clear shortlist',

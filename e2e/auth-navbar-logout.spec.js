@@ -28,7 +28,7 @@ test.describe('Authentication Navbar and Logout Flow @backend', () => {
 
     // Should be redirected to auth page with redirect parameter
     const url = page.url();
-    expect(url).toContain('/auth.html');
+    expect(url).toContain('/auth');
     expect(url).toContain('redirect=');
     expect(url).toContain('dashboard-customer.html');
   });

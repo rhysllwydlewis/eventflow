@@ -8,6 +8,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 const store = require('../store');
 const sentimentAnalysis = require('../utils/sentimentAnalysis');
 const ReviewModel = require('../models/Review');
@@ -181,13 +182,13 @@ async function createReview(reviewData, userId) {
       rating: reviewData.rating,
       verified: verificationStatus !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED,
     })
-    .catch(err => console.error('Failed to track review received:', err));
+    .catch(err => logger.error('Failed to track review received:', err));
 
   // Trigger badge evaluation for supplier (async, non-blocking)
   const badgeManagement = require('../utils/badgeManagement');
   badgeManagement
     .evaluateSupplierBadges(reviewData.supplierId)
-    .catch(err => console.error('Failed to evaluate supplier badges:', err));
+    .catch(err => logger.error('Failed to evaluate supplier badges:', err));
 
   return {
     reviewId: review._id,

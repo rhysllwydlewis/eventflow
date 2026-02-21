@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Blog Tag Filtering', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/blog.html');
+    await page.goto('/blog');
     await page.waitForSelector('#blog-articles .article-card');
     await page.waitForSelector('.tag-filter');
   });

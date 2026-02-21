@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { csrfProtection } = require('./csrf');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
@@ -101,7 +102,7 @@ router.get('/', async (req, res) => {
       experiments: activeExperiments,
     });
   } catch (error) {
-    console.error('Error fetching experiments:', error);
+    logger.error('Error fetching experiments:', error);
     res.status(500).json({ error: 'Failed to fetch experiments' });
   }
 });
@@ -133,7 +134,7 @@ router.get('/:name/variant', async (req, res) => {
       value: variantValue,
     });
   } catch (error) {
-    console.error('Error getting variant:', error);
+    logger.error('Error getting variant:', error);
     res.status(500).json({ error: 'Failed to get variant' });
   }
 });
@@ -178,7 +179,7 @@ router.post('/:name/convert', csrfProtection, async (req, res) => {
 
     res.json({ success: true, message: 'Conversion tracked' });
   } catch (error) {
-    console.error('Error tracking conversion:', error);
+    logger.error('Error tracking conversion:', error);
     // Fail silently for analytics
     res.json({ success: true, message: 'Conversion received' });
   }
@@ -228,7 +229,7 @@ router.post('/:name/view', csrfProtection, async (req, res) => {
 
     res.json({ success: true, message: 'View tracked' });
   } catch (error) {
-    console.error('Error tracking view:', error);
+    logger.error('Error tracking view:', error);
     // Fail silently for analytics
     res.json({ success: true, message: 'View received' });
   }
@@ -287,7 +288,7 @@ router.get('/:name/results', async (req, res) => {
       results,
     });
   } catch (error) {
-    console.error('Error fetching experiment results:', error);
+    logger.error('Error fetching experiment results:', error);
     res.status(500).json({ error: 'Failed to fetch experiment results' });
   }
 });

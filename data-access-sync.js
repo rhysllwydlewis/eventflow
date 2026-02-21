@@ -1,3 +1,4 @@
+const logger = require('./utils/logger.js');
 /**
  * Synchronous Data Access Wrapper for EventFlow
  *
@@ -9,9 +10,9 @@
 
 const { read: readLocal, write: writeLocal, uid, DATA_DIR } = require('./store');
 
-console.warn('⚠️  WARNING: data-access-sync.js is deprecated');
-console.warn('   This module always uses local storage, bypassing MongoDB');
-console.warn('   Update your code to use db-unified.js with async/await');
+logger.warn('⚠️  WARNING: data-access-sync.js is deprecated');
+logger.warn('   This module always uses local storage, bypassing MongoDB');
+logger.warn('   Update your code to use db-unified.js with async/await');
 
 /**
  * @deprecated Use db-unified.read() with await instead

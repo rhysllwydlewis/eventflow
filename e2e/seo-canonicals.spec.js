@@ -12,16 +12,16 @@ import { test, expect } from '@playwright/test';
 test.describe('SEO Canonicals', () => {
   const publicPages = [
     { path: '/', canonical: 'https://event-flow.co.uk/' },
-    { path: '/blog.html', canonical: 'https://event-flow.co.uk/blog.html' },
+    { path: '/blog', canonical: 'https://event-flow.co.uk/blog' },
     { path: '/suppliers', canonical: 'https://event-flow.co.uk/suppliers' },
     { path: '/marketplace', canonical: 'https://event-flow.co.uk/marketplace' },
-    { path: '/pricing.html', canonical: 'https://event-flow.co.uk/pricing.html' },
-    { path: '/start.html', canonical: 'https://event-flow.co.uk/start.html' },
-    { path: '/for-suppliers.html', canonical: 'https://event-flow.co.uk/for-suppliers.html' },
-    { path: '/faq.html', canonical: 'https://event-flow.co.uk/faq.html' },
-    { path: '/contact.html', canonical: 'https://event-flow.co.uk/contact.html' },
-    { path: '/privacy.html', canonical: 'https://event-flow.co.uk/privacy.html' },
-    { path: '/terms.html', canonical: 'https://event-flow.co.uk/terms.html' },
+    { path: '/pricing', canonical: 'https://event-flow.co.uk/pricing' },
+    { path: '/start', canonical: 'https://event-flow.co.uk/start' },
+    { path: '/for-suppliers', canonical: 'https://event-flow.co.uk/for-suppliers' },
+    { path: '/faq', canonical: 'https://event-flow.co.uk/faq' },
+    { path: '/contact', canonical: 'https://event-flow.co.uk/contact' },
+    { path: '/privacy', canonical: 'https://event-flow.co.uk/privacy' },
+    { path: '/terms', canonical: 'https://event-flow.co.uk/terms' },
   ];
 
   const articlePages = [

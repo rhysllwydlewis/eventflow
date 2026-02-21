@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -142,7 +143,7 @@ router.post(
       await seed();
       res.json({ ok: true });
     } catch (err) {
-      console.error('Reset demo failed', err);
+      logger.error('Reset demo failed', err);
       res.status(500).json({ error: 'Reset demo failed' });
     }
   }

@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 const { ObjectId } = require('mongodb');
 
@@ -51,7 +52,7 @@ async function createIndexes(db) {
   // Index for statistics and monitoring
   await collection.createIndex({ createdAt: -1 });
 
-  console.log('✅ LinkPreview indexes created');
+  logger.info('✅ LinkPreview indexes created');
 }
 
 /**
@@ -67,7 +68,7 @@ function normalizeUrl(url) {
     // Remove trailing slashes, fragments, and tracking parameters
     parsed.hash = '';
     const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
-    trackingParams.forEach((param) => parsed.searchParams.delete(param));
+    trackingParams.forEach(param => parsed.searchParams.delete(param));
 
     let normalized = parsed.toString();
     if (normalized.endsWith('/')) {
@@ -141,11 +142,11 @@ function extractUrls(content) {
 
   // Remove duplicates and normalize
   const urls = matches
-    .map((url) => {
+    .map(url => {
       // Remove trailing punctuation
       return url.replace(/[.,;!?]+$/, '');
     })
-    .filter((url) => normalizeUrl(url)); // Only valid URLs
+    .filter(url => normalizeUrl(url)); // Only valid URLs
 
   return [...new Set(urls)];
 }

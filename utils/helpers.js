@@ -7,6 +7,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const logger = require('./logger');
 
 /**
  * Generate unique ID
@@ -54,7 +55,7 @@ async function supplierIsProActive(userIdOrSupplier) {
     const validPlans = ['pro', 'pro_plus', 'enterprise'];
     return validPlans.includes(subscription.plan);
   } catch (error) {
-    console.error('Error checking Pro status:', error);
+    logger.error('Error checking Pro status:', error);
     return false;
   }
 }

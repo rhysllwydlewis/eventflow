@@ -6,6 +6,7 @@
 'use strict';
 
 const cache = require('../cache');
+const logger = require('../utils/logger');
 
 /**
  * Cache middleware for GET requests
@@ -71,7 +72,7 @@ function cacheMiddleware(options = {}) {
 
         // Cache the response
         cache.set(cacheKey, { data, etag: etagValue }, ttl).catch(err => {
-          console.error('Cache set error:', err);
+          logger.error('Cache set error:', err);
         });
 
         return originalJson(data);
@@ -79,7 +80,7 @@ function cacheMiddleware(options = {}) {
 
       next();
     } catch (error) {
-      console.error('Cache middleware error:', error);
+      logger.error('Cache middleware error:', error);
       next();
     }
   };
@@ -109,7 +110,7 @@ function invalidateCacheMiddleware(options = {}) {
         const statusCode = res.statusCode;
         if (statusCode >= 200 && statusCode < 300) {
           cache.delPattern(pattern).catch(err => {
-            console.error('Cache invalidation error:', err);
+            logger.error('Cache invalidation error:', err);
           });
         }
 
@@ -134,10 +135,10 @@ function cacheWarmingMiddleware(warmingFunction, ttl = 3600) {
       const data = await warmingFunction();
       if (data) {
         await cache.warmCache(data, ttl);
-        console.log('✅ Cache warmed with critical data');
+        logger.info('✅ Cache warmed with critical data');
       }
     } catch (error) {
-      console.error('Cache warming error:', error);
+      logger.error('Cache warming error:', error);
     }
     next();
   };

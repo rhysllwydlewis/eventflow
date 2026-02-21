@@ -143,7 +143,7 @@
         }
 
         // For paid plans, redirect to auth with return URL
-        window.location.href = `/auth.html?redirect=${encodeURIComponent(
+        window.location.href = `/auth?redirect=${encodeURIComponent(
           `${window.location.pathname}${window.location.search}`
         )}`;
         return false;
@@ -279,7 +279,7 @@
     try {
       // Handle free plan - just redirect to sign up or dashboard
       if (plan.isFree) {
-        window.location.href = '/auth.html?plan=free';
+        window.location.href = '/auth?plan=free';
         return;
       }
 

@@ -6,6 +6,7 @@
 'use strict';
 
 const subscriptionService = require('../services/subscriptionService');
+const logger = require('../utils/logger');
 const dbUnified = require('../db-unified');
 const { TIER_LEVELS } = require('../models/Subscription');
 
@@ -71,7 +72,7 @@ function requireSubscription(minTier = 'free') {
         upgradeUrl: '/supplier/subscription.html',
       });
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      logger.error('Error checking subscription:', error);
       return res.status(500).json({ error: 'Failed to check subscription status' });
     }
   };
@@ -100,7 +101,7 @@ function checkFeatureLimit(feature) {
         upgradeUrl: '/supplier/subscription.html',
       });
     } catch (error) {
-      console.error('Error checking feature access:', error);
+      logger.error('Error checking feature access:', error);
       return res.status(500).json({ error: 'Failed to check feature access' });
     }
   };

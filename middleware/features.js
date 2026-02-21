@@ -6,6 +6,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 
 /**
  * Get current feature flags from settings
@@ -25,7 +26,7 @@ async function getFeatureFlags() {
       pexelsCollage: features.pexelsCollage === true,
     };
   } catch (error) {
-    console.error('Error reading feature flags:', error);
+    logger.error('Error reading feature flags:', error);
     // Return all features enabled as fallback to prevent breaking the site
     return {
       registration: true,
@@ -59,7 +60,7 @@ function featureRequired(featureName) {
 
       next();
     } catch (error) {
-      console.error(`Error checking feature flag '${featureName}':`, error);
+      logger.error(`Error checking feature flag '${featureName}':`, error);
       // Allow request to proceed on error to prevent breaking the site
       next();
     }

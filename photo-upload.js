@@ -38,12 +38,12 @@ async function checkMongoDBAvailability() {
     const isAvailable = await mongoDb.isMongoAvailable();
     if (isAvailable) {
       STORAGE_TYPE = 'mongodb';
-      console.log('✓ Photos will be stored in MongoDB (persistent across deployments)');
+      logger.info('✓ Photos will be stored in MongoDB (persistent across deployments)');
     } else {
-      console.log('⚠ MongoDB not available - using local storage (photos may not persist)');
+      logger.info('⚠ MongoDB not available - using local storage (photos may not persist)');
     }
   } catch (error) {
-    console.log('⚠ Could not check MongoDB - using local storage:', error.message);
+    logger.info('⚠ Could not check MongoDB - using local storage:', error.message);
   }
 }
 
@@ -938,7 +938,7 @@ async function deleteImage(url) {
       })
     );
   } catch (error) {
-    console.error('Error deleting image:', error);
+    logger.error('Error deleting image:', error);
     // Don't throw - deletion failures shouldn't break the app
   }
 }

@@ -146,7 +146,7 @@ async function verifyHCaptcha(token) {
     if (process.env.NODE_ENV === 'production') {
       return { success: false, error: 'CAPTCHA verification not configured' };
     }
-    console.warn(
+    logger.warn(
       'hCaptcha verification skipped - HCAPTCHA_SECRET not configured (development only)'
     );
     return { success: true, warning: 'Captcha verification disabled in development' };
@@ -182,10 +182,10 @@ async function verifyHCaptcha(token) {
     }
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error('hCaptcha verification timeout');
+      logger.error('hCaptcha verification timeout');
       return { success: false, error: 'Captcha verification timeout' };
     }
-    console.error('Error verifying captcha:', error);
+    logger.error('Error verifying captcha:', error);
     return { success: false, error: 'Captcha verification error' };
   }
 }
@@ -329,9 +329,9 @@ function logIntegrationStartupSummary() {
     },
   ];
 
-  console.log('   Integration summary:');
+  logger.info('   Integration summary:');
   for (const item of integrationSummary) {
-    console.log(`   - ${item.name}: ${item.status} (${item.required})`);
+    logger.info(`   - ${item.name}: ${item.status} (${item.required})`);
   }
 }
 
@@ -463,12 +463,26 @@ const canonicalPages = [
   'contact',
   'legal',
   'credits',
+  'checkout',
+  'privacy',
+  'terms',
+  'payment-success',
+  'payment-cancel',
+  'my-marketplace-listings',
+  'budget',
+  'plan',
+  'settings',
+  'timeline',
+  'notifications',
+  'guests',
+  'messages',
 ];
 
 canonicalPages.forEach(page => {
-  // Redirect .html to canonical (this ensures canonical URLs)
+  // Redirect .html to canonical, preserving any query string
   app.get(`/${page}.html`, (req, res) => {
-    res.redirect(301, `/${page}`);
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    res.redirect(301, `/${page}${qs}`);
   });
   // The canonical URL without .html is handled by template middleware + static files
 });
@@ -818,7 +832,7 @@ app.use((req, res) => {
 
   // Log 404 for debugging (but not for common static assets)
   if (!url.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf)$/i)) {
-    console.warn(`404 Not Found: [${method}] ${url}`);
+    logger.warn(`404 Not Found: [${method}] ${url}`);
   }
 
   // Return JSON for API requests or if client accepts JSON
@@ -984,76 +998,76 @@ function initializeWebSocketV2(db) {
 async function startServer() {
   // Set startup timeout to prevent hanging
   const startupTimeout = setTimeout(() => {
-    console.error('');
-    console.error('='.repeat(60));
-    console.error('❌ STARTUP TIMEOUT');
-    console.error('='.repeat(60));
-    console.error('Server startup took longer than 30 seconds');
-    console.error('This usually indicates:');
-    console.error('  - Database connection hanging');
-    console.error('  - Email service not responding');
-    console.error('  - Network connectivity issues');
-    console.error('');
-    console.error('Check your configuration and try again.');
-    console.error('='.repeat(60));
+    logger.error('');
+    logger.error('='.repeat(60));
+    logger.error('❌ STARTUP TIMEOUT');
+    logger.error('='.repeat(60));
+    logger.error('Server startup took longer than 30 seconds');
+    logger.error('This usually indicates:');
+    logger.error('  - Database connection hanging');
+    logger.error('  - Email service not responding');
+    logger.error('  - Network connectivity issues');
+    logger.error('');
+    logger.error('Check your configuration and try again.');
+    logger.error('='.repeat(60));
     process.exit(1);
   }, 30000); // 30 seconds
 
   try {
-    console.log('='.repeat(60));
-    console.log(`EventFlow ${APP_VERSION} - Starting Server`);
-    console.log('='.repeat(60));
-    console.log('');
+    logger.info('='.repeat(60));
+    logger.info(`EventFlow ${APP_VERSION} - Starting Server`);
+    logger.info('='.repeat(60));
+    logger.info('');
 
     // 1. Validate critical environment variables
-    console.log('📋 Checking configuration...');
+    logger.info('📋 Checking configuration...');
     const baseUrl = resolveBaseUrl();
-    console.log(`   BASE_URL: ${baseUrl}`);
-    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`   PORT: ${PORT}`);
+    logger.info(`   BASE_URL: ${baseUrl}`);
+    logger.info(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`   PORT: ${PORT}`);
 
     if (isProduction && baseUrl.includes('localhost')) {
-      console.warn('⚠️  Warning: BASE_URL points to localhost in production');
-      console.warn('   Set BASE_URL to your actual domain (e.g., https://event-flow.co.uk)');
+      logger.warn('⚠️  Warning: BASE_URL points to localhost in production');
+      logger.warn('   Set BASE_URL to your actual domain (e.g., https://event-flow.co.uk)');
     }
 
     const missingCriticalConfig = getMissingCriticalProductionConfig(baseUrl);
     const allowDegradedStartup = process.env.ALLOW_DEGRADED_STARTUP === 'true';
     if (missingCriticalConfig.length > 0) {
-      console.error('');
-      console.error('❌ CRITICAL PRODUCTION CONFIGURATION MISSING');
-      console.error(`   Missing/invalid: ${missingCriticalConfig.join(', ')}`);
-      console.error(
+      logger.error('');
+      logger.error('❌ CRITICAL PRODUCTION CONFIGURATION MISSING');
+      logger.error(`   Missing/invalid: ${missingCriticalConfig.join(', ')}`);
+      logger.error(
         '   Set required values or use ALLOW_DEGRADED_STARTUP=true to bypass temporarily.'
       );
       if (!allowDegradedStartup) {
         process.exit(1);
       }
-      console.warn('   ALLOW_DEGRADED_STARTUP enabled; continuing with degraded startup.');
+      logger.warn('   ALLOW_DEGRADED_STARTUP enabled; continuing with degraded startup.');
     }
 
     // 2. Pre-flight database validation (before initialization)
-    console.log('');
-    console.log('🔌 Validating database configuration...');
+    logger.info('');
+    logger.info('🔌 Validating database configuration...');
 
     // Check if MongoDB is configured and validate the URI format
     if (process.env.MONGODB_URI) {
-      console.log('   MongoDB URI detected - validating format...');
+      logger.info('   MongoDB URI detected - validating format...');
 
       // The validation will happen in db.js getConnectionUri(), but we can provide
       // early feedback here if we detect obvious issues
       const uri = process.env.MONGODB_URI;
 
       if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
-        console.error('');
-        console.error('❌ INVALID MONGODB_URI FORMAT');
-        console.error('   Your connection string must start with:');
-        console.error('   • mongodb:// or mongodb+srv://');
-        console.error('');
-        console.error('   Current value starts with:', `${uri.substring(0, 10)}...`);
-        console.error('');
-        console.error('📚 Setup guide: See MONGODB_SETUP_SIMPLE.md');
-        console.error('');
+        logger.error('');
+        logger.error('❌ INVALID MONGODB_URI FORMAT');
+        logger.error('   Your connection string must start with:');
+        logger.error('   • mongodb:// or mongodb+srv://');
+        logger.error('');
+        logger.error('   Current value starts with:', `${uri.substring(0, 10)}...`);
+        logger.error('');
+        logger.error('📚 Setup guide: See MONGODB_SETUP_SIMPLE.md');
+        logger.error('');
         process.exit(1);
       }
 
@@ -1066,94 +1080,94 @@ async function startServer() {
         uri.includes('<username>');
 
       if (hasPlaceholder) {
-        console.error('');
-        console.error('❌ MONGODB_URI CONTAINS PLACEHOLDER VALUES');
-        console.error(
+        logger.error('');
+        logger.error('❌ MONGODB_URI CONTAINS PLACEHOLDER VALUES');
+        logger.error(
           '   You must replace the example values with your actual MongoDB credentials.'
         );
-        console.error('');
-        console.error(
+        logger.error('');
+        logger.error(
           '   Current MONGODB_URI contains placeholder text that needs to be replaced.'
         );
-        console.error('');
-        console.error('📚 Step-by-step setup guide: MONGODB_SETUP_SIMPLE.md');
-        console.error('   Get your real connection string from: https://cloud.mongodb.com/');
-        console.error('');
+        logger.error('');
+        logger.error('📚 Step-by-step setup guide: MONGODB_SETUP_SIMPLE.md');
+        logger.error('   Get your real connection string from: https://cloud.mongodb.com/');
+        logger.error('');
         process.exit(1);
       }
 
-      console.log('   ✅ MongoDB URI format looks valid');
+      logger.info('   ✅ MongoDB URI format looks valid');
     }
 
     // Warn if using local storage in production (before initialization)
     if (isProduction) {
       if (!databaseConfig.isMongoAvailable()) {
-        console.warn('');
-        console.warn('='.repeat(70));
-        console.warn('⚠️  WARNING: NO CLOUD DATABASE CONFIGURED');
-        console.warn('='.repeat(70));
-        console.warn('');
-        console.warn('Running in LOCAL STORAGE MODE (non-persistent).');
-        console.warn('');
-        console.warn('⚠️  IMPORTANT:');
-        console.warn('   • Data is stored in local JSON files');
-        console.warn('   • Data will be LOST on server restart/redeployment');
-        console.warn('   • NOT RECOMMENDED for production with real user data');
-        console.warn('');
-        console.warn('To set up persistent data storage with MongoDB Atlas:');
-        console.warn('   1. Create account at: https://cloud.mongodb.com/');
-        console.warn('   2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
-        console.warn('   3. Set MONGODB_URI environment variable');
-        console.warn('');
-        console.warn('📚 Documentation:');
-        console.warn('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
-        console.warn('   → Technical guide: MONGODB_SETUP.md');
-        console.warn('   → Deployment guide: DEPLOYMENT_GUIDE.md');
-        console.warn('');
-        console.warn('='.repeat(70));
-        console.warn('');
-        console.warn('Continuing with local storage...');
-        console.warn('');
+        logger.warn('');
+        logger.warn('='.repeat(70));
+        logger.warn('⚠️  WARNING: NO CLOUD DATABASE CONFIGURED');
+        logger.warn('='.repeat(70));
+        logger.warn('');
+        logger.warn('Running in LOCAL STORAGE MODE (non-persistent).');
+        logger.warn('');
+        logger.warn('⚠️  IMPORTANT:');
+        logger.warn('   • Data is stored in local JSON files');
+        logger.warn('   • Data will be LOST on server restart/redeployment');
+        logger.warn('   • NOT RECOMMENDED for production with real user data');
+        logger.warn('');
+        logger.warn('To set up persistent data storage with MongoDB Atlas:');
+        logger.warn('   1. Create account at: https://cloud.mongodb.com/');
+        logger.warn('   2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
+        logger.warn('   3. Set MONGODB_URI environment variable');
+        logger.warn('');
+        logger.warn('📚 Documentation:');
+        logger.warn('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
+        logger.warn('   → Technical guide: MONGODB_SETUP.md');
+        logger.warn('   → Deployment guide: DEPLOYMENT_GUIDE.md');
+        logger.warn('');
+        logger.warn('='.repeat(70));
+        logger.warn('');
+        logger.warn('Continuing with local storage...');
+        logger.warn('');
       }
     }
 
     // 3. Start the server IMMEDIATELY (before database initialization)
     // This ensures Railway healthchecks can reach /api/health without waiting for database
-    console.log('');
-    console.log('🚀 Starting server...');
+    logger.info('');
+    logger.info('🚀 Starting server...');
 
     server.listen(PORT, '0.0.0.0', () => {
       // Clear startup timeout - server started successfully
       clearTimeout(startupTimeout);
 
-      console.log('');
-      console.log('='.repeat(60));
-      console.log(`✅ Server is ready!`);
-      console.log('='.repeat(60));
-      console.log(`   Server: http://0.0.0.0:${PORT}`);
-      console.log(`   Local:  http://localhost:${PORT}`);
+      logger.info('');
+      logger.info('='.repeat(60));
+      logger.info(`✅ Server is ready!`);
+      logger.info('='.repeat(60));
+      logger.info(`   Server: http://0.0.0.0:${PORT}`);
+      logger.info(`   Local:  http://localhost:${PORT}`);
       if (!baseUrl.includes('localhost')) {
-        console.log(`   Public: ${baseUrl}`);
+        logger.info(`   Public: ${baseUrl}`);
       }
-      console.log(`   Health: ${baseUrl}/api/health`);
-      console.log(`   Docs:   ${baseUrl}/api-docs`);
-      console.log('='.repeat(60));
-      console.log('');
+      logger.info(`   Health: ${baseUrl}/api/health`);
+      logger.info(`   Docs:   ${baseUrl}/api-docs`);
+      logger.info('='.repeat(60));
+      logger.info('');
 
       // Log WebSocket status based on mode
       if (WEBSOCKET_MODE === 'v1' && wsServer) {
-        console.log('✅ WebSocket v1 (legacy) initialized for real-time notifications');
+        logger.info('✅ WebSocket v1 (legacy) initialized for real-time notifications');
       } else if (WEBSOCKET_MODE === 'v2') {
-        console.log('✅ WebSocket v2 (modern) will initialize after database connection');
+        logger.info('✅ WebSocket v2 (modern) will initialize after database connection');
       } else if (WEBSOCKET_MODE === 'off') {
-        console.log('⚠️  WebSocket disabled (WEBSOCKET_MODE=off) - real-time features unavailable');
+        logger.info('⚠️  WebSocket disabled (WEBSOCKET_MODE=off) - real-time features unavailable');
       } else {
-        console.log('⚠️  WebSocket server not available - real-time features disabled');
+        logger.info('⚠️  WebSocket server not available - real-time features disabled');
       }
 
-      console.log('Server is now accepting requests');
-      console.log('');
-      console.log('🔌 Database initialization running in background...');
+      logger.info('Server is now accepting requests');
+      logger.info('');
+      logger.info('🔌 Database initialization running in background...');
     });
 
     // 4. Initialize database connection in background (non-blocking)
@@ -1161,9 +1175,9 @@ async function startServer() {
     // Note: In production, the app will exit if MongoDB is not properly configured
     (async () => {
       try {
-        console.log('   Connecting to database...');
+        logger.info('   Connecting to database...');
         await dbUnified.initializeDatabase();
-        console.log('   ✅ Database connection successful');
+        logger.info('   ✅ Database connection successful');
 
         // Verify database connection in production
         // IMPORTANT: This happens after server.listen() to allow health checks during startup,
@@ -1171,8 +1185,8 @@ async function startServer() {
         // This is intentional - the brief window allows orchestrators to detect the issue
         // without blocking health checks, then the process exits for proper restart.
         if (process.env.NODE_ENV === 'production') {
-          console.log('');
-          console.log('🔒 Verifying production database configuration...');
+          logger.info('');
+          logger.info('🔒 Verifying production database configuration...');
           const dbStatus = await dbUnified.getStatus();
 
           if (dbStatus.backend !== 'mongodb') {
@@ -1195,8 +1209,8 @@ async function startServer() {
           }
 
           logger.info('✅ Production database verification passed:', dbStatus);
-          console.log('   ✅ MongoDB configured and connected');
-          console.log('   ✅ Production database verification passed');
+          logger.info('   ✅ MongoDB configured and connected');
+          logger.info('   ✅ Production database verification passed');
         }
 
         // Initialize WebSocket v2 with MongoDB
@@ -1204,18 +1218,18 @@ async function startServer() {
           const db = await mongoDb.getDb();
           initializeWebSocketV2(db);
         } catch (error) {
-          console.warn('   ⚠️  WebSocket v2 initialization deferred (MongoDB not available yet)');
+          logger.warn('   ⚠️  WebSocket v2 initialization deferred (MongoDB not available yet)');
         }
 
         // Create database indexes for query optimization
-        console.log('');
-        console.log('🔍 Creating database indexes...');
+        logger.info('');
+        logger.info('🔍 Creating database indexes...');
         try {
           await addDatabaseIndexes();
-          console.log('   ✅ Database indexes created');
+          logger.info('   ✅ Database indexes created');
         } catch (indexError) {
-          console.warn('   ⚠️  Could not create all database indexes:', indexError.message);
-          console.warn('   Server will continue running, but queries may be slower');
+          logger.warn('   ⚠️  Could not create all database indexes:', indexError.message);
+          logger.warn('   Server will continue running, but queries may be slower');
         }
 
         // Ensure messaging indexes exist (using Message model)
@@ -1223,9 +1237,9 @@ async function startServer() {
           const db = await mongoDb.getDb();
           const Message = require('./models/Message');
           await Message.createIndexes(db);
-          console.log('   ✅ Messaging indexes verified');
+          logger.info('   ✅ Messaging indexes verified');
         } catch (err) {
-          console.warn('   ⚠️  Could not verify messaging indexes:', err.message);
+          logger.warn('   ⚠️  Could not verify messaging indexes:', err.message);
         }
 
         // Auto-migrate v1 threads and messages to MongoDB (if needed)
@@ -1237,19 +1251,19 @@ async function startServer() {
             return;
           }
 
-          console.warn(
+          logger.warn(
             '⚠️  [DEPRECATED] Running legacy v1→MongoDB startup migration ' +
               '(LEGACY_STARTUP_MIGRATION=true). ' +
               'Disable by removing this env var once migration is complete.'
           );
 
           try {
-            console.log('');
-            console.log('🔄 Checking for v1 threads to migrate to MongoDB...');
+            logger.info('');
+            logger.info('🔄 Checking for v1 threads to migrate to MongoDB...');
 
             const dbStatus = await dbUnified.getStatus();
             if (dbStatus.backend !== 'mongodb') {
-              console.log('   ⏭️  Skipping migration (not using MongoDB)');
+              logger.info('   ⏭️  Skipping migration (not using MongoDB)');
               return;
             }
 
@@ -1323,21 +1337,21 @@ async function startServer() {
             }
 
             if (migratedThreads > 0 || migratedMessages > 0) {
-              console.log(
+              logger.info(
                 `   ✅ Migrated ${migratedThreads} threads and ${migratedMessages} messages to MongoDB`
               );
             } else {
-              console.log('   ✅ No v1 threads to migrate (all up to date)');
+              logger.info('   ✅ No v1 threads to migrate (all up to date)');
             }
           } catch (error) {
             // Log error but don't block server startup
-            console.error('   ⚠️  Auto-migration failed (non-fatal):', error.message);
+            logger.error('   ⚠️  Auto-migration failed (non-fatal):', error.message);
           }
         });
 
         // 4a. Seed database with initial data
-        console.log('');
-        console.log('📊 Seeding database...');
+        logger.info('');
+        logger.info('📊 Seeding database...');
         await seed({
           skipIfExists: isProduction,
           seedUsers: true,
@@ -1345,21 +1359,21 @@ async function startServer() {
           seedPackages: true, // Seed demo packages in production if empty (after auto-migration)
           autoMigrateFromLocal: true, // Auto-migrate from local storage if detected
         });
-        console.log('   ✅ Database seeding complete');
+        logger.info('   ✅ Database seeding complete');
 
         // 4b. Validate admin authentication configuration
-        console.log('');
-        console.log('🔐 Validating admin authentication configuration...');
+        logger.info('');
+        logger.info('🔐 Validating admin authentication configuration...');
         const domainAdmin = require('./middleware/domain-admin');
 
         // Validate ADMIN_DOMAINS format
         const domainsValidation = domainAdmin.validateAdminDomainsFormat();
         if (!domainsValidation.valid) {
-          console.error('');
-          console.error('❌ CRITICAL: Invalid ADMIN_DOMAINS configuration');
-          console.error(`   ${domainsValidation.error}`);
-          console.error('');
-          console.error('Fix the ADMIN_DOMAINS environment variable and restart.');
+          logger.error('');
+          logger.error('❌ CRITICAL: Invalid ADMIN_DOMAINS configuration');
+          logger.error(`   ${domainsValidation.error}`);
+          logger.error('');
+          logger.error('Fix the ADMIN_DOMAINS environment variable and restart.');
           process.exit(1);
         }
 
@@ -1370,19 +1384,19 @@ async function startServer() {
         if (process.env.NODE_ENV === 'production') {
           const ownerPassword = process.env.OWNER_PASSWORD;
           if (!ownerPassword || ownerPassword === 'Admin123!') {
-            console.log(
+            logger.info(
               '   ℹ️  OWNER_PASSWORD not set (only required when bootstrapping owner account).'
             );
           } else {
-            console.log('   ✅ Owner password configured');
+            logger.info('   ✅ Owner password configured');
           }
         }
 
-        console.log('   ✅ Admin authentication configuration valid');
+        logger.info('   ✅ Admin authentication configuration valid');
 
         // 4c. Initialize Date Management Service
-        console.log('');
-        console.log('📅 Initializing Date Management Service...');
+        logger.info('');
+        logger.info('📅 Initializing Date Management Service...');
         try {
           const DateManagementService = require('./services/dateManagementService');
           const dateService = new DateManagementService(dbUnified, logger);
@@ -1393,112 +1407,112 @@ async function startServer() {
           // Make available to routes via app.locals
           app.locals.dateService = dateService;
 
-          console.log('   ✅ Date Management Service initialized');
-          console.log(`   ✅ Monthly checks scheduled: ${scheduleResult.scheduled ? 'Yes' : 'No'}`);
+          logger.info('   ✅ Date Management Service initialized');
+          logger.info(`   ✅ Monthly checks scheduled: ${scheduleResult.scheduled ? 'Yes' : 'No'}`);
           if (scheduleResult.nextRun) {
-            console.log(`   ⏰ Next scheduled check: ${scheduleResult.nextRun.toISOString()}`);
+            logger.info(`   ⏰ Next scheduled check: ${scheduleResult.nextRun.toISOString()}`);
           }
         } catch (dateServiceError) {
-          console.warn(
+          logger.warn(
             '   ⚠️  Date Management Service failed to initialize:',
             dateServiceError.message
           );
-          console.warn('   Date automation features will not be available');
+          logger.warn('   Date automation features will not be available');
         }
       } catch (error) {
-        console.error('');
-        console.error('='.repeat(70));
-        console.error('⚠️  DATABASE CONNECTION FAILED');
-        console.error('='.repeat(70));
-        console.error('');
-        console.error('Warning: Could not connect to the database.');
-        console.error('Server will continue running with limited functionality:');
-        console.error('   • User authentication and data may not persist');
-        console.error('   • Local file storage will be used (non-persistent)');
-        console.error('   • Data will be lost on server restart');
-        console.error('');
-        console.error('Error details:');
-        console.error(`   ${error.message}`);
-        console.error('');
+        logger.error('');
+        logger.error('='.repeat(70));
+        logger.error('⚠️  DATABASE CONNECTION FAILED');
+        logger.error('='.repeat(70));
+        logger.error('');
+        logger.error('Warning: Could not connect to the database.');
+        logger.error('Server will continue running with limited functionality:');
+        logger.error('   • User authentication and data may not persist');
+        logger.error('   • Local file storage will be used (non-persistent)');
+        logger.error('   • Data will be lost on server restart');
+        logger.error('');
+        logger.error('Error details:');
+        logger.error(`   ${error.message}`);
+        logger.error('');
 
         if (
           error.message.includes('Invalid scheme') ||
           error.message.includes('placeholder') ||
           error.message.includes('MONGODB_URI')
         ) {
-          console.error('🔍 This looks like a MongoDB configuration issue.');
-          console.error('');
-          console.error('📚 Follow the setup guide:');
-          console.error('   → MONGODB_SETUP_SIMPLE.md (beginner-friendly)');
-          console.error('   → Get MongoDB Atlas free: https://cloud.mongodb.com/');
-          console.error('');
+          logger.error('🔍 This looks like a MongoDB configuration issue.');
+          logger.error('');
+          logger.error('📚 Follow the setup guide:');
+          logger.error('   → MONGODB_SETUP_SIMPLE.md (beginner-friendly)');
+          logger.error('   → Get MongoDB Atlas free: https://cloud.mongodb.com/');
+          logger.error('');
         }
 
-        console.error('='.repeat(70));
-        console.error('');
+        logger.error('='.repeat(70));
+        logger.error('');
       }
 
       // 5. Check email service
-      console.log('');
-      console.log('📧 Checking email configuration...');
+      logger.info('');
+      logger.info('📧 Checking email configuration...');
       if (EMAIL_ENABLED) {
         if (postmark.isPostmarkEnabled()) {
           const postmarkStatus = postmark.getPostmarkStatus();
-          console.log(`   ✅ Email: Postmark configured (${postmarkStatus.domain})`);
-          console.log('   ✅ Postmark ready to send emails');
+          logger.info(`   ✅ Email: Postmark configured (${postmarkStatus.domain})`);
+          logger.info('   ✅ Postmark ready to send emails');
         } else {
-          console.warn('   ⚠️  Email enabled but Postmark not configured');
-          console.warn('   Set POSTMARK_API_KEY and POSTMARK_FROM in your .env file');
-          console.warn('   Emails will be saved to /outbox folder instead');
+          logger.warn('   ⚠️  Email enabled but Postmark not configured');
+          logger.warn('   Set POSTMARK_API_KEY and POSTMARK_FROM in your .env file');
+          logger.warn('   Emails will be saved to /outbox folder instead');
         }
       } else {
-        console.log('   ℹ️  Email disabled (EMAIL_ENABLED=false)');
-        console.log('   Emails will be saved to /outbox folder');
+        logger.info('   ℹ️  Email disabled (EMAIL_ENABLED=false)');
+        logger.info('   Emails will be saved to /outbox folder');
       }
 
       // 6. Check optional services
-      console.log('');
-      console.log('🔧 Checking optional services...');
+      logger.info('');
+      logger.info('🔧 Checking optional services...');
       logIntegrationStartupSummary();
       if (STRIPE_ENABLED) {
-        console.log('   ✅ Stripe: Configured');
+        logger.info('   ✅ Stripe: Configured');
       } else {
-        console.log('   ℹ️  Stripe: Not configured (optional)');
+        logger.info('   ℹ️  Stripe: Not configured (optional)');
       }
 
       if (AI_ENABLED) {
-        console.log('   ✅ OpenAI: Configured');
+        logger.info('   ✅ OpenAI: Configured');
       } else {
-        console.log('   ℹ️  OpenAI: Not configured (optional)');
+        logger.info('   ℹ️  OpenAI: Not configured (optional)');
       }
 
       // Check Pexels API configuration
       const { getPexelsService } = require('./utils/pexels-service');
       const pexels = getPexelsService();
       if (pexels.isConfigured()) {
-        console.log('   ✅ Pexels API: Configured');
-        console.log('   Use admin settings to test connection and enable dynamic collage');
+        logger.info('   ✅ Pexels API: Configured');
+        logger.info('   Use admin settings to test connection and enable dynamic collage');
       } else {
-        console.log('   ℹ️  Pexels API: Not configured (optional)');
-        console.log('   Set PEXELS_API_KEY to enable stock photo integration');
+        logger.info('   ℹ️  Pexels API: Not configured (optional)');
+        logger.info('   Set PEXELS_API_KEY to enable stock photo integration');
       }
 
-      console.log('');
-      console.log('🎉 Background initialization complete!');
+      logger.info('');
+      logger.info('🎉 Background initialization complete!');
     })();
   } catch (error) {
     // Clear startup timeout
     clearTimeout(startupTimeout);
 
-    console.error('');
-    console.error('='.repeat(60));
-    console.error('❌ STARTUP FAILED');
-    console.error('='.repeat(60));
-    console.error('Error:', error.message);
-    console.error('');
-    console.error('Please fix the configuration issues and try again.');
-    console.error('See the documentation for setup instructions.');
-    console.error('='.repeat(60));
+    logger.error('');
+    logger.error('='.repeat(60));
+    logger.error('❌ STARTUP FAILED');
+    logger.error('='.repeat(60));
+    logger.error('Error:', error.message);
+    logger.error('');
+    logger.error('Please fix the configuration issues and try again.');
+    logger.error('See the documentation for setup instructions.');
+    logger.error('='.repeat(60));
     process.exit(1);
   }
 }
@@ -1509,7 +1523,7 @@ module.exports = app;
 // Only start the server if this file is run directly (not imported by tests)
 if (require.main === module) {
   startServer().catch(error => {
-    console.error('Fatal error during startup:', error);
+    logger.error('Fatal error during startup:', error);
     sentry.captureException(error);
     process.exit(1);
   });
@@ -1517,12 +1531,12 @@ if (require.main === module) {
 
 // Global error handlers
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   sentry.captureException(reason);
 });
 
 process.on('uncaughtException', error => {
-  console.error('Uncaught Exception:', error);
+  logger.error('Uncaught Exception:', error);
   sentry.captureException(error);
   // Give Sentry time to send the error before exiting
   setTimeout(() => {
@@ -1532,7 +1546,7 @@ process.on('uncaughtException', error => {
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+  logger.info('SIGTERM signal received: closing HTTP server');
 
   // Shutdown WebSocket servers gracefully
   if (wsServerV2) {
@@ -1545,7 +1559,7 @@ process.on('SIGTERM', async () => {
 });
 
 process.on('SIGINT', async () => {
-  console.log('SIGINT signal received: closing HTTP server');
+  logger.info('SIGINT signal received: closing HTTP server');
 
   // Shutdown WebSocket servers gracefully
   if (wsServerV2) {

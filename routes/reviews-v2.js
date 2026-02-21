@@ -10,6 +10,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 const reviewService = require('../services/reviewService');
 const { authRequired } = require('../middleware/auth');
@@ -62,7 +63,7 @@ router.post('/with-verification', authRequired, csrfProtection, async (req, res)
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Create review error:', error);
+    logger.error('Create review error:', error);
     res.status(400).json({
       error: error.message,
     });
@@ -93,7 +94,7 @@ router.get('/supplier/:id', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Get supplier reviews error:', error);
+    logger.error('Get supplier reviews error:', error);
     res.status(500).json({
       error: 'Failed to get reviews',
       details: error.message,
@@ -146,7 +147,7 @@ router.put('/:id', authRequired, csrfProtection, async (req, res) => {
       message: 'Review updated successfully',
     });
   } catch (error) {
-    console.error('Update review error:', error);
+    logger.error('Update review error:', error);
     res.status(500).json({
       error: 'Failed to update review',
       details: error.message,
@@ -185,7 +186,7 @@ router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
       message: 'Review deleted successfully',
     });
   } catch (error) {
-    console.error('Delete review error:', error);
+    logger.error('Delete review error:', error);
     res.status(500).json({
       error: 'Failed to delete review',
       details: error.message,
@@ -218,7 +219,7 @@ router.post('/:id/helpful', authRequired, csrfProtection, async (req, res) => {
       message: 'Vote recorded successfully',
     });
   } catch (error) {
-    console.error('Vote on review error:', error);
+    logger.error('Vote on review error:', error);
     res.status(400).json({
       error: error.message,
     });
@@ -267,7 +268,7 @@ router.post(
         message: 'Response posted successfully',
       });
     } catch (error) {
-      console.error('Add response error:', error);
+      logger.error('Add response error:', error);
       res.status(400).json({
         error: error.message,
       });
@@ -331,7 +332,7 @@ router.put(
         message: 'Response updated successfully',
       });
     } catch (error) {
-      console.error('Update response error:', error);
+      logger.error('Update response error:', error);
       res.status(500).json({
         error: 'Failed to update response',
         details: error.message,
@@ -370,7 +371,7 @@ router.get(
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Get moderation queue error:', error);
+      logger.error('Get moderation queue error:', error);
       res.status(500).json({
         error: 'Failed to get moderation queue',
         details: error.message,
@@ -405,7 +406,7 @@ router.post(
         message: 'Review approved successfully',
       });
     } catch (error) {
-      console.error('Approve review error:', error);
+      logger.error('Approve review error:', error);
       res.status(400).json({
         error: error.message,
       });
@@ -442,7 +443,7 @@ router.post(
         message: 'Review rejected successfully',
       });
     } catch (error) {
-      console.error('Reject review error:', error);
+      logger.error('Reject review error:', error);
       res.status(400).json({
         error: error.message,
       });
@@ -479,7 +480,7 @@ router.post(
         message: 'Change request sent to author',
       });
     } catch (error) {
-      console.error('Request changes error:', error);
+      logger.error('Request changes error:', error);
       res.status(400).json({
         error: error.message,
       });
@@ -505,7 +506,7 @@ router.get(
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Get moderation stats error:', error);
+      logger.error('Get moderation stats error:', error);
       res.status(500).json({
         error: 'Failed to get moderation statistics',
         details: error.message,
@@ -547,7 +548,7 @@ router.post(
         message: 'Dispute filed successfully',
       });
     } catch (error) {
-      console.error('File dispute error:', error);
+      logger.error('File dispute error:', error);
       res.status(400).json({
         error: error.message,
       });
@@ -577,7 +578,7 @@ router.get('/disputes', authRequired, reviewModeration.canModerateReviews, async
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Get disputes error:', error);
+    logger.error('Get disputes error:', error);
     res.status(500).json({
       error: 'Failed to get disputes',
       details: error.message,
@@ -620,7 +621,7 @@ router.post(
         message: 'Dispute resolved successfully',
       });
     } catch (error) {
-      console.error('Resolve dispute error:', error);
+      logger.error('Resolve dispute error:', error);
       res.status(400).json({
         error: error.message,
       });
@@ -648,7 +649,7 @@ router.get('/supplier/:id/analytics', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Get supplier analytics error:', error);
+    logger.error('Get supplier analytics error:', error);
     res.status(500).json({
       error: 'Failed to get analytics',
       details: error.message,
@@ -673,7 +674,7 @@ router.get('/analytics/trends', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Get platform analytics error:', error);
+    logger.error('Get platform analytics error:', error);
     res.status(500).json({
       error: 'Failed to get analytics',
       details: error.message,
@@ -715,7 +716,7 @@ router.get('/analytics/sentiment', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Get sentiment analytics error:', error);
+    logger.error('Get sentiment analytics error:', error);
     res.status(500).json({
       error: 'Failed to get sentiment analytics',
       details: error.message,
@@ -746,7 +747,7 @@ router.get('/analytics/distribution', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Get distribution analytics error:', error);
+    logger.error('Get distribution analytics error:', error);
     res.status(500).json({
       error: 'Failed to get distribution analytics',
       details: error.message,
@@ -779,7 +780,7 @@ router.get('/bookings/:bookingId/eligible', authRequired, async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Check eligibility error:', error);
+    logger.error('Check eligibility error:', error);
     res.status(500).json({
       error: 'Failed to check eligibility',
       details: error.message,
@@ -803,7 +804,7 @@ router.get('/verified-count/:supplierId', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Get verified count error:', error);
+    logger.error('Get verified count error:', error);
     res.status(500).json({
       error: 'Failed to get verified count',
       details: error.message,
@@ -863,7 +864,7 @@ router.get('/', async (req, res) => {
       total: approvedReviews.length,
     });
   } catch (error) {
-    console.error('Get public reviews error:', error);
+    logger.error('Get public reviews error:', error);
     res.status(500).json({
       error: 'Failed to get reviews',
       reviews: [],

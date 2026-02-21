@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -143,7 +144,7 @@ async function writeThreadToMongoDB(thread, db) {
           participants.push(supplier.ownerUserId);
         }
       } catch (error) {
-        console.error('Error looking up supplier owner for participants:', error);
+        logger.error('Error looking up supplier owner for participants:', error);
         // Continue without adding supplier owner - don't block the dual-write
       }
     }
@@ -175,7 +176,7 @@ async function writeThreadToMongoDB(thread, db) {
       { upsert: true }
     );
   } catch (error) {
-    console.error('Error writing thread to MongoDB:', error);
+    logger.error('Error writing thread to MongoDB:', error);
     // Don't throw - dual-write failure shouldn't block the v1 API
   }
 }
@@ -224,7 +225,7 @@ async function writeMessageToMongoDB(message, db) {
       { upsert: true }
     );
   } catch (error) {
-    console.error('Error writing message to MongoDB:', error);
+    logger.error('Error writing message to MongoDB:', error);
     // Don't throw - dual-write failure shouldn't block the v1 API
   }
 }

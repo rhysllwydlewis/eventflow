@@ -9,6 +9,7 @@
 
 const { read: readLocal, write: writeLocal, uid, DATA_DIR } = require('./store');
 const db = require('./db');
+const logger = require('./utils/logger');
 
 // Track whether MongoDB is available
 let MONGODB_ENABLED = false;
@@ -20,12 +21,12 @@ let mongoClient = null;
     if (db.isMongoAvailable()) {
       mongoClient = await db.connect();
       MONGODB_ENABLED = true;
-      console.log('✅ Data Access Layer: MongoDB is available');
+      logger.info('✅ Data Access Layer: MongoDB is available');
     } else {
-      console.log('⚠️  Data Access Layer: MongoDB not available, using local storage');
+      logger.info('⚠️  Data Access Layer: MongoDB not available, using local storage');
     }
   } catch (error) {
-    console.log('⚠️  Data Access Layer: MongoDB connection failed, using local storage');
+    logger.info('⚠️  Data Access Layer: MongoDB connection failed, using local storage');
   }
 })();
 
@@ -40,7 +41,7 @@ async function read(collectionName) {
       const collection = mongoClient.collection(collectionName);
       return await collection.find({}).toArray();
     } catch (error) {
-      console.error(
+      logger.error(
         `MongoDB read error for ${collectionName}, falling back to local:`,
         error.message
       );
@@ -73,7 +74,7 @@ async function write(collectionName, data) {
         await collection.insertMany(data);
       }
     } catch (error) {
-      console.error(`MongoDB write error for ${collectionName}:`, error.message);
+      logger.error(`MongoDB write error for ${collectionName}:`, error.message);
       // Local write already succeeded, so don't throw
     }
   }
@@ -91,7 +92,7 @@ async function getById(collectionName, docId) {
       const collection = mongoClient.collection(collectionName);
       return await collection.findOne({ id: docId });
     } catch (error) {
-      console.error(
+      logger.error(
         `MongoDB getById error for ${collectionName}/${docId}, falling back to local:`,
         error.message
       );
@@ -128,7 +129,7 @@ async function update(collectionName, docId, updates) {
       const collection = mongoClient.collection(collectionName);
       await collection.updateOne({ id: docId }, { $set: updates });
     } catch (error) {
-      console.error(`MongoDB update error for ${collectionName}/${docId}:`, error.message);
+      logger.error(`MongoDB update error for ${collectionName}/${docId}:`, error.message);
       // Local update succeeded, continue
     }
   }
@@ -167,7 +168,7 @@ async function create(collectionName, data) {
       const collection = mongoClient.collection(collectionName);
       await collection.insertOne(doc);
     } catch (error) {
-      console.error(`MongoDB create error for ${collectionName}:`, error.message);
+      logger.error(`MongoDB create error for ${collectionName}:`, error.message);
       // Local create succeeded, continue
     }
   }
@@ -198,7 +199,7 @@ async function remove(collectionName, docId) {
       const collection = mongoClient.collection(collectionName);
       await collection.deleteOne({ id: docId });
     } catch (error) {
-      console.error(`MongoDB delete error for ${collectionName}/${docId}:`, error.message);
+      logger.error(`MongoDB delete error for ${collectionName}/${docId}:`, error.message);
       // Local delete succeeded, continue
     }
   }
@@ -288,7 +289,7 @@ async function query(collectionName, filters = {}) {
 
       return await cursor.toArray();
     } catch (error) {
-      console.error(
+      logger.error(
         `MongoDB query error for ${collectionName}, falling back to local:`,
         error.message
       );
@@ -388,7 +389,7 @@ module.exports = {
       // Update local storage
       writeLocal(collectionName, data);
     } catch (error) {
-      console.error(`MongoDB replaceCollection error for ${collectionName}:`, error.message);
+      logger.error(`MongoDB replaceCollection error for ${collectionName}:`, error.message);
       throw error;
     }
   },

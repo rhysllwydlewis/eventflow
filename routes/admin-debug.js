@@ -7,6 +7,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const bcrypt = require('bcryptjs');
 const { read, write } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
@@ -118,7 +119,7 @@ router.post(
         userAgent: req.get('user-agent'),
       });
 
-      console.log(`[ADMIN DEBUG] Password fixed for user: ${email} by admin: ${req.user.email}`);
+      logger.info(`[ADMIN DEBUG] Password fixed for user: ${email} by admin: ${req.user.email}`);
 
       res.json({
         ok: true,
@@ -131,7 +132,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error fixing password:', error);
+      logger.error('Error fixing password:', error);
       res.status(500).json({ error: 'Failed to update password' });
     }
   }
@@ -178,7 +179,7 @@ router.post(
       userAgent: req.get('user-agent'),
     });
 
-    console.log(`[ADMIN DEBUG] User verified: ${email} by admin: ${req.user.email}`);
+    logger.info(`[ADMIN DEBUG] User verified: ${email} by admin: ${req.user.email}`);
 
     res.json({
       ok: true,
@@ -211,7 +212,7 @@ router.post(
     }
 
     try {
-      console.log(`🧪 Testing email send to: ${email}`);
+      logger.info(`🧪 Testing email send to: ${email}`);
 
       // Find user
       const user = read('users').find(
@@ -248,7 +249,7 @@ router.post(
         testToken: process.env.NODE_ENV === 'production' ? undefined : testToken,
       });
     } catch (error) {
-      console.error('Email test failed:', error);
+      logger.error('Email test failed:', error);
       res.status(500).json({
         error: 'Email send failed',
         details: error.message,
@@ -276,7 +277,7 @@ router.post(
       return res.status(400).json({ error: 'email and password required' });
     }
 
-    console.log(`[LOGIN TEST] Testing login for: ${email}`);
+    logger.info(`[LOGIN TEST] Testing login for: ${email}`);
 
     const user = read('users').find(
       u => (u.email || '').toLowerCase() === String(email).toLowerCase()
@@ -387,7 +388,7 @@ router.post(
       userAgent: req.get('user-agent'),
     });
 
-    console.log(`[ADMIN DEBUG] User audit completed by admin: ${req.user.email}`);
+    logger.info(`[ADMIN DEBUG] User audit completed by admin: ${req.user.email}`);
 
     res.json(audit);
   }
