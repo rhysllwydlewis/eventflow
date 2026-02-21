@@ -1056,7 +1056,7 @@ describe('MessengerV4Service', () => {
     });
 
     it('should not change lastMessage when a non-last message is deleted', async () => {
-      const second = await service.sendMessage(conversation._id.toString(), {
+      await service.sendMessage(conversation._id.toString(), {
         senderId: 'user1',
         senderName: 'Alice',
         content: 'Second message',
