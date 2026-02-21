@@ -1755,7 +1755,6 @@ const AdminShared = (function () {
   function init() {
     fetchCSRFToken();
     highlightActivePage();
-    initSidebarToggle();
     loadBadgeCounts();
     initKeyboardShortcuts();
 
@@ -1802,7 +1801,6 @@ const AdminShared = (function () {
     loadBadgeCounts,
     // Navigation
     highlightActivePage,
-    initSidebarToggle,
     // Helpers
     generateId,
     debounce,

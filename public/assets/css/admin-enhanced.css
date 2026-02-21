@@ -216,6 +216,9 @@ main.section {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .btn-secondary:hover {
@@ -2322,6 +2325,7 @@ tbody tr.selected td {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  text-decoration: none;
 }
 
 .btn-manage:hover {
