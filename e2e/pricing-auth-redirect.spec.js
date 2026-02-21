@@ -78,6 +78,11 @@ test.describe('Clean URL redirects for canonical pages', () => {
     'for-suppliers',
     'payment-success',
     'payment-cancel',
+    'my-marketplace-listings',
+    'budget',
+    'plan',
+    'settings',
+    'timeline',
   ];
 
   for (const pageName of canonicalPages) {
@@ -100,4 +105,22 @@ test.describe('Clean URL redirects for canonical pages', () => {
       expect(page.url()).not.toContain('.html');
     });
   }
+
+  test('checkout.html?plan=pro should redirect 301 to /checkout?plan=pro (preserving query string)', async ({
+    page,
+  }) => {
+    let redirectStatus = null;
+    page.on('response', response => {
+      if (response.url().includes('/checkout.html')) {
+        redirectStatus = response.status();
+      }
+    });
+
+    await page.goto('/checkout.html?plan=pro');
+
+    expect(redirectStatus).toBe(301);
+    expect(page.url()).toContain('/checkout');
+    expect(page.url()).toContain('plan=pro');
+    expect(page.url()).not.toContain('.html');
+  });
 });

@@ -468,12 +468,18 @@ const canonicalPages = [
   'terms',
   'payment-success',
   'payment-cancel',
+  'my-marketplace-listings',
+  'budget',
+  'plan',
+  'settings',
+  'timeline',
 ];
 
 canonicalPages.forEach(page => {
-  // Redirect .html to canonical (this ensures canonical URLs)
+  // Redirect .html to canonical, preserving any query string
   app.get(`/${page}.html`, (req, res) => {
-    res.redirect(301, `/${page}`);
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    res.redirect(301, `/${page}${qs}`);
   });
   // The canonical URL without .html is handled by template middleware + static files
 });

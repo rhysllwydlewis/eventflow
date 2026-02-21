@@ -474,7 +474,7 @@ export function createProfileChecklist(completionData, containerId) {
       label: 'Email verified',
       completed: completionData.emailVerified || false,
       action: !completionData.emailVerified
-        ? { text: 'Verify Now', href: '/settings.html#verify-email' }
+        ? { text: 'Verify Now', href: '/settings#verify-email' }
         : null,
     },
     {

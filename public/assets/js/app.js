@@ -149,13 +149,16 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/dashboard-supplier.html',
       '/dashboard.html',
       '/settings.html',
+      '/settings',
       '/plan.html',
+      '/plan',
       '/pricing.html',
       '/pricing',
       '/checkout.html',
       '/checkout',
       '/supplier/subscription.html',
       '/my-marketplace-listings.html',
+      '/my-marketplace-listings',
       '/supplier/marketplace-new-listing.html',
       '/marketplace',
       '/marketplace.html',
@@ -166,12 +169,15 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/dashboard-customer.html',
       '/dashboard.html',
       '/settings.html',
+      '/settings',
       '/plan.html',
+      '/plan',
       '/pricing.html',
       '/pricing',
       '/checkout.html',
       '/checkout',
       '/my-marketplace-listings.html',
+      '/my-marketplace-listings',
       '/marketplace',
       '/marketplace.html',
       '/conversation.html',
@@ -3949,7 +3955,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   ? 'results'
                   : location.pathname.endsWith('supplier.html')
                     ? 'supplier'
-                    : location.pathname.endsWith('plan.html')
+                    : location.pathname.endsWith('plan.html') || location.pathname === '/plan'
                       ? 'plan'
                       : '');
 

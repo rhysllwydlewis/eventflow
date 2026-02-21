@@ -63,7 +63,7 @@
 
     // Mark the free plan button as the current plan when user has no active Pro
     const freeButtons = document.querySelectorAll(
-      'a[href="/checkout.html?plan=free"], a[href="/checkout.html?plan=starter"]'
+      'a[href="/checkout?plan=free"], a[href="/checkout?plan=starter"]'
     );
     freeButtons.forEach(button => {
       if (!hasActivePro) {
@@ -163,7 +163,7 @@
   // Rewrite CTAs for unauthenticated users to go via the auth page first.
   // Uses canonical (extensionless) paths in the redirect parameter.
   function updateButtonsForUnauthenticatedUser() {
-    const allPricingButtons = document.querySelectorAll('a[href*="/checkout.html?plan="]');
+    const allPricingButtons = document.querySelectorAll('a[href*="/checkout?plan="]');
     allPricingButtons.forEach(button => {
       const originalHref = button.getAttribute('href');
       if (originalHref) {

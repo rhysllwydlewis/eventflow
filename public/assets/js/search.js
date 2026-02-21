@@ -397,7 +397,7 @@ class GlobalSearch {
             <span>Start Planning</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/budget.html" class="search-result-item">
+          <a href="/budget" class="search-result-item">
             <span>Budget Tracker</span>
             <span style="color: var(--muted);">→</span>
           </a>
@@ -561,7 +561,7 @@ class GlobalSearch {
         type: 'page',
         title: 'Budget Tracker',
         description: 'Manage your event budget',
-        url: '/budget.html',
+        url: '/budget',
       },
       {
         type: 'page',

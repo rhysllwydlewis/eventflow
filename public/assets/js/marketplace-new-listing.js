@@ -131,7 +131,7 @@
       console.error('Error loading listing:', error);
       showToast('Failed to load listing for editing', 'error');
       setTimeout(() => {
-        window.location.href = '/my-marketplace-listings.html';
+        window.location.href = '/my-marketplace-listings';
       }, 2000);
     }
   }
@@ -632,7 +632,7 @@
 
         // Redirect to my listings page after a short delay
         setTimeout(() => {
-          window.location.href = '/my-marketplace-listings.html';
+          window.location.href = '/my-marketplace-listings';
         }, 1500);
       } catch (error) {
         console.error('Error submitting listing:', error);
