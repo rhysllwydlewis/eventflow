@@ -469,7 +469,7 @@ describe('Messenger client-side fixes', () => {
       'utf8'
     );
     expect(src).toContain('applyCsrfProtection');
-    // Should appear in the POST validate route handler
-    expect(src).toMatch(/router\.post\(['"]\/validate['"]\s*,[\s\S]*?applyCsrfProtection/);
+    // Should appear in the POST validate route handler (may be inline or multi-line)
+    expect(src).toMatch(/router\.post\([\s\S]*?['"]\/validate['"][\s\S]*?applyCsrfProtection/);
   });
 });
