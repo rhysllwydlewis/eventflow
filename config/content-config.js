@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 /**
  * Get current year (for copyright and current date references)
@@ -195,16 +196,16 @@ function validateProductionConfig() {
     const strictValidation = process.env.CONTENT_CONFIG_STRICT === 'true';
 
     if (strictValidation) {
-      console.warn('');
-      console.warn('⚠️  WARNING: Production config contains placeholder values!');
-      console.warn('⚠️  Update config/content-config.js before launch');
-      console.warn('⚠️  Found placeholders:', foundPlaceholders);
-      console.warn('');
+      logger.warn('');
+      logger.warn('⚠️  WARNING: Production config contains placeholder values!');
+      logger.warn('⚠️  Update config/content-config.js before launch');
+      logger.warn('⚠️  Found placeholders:', foundPlaceholders);
+      logger.warn('');
       return;
     }
 
-    console.log('ℹ️  Content config contains default placeholder values (strict mode disabled).');
-    console.log('   Set CONTENT_CONFIG_STRICT=true to enforce startup warnings.');
+    logger.info('ℹ️  Content config contains default placeholder values (strict mode disabled).');
+    logger.info('   Set CONTENT_CONFIG_STRICT=true to enforce startup warnings.');
   }
 }
 

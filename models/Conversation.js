@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 /**
  * Conversation Schema Definition
@@ -88,7 +89,7 @@ async function createConversationIndexes(db) {
   // Index for filtering by status
   await collection.createIndex({ status: 1 }, { name: 'conversations_by_status' });
 
-  console.log('✅ Conversation indexes created successfully');
+  logger.info('✅ Conversation indexes created successfully');
 }
 
 /**
@@ -119,7 +120,7 @@ async function createMessageIndexes(db) {
   // Index for filtering deleted messages
   await collection.createIndex({ isDeleted: 1 }, { name: 'messages_by_deleted_status' });
 
-  console.log('✅ Chat message indexes created successfully');
+  logger.info('✅ Chat message indexes created successfully');
 }
 
 /**
@@ -132,7 +133,7 @@ async function initializeIndexes(db) {
     await createMessageIndexes(db);
     return true;
   } catch (error) {
-    console.error('Failed to create messenger indexes:', error);
+    logger.error('Failed to create messenger indexes:', error);
     throw error;
   }
 }

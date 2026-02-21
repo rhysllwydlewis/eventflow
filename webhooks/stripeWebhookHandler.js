@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 const subscriptionService = require('../services/subscriptionService');
 const paymentService = require('../services/paymentService');
@@ -38,12 +39,12 @@ function resolvePlanTier(planName) {
  * @param {Object} invoice - Stripe invoice object
  */
 async function handleInvoiceCreated(invoice) {
-  console.log('Processing invoice.created:', invoice.id);
+  logger.info('Processing invoice.created:', invoice.id);
 
   const subscription = await subscriptionService.getSubscriptionByStripeId(invoice.subscription);
 
   if (!subscription) {
-    console.warn('Subscription not found for invoice:', invoice.id);
+    logger.warn('Subscription not found for invoice:', invoice.id);
     return;
   }
 
@@ -86,12 +87,12 @@ async function handleInvoiceCreated(invoice) {
  * @param {Object} invoice - Stripe invoice object
  */
 async function handleInvoicePaymentSucceeded(invoice) {
-  console.log('Processing invoice.payment_succeeded:', invoice.id);
+  logger.info('Processing invoice.payment_succeeded:', invoice.id);
 
   const subscription = await subscriptionService.getSubscriptionByStripeId(invoice.subscription);
 
   if (!subscription) {
-    console.warn('Subscription not found for invoice:', invoice.id);
+    logger.warn('Subscription not found for invoice:', invoice.id);
     return;
   }
 
@@ -140,12 +141,12 @@ async function handleInvoicePaymentSucceeded(invoice) {
  * @param {Object} invoice - Stripe invoice object
  */
 async function handleInvoicePaymentFailed(invoice) {
-  console.log('Processing invoice.payment_failed:', invoice.id);
+  logger.info('Processing invoice.payment_failed:', invoice.id);
 
   const subscription = await subscriptionService.getSubscriptionByStripeId(invoice.subscription);
 
   if (!subscription) {
-    console.warn('Subscription not found for invoice:', invoice.id);
+    logger.warn('Subscription not found for invoice:', invoice.id);
     return;
   }
 
@@ -178,7 +179,7 @@ async function handleInvoicePaymentFailed(invoice) {
   const user = users.find(u => u.id === subscription.userId);
 
   if (user) {
-    console.log(
+    logger.info(
       `Payment failed for user ${user.email}: Invoice ${invoice.id}, Amount: ${invoice.amount_due / 100} ${invoice.currency.toUpperCase()}`
     );
 
@@ -202,12 +203,12 @@ async function handleInvoicePaymentFailed(invoice) {
  * @param {Object} stripeSubscription - Stripe subscription object
  */
 async function handleSubscriptionCreated(stripeSubscription) {
-  console.log('Processing customer.subscription.created:', stripeSubscription.id);
+  logger.info('Processing customer.subscription.created:', stripeSubscription.id);
 
   // Check if subscription already exists
   const existing = await subscriptionService.getSubscriptionByStripeId(stripeSubscription.id);
   if (existing) {
-    console.log('Subscription already exists:', existing.id);
+    logger.info('Subscription already exists:', existing.id);
     return;
   }
 
@@ -216,7 +217,7 @@ async function handleSubscriptionCreated(stripeSubscription) {
   const payment = payments.find(p => p.stripeCustomerId === stripeSubscription.customer);
 
   if (!payment) {
-    console.warn('User not found for Stripe customer:', stripeSubscription.customer);
+    logger.warn('User not found for Stripe customer:', stripeSubscription.customer);
     return;
   }
 
@@ -246,12 +247,12 @@ async function handleSubscriptionCreated(stripeSubscription) {
  * @param {Object} stripeSubscription - Stripe subscription object
  */
 async function handleSubscriptionUpdated(stripeSubscription) {
-  console.log('Processing customer.subscription.updated:', stripeSubscription.id);
+  logger.info('Processing customer.subscription.updated:', stripeSubscription.id);
 
   const subscription = await subscriptionService.getSubscriptionByStripeId(stripeSubscription.id);
 
   if (!subscription) {
-    console.warn('Subscription not found:', stripeSubscription.id);
+    logger.warn('Subscription not found:', stripeSubscription.id);
     return;
   }
 
@@ -289,12 +290,12 @@ async function handleSubscriptionUpdated(stripeSubscription) {
  * @param {Object} stripeSubscription - Stripe subscription object
  */
 async function handleSubscriptionTrialWillEnd(stripeSubscription) {
-  console.log('Processing customer.subscription.trial_will_end:', stripeSubscription.id);
+  logger.info('Processing customer.subscription.trial_will_end:', stripeSubscription.id);
 
   const subscription = await subscriptionService.getSubscriptionByStripeId(stripeSubscription.id);
 
   if (!subscription) {
-    console.warn('Subscription not found:', stripeSubscription.id);
+    logger.warn('Subscription not found:', stripeSubscription.id);
     return;
   }
 
@@ -303,7 +304,7 @@ async function handleSubscriptionTrialWillEnd(stripeSubscription) {
   const user = users.find(u => u.id === subscription.userId);
 
   if (!user) {
-    console.warn('User not found for subscription:', subscription.userId);
+    logger.warn('User not found for subscription:', subscription.userId);
     return;
   }
 
@@ -312,7 +313,7 @@ async function handleSubscriptionTrialWillEnd(stripeSubscription) {
   const now = new Date();
   const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
 
-  console.log(
+  logger.info(
     `Trial ending soon for user ${user.email}: ${daysRemaining} days remaining (ends ${trialEndDate.toISOString()})`
   );
 
@@ -339,12 +340,12 @@ async function handleSubscriptionTrialWillEnd(stripeSubscription) {
  * @param {Object} stripeSubscription - Stripe subscription object
  */
 async function handleSubscriptionDeleted(stripeSubscription) {
-  console.log('Processing customer.subscription.deleted:', stripeSubscription.id);
+  logger.info('Processing customer.subscription.deleted:', stripeSubscription.id);
 
   const subscription = await subscriptionService.getSubscriptionByStripeId(stripeSubscription.id);
 
   if (!subscription) {
-    console.warn('Subscription not found:', stripeSubscription.id);
+    logger.warn('Subscription not found:', stripeSubscription.id);
     return;
   }
 
@@ -370,7 +371,7 @@ async function handleSubscriptionDeleted(stripeSubscription) {
  * @param {Object} paymentIntent - Stripe payment intent object
  */
 async function handlePaymentIntentSucceeded(paymentIntent) {
-  console.log('Processing payment_intent.succeeded:', paymentIntent.id);
+  logger.info('Processing payment_intent.succeeded:', paymentIntent.id);
 
   const payment = await paymentService.getPaymentByStripeId(paymentIntent.id);
 
@@ -386,7 +387,7 @@ async function handlePaymentIntentSucceeded(paymentIntent) {
  * @param {Object} paymentIntent - Stripe payment intent object
  */
 async function handlePaymentIntentFailed(paymentIntent) {
-  console.log('Processing payment_intent.payment_failed:', paymentIntent.id);
+  logger.info('Processing payment_intent.payment_failed:', paymentIntent.id);
 
   const payment = await paymentService.getPaymentByStripeId(paymentIntent.id);
 
@@ -406,7 +407,7 @@ async function handlePaymentIntentFailed(paymentIntent) {
  * @param {Object} charge - Stripe charge object
  */
 async function handleChargeRefunded(charge) {
-  console.log('Processing charge.refunded:', charge.id);
+  logger.info('Processing charge.refunded:', charge.id);
 
   const payment = await paymentService.getPaymentByStripeId(charge.payment_intent);
 
@@ -465,10 +466,10 @@ async function processWebhookEvent(event) {
         break;
 
       default:
-        console.log('Unhandled webhook event type:', event.type);
+        logger.info('Unhandled webhook event type:', event.type);
     }
   } catch (error) {
-    console.error(`Error processing webhook event ${event.type}:`, error);
+    logger.error(`Error processing webhook event ${event.type}:`, error);
     throw error;
   }
 }

@@ -7,6 +7,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const logger = require('./logger');
 
 /**
  * Generate unique ID

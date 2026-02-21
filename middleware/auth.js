@@ -6,6 +6,7 @@
 'use strict';
 
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
 const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
 

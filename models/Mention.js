@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 const { ObjectId } = require('mongodb');
 
@@ -43,7 +44,7 @@ async function createIndexes(db) {
   // Index for cleanup and statistics
   await collection.createIndex({ createdAt: -1 });
 
-  console.log('✅ Mention indexes created');
+  logger.info('✅ Mention indexes created');
 }
 
 /**

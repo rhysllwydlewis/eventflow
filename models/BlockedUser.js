@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 const { ObjectId } = require('mongodb');
 
@@ -38,7 +39,7 @@ async function createIndexes(db) {
   // Index for finding who blocked a specific user
   await collection.createIndex({ blockedUserId: 1 });
 
-  console.log('✅ BlockedUser indexes created');
+  logger.info('✅ BlockedUser indexes created');
 }
 
 /**

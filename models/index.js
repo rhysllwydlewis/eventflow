@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 // Import subscription and invoice schemas
 const { subscriptionSchema } = require('./Subscription');
@@ -801,17 +802,17 @@ async function initializeCollections(db) {
       if (existingCollections.length === 0) {
         // Create collection with schema validation
         await db.createCollection(name, schema);
-        console.log(`Created collection: ${name}`);
+        logger.info(`Created collection: ${name}`);
       } else {
         // Update validation rules for existing collection
         await db.command({
           collMod: name,
           validator: schema.validator,
         });
-        console.log(`Updated validation for collection: ${name}`);
+        logger.info(`Updated validation for collection: ${name}`);
       }
     } catch (error) {
-      console.error(`Error initializing collection ${name}:`, error.message);
+      logger.error(`Error initializing collection ${name}:`, error.message);
     }
   }
 
@@ -967,9 +968,9 @@ async function createIndexes(db) {
     await db.collection('marketplace_images').createIndex({ listingId: 1, order: 1 });
     await db.collection('marketplace_images').createIndex({ uploadedAt: -1 });
 
-    console.log('Database indexes created successfully');
+    logger.info('Database indexes created successfully');
   } catch (error) {
-    console.error('Error creating indexes:', error.message);
+    logger.error('Error creating indexes:', error.message);
   }
 }
 

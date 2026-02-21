@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('../utils/logger.js');
 
 const { ObjectId } = require('mongodb');
 
@@ -61,7 +62,7 @@ async function createIndexes(db) {
   await collection.createIndex({ createdAt: -1 });
   await collection.createIndex({ userId: 1, createdAt: -1 });
 
-  console.log('✅ MessageQueue indexes created');
+  logger.info('✅ MessageQueue indexes created');
 }
 
 /**

@@ -22,6 +22,7 @@
 
 'use strict';
 
+const moduleLogger = require('../utils/logger');
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /**
@@ -48,7 +49,9 @@ function createDeprecationMiddleware({ version, sunset, logger }) {
     );
 
     const logFn =
-      typeof logger === 'function' ? logger : msg => logger.warn(`[DEPRECATED API] ${msg}`); // eslint-disable-line no-console
+      typeof logger === 'function'
+        ? logger
+        : msg => (logger || moduleLogger).warn(`[DEPRECATED API] ${msg}`);
 
     // Re-read mode every request so env-var changes in tests take effect
     const currentMode = (process.env.LEGACY_MESSAGING_MODE || 'read-only').toLowerCase();

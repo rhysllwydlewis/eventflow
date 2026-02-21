@@ -19,6 +19,7 @@ const {
   debugToken,
   TOKEN_TYPES,
 } = require('../utils/token');
+const logger = require('../utils/logger');
 
 /**
  * Middleware to extract and validate verification token
