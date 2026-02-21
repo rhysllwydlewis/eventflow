@@ -101,10 +101,13 @@ class MessengerApp {
    */
   async loadCurrentUser() {
     try {
-      // Check if AuthState is available (from auth-state.js)
-      if (window.AuthState && window.AuthState.user) {
-        this.currentUser = window.AuthState.user;
-        return;
+      // Check if AuthStateManager is available (from auth-state.js)
+      if (window.AuthStateManager && typeof window.AuthStateManager.getUser === 'function') {
+        const user = window.AuthStateManager.getUser();
+        if (user) {
+          this.currentUser = user;
+          return;
+        }
       }
 
       // Fallback: try v4 API first

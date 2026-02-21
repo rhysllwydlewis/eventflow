@@ -63,7 +63,7 @@ class AuthGate {
    * @param {string} returnUrl - Optional return URL after login
    */
   redirectToLogin(returnUrl) {
-    const url = returnUrl ? `/auth.html?redirect=${encodeURIComponent(returnUrl)}` : '/auth.html';
+    const url = returnUrl ? `/auth?redirect=${encodeURIComponent(returnUrl)}` : '/auth';
     window.location.href = url;
   }
 
@@ -79,10 +79,10 @@ class AuthGate {
       <div class="auth-prompt-content">
         <p>${message}</p>
         <div class="auth-prompt-actions">
-          <button class="cta" onclick="window.location.href='/auth.html?mode=register'">
+          <button class="cta" onclick="window.location.href='/auth?mode=register'">
             Create Account
           </button>
-          <button class="cta secondary" onclick="window.location.href='/auth.html'">
+          <button class="cta secondary" onclick="window.location.href='/auth'">
             Log In
           </button>
         </div>

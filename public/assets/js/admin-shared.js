@@ -215,11 +215,11 @@ const AdminShared = (function () {
           // Optionally redirect to login after a delay (with origin validation)
           setTimeout(() => {
             const currentPath = window.location.pathname;
-            if (currentPath !== '/auth.html') {
+            if (currentPath !== '/auth' && currentPath !== '/auth.html') {
               // Use relative path instead of full URL for security
               const returnPath =
                 window.location.pathname + window.location.search + window.location.hash;
-              const loginUrl = `/auth.html?redirect=${encodeURIComponent(returnPath)}`;
+              const loginUrl = `/auth?redirect=${encodeURIComponent(returnPath)}`;
               // Ensure the redirect is to the same origin
               if (loginUrl.startsWith('/')) {
                 window.location.href = loginUrl;
@@ -295,7 +295,7 @@ const AdminShared = (function () {
       if (response.status === 401) {
         debugWarn('401 Unauthorized - redirecting to login');
         const currentPath = window.location.pathname;
-        const redirectUrl = `/auth.html?redirect=${encodeURIComponent(currentPath)}`;
+        const redirectUrl = `/auth?redirect=${encodeURIComponent(currentPath)}`;
         window.location.href = redirectUrl;
         throw new Error('Authentication required');
       }
@@ -1664,7 +1664,7 @@ const AdminShared = (function () {
         if (response.status === 401) {
           debugWarn('401 Unauthorized - redirecting to login');
           const currentPath = window.location.pathname;
-          const redirectUrl = `/auth.html?redirect=${encodeURIComponent(currentPath)}`;
+          const redirectUrl = `/auth?redirect=${encodeURIComponent(currentPath)}`;
           window.location.href = redirectUrl;
           throw new Error('Authentication required');
         }

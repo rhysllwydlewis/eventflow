@@ -274,7 +274,7 @@
       // Update desktop auth link
       if (elements.authLink) {
         elements.authLink.textContent = 'Log in';
-        elements.authLink.href = '/auth.html';
+        elements.authLink.href = '/auth';
         elements.authLink.classList.remove('ef-btn-secondary');
         elements.authLink.classList.add('ef-btn-primary');
         const newAuthLink = elements.authLink.cloneNode(true);
@@ -290,7 +290,7 @@
       // Show mobile auth
       if (elements.mobileAuth) {
         elements.mobileAuth.textContent = 'Log in';
-        elements.mobileAuth.href = '/auth.html';
+        elements.mobileAuth.href = '/auth';
         elements.mobileAuth.style.display = '';
       }
 

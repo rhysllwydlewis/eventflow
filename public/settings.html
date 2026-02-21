@@ -276,7 +276,7 @@
       
       if (!user) {
         // Not logged in, redirect to login
-        window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = '/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
         return;
       }
       

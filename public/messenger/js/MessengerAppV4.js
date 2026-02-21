@@ -808,9 +808,9 @@ class MessengerAppV4 {
       }
     }
 
-    // Legacy fallback: AuthState
-    if (window.AuthState?.getUser) {
-      const user = window.AuthState.getUser();
+    // Legacy fallback: AuthStateManager
+    if (window.AuthStateManager?.getUser) {
+      const user = window.AuthStateManager.getUser();
       if (user) {
         return user;
       }

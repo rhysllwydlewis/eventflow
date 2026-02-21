@@ -624,7 +624,7 @@
     openReviewModal() {
       if (!this.currentUser) {
         this.showToast('Please sign in to write a review', 'error');
-        window.location.href = `/auth.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+        window.location.href = `/auth?redirect=${encodeURIComponent(window.location.pathname)}`;
         return;
       }
 

@@ -53,14 +53,14 @@
 
       if (res.status === 401) {
         // Not logged in - redirect to auth
-        window.location.href = '/auth.html?redirect=/supplier/marketplace-new-listing.html';
+        window.location.href = '/auth?redirect=/supplier/marketplace-new-listing';
         return false;
       }
 
       if (!res.ok) {
         showToast('Unable to verify authentication', 'error');
         setTimeout(() => {
-          window.location.href = '/auth.html';
+          window.location.href = '/auth';
         }, 2000);
         return false;
       }
@@ -77,7 +77,7 @@
       }
 
       if (!currentUser) {
-        window.location.href = '/auth.html?redirect=/supplier/marketplace-new-listing.html';
+        window.location.href = '/auth?redirect=/supplier/marketplace-new-listing';
         return false;
       }
 

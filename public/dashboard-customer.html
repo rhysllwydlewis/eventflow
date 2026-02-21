@@ -846,7 +846,7 @@ async function initDashboard() {
   
   if (!user) {
     // Redirect to login if not authenticated
-    window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+    window.location.href = '/auth?redirect=' + encodeURIComponent(window.location.pathname);
     return;
   }
 

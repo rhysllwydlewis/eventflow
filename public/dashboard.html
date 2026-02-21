@@ -53,13 +53,13 @@
 
         if (res.status === 401) {
           // Not authenticated - redirect to login with return URL
-          window.location.href = '/auth.html?redirect=/dashboard.html';
+          window.location.href = '/auth?redirect=/dashboard.html';
           return;
         }
 
         if (!res.ok) {
           console.error('Failed to fetch user:', res.status);
-          window.location.href = '/auth.html?redirect=/dashboard.html';
+          window.location.href = '/auth?redirect=/dashboard.html';
           return;
         }
 
@@ -69,7 +69,7 @@
         const user = data.user || data;
 
         if (!user || !user.role) {
-          window.location.href = '/auth.html?redirect=/dashboard.html';
+          window.location.href = '/auth?redirect=/dashboard.html';
           return;
         }
 
@@ -85,7 +85,7 @@
       } catch (error) {
         console.error('Error redirecting to dashboard:', error);
         // Fallback to auth page
-        window.location.href = '/auth.html?redirect=/dashboard.html';
+        window.location.href = '/auth?redirect=/dashboard.html';
       }
     })();
   </script>

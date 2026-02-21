@@ -929,7 +929,7 @@
   // Sign out
   document.getElementById('signoutBtn').addEventListener('click', async () => {
     await fetch('/api/auth/signout', { method: 'POST', credentials: 'include' });
-    window.location.href = '/auth.html';
+    window.location.href = '/auth';
   });
 
   // Initial load

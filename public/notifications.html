@@ -524,14 +524,14 @@
 
       if (!response.ok) {
         // User not authenticated, redirect to auth page
-        window.location.href = `/auth?redirect=${encodeURIComponent('/notifications')}`;
+        window.location.href = `/auth?redirect=${encodeURIComponent('/notifications.html')}`;
         return false;
       }
 
       return true;
     } catch (error) {
       console.error('Error checking authentication:', error);
-      window.location.href = `/auth?redirect=${encodeURIComponent('/notifications')}`;
+      window.location.href = `/auth?redirect=${encodeURIComponent('/notifications.html')}`;
       return false;
     }
   }

@@ -3937,7 +3937,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ? 'admin_users'
       : location.pathname.endsWith('admin.html')
         ? 'admin'
-        : location.pathname.endsWith('auth.html')
+        : location.pathname.endsWith('auth.html') || location.pathname === '/auth'
           ? 'auth'
           : location.pathname.endsWith('verify.html') || location.pathname === '/verify'
             ? 'verify'
@@ -5139,7 +5139,7 @@ async function initVerify() {
       }
       // Auto-redirect to login after 3 seconds
       setTimeout(() => {
-        window.location.href = '/auth.html';
+        window.location.href = '/auth';
       }, 3000);
     }
   } catch (err) {

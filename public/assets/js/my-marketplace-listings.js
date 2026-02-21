@@ -107,7 +107,7 @@
         <p class="small" style="margin-top: 8px;">
           You need to be logged in to view and manage your marketplace listings.
         </p>
-        <a href="/auth.html?redirect=/my-marketplace-listings.html" class="cta" style="margin-top: 12px; display: inline-block;">
+        <a href="/auth?redirect=/my-marketplace-listings" class="cta" style="margin-top: 12px; display: inline-block;">
           Log in or Sign up
         </a>
       `;
@@ -175,7 +175,7 @@
         // Logged out - show toast and redirect to auth
         showToast('Please log in to list items');
         setTimeout(() => {
-          window.location.href = '/auth.html?redirect=/my-marketplace-listings.html';
+          window.location.href = '/auth?redirect=/my-marketplace-listings';
         }, 1500);
         return;
       }
