@@ -44,7 +44,7 @@ class ChatAPI {
 
     try {
       const response = await fetch(url, finalOptions);
-      
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Request failed' }));
         throw new Error(error.error || `HTTP ${response.status}`);
@@ -72,13 +72,27 @@ class ChatAPI {
    */
   async getConversations({ status, unreadOnly, pinned, archived, search, limit, skip } = {}) {
     const params = new URLSearchParams();
-    if (status) params.append('status', status);
-    if (unreadOnly) params.append('unreadOnly', 'true');
-    if (pinned !== undefined) params.append('pinned', pinned.toString());
-    if (archived !== undefined) params.append('archived', archived.toString());
-    if (search) params.append('search', search);
-    if (limit) params.append('limit', limit.toString());
-    if (skip) params.append('skip', skip.toString());
+    if (status) {
+      params.append('status', status);
+    }
+    if (unreadOnly) {
+      params.append('unreadOnly', 'true');
+    }
+    if (pinned !== undefined) {
+      params.append('pinned', pinned.toString());
+    }
+    if (archived !== undefined) {
+      params.append('archived', archived.toString());
+    }
+    if (search) {
+      params.append('search', search);
+    }
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
+    if (skip) {
+      params.append('skip', skip.toString());
+    }
 
     const query = params.toString();
     return this.request(`/conversations${query ? `?${query}` : ''}`);
@@ -125,8 +139,12 @@ class ChatAPI {
    */
   async getMessages(conversationId, { before, limit } = {}) {
     const params = new URLSearchParams();
-    if (before) params.append('before', before);
-    if (limit) params.append('limit', limit.toString());
+    if (before) {
+      params.append('before', before);
+    }
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
 
     const query = params.toString();
     return this.request(`/conversations/${conversationId}/messages${query ? `?${query}` : ''}`);
@@ -175,8 +193,12 @@ class ChatAPI {
    */
   async getContacts({ search, limit } = {}) {
     const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (limit) params.append('limit', limit.toString());
+    if (search) {
+      params.append('search', search);
+    }
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
 
     const query = params.toString();
     return this.request(`/contacts${query ? `?${query}` : ''}`);
@@ -195,7 +217,9 @@ class ChatAPI {
   async searchMessages(query, { limit } = {}) {
     const params = new URLSearchParams();
     params.append('q', query);
-    if (limit) params.append('limit', limit.toString());
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
 
     return this.request(`/search?${params.toString()}`);
   }

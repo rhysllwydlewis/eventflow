@@ -7,30 +7,30 @@ class UnreadBadgeManager {
   constructor() {
     // All possible badge element selectors
     this.badgeSelectors = [
-      '#unreadMessageBadge',          // Dashboard widget (customer/supplier)
-      '#ef-bottom-dashboard-badge',   // Bottom nav (mobile)
-      '#inboxCount',                  // Messages page inbox tab
-      '.supplier-unread-badge',       // Supplier dashboard alternate
-      '.notification-badge',          // Any generic notification badge
+      '#unreadMessageBadge', // Dashboard widget (customer/supplier)
+      '#ef-bottom-dashboard-badge', // Bottom nav (mobile)
+      '#inboxCount', // Messages page inbox tab
+      '.supplier-unread-badge', // Supplier dashboard alternate
+      '.notification-badge', // Any generic notification badge
     ];
-    
+
     this.currentCount = 0;
-    
+
     // Listen to unread count updates from messaging system
     this.setupListeners();
   }
-  
+
   setupListeners() {
     // Listen to custom event from MessagingManager
-    window.addEventListener('unreadCountUpdated', (e) => {
+    window.addEventListener('unreadCountUpdated', e => {
       this.updateAll(e.detail.count);
     });
-    
+
     // Listen to WebSocket events if messaging system is available
     if (window.messagingSystem) {
       const tryListenToSocket = () => {
         if (window.messagingSystem.socket) {
-          window.messagingSystem.socket.on('unread:update', (data) => {
+          window.messagingSystem.socket.on('unread:update', data => {
             this.updateAll(data.count);
           });
         } else {
@@ -41,7 +41,7 @@ class UnreadBadgeManager {
       tryListenToSocket();
     }
   }
-  
+
   /**
    * Update all badge instances with new count
    * @param {number} count - Unread message count
@@ -51,14 +51,16 @@ class UnreadBadgeManager {
       console.warn('[UnreadBadgeManager] Invalid unread count:', count);
       return;
     }
-    
+
     this.currentCount = count;
-    
+
     this.badgeSelectors.forEach(selector => {
       const badges = document.querySelectorAll(selector);
       badges.forEach(badge => {
-        if (!badge) return;
-        
+        if (!badge) {
+          return;
+        }
+
         if (count > 0) {
           // Show badge with count
           badge.textContent = count > 99 ? '99+' : count.toString();
@@ -71,14 +73,16 @@ class UnreadBadgeManager {
         }
       });
     });
-    
+
     // Also update page title if on messages page
     this.updatePageTitle(count);
-    
+
     // Log for debugging
-    console.debug(`[UnreadBadgeManager] Updated ${this.badgeSelectors.length} badge types to count: ${count}`);
+    console.debug(
+      `[UnreadBadgeManager] Updated ${this.badgeSelectors.length} badge types to count: ${count}`
+    );
   }
-  
+
   /**
    * Update page title with unread count (e.g., "(3) Messages - EventFlow")
    * @param {number} count - Unread count
@@ -89,7 +93,7 @@ class UnreadBadgeManager {
       document.title = count > 0 ? `(${count}) ${baseTitle}` : baseTitle;
     }
   }
-  
+
   /**
    * Manually refresh count from API
    */
@@ -98,16 +102,16 @@ class UnreadBadgeManager {
       const response = await fetch('/api/v2/messages/unread', {
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const data = await response.json();
       const count = data.count || data.unreadCount || 0;
-      
+
       this.updateAll(count);
-      
+
       return count;
     } catch (error) {
       console.error('[UnreadBadgeManager] Failed to refresh count:', error);
@@ -115,7 +119,7 @@ class UnreadBadgeManager {
       return this.currentCount;
     }
   }
-  
+
   /**
    * Get current count
    */

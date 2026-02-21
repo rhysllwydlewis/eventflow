@@ -34,7 +34,7 @@ class ChatInboxWidget {
     this.render();
     await this.loadConversations();
     await this.loadUnreadCount();
-    
+
     // Refresh every 30 seconds
     this.refreshInterval = setInterval(() => {
       this.refresh();
@@ -50,7 +50,7 @@ class ChatInboxWidget {
         unreadOnly: this.options.showUnreadOnly,
         limit: this.options.maxConversations,
       });
-      
+
       this.conversations = result.conversations || [];
       this.renderConversations();
     } catch (error) {
@@ -76,10 +76,7 @@ class ChatInboxWidget {
    * Refresh data
    */
   async refresh() {
-    await Promise.all([
-      this.loadConversations(),
-      this.loadUnreadCount(),
-    ]);
+    await Promise.all([this.loadConversations(), this.loadUnreadCount()]);
   }
 
   /**
@@ -110,7 +107,9 @@ class ChatInboxWidget {
    */
   renderConversations() {
     const content = this.container.querySelector('#widgetContent');
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
     if (this.conversations.length === 0) {
       content.innerHTML = `
@@ -121,17 +120,19 @@ class ChatInboxWidget {
       return;
     }
 
-    content.innerHTML = this.conversations.map(conv => {
-      const participant = this.getOtherParticipant(conv);
-      const lastMessage = conv.lastMessage || {};
-      const unreadCount = this.getUnreadCount(conv);
-      
-      return `
+    content.innerHTML = this.conversations
+      .map(conv => {
+        const participant = this.getOtherParticipant(conv);
+        const lastMessage = conv.lastMessage || {};
+        const unreadCount = this.getUnreadCount(conv);
+
+        return `
         <a href="/chat/?conversation=${conv._id}" class="widget-conversation ${unreadCount > 0 ? 'unread' : ''}">
           <div class="widget-avatar">
-            ${participant.avatar 
-              ? `<img src="${this.escapeHtml(participant.avatar)}" alt="${this.escapeHtml(participant.displayName)}">` 
-              : `<span>${this.getInitials(participant.displayName)}</span>`
+            ${
+              participant.avatar
+                ? `<img src="${this.escapeHtml(participant.avatar)}" alt="${this.escapeHtml(participant.displayName)}">`
+                : `<span>${this.getInitials(participant.displayName)}</span>`
             }
           </div>
           <div class="widget-info">
@@ -144,7 +145,8 @@ class ChatInboxWidget {
           </div>
         </a>
       `;
-    }).join('');
+      })
+      .join('');
   }
 
   /**
@@ -152,7 +154,9 @@ class ChatInboxWidget {
    */
   renderError() {
     const content = this.container.querySelector('#widgetContent');
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
     content.innerHTML = `
       <div class="widget-error">
@@ -167,7 +171,9 @@ class ChatInboxWidget {
    */
   renderUnreadBadge() {
     const badge = this.container.querySelector('#widgetUnreadBadge');
-    if (!badge) return;
+    if (!badge) {
+      return;
+    }
 
     if (this.unreadCount > 0) {
       badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
@@ -193,9 +199,10 @@ class ChatInboxWidget {
    */
   getUnreadCount(conversation) {
     // TODO: Get current user ID
-    const participant = conversation.participants && conversation.participants.length > 0
-      ? conversation.participants[0]
-      : null;
+    const participant =
+      conversation.participants && conversation.participants.length > 0
+        ? conversation.participants[0]
+        : null;
     return participant ? participant.unreadCount || 0 : 0;
   }
 
@@ -203,7 +210,9 @@ class ChatInboxWidget {
    * Get initials from name
    */
   getInitials(name) {
-    if (!name) return '?';
+    if (!name) {
+      return '?';
+    }
     return name
       .split(' ')
       .map(word => word[0])
@@ -216,8 +225,10 @@ class ChatInboxWidget {
    * Format timestamp
    */
   formatTime(timestamp) {
-    if (!timestamp) return '';
-    
+    if (!timestamp) {
+      return '';
+    }
+
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
@@ -226,11 +237,19 @@ class ChatInboxWidget {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m`;
-    if (hours < 24) return `${hours}h`;
-    if (days < 7) return `${days}d`;
-    
+    if (minutes < 1) {
+      return 'Just now';
+    }
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+    if (hours < 24) {
+      return `${hours}h`;
+    }
+    if (days < 7) {
+      return `${days}d`;
+    }
+
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
@@ -238,7 +257,9 @@ class ChatInboxWidget {
    * Escape HTML to prevent XSS
    */
   escapeHtml(text) {
-    if (!text) return '';
+    if (!text) {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;

@@ -69,7 +69,9 @@ class MessengerState {
    * Get active conversation
    */
   getActiveConversation() {
-    if (!this.activeConversationId) return null;
+    if (!this.activeConversationId) {
+      return null;
+    }
     return this.conversations.find(c => c._id === this.activeConversationId);
   }
 
@@ -119,7 +121,7 @@ class MessengerState {
   updateMessage(conversationId, messageId, updates) {
     const messages = this.messages.get(conversationId) || [];
     const index = messages.findIndex(m => m._id === messageId);
-    
+
     if (index >= 0) {
       messages[index] = { ...messages[index], ...updates };
       this.messages.set(conversationId, messages);
@@ -133,7 +135,7 @@ class MessengerState {
   deleteMessage(conversationId, messageId) {
     const messages = this.messages.get(conversationId) || [];
     const filteredMessages = messages.filter(m => m._id !== messageId);
-    
+
     this.messages.set(conversationId, filteredMessages);
     this.emit('messageDeleted', { conversationId, messageId });
   }
@@ -144,18 +146,18 @@ class MessengerState {
   updateReaction(conversationId, messageId, reaction) {
     const messages = this.messages.get(conversationId) || [];
     const index = messages.findIndex(m => m._id === messageId);
-    
+
     if (index >= 0) {
       const message = messages[index];
       if (!message.reactions) {
         message.reactions = [];
       }
-      
+
       // Toggle reaction or add it
       const existingIndex = message.reactions.findIndex(
         r => r.emoji === reaction.emoji && r.userId === reaction.userId
       );
-      
+
       if (existingIndex >= 0) {
         // Remove reaction
         message.reactions.splice(existingIndex, 1);
@@ -163,7 +165,7 @@ class MessengerState {
         // Add reaction
         message.reactions.push(reaction);
       }
-      
+
       this.messages.set(conversationId, messages);
       this.emit('messageUpdated', { conversationId, messageId, message });
     }
@@ -176,14 +178,14 @@ class MessengerState {
     if (!this.typingUsers.has(conversationId)) {
       this.typingUsers.set(conversationId, new Set());
     }
-    
+
     const typingSet = this.typingUsers.get(conversationId);
     if (isTyping) {
       typingSet.add(userId);
     } else {
       typingSet.delete(userId);
     }
-    
+
     this.emit('typingChanged', { conversationId, typingUsers: Array.from(typingSet) });
   }
 
@@ -285,18 +287,14 @@ class MessengerState {
    * Unsubscribe from state changes
    */
   off(event, callback) {
-    this.listeners = this.listeners.filter(
-      l => l.event !== event || l.callback !== callback
-    );
+    this.listeners = this.listeners.filter(l => l.event !== event || l.callback !== callback);
   }
 
   /**
    * Emit state change event
    */
   emit(event, data) {
-    this.listeners
-      .filter(l => l.event === event)
-      .forEach(l => l.callback(data));
+    this.listeners.filter(l => l.event === event).forEach(l => l.callback(data));
   }
 
   /**

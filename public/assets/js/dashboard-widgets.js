@@ -10,7 +10,9 @@ import { animateProgressBar, animateCircularProgress, initCountUp } from './coun
  * data into innerHTML template literals.
  */
 function escapeHtml(unsafe) {
-  if (typeof unsafe !== 'string') return '';
+  if (typeof unsafe !== 'string') {
+    return '';
+  }
   const div = document.createElement('div');
   div.textContent = unsafe;
   return div.innerHTML;

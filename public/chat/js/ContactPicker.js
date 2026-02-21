@@ -17,7 +17,7 @@ class ContactPicker {
     this.searchQuery = '';
     this.isOpen = false;
     this.isLoading = false;
-    
+
     this.modal = null;
     this.searchInput = null;
     this.contactsList = null;
@@ -40,7 +40,7 @@ class ContactPicker {
     const modal = document.createElement('div');
     modal.className = 'contact-picker-modal';
     modal.style.display = 'none';
-    
+
     modal.innerHTML = `
       <div class="contact-picker-overlay"></div>
       <div class="contact-picker-content">
@@ -74,7 +74,7 @@ class ContactPicker {
     overlay.addEventListener('click', () => this.close());
 
     // Escape key
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && this.isOpen) {
         this.close();
       }
@@ -82,7 +82,7 @@ class ContactPicker {
 
     // Search input
     if (this.searchInput) {
-      this.searchInput.addEventListener('input', (e) => {
+      this.searchInput.addEventListener('input', e => {
         this.searchQuery = e.target.value.toLowerCase();
         this.filterContacts();
       });
@@ -90,7 +90,7 @@ class ContactPicker {
 
     // Contact click (delegated)
     if (this.contactsList) {
-      this.contactsList.addEventListener('click', (e) => {
+      this.contactsList.addEventListener('click', e => {
         const contactItem = e.target.closest('.contact-item');
         if (contactItem && !contactItem.classList.contains('skeleton')) {
           const userId = contactItem.dataset.userId;
@@ -171,8 +171,8 @@ class ContactPicker {
   async selectContact(userId) {
     try {
       // Check if conversation already exists
-      const existingConversation = this.chatState.conversations.find(c => 
-        c.participants && c.participants.includes(userId)
+      const existingConversation = this.chatState.conversations.find(
+        c => c.participants && c.participants.includes(userId)
       );
 
       if (existingConversation) {
@@ -184,15 +184,14 @@ class ContactPicker {
 
       // Create new conversation
       const conversation = await this.chatAPI.createConversation(userId);
-      
+
       // Add to state
       this.chatState.addConversation(conversation);
-      
+
       // Activate it
       this.chatState.setActiveConversation(conversation.id);
-      
+
       this.close();
-      
     } catch (error) {
       console.error('Failed to create conversation:', error);
       this.showError('Failed to start conversation');
@@ -205,7 +204,9 @@ class ContactPicker {
    * @returns {string}
    */
   escapeHtml(str) {
-    if (!str) return '';
+    if (!str) {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
@@ -220,7 +221,7 @@ class ContactPicker {
     const initials = (name || '?').charAt(0).toUpperCase();
     const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'];
     const color = colors[Math.abs(this.hashCode(name)) % colors.length];
-    
+
     return `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="${color}"/><text x="50%" y="50%" font-size="20" text-anchor="middle" dy=".3em" fill="white">${initials}</text></svg>`;
   }
 
@@ -264,9 +265,14 @@ class ContactPicker {
    * Render loading skeletons
    */
   renderLoading() {
-    if (!this.contactsList) return;
+    if (!this.contactsList) {
+      return;
+    }
 
-    const skeletons = Array(5).fill(0).map(() => `
+    const skeletons = Array(5)
+      .fill(0)
+      .map(
+        () => `
       <div class="contact-item skeleton">
         <div class="skeleton-avatar"></div>
         <div class="contact-info">
@@ -274,7 +280,9 @@ class ContactPicker {
           <div class="skeleton-line" style="width: 80%; margin-top: 8px;"></div>
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     this.contactsList.innerHTML = skeletons;
   }
@@ -283,7 +291,9 @@ class ContactPicker {
    * Render error state
    */
   renderError() {
-    if (!this.contactsList) return;
+    if (!this.contactsList) {
+      return;
+    }
 
     this.contactsList.innerHTML = `
       <div class="empty-state">
@@ -298,7 +308,9 @@ class ContactPicker {
    * Render empty state
    */
   renderEmpty() {
-    if (!this.contactsList) return;
+    if (!this.contactsList) {
+      return;
+    }
 
     const message = this.searchQuery ? 'No contacts found' : 'No contacts available';
     const icon = this.searchQuery ? '🔍' : '👥';
@@ -315,7 +327,9 @@ class ContactPicker {
    * Render the contact list
    */
   render() {
-    if (!this.contactsList) return;
+    if (!this.contactsList) {
+      return;
+    }
 
     if (this.filteredContacts.length === 0) {
       this.renderEmpty();

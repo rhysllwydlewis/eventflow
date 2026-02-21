@@ -12,7 +12,9 @@
    * and must be escaped before being inserted into innerHTML.
    */
   function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = unsafe;
     return div.innerHTML;
@@ -22,7 +24,9 @@
    * Sanitize a URL to only allow http/https schemes (blocks javascript: URIs).
    */
   function safeSrc(url) {
-    if (!url || typeof url !== 'string') return '';
+    if (!url || typeof url !== 'string') {
+      return '';
+    }
     try {
       const parsed = new URL(url, window.location.origin);
       if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
@@ -31,7 +35,11 @@
     } catch (_) {
       // If URL is relative (no protocol), only allow if it doesn't start with a dangerous scheme
       const lower = url.toLowerCase().replace(/\s/g, '');
-      if (!lower.startsWith('javascript:') && !lower.startsWith('data:') && !lower.startsWith('vbscript:')) {
+      if (
+        !lower.startsWith('javascript:') &&
+        !lower.startsWith('data:') &&
+        !lower.startsWith('vbscript:')
+      ) {
         return url;
       }
     }
@@ -121,9 +129,8 @@
             const location = escapeHtml(supplier.location || '');
             const logoSrc = safeSrc(supplier.logo || '');
             const initial = (supplier.businessName || 'S').charAt(0).toUpperCase();
-            const supplierId = (typeof supplier.id === 'string' || typeof supplier.id === 'number')
-              ? supplier.id
-              : '';
+            const supplierId =
+              typeof supplier.id === 'string' || typeof supplier.id === 'number' ? supplier.id : '';
             const href = `/supplier?id=${encodeURIComponent(supplierId)}`;
             const ratingText = supplier.averageRating
               ? `⭐ ${Number(supplier.averageRating).toFixed(1)} (${supplier.reviewCount || 0} reviews)`
@@ -144,7 +151,8 @@
             ${location ? `<p style="margin: 0 0 0.5rem; font-size: 0.875rem; color: #6b7280;">📍 ${location}</p>` : ''}
             ${ratingText ? `<p style="margin: 0; font-size: 0.875rem; color: #6b7280;">${ratingText}</p>` : ''}
           </a>
-        `})
+        `;
+          })
           .join('')}
       </div>
     `;
