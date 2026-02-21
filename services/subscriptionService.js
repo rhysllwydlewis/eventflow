@@ -368,10 +368,9 @@ async function getSubscriptionStats() {
     pastDue: subscriptions.filter(s => s.status === 'past_due').length,
     byPlan: {
       free: subscriptions.filter(s => s.plan === 'free').length,
-      basic: subscriptions.filter(
-        s => s.plan === 'basic' || (s.plan === 'pro' && s.status === 'trialing')
-      ).length,
-      pro: subscriptions.filter(s => s.plan === 'pro' && s.status !== 'trialing').length,
+      basic: subscriptions.filter(s => s.plan === 'basic').length,
+      pro: subscriptions.filter(s => s.plan === 'pro').length,
+      pro_plus: subscriptions.filter(s => s.plan === 'pro_plus').length,
       enterprise: subscriptions.filter(s => s.plan === 'enterprise').length,
     },
   };

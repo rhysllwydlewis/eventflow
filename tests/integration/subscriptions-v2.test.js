@@ -135,9 +135,9 @@ describe('Subscription Service Integration Tests', () => {
     });
 
     it('should reject same tier upgrade', async () => {
-      await expect(
-        subscriptionService.upgradeSubscription(subscriptionId, 'pro')
-      ).rejects.toThrow('must be higher tier');
+      await expect(subscriptionService.upgradeSubscription(subscriptionId, 'pro')).rejects.toThrow(
+        'must be higher tier'
+      );
     });
   });
 
@@ -291,8 +291,43 @@ describe('Subscription Service Integration Tests', () => {
       expect(stats.total).toBe(3);
       expect(stats.active).toBe(2);
       expect(stats.trialing).toBe(1);
-      expect(stats.byPlan.pro).toBe(2);
+      // All 3 subscriptions are on the 'pro' plan (one is trialing)
+      expect(stats.byPlan.pro).toBe(3);
+      expect(stats.byPlan.basic).toBe(0);
+    });
+  });
+
+  describe('getSubscriptionStats (pro_plus coverage)', () => {
+    it('should count pro_plus subscriptions correctly in byPlan', async () => {
+      mockSubscriptions = [
+        { id: 's1', userId: 'u1', plan: 'pro_plus', status: 'active' },
+        { id: 's2', userId: 'u2', plan: 'pro', status: 'active' },
+        { id: 's3', userId: 'u3', plan: 'pro_plus', status: 'trialing' },
+        { id: 's4', userId: 'u4', plan: 'basic', status: 'canceled' },
+      ];
+      const stats = await subscriptionService.getSubscriptionStats();
+      expect(stats.byPlan.pro_plus).toBe(2);
+      expect(stats.byPlan.pro).toBe(1);
       expect(stats.byPlan.basic).toBe(1);
+    });
+  });
+
+  describe('getSubscriptionByUserId', () => {
+    it('should return null when user has no active subscription', async () => {
+      const sub = await subscriptionService.getSubscriptionByUserId('usr-none');
+      expect(sub).toBeNull();
+    });
+
+    it('should return subscription for user with active subscription', async () => {
+      await subscriptionService.createSubscription({
+        userId: 'usr-1',
+        plan: 'pro',
+        stripeSubscriptionId: 'sub_me_test',
+        stripeCustomerId: 'cus_me_test',
+      });
+      const sub = await subscriptionService.getSubscriptionByUserId('usr-1');
+      expect(sub).not.toBeNull();
+      expect(sub.plan).toBe('pro');
     });
   });
 

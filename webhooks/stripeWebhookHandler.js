@@ -18,10 +18,18 @@ const { uid } = require('../store');
  */
 function resolvePlanTier(planName) {
   const lc = (planName || '').toLowerCase();
-  if (lc.includes('enterprise')) { return 'enterprise'; }
-  if (lc.includes('pro_plus') || lc.includes('proplus')) { return 'pro_plus'; }
-  if (lc.includes('pro')) { return 'pro'; }
-  if (lc.includes('basic')) { return 'basic'; }
+  if (lc.includes('enterprise')) {
+    return 'enterprise';
+  }
+  if (lc.includes('pro_plus') || lc.includes('proplus')) {
+    return 'pro_plus';
+  }
+  if (lc.includes('pro')) {
+    return 'pro';
+  }
+  if (lc.includes('basic')) {
+    return 'basic';
+  }
   return 'free';
 }
 
@@ -473,6 +481,7 @@ module.exports = {
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
   handleSubscriptionDeleted,
+  handleSubscriptionTrialWillEnd,
   handlePaymentIntentSucceeded,
   handlePaymentIntentFailed,
   handleChargeRefunded,

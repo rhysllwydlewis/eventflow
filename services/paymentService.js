@@ -57,7 +57,7 @@ async function retryStripeCall(fn, maxRetries = 3) {
       }
 
       // Exponential backoff: 1s, 2s, 4s
-      const delay = Math.pow(2, attempt - 1) * 1000;
+      const delay = 2 ** (attempt - 1) * 1000;
       console.warn(
         `Stripe API call failed (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying in ${delay}ms...`
       );
@@ -330,14 +330,9 @@ async function calculateMRR() {
 
   subscriptions.forEach(sub => {
     if (sub.status === 'active' || sub.status === 'trialing') {
-      let planKey = sub.plan;
-      if (planKey === 'pro_plus') {
-        planKey = 'pro';
-      }
-
-      const planPrice = PLAN_FEATURES[planKey]?.price || 0;
+      const planPrice = PLAN_FEATURES[sub.plan]?.price || 0;
       totalMRR += planPrice;
-      mrrByPlan[planKey] = (mrrByPlan[planKey] || 0) + planPrice;
+      mrrByPlan[sub.plan] = (mrrByPlan[sub.plan] || 0) + planPrice;
     }
   });
 

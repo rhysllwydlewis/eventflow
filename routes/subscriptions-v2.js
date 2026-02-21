@@ -157,8 +157,31 @@ router.post(
 
 /**
  * @swagger
- * /api/v2/subscriptions:
- *   post:
+ * /api/v2/subscriptions/me:
+ *   get:
+ *     summary: Get current user's subscription
+ *     description: Returns the authenticated user's active subscription, or null with plan 'free' when none exists.
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Subscription retrieved (subscription is null when user has no paid plan)
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/me', authRequired, async (req, res) => {
+  try {
+    const subscription = await subscriptionService.getSubscriptionByUserId(req.user.id);
+    const plan = subscription ? subscription.plan : 'free';
+    res.json({ success: true, subscription, plan });
+  } catch (error) {
+    console.error('Error fetching current user subscription:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription', message: error.message });
+  }
+});
+
+/**
  *     summary: Subscribe to a plan
  *     tags: [Subscriptions]
  *     security:
