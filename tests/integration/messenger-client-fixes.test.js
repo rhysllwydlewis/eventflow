@@ -472,4 +472,78 @@ describe('Messenger client-side fixes', () => {
     // Should appear in the POST validate route handler (may be inline or multi-line)
     expect(src).toMatch(/router\.post\([\s\S]*?['"]\/validate['"][\s\S]*?applyCsrfProtection/);
   });
+
+  // ── messenger.service.js markUnread support ─────────────────────────────────
+
+  it('messenger.service.js handles markUnread by setting unreadCount=1 and resetting lastReadAt', () => {
+    const svc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'services', 'messenger.service.js'),
+      'utf8'
+    );
+    expect(svc).toContain('updates.markUnread');
+    expect(svc).toContain('participants.$[participant].unreadCount');
+    expect(svc).toContain('participants.$[participant].lastReadAt');
+  });
+
+  // ── routes/messenger.js: ObjectId validation + markUnread passthrough ────────
+
+  it('routes/messenger.js has isValidObjectId helper', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    expect(routeSrc).toContain('function isValidObjectId');
+    expect(routeSrc).toContain('/^[a-fA-F0-9]{24}$/');
+  });
+
+  it('routes/messenger.js validates conversation ID in GET /conversations/:id', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    expect(routeSrc).toContain('isValidObjectId(id)');
+    expect(routeSrc).toContain('Invalid conversation ID');
+  });
+
+  it('routes/messenger.js passes markUnread from body to updateConversation', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    expect(routeSrc).toContain('markUnread');
+    expect(routeSrc).toContain('updates.markUnread = markUnread');
+  });
+
+  // ── ChatInboxWidget: currentUserId resolved from cookie/API ─────────────────
+
+  it('ChatInboxWidget._loadCurrentUser resolves user from cookie then API', () => {
+    const widgetSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'chat', 'js', 'ChatInboxWidget.js'),
+      'utf8'
+    );
+    expect(widgetSrc).toContain('_loadCurrentUser');
+    expect(widgetSrc).toContain('_getCookie');
+    expect(widgetSrc).toContain('/api/v1/auth/me');
+    expect(widgetSrc).toContain('this.currentUserId');
+  });
+
+  it('ChatInboxWidget.getOtherParticipant uses currentUserId to find the other party', () => {
+    const widgetSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'chat', 'js', 'ChatInboxWidget.js'),
+      'utf8'
+    );
+    // Should filter participants by userId !== currentUserId
+    expect(widgetSrc).toContain('p.userId !== this.currentUserId');
+    // Should no longer have the TODO comment
+    expect(widgetSrc).not.toContain('TODO: Get current user ID from cookie/session');
+  });
+
+  it('ChatInboxWidget.getUnreadCount uses currentUserId to find own participant', () => {
+    const widgetSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'chat', 'js', 'ChatInboxWidget.js'),
+      'utf8'
+    );
+    expect(widgetSrc).toContain('p.userId === this.currentUserId');
+    expect(widgetSrc).not.toContain('TODO: Get current user ID');
+  });
 });

@@ -176,6 +176,10 @@ function sanitizeInput(text) {
     .substring(0, 10000); // Max 10k chars
 }
 
+function isValidObjectId(id) {
+  return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
+}
+
 /**
  * Store attachment file
  */
@@ -357,6 +361,9 @@ router.get('/conversations', applyAuthRequired, ensureServices, async (req, res)
 router.get('/conversations/:id', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+    }
     const userId = req.user.id;
 
     const conversation = await (await getMessengerService()).getConversation(id, userId);
@@ -388,8 +395,11 @@ router.patch(
   async (req, res) => {
     try {
       const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
-      const { isPinned, isMuted, isArchived } = req.body;
+      const { isPinned, isMuted, isArchived, markUnread } = req.body;
 
       const updates = {};
       if (isPinned !== undefined) {
@@ -400,6 +410,9 @@ router.patch(
       }
       if (isArchived !== undefined) {
         updates.isArchived = isArchived;
+      }
+      if (markUnread !== undefined) {
+        updates.markUnread = markUnread;
       }
 
       const conversation = await (
@@ -434,6 +447,9 @@ router.delete(
   async (req, res) => {
     try {
       const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
 
       await (await getMessengerService()).deleteConversation(id, userId);

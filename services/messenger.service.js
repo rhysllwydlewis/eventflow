@@ -226,6 +226,13 @@ class MessengerService {
       updateFields['participants.$[participant].isArchived'] = updates.isArchived;
     }
 
+    // markUnread: set unreadCount to 1 and reset lastReadAt so the conversation
+    // appears unread in the conversation list without reloading
+    if (updates.markUnread) {
+      updateFields['participants.$[participant].unreadCount'] = 1;
+      updateFields['participants.$[participant].lastReadAt'] = new Date(0);
+    }
+
     updateFields.updatedAt = new Date();
 
     const result = await this.db.collection('conversations').findOneAndUpdate(

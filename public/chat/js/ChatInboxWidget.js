@@ -23,6 +23,7 @@ class ChatInboxWidget {
     this.conversations = [];
     this.unreadCount = 0;
     this.refreshInterval = null;
+    this.currentUserId = null;
 
     this.init();
   }
@@ -32,6 +33,7 @@ class ChatInboxWidget {
    */
   async init() {
     this.render();
+    await this._loadCurrentUser();
     await this.loadConversations();
     await this.loadUnreadCount();
 
@@ -39,6 +41,43 @@ class ChatInboxWidget {
     this.refreshInterval = setInterval(() => {
       this.refresh();
     }, 30000);
+  }
+
+  /**
+   * Load current user from cookie or API to identify the "other" participant
+   */
+  async _loadCurrentUser() {
+    try {
+      const userCookie = this._getCookie('user');
+      if (userCookie) {
+        const parsed = JSON.parse(decodeURIComponent(userCookie));
+        this.currentUserId = parsed.id || parsed._id || null;
+        return;
+      }
+      const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        this.currentUserId = (data.user || data).id || (data.user || data)._id || null;
+      }
+    } catch (_) {
+      // Non-critical — fall back to first participant
+    }
+  }
+
+  /**
+   * Read a cookie value by name
+   * @param {string} name
+   * @returns {string|null}
+   */
+  _getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [key, ...rest] = cookie.trim().split('=');
+      if (key === name) {
+        return rest.join('=') || null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -187,23 +226,32 @@ class ChatInboxWidget {
    * Get other participant (not current user)
    */
   getOtherParticipant(conversation) {
-    // TODO: Get current user ID from cookie/session
-    // For now, return first participant
-    return conversation.participants && conversation.participants.length > 0
-      ? conversation.participants[0]
-      : { displayName: 'Unknown', avatar: null };
+    if (!conversation.participants || conversation.participants.length === 0) {
+      return { displayName: 'Unknown', avatar: null };
+    }
+    if (this.currentUserId) {
+      const other = conversation.participants.find(p => p.userId !== this.currentUserId);
+      if (other) {
+        return other;
+      }
+    }
+    // Fall back to first participant when current user is unknown
+    return conversation.participants[0];
   }
 
   /**
    * Get unread count for current user
    */
   getUnreadCount(conversation) {
-    // TODO: Get current user ID
-    const participant =
-      conversation.participants && conversation.participants.length > 0
-        ? conversation.participants[0]
-        : null;
-    return participant ? participant.unreadCount || 0 : 0;
+    if (!conversation.participants || conversation.participants.length === 0) {
+      return 0;
+    }
+    if (this.currentUserId) {
+      const me = conversation.participants.find(p => p.userId === this.currentUserId);
+      return me ? me.unreadCount || 0 : 0;
+    }
+    // Fall back to first participant
+    return conversation.participants[0].unreadCount || 0;
   }
 
   /**
