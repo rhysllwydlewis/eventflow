@@ -474,6 +474,8 @@ const canonicalPages = [
   'settings',
   'timeline',
   'notifications',
+  'guests',
+  'messages',
 ];
 
 canonicalPages.forEach(page => {

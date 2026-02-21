@@ -401,7 +401,7 @@ class GlobalSearch {
             <span>Budget Tracker</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/guests.html" class="search-result-item">
+          <a href="/guests" class="search-result-item">
             <span>Guest List Manager</span>
             <span style="color: var(--muted);">→</span>
           </a>
@@ -567,7 +567,7 @@ class GlobalSearch {
         type: 'page',
         title: 'Guest List Manager',
         description: 'Track RSVPs and guests',
-        url: '/guests.html',
+        url: '/guests',
       },
       {
         type: 'help',

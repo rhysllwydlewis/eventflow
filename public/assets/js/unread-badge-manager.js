@@ -88,7 +88,7 @@ class UnreadBadgeManager {
    * @param {number} count - Unread count
    */
   updatePageTitle(count) {
-    if (window.location.pathname.includes('messages.html')) {
+    if (window.location.pathname.includes('messages')) {
       const baseTitle = 'Messages - EventFlow';
       document.title = count > 0 ? `(${count}) ${baseTitle}` : baseTitle;
     }
