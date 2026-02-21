@@ -161,7 +161,7 @@ async function initSubscriptionPage() {
 async function checkAuth() {
   try {
     console.log('[Subscription] Checking authentication...');
-    const response = await fetch('/api/auth/me', {
+    const response = await fetch('/api/v1/auth/me', {
       credentials: 'include',
     });
 

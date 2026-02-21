@@ -306,7 +306,7 @@
   async function init() {
     // Check authentication
     try {
-      const response = await fetch('/api/auth/me', { credentials: 'include' });
+      const response = await fetch('/api/v1/auth/me', { credentials: 'include' });
       if (!response.ok) {
         window.location.href = `/auth?redirect=${encodeURIComponent(window.location.pathname)}`;
         return;
