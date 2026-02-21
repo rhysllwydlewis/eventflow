@@ -933,7 +933,9 @@
 
     // Show selected image if exists
     if (category.heroImage) {
-      document.getElementById('selectedImageThumbnail').src = category.heroImage;
+      const thumb = document.getElementById('selectedImageThumbnail');
+      thumb.src = category.heroImage;
+      thumb.alt = category.name ? `Hero image for ${category.name}` : 'Selected hero image';
       document.getElementById('selectedImageCredit').textContent = category.pexelsAttribution || '';
       document.getElementById('selectedImagePreview').style.display = 'block';
     } else {
@@ -1192,7 +1194,9 @@
 
     document.getElementById('categoryHeroImage').value = photo.src.large;
     document.getElementById('categoryPexelsAttribution').value = attribution;
-    document.getElementById('selectedImageThumbnail').src = photo.src.medium;
+    const thumb = document.getElementById('selectedImageThumbnail');
+    thumb.src = photo.src.medium;
+    thumb.alt = photo.alt || `Photo by ${photo.photographer} on Pexels`;
     document.getElementById('selectedImageCredit').innerHTML = attribution;
     document.getElementById('selectedImagePreview').style.display = 'block';
   }
