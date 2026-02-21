@@ -635,13 +635,9 @@
     }
   });
 
-  // Sidebar functionality
-  document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-    document.getElementById('adminSidebar')?.classList.toggle('open');
-  });
-
+  // Highlight active page in top navbar
   const currentPath = window.location.pathname;
-  document.querySelectorAll('.admin-nav-link').forEach(link => {
+  document.querySelectorAll('.admin-nav-btn').forEach(link => {
     if (link.getAttribute('href') === currentPath) {
       link.classList.add('active');
     }

@@ -354,7 +354,9 @@ const AdminShared = (function () {
   // Fetch CSRF token
   async function fetchCSRFToken() {
     try {
-      const data = await fetch('/api/v1/csrf-token', { credentials: 'include' }).then(r => r.json());
+      const data = await fetch('/api/v1/csrf-token', { credentials: 'include' }).then(r =>
+        r.json()
+      );
       if (data && data.csrfToken) {
         window.__CSRF_TOKEN__ = data.csrfToken;
       }
@@ -898,10 +900,10 @@ const AdminShared = (function () {
     }
   }
 
-  // Highlight active page in sidebar
+  // Highlight active page in top navbar
   function highlightActivePage() {
     const currentPath = window.location.pathname;
-    document.querySelectorAll('.admin-nav-link').forEach(link => {
+    document.querySelectorAll('.admin-nav-btn').forEach(link => {
       const href = link.getAttribute('href');
       if (href === currentPath) {
         link.classList.add('active');

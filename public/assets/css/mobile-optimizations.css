@@ -1138,8 +1138,7 @@ h4 {
 
 @media (max-width: 768px) {
   /* Sidebar collapse to hamburger menu */
-  .dashboard-sidebar,
-  .admin-sidebar {
+  .dashboard-sidebar {
     position: fixed;
     left: -280px;
     top: 0;
@@ -1151,19 +1150,16 @@ h4 {
     overflow-y: auto;
   }
   
-  html[data-theme="dark"] .dashboard-sidebar,
-  html[data-theme="dark"] .admin-sidebar {
+  html[data-theme="dark"] .dashboard-sidebar {
     background: #1F2937;
   }
   
-  .dashboard-sidebar.is-open,
-  .admin-sidebar.is-open {
+  .dashboard-sidebar.is-open {
     left: 0;
   }
   
   /* Overlay for sidebar */
-  .dashboard-sidebar.is-open::after,
-  .admin-sidebar.is-open::after {
+  .dashboard-sidebar.is-open::after {
     content: '';
     position: fixed;
     top: 0;

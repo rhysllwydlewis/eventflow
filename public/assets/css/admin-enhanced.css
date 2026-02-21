@@ -689,33 +689,6 @@ tbody tr.selected td {
   font-weight: 600;
 }
 
-/* Enhanced Sidebar */
-.admin-sidebar {
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
-}
-
-.admin-sidebar-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.admin-nav-link {
-  margin: 0.25rem 0.5rem;
-  border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-nav-link:hover {
-  background: rgba(102, 126, 234, 0.15);
-  transform: translateX(4px);
-}
-
-.admin-nav-link.active {
-  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
   body {
