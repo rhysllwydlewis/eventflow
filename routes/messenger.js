@@ -514,10 +514,11 @@ router.post(
   async (req, res) => {
     try {
       const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
       const { message: content, replyToId } = req.body;
-
-      // Validate content or attachments
       if (!content && (!req.files || req.files.length === 0)) {
         return res.status(400).json({
           error: 'Message must have content or attachments',
@@ -643,6 +644,9 @@ router.patch(
   async (req, res) => {
     try {
       const { id: messageId } = req.params;
+      if (!isValidObjectId(messageId)) {
+        return res.status(400).json({ error: 'Invalid message ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
       const { content } = req.body;
 
@@ -694,6 +698,9 @@ router.delete(
   async (req, res) => {
     try {
       const { id: messageId } = req.params;
+      if (!isValidObjectId(messageId)) {
+        return res.status(400).json({ error: 'Invalid message ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
 
       // Get message first to retrieve conversationId for WebSocket
@@ -757,6 +764,9 @@ router.post(
   async (req, res) => {
     try {
       const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
 
       const result = await (await getMessengerService()).markAsRead(conversationId, userId);
@@ -793,6 +803,9 @@ router.post(
   async (req, res) => {
     try {
       const { id: messageId } = req.params;
+      if (!isValidObjectId(messageId)) {
+        return res.status(400).json({ error: 'Invalid message ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
       const { emoji } = req.body;
 
@@ -921,6 +934,9 @@ router.get('/unread-count', applyAuthRequired, ensureServices, async (req, res) 
 router.post('/conversations/:id/typing', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+    }
     const userId = req.user.id;
     const { isTyping } = req.body;
 
