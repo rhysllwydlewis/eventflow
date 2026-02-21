@@ -113,7 +113,7 @@ async function initSubscriptionPage() {
       console.error('[Subscription] Authentication required - redirecting to login');
       // Preserve the current URL to return after login
       const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/auth.html?redirect=${returnUrl}`;
+      window.location.href = `/auth?redirect=${returnUrl}`;
       return;
     }
 

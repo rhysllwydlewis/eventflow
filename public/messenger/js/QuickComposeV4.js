@@ -429,7 +429,7 @@
         returnUrl: window.location.href,
       };
       saveDraft(draft);
-      window.location.href = `/auth.html?redirect=${encodeURIComponent(window.location.href)}`;
+      window.location.href = `/auth?redirect=${encodeURIComponent(window.location.href)}`;
       return;
     }
 

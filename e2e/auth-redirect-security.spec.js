@@ -51,8 +51,8 @@ test.describe('Auth Redirect Security', () => {
     await page.goto('/index.html');
     await page.waitForLoadState('networkidle');
 
-    // Check all auth links on the page
-    const authLinks = await page.locator('a[href*="auth.html"]').all();
+    // Check all auth links on the page (both legacy /auth.html and canonical /auth)
+    const authLinks = await page.locator('a[href*="/auth"]').all();
 
     for (const link of authLinks) {
       const href = await link.getAttribute('href');

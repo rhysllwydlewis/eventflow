@@ -43,7 +43,7 @@
     if (!isAuthenticated) {
       // Redirect to login with return URL
       const currentUrl = encodeURIComponent(window.location.href);
-      window.location.href = `/auth.html?redirect=${currentUrl}`;
+      window.location.href = `/auth?redirect=${currentUrl}`;
       return;
     }
 
@@ -91,7 +91,7 @@
     if (!isAuthenticated) {
       // Redirect to login with return URL
       const currentUrl = encodeURIComponent(window.location.href);
-      window.location.href = `/auth.html?redirect=${currentUrl}`;
+      window.location.href = `/auth?redirect=${currentUrl}`;
       return;
     }
 
