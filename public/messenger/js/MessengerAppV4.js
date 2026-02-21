@@ -41,7 +41,7 @@ class MessengerAppV4 {
       // 1. Load current user
       this.currentUser = await this._loadCurrentUser();
       if (!this.currentUser) {
-        window.location.href = '/login.html';
+        window.location.href = '/auth';
         return;
       }
       this.state.setCurrentUser(this.currentUser);

@@ -27,7 +27,7 @@ class MessengerApp {
       await this.loadCurrentUser();
       
       if (!this.currentUser) {
-        window.location.href = '/login.html';
+        window.location.href = '/auth';
         return;
       }
 
@@ -343,7 +343,7 @@ class MessengerApp {
       
       this.socket.disconnect();
       this.state.clear();
-      window.location.href = '/login.html';
+      window.location.href = '/auth';
     } catch (error) {
       console.error('Logout failed:', error);
     }

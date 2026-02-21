@@ -83,6 +83,7 @@ test.describe('Clean URL redirects for canonical pages', () => {
     'plan',
     'settings',
     'timeline',
+    'notifications',
   ];
 
   for (const pageName of canonicalPages) {

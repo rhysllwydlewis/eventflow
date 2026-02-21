@@ -345,7 +345,7 @@
   </div>
   <div class="notification-list"></div>
   <div class="notification-footer">
-    <a href="/notifications.html" class="notification-view-all">View all</a>
+    <a href="/notifications" class="notification-view-all">View all</a>
   </div>
 </div>
 
@@ -524,14 +524,14 @@
 
       if (!response.ok) {
         // User not authenticated, redirect to auth page
-        window.location.href = `/auth?redirect=${encodeURIComponent('/notifications.html')}`;
+        window.location.href = `/auth?redirect=${encodeURIComponent('/notifications')}`;
         return false;
       }
 
       return true;
     } catch (error) {
       console.error('Error checking authentication:', error);
-      window.location.href = `/auth?redirect=${encodeURIComponent('/notifications.html')}`;
+      window.location.href = `/auth?redirect=${encodeURIComponent('/notifications')}`;
       return false;
     }
   }

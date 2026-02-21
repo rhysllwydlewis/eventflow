@@ -88,6 +88,7 @@ const canonicalPages = [
   'plan',
   'settings',
   'timeline',
+  'notifications',
 ];
 
 canonicalPages.forEach(page => {
