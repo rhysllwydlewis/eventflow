@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
@@ -50,7 +51,7 @@ router.get('/', authRequired, async (req, res) => {
       count: populatedItems.length,
     });
   } catch (error) {
-    console.error('Error fetching saved items:', error);
+    logger.error('Error fetching saved items:', error);
     res.status(500).json({ error: 'Failed to fetch saved items', details: error.message });
   }
 });
@@ -114,7 +115,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
       savedItem: newSavedItem,
     });
   } catch (error) {
-    console.error('Error saving item:', error);
+    logger.error('Error saving item:', error);
     res.status(500).json({ error: 'Failed to save item', details: error.message });
   }
 });
@@ -167,7 +168,7 @@ router.delete('/by-item', authRequired, csrfProtection, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error removing saved item by item:', error);
+    logger.error('Error removing saved item by item:', error);
     res.status(500).json({ error: 'Failed to remove saved item', details: error.message });
   }
 });
@@ -196,7 +197,7 @@ router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
       message: 'Item removed from saved',
     });
   } catch (error) {
-    console.error('Error removing saved item:', error);
+    logger.error('Error removing saved item:', error);
     res.status(500).json({ error: 'Failed to remove saved item', details: error.message });
   }
 });

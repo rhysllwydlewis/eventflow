@@ -902,7 +902,7 @@ router.delete('/photos/delete', applyAuthRequired, applyCsrfProtection, async (r
 
     res.json({ success: true, message: 'Photo deleted successfully' });
   } catch (error) {
-    console.error('Delete photo error:', error);
+    logger.error('Delete photo error:', error);
     res.status(500).json({ error: 'Failed to delete photo', details: error.message });
   }
 });
@@ -966,7 +966,7 @@ router.post(
         message: approved ? 'Photo approved' : 'Photo rejected',
       });
     } catch (error) {
-      console.error('Approve photo error:', error);
+      logger.error('Approve photo error:', error);
       res.status(500).json({ error: 'Failed to approve photo', details: error.message });
     }
   }
@@ -998,7 +998,7 @@ router.post('/photos/crop', applyAuthRequired, applyCsrfProtection, async (req, 
       message: 'Image cropped successfully',
     });
   } catch (error) {
-    console.error('Crop image error:', error);
+    logger.error('Crop image error:', error);
     res.status(500).json({ error: 'Failed to crop image', details: error.message });
   }
 });
@@ -1053,7 +1053,7 @@ router.get('/photos/pending', applyAuthRequired, applyRoleRequired('admin'), asy
       photos: pendingPhotos,
     });
   } catch (error) {
-    console.error('Get pending photos error:', error);
+    logger.error('Get pending photos error:', error);
     res.status(500).json({ error: 'Failed to get pending photos', details: error.message });
   }
 });
@@ -1081,7 +1081,7 @@ router.put('/photos/:id', applyAuthRequired, applyCsrfProtection, async (req, re
       message: 'Photo metadata updated successfully',
     });
   } catch (error) {
-    console.error('Update photo metadata error:', error);
+    logger.error('Update photo metadata error:', error);
     res.status(500).json({ error: 'Failed to update photo metadata', details: error.message });
   }
 });
@@ -1116,7 +1116,7 @@ router.post(
         message: 'Photo replaced successfully',
       });
     } catch (error) {
-      console.error('Replace photo error:', error);
+      logger.error('Replace photo error:', error);
       res.status(500).json({ error: 'Failed to replace photo', details: error.message });
     }
   }
@@ -1145,7 +1145,7 @@ router.post('/photos/bulk-edit', applyAuthRequired, applyCsrfProtection, async (
       message: `${results.length} photo(s) updated successfully`,
     });
   } catch (error) {
-    console.error('Bulk edit photos error:', error);
+    logger.error('Bulk edit photos error:', error);
     res.status(500).json({ error: 'Failed to bulk edit photos', details: error.message });
   }
 });
@@ -1176,7 +1176,7 @@ router.post('/photos/:id/filters', applyAuthRequired, applyCsrfProtection, async
       message: 'Filters applied successfully',
     });
   } catch (error) {
-    console.error('Apply filters error:', error);
+    logger.error('Apply filters error:', error);
     res.status(500).json({ error: 'Failed to apply filters', details: error.message });
   }
 });
@@ -1201,7 +1201,7 @@ router.post('/photos/reorder', applyAuthRequired, applyCsrfProtection, async (re
       message: 'Photo order updated successfully',
     });
   } catch (error) {
-    console.error('Reorder photos error:', error);
+    logger.error('Reorder photos error:', error);
     res.status(500).json({ error: 'Failed to reorder photos', details: error.message });
   }
 });
@@ -1262,7 +1262,7 @@ router.get('/admin/photos', applyAuthRequired, applyRoleRequired('admin'), async
       })),
     });
   } catch (error) {
-    console.error('Error fetching supplier photos:', error);
+    logger.error('Error fetching supplier photos:', error);
     res.status(500).json({ error: 'Failed to fetch photos', details: error.message });
   }
 });
@@ -1392,7 +1392,7 @@ router.get('/photos/:id', apiLimiter, async (req, res) => {
     // Send the image
     res.send(imageBuffer);
   } catch (error) {
-    console.error('Error serving photo from MongoDB:', error);
+    logger.error('Error serving photo from MongoDB:', error);
     res.status(500).json({ error: 'Failed to retrieve photo' });
   }
 });

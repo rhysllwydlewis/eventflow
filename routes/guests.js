@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
@@ -36,7 +37,7 @@ async function verifyPlanOwnership(req, res, next) {
     req.plan = plan;
     next();
   } catch (error) {
-    console.error('Error verifying plan ownership:', error);
+    logger.error('Error verifying plan ownership:', error);
     res.status(500).json({ error: 'Failed to verify plan access' });
   }
 }
@@ -56,7 +57,7 @@ router.get('/:planId/guests', authRequired, verifyPlanOwnership, async (req, res
       count: guests.length,
     });
   } catch (error) {
-    console.error('Error fetching guests:', error);
+    logger.error('Error fetching guests:', error);
     res.status(500).json({ error: 'Failed to fetch guests', details: error.message });
   }
 });
@@ -109,7 +110,7 @@ router.post('/:planId/guests', authRequired, csrfProtection, verifyPlanOwnership
       guest: newGuest,
     });
   } catch (error) {
-    console.error('Error adding guest:', error);
+    logger.error('Error adding guest:', error);
     res.status(500).json({ error: 'Failed to add guest', details: error.message });
   }
 });
@@ -174,7 +175,7 @@ router.patch('/:planId/guests/:id', authRequired, csrfProtection, verifyPlanOwne
       guest,
     });
   } catch (error) {
-    console.error('Error updating guest:', error);
+    logger.error('Error updating guest:', error);
     res.status(500).json({ error: 'Failed to update guest', details: error.message });
   }
 });
@@ -214,7 +215,7 @@ router.delete('/:planId/guests/:id', authRequired, csrfProtection, verifyPlanOwn
       message: 'Guest removed successfully',
     });
   } catch (error) {
-    console.error('Error deleting guest:', error);
+    logger.error('Error deleting guest:', error);
     res.status(500).json({ error: 'Failed to delete guest', details: error.message });
   }
 });

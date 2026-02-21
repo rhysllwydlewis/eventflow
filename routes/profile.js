@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const validator = require('validator');
 
 const dbUnified = require('../db-unified');
@@ -240,7 +241,7 @@ router.post('/avatar', authRequired, csrfProtection, (req, res) => {
         avatarUrl: users[idx].avatarUrl,
       });
     } catch (processError) {
-      console.error('Avatar processing error:', processError);
+      logger.error('Avatar processing error:', processError);
 
       // Handle validation errors with appropriate status codes
       if (processError.name === 'ValidationError') {
@@ -279,7 +280,7 @@ router.delete('/avatar', authRequired, csrfProtection, async (req, res) => {
   try {
     await photoUpload.deleteImage(users[idx].avatarUrl);
   } catch (deleteErr) {
-    console.error('Failed to delete avatar file:', deleteErr);
+    logger.error('Failed to delete avatar file:', deleteErr);
     // Continue anyway to clean up database record
   }
 

@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
@@ -79,7 +80,7 @@ router.get('/', authRequired, async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error fetching referrals:', error);
+    logger.error('Error fetching referrals:', error);
     res.status(500).json({ error: 'Failed to fetch referrals', details: error.message });
   }
 });
@@ -131,7 +132,7 @@ router.post('/track', csrfProtection, async (req, res) => {
 
     res.json({ success: true, message: 'Referral tracked successfully' });
   } catch (error) {
-    console.error('Error tracking referral:', error);
+    logger.error('Error tracking referral:', error);
     // Fail silently to prevent abuse
     res.json({ success: true, message: 'Referral processed' });
   }
@@ -160,7 +161,7 @@ router.patch('/:id/activate', authRequired, csrfProtection, async (req, res) => 
 
     res.json({ success: true, message: 'Referral activated' });
   } catch (error) {
-    console.error('Error activating referral:', error);
+    logger.error('Error activating referral:', error);
     res.status(500).json({ error: 'Failed to activate referral', details: error.message });
   }
 });
@@ -214,7 +215,7 @@ router.get('/stats', authRequired, async (req, res) => {
       topReferrers,
     });
   } catch (error) {
-    console.error('Error fetching referral stats:', error);
+    logger.error('Error fetching referral stats:', error);
     res.status(500).json({ error: 'Failed to fetch referral stats', details: error.message });
   }
 });

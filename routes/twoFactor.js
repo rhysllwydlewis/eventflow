@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
@@ -64,7 +65,7 @@ router.post('/setup', csrfProtection, writeLimiter, authRequired, async (req, re
       message: 'Scan the QR code with your authenticator app, then verify to enable 2FA',
     });
   } catch (error) {
-    console.error('2FA setup error:', error);
+    logger.error('2FA setup error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to setup 2FA',
@@ -132,7 +133,7 @@ router.post('/verify', csrfProtection, writeLimiter, authRequired, async (req, r
       message: '2FA has been enabled successfully',
     });
   } catch (error) {
-    console.error('2FA verify error:', error);
+    logger.error('2FA verify error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to verify 2FA token',
@@ -214,7 +215,7 @@ router.post('/disable', csrfProtection, writeLimiter, authRequired, async (req, 
       message: '2FA has been disabled',
     });
   } catch (error) {
-    console.error('2FA disable error:', error);
+    logger.error('2FA disable error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to disable 2FA',
@@ -238,7 +239,7 @@ router.get('/status', authRequired, async (req, res) => {
       hasBackupCodes: !!user?.twoFactorBackupCodes?.length,
     });
   } catch (error) {
-    console.error('2FA status error:', error);
+    logger.error('2FA status error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to get 2FA status',

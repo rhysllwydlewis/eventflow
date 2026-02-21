@@ -296,7 +296,7 @@ async function isThreadParticipant(thread, userId, db = null) {
         return true;
       }
     } catch (error) {
-      console.error('Error checking supplier ownership:', error);
+      logger.error('Error checking supplier ownership:', error);
       // Fall through to return false
     }
   }
@@ -532,7 +532,7 @@ router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) =
             }
           }
         } catch (error) {
-          console.error('Error looking up participant names:', error);
+          logger.error('Error looking up participant names:', error);
           // Continue with existing names - don't block the response
         }
       }

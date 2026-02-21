@@ -103,7 +103,7 @@ router.get('/badges', applyAuthRequired, applyRoleRequired('admin'), async (req,
     const badges = await dbUnified.read('badges');
     res.json({ badges });
   } catch (error) {
-    console.error('Error fetching badges:', error);
+    logger.error('Error fetching badges:', error);
     res.status(500).json({ error: 'Failed to fetch badges' });
   }
 });
@@ -150,7 +150,7 @@ router.post(
 
       res.status(201).json({ badge: newBadge });
     } catch (error) {
-      console.error('Error creating badge:', error);
+      logger.error('Error creating badge:', error);
       res.status(500).json({ error: 'Failed to create badge' });
     }
   }
@@ -230,7 +230,7 @@ router.put(
       await dbUnified.write('badges', badges);
       res.json({ badge: badges[badgeIndex] });
     } catch (error) {
-      console.error('Error updating badge:', error);
+      logger.error('Error updating badge:', error);
       res.status(500).json({ error: 'Failed to update badge' });
     }
   }
@@ -259,7 +259,7 @@ router.delete(
       await dbUnified.write('badges', filtered);
       res.json({ success: true });
     } catch (error) {
-      console.error('Error deleting badge:', error);
+      logger.error('Error deleting badge:', error);
       res.status(500).json({ error: 'Failed to delete badge' });
     }
   }
@@ -296,7 +296,7 @@ router.post(
 
       res.json({ success: true, user: users[userIndex] });
     } catch (error) {
-      console.error('Error awarding badge:', error);
+      logger.error('Error awarding badge:', error);
       res.status(500).json({ error: 'Failed to award badge' });
     }
   }
@@ -329,7 +329,7 @@ router.delete(
 
       res.json({ success: true, user: users[userIndex] });
     } catch (error) {
-      console.error('Error removing badge:', error);
+      logger.error('Error removing badge:', error);
       res.status(500).json({ error: 'Failed to remove badge' });
     }
   }
@@ -477,7 +477,7 @@ router.delete(
           await photoUpload.deleteImage(oldImageUrl);
         } catch (deleteErr) {
           // Ignore delete errors - the URL is already removed from the category
-          console.warn('Failed to delete old image file:', deleteErr);
+          logger.warn('Failed to delete old image file:', deleteErr);
         }
       }
 
@@ -486,7 +486,7 @@ router.delete(
         category: categories[categoryIndex],
       });
     } catch (error) {
-      console.error('Error removing category hero image:', error);
+      logger.error('Error removing category hero image:', error);
       res.status(500).json({ error: 'Failed to remove image', details: error.message });
     }
   }
@@ -537,7 +537,7 @@ router.post(
         category: newCategory,
       });
     } catch (error) {
-      console.error('Error creating category:', error);
+      logger.error('Error creating category:', error);
       res.status(500).json({ error: 'Failed to create category', details: error.message });
     }
   }
@@ -588,7 +588,7 @@ router.put(
         categories,
       });
     } catch (error) {
-      console.error('Error reordering categories:', error);
+      logger.error('Error reordering categories:', error);
       res.status(500).json({ error: 'Failed to reorder categories', details: error.message });
     }
   }
@@ -652,7 +652,7 @@ router.put(
         category: categories[categoryIndex],
       });
     } catch (error) {
-      console.error('Error updating category:', error);
+      logger.error('Error updating category:', error);
       res.status(500).json({ error: 'Failed to update category', details: error.message });
     }
   }
@@ -687,7 +687,7 @@ router.delete(
         category: deletedCategory,
       });
     } catch (error) {
-      console.error('Error deleting category:', error);
+      logger.error('Error deleting category:', error);
       res.status(500).json({ error: 'Failed to delete category', details: error.message });
     }
   }
@@ -727,7 +727,7 @@ router.put(
         category: categories[categoryIndex],
       });
     } catch (error) {
-      console.error('Error toggling category visibility:', error);
+      logger.error('Error toggling category visibility:', error);
       res.status(500).json({ error: 'Failed to toggle visibility', details: error.message });
     }
   }

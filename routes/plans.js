@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimits');
@@ -30,7 +31,7 @@ router.get('/', authRequired, async (req, res) => {
       count: userPlans.length,
     });
   } catch (error) {
-    console.error('Error fetching plans:', error);
+    logger.error('Error fetching plans:', error);
     res.status(500).json({ error: 'Failed to fetch plans', details: error.message });
   }
 });
@@ -52,7 +53,7 @@ router.get('/:id', authRequired, async (req, res) => {
 
     res.json({ plan });
   } catch (error) {
-    console.error('Error fetching plan:', error);
+    logger.error('Error fetching plan:', error);
     res.status(500).json({ error: 'Failed to fetch plan', details: error.message });
   }
 });
@@ -121,7 +122,7 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
       plan: newPlan,
     });
   } catch (error) {
-    console.error('Error creating plan:', error);
+    logger.error('Error creating plan:', error);
     res.status(500).json({ error: 'Failed to create plan', details: error.message });
   }
 });
@@ -180,7 +181,7 @@ router.patch('/:id', authRequired, csrfProtection, writeLimiter, async (req, res
       plan,
     });
   } catch (error) {
-    console.error('Error updating plan:', error);
+    logger.error('Error updating plan:', error);
     res.status(500).json({ error: 'Failed to update plan', details: error.message });
   }
 });
@@ -208,7 +209,7 @@ router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, re
       message: 'Plan deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting plan:', error);
+    logger.error('Error deleting plan:', error);
     res.status(500).json({ error: 'Failed to delete plan', details: error.message });
   }
 });
@@ -240,7 +241,7 @@ router.get('/:planId/budget', authRequired, async (req, res) => {
       totalPaid: budgetItems.reduce((sum, item) => sum + (item.paid || 0), 0),
     });
   } catch (error) {
-    console.error('Error fetching budget:', error);
+    logger.error('Error fetching budget:', error);
     res.status(500).json({ error: 'Failed to fetch budget', details: error.message });
   }
 });
@@ -393,7 +394,7 @@ router.get('/:id/export', authRequired, async (req, res) => {
     // Finalize PDF
     doc.end();
   } catch (error) {
-    console.error('Error exporting plan to PDF:', error);
+    logger.error('Error exporting plan to PDF:', error);
     // If headers not sent yet, send error response
     if (!res.headersSent) {
       res.status(500).json({ error: 'Failed to export PDF', details: error.message });
@@ -448,7 +449,7 @@ router.post('/:planId/budget', authRequired, csrfProtection, writeLimiter, async
       count: sanitizedItems.length,
     });
   } catch (error) {
-    console.error('Error saving budget:', error);
+    logger.error('Error saving budget:', error);
     res.status(500).json({ error: 'Failed to save budget', details: error.message });
   }
 });

@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
 
@@ -237,7 +238,7 @@ router.post('/plans/guest', applyCsrfProtection, async (req, res) => {
       token, // Frontend stores this to claim later
     });
   } catch (error) {
-    console.error('Error creating guest plan:', error);
+    logger.error('Error creating guest plan:', error);
     res.status(500).json({ error: 'Failed to create guest plan' });
   }
 });
@@ -292,7 +293,7 @@ router.post(
         message: 'Plan successfully claimed!',
       });
     } catch (error) {
-      console.error('Error claiming guest plan:', error);
+      logger.error('Error claiming guest plan:', error);
       res.status(500).json({ error: 'Failed to claim guest plan' });
     }
   }

@@ -6,6 +6,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
@@ -83,7 +84,7 @@ router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, 
         userAgent: req.headers['user-agent'],
         cached: false,
       })
-      .catch(err => console.error('Failed to track search:', err));
+      .catch(err => logger.error('Failed to track search:', err));
 
     res.json({
       success: true,
@@ -91,7 +92,7 @@ router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, 
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Supplier search error:', error);
+    logger.error('Supplier search error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to perform search',
@@ -138,7 +139,7 @@ router.get('/packages', searchCacheMiddleware({ fixedTtl: 600 }), async (req, re
         durationMs: results.durationMs,
         userAgent: req.headers['user-agent'],
       })
-      .catch(err => console.error('Failed to track search:', err));
+      .catch(err => logger.error('Failed to track search:', err));
 
     res.json({
       success: true,
@@ -146,7 +147,7 @@ router.get('/packages', searchCacheMiddleware({ fixedTtl: 600 }), async (req, re
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Package search error:', error);
+    logger.error('Package search error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to search packages',
@@ -184,7 +185,7 @@ router.post('/advanced', async (req, res) => {
         durationMs: results.durationMs,
         userAgent: req.headers['user-agent'],
       })
-      .catch(err => console.error('Failed to track search:', err));
+      .catch(err => logger.error('Failed to track search:', err));
 
     res.json({
       success: true,
@@ -192,7 +193,7 @@ router.post('/advanced', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Advanced search error:', error);
+    logger.error('Advanced search error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to perform advanced search',
@@ -250,7 +251,7 @@ router.post('/saved', authRequired, csrfProtection, async (req, res) => {
       message: 'Search saved successfully',
     });
   } catch (error) {
-    console.error('Save search error:', error);
+    logger.error('Save search error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to save search',
@@ -274,7 +275,7 @@ router.get('/saved', authRequired, async (req, res) => {
       data: { searches: userSearches },
     });
   } catch (error) {
-    console.error('Get saved searches error:', error);
+    logger.error('Get saved searches error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve saved searches',
@@ -308,7 +309,7 @@ router.delete('/saved/:id', authRequired, csrfProtection, async (req, res) => {
       message: 'Saved search deleted',
     });
   } catch (error) {
-    console.error('Delete saved search error:', error);
+    logger.error('Delete saved search error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to delete saved search',
@@ -339,7 +340,7 @@ router.get('/history', authRequired, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get search history error:', error);
+    logger.error('Get search history error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve search history',
@@ -380,7 +381,7 @@ router.get('/suggestions', searchCacheMiddleware({ fixedTtl: 3600 }), async (req
       data: { suggestions },
     });
   } catch (error) {
-    console.error('Suggestions error:', error);
+    logger.error('Suggestions error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get suggestions',
@@ -411,7 +412,7 @@ router.get('/trending', searchCacheMiddleware({ fixedTtl: 600 }), async (req, re
       data: { trending, timeRange },
     });
   } catch (error) {
-    console.error('Trending searches error:', error);
+    logger.error('Trending searches error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get trending searches',
@@ -433,7 +434,7 @@ router.get('/popular-queries', searchCacheMiddleware({ fixedTtl: 1800 }), async 
       data: { queries: popular },
     });
   } catch (error) {
-    console.error('Popular queries error:', error);
+    logger.error('Popular queries error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get popular queries',
@@ -471,7 +472,7 @@ router.get('/categories', searchCacheMiddleware({ fixedTtl: 86400 }), async (req
       data: { categories },
     });
   } catch (error) {
-    console.error('Get categories error:', error);
+    logger.error('Get categories error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get categories',
@@ -505,7 +506,7 @@ router.get('/amenities', searchCacheMiddleware({ fixedTtl: 86400 }), async (req,
       data: { amenities },
     });
   } catch (error) {
-    console.error('Get amenities error:', error);
+    logger.error('Get amenities error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get amenities',
@@ -538,7 +539,7 @@ router.get('/locations', searchCacheMiddleware({ fixedTtl: 86400 }), async (req,
       data: { locations },
     });
   } catch (error) {
-    console.error('Get locations error:', error);
+    logger.error('Get locations error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get locations',
@@ -563,7 +564,7 @@ router.get('/analytics', authRequired, roleRequired('admin'), async (req, res) =
       data: analytics,
     });
   } catch (error) {
-    console.error('Get analytics error:', error);
+    logger.error('Get analytics error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get search analytics',
@@ -585,7 +586,7 @@ router.get('/analytics/trends', authRequired, roleRequired('admin'), async (req,
       data: { trends: trending, timeRange },
     });
   } catch (error) {
-    console.error('Get trends error:', error);
+    logger.error('Get trends error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get trends',
@@ -606,7 +607,7 @@ router.get('/analytics/user-behavior', authRequired, roleRequired('admin'), asyn
       data: insights,
     });
   } catch (error) {
-    console.error('Get user behavior error:', error);
+    logger.error('Get user behavior error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get user behavior insights',
@@ -636,7 +637,7 @@ router.get('/performance', authRequired, roleRequired('admin'), async (req, res)
       },
     });
   } catch (error) {
-    console.error('Get performance error:', error);
+    logger.error('Get performance error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get performance metrics',
@@ -658,7 +659,7 @@ router.post('/cache/clear', authRequired, csrfProtection, roleRequired('admin'),
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Clear cache error:', error);
+    logger.error('Clear cache error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to clear cache',
@@ -680,7 +681,7 @@ router.get('/cache/stats', authRequired, roleRequired('admin'), async (req, res)
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Get cache stats error:', error);
+    logger.error('Get cache stats error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get cache statistics',

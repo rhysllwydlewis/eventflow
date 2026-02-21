@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { writeLimiter } = require('../middleware/rateLimits');
 const { csrfProtection } = require('../middleware/csrf');
@@ -25,12 +26,12 @@ try {
     const stripeLib = require('stripe');
     stripe = stripeLib(stripeSecretKey);
     STRIPE_ENABLED = true;
-    console.log('✅ Stripe payment integration enabled');
+    logger.info('✅ Stripe payment integration enabled');
   } else {
-    console.warn('⚠️  Stripe is not configured (STRIPE_SECRET_KEY missing)');
+    logger.warn('⚠️  Stripe is not configured (STRIPE_SECRET_KEY missing)');
   }
 } catch (err) {
-  console.error('❌ Failed to initialize Stripe:', err.message);
+  logger.error('❌ Failed to initialize Stripe:', err.message);
 }
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -45,9 +46,9 @@ const STRIPE_PRO_INTRO_COUPON_ID = process.env.STRIPE_PRO_INTRO_COUPON_ID || '';
 const INTRO_PRICING_ENABLED = !!(STRIPE_PRO_PRICE_ID && STRIPE_PRO_INTRO_COUPON_ID);
 
 if (INTRO_PRICING_ENABLED) {
-  console.log('✅ Professional plan introductory pricing enabled');
+  logger.info('✅ Professional plan introductory pricing enabled');
 } else if (STRIPE_PRO_PRICE_ID || STRIPE_PRO_INTRO_COUPON_ID) {
-  console.warn(
+  logger.warn(
     '⚠️  Partial introductory pricing config detected. Both STRIPE_PRO_PRICE_ID and STRIPE_PRO_INTRO_COUPON_ID are required.'
   );
 }
@@ -170,7 +171,7 @@ router.post(
       // Check database connectivity first
       const dbStatus = dbUnified.getDatabaseStatus();
       if (!dbStatus.connected) {
-        console.error(
+        logger.error(
           'Database not connected for checkout session creation. State:',
           dbStatus.state
         );
@@ -200,7 +201,7 @@ router.post(
         const fallbackTier = planName ? getSubscriptionTier(planName) : 'free';
         if ((fallbackTier === 'pro' || fallbackTier === 'pro_plus') && STRIPE_PRO_PRICE_ID) {
           priceId = STRIPE_PRO_PRICE_ID;
-          console.log(`Subscription: using fallback priceId ${priceId} for plan "${planName}"`);
+          logger.info(`Subscription: using fallback priceId ${priceId} for plan "${planName}"`);
         } else {
           return res.status(400).json({
             error: 'Price ID is required for subscriptions.',
@@ -216,7 +217,7 @@ router.post(
         INTRO_PRICING_ENABLED && type === 'subscription' && isProfessionalPlan;
 
       if (useIntroPricing) {
-        console.log('✅ Applying introductory pricing for Professional plan');
+        logger.info('✅ Applying introductory pricing for Professional plan');
       }
 
       // Get or create Stripe customer
@@ -228,7 +229,7 @@ router.post(
         try {
           customer = await stripe.customers.retrieve(existingCustomerId);
         } catch (err) {
-          console.warn('Failed to retrieve existing customer:', err.message);
+          logger.warn('Failed to retrieve existing customer:', err.message);
           customer = null;
         }
       }
@@ -287,7 +288,7 @@ router.post(
             },
           ];
           sessionConfig.metadata.introPricing = 'true';
-          console.log(
+          logger.info(
             `Applied intro coupon: ${STRIPE_PRO_INTRO_COUPON_ID} to price: ${effectivePriceId}`
           );
         }
@@ -326,7 +327,7 @@ router.post(
         url: session.url,
       });
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      logger.error('Error creating checkout session:', error);
 
       // Provide more specific error messages
       let errorMessage = error.message;
@@ -413,7 +414,7 @@ router.post(
         url: session.url,
       });
     } catch (error) {
-      console.error('Error creating portal session:', error);
+      logger.error('Error creating portal session:', error);
       res.status(500).json({
         error: 'Failed to create billing portal session',
         message: error.message,
@@ -451,7 +452,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   const sig = req.headers['stripe-signature'];
 
   if (!sig) {
-    console.error('Missing Stripe signature header');
+    logger.error('Missing Stripe signature header');
     return res.status(400).json({ error: 'Missing signature' });
   }
 
@@ -463,15 +464,15 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
     } else {
       // In development/test, parse without verification
-      console.warn('⚠️  Webhook signature verification skipped (STRIPE_WEBHOOK_SECRET not set)');
+      logger.warn('⚠️  Webhook signature verification skipped (STRIPE_WEBHOOK_SECRET not set)');
       event = JSON.parse(req.body.toString());
     }
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    logger.error('Webhook signature verification failed:', err.message);
     return res.status(400).json({ error: 'Invalid signature' });
   }
 
-  console.log(`Received webhook event: ${event.type}`);
+  logger.info(`Received webhook event: ${event.type}`);
 
   try {
     switch (event.type) {
@@ -512,12 +513,12 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.info(`Unhandled event type: ${event.type}`);
     }
 
     res.json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    logger.error('Error processing webhook:', error);
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
@@ -528,7 +529,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 async function handleCheckoutCompleted(session) {
   const userId = session.metadata?.userId;
   if (!userId) {
-    console.error('No userId in checkout session metadata');
+    logger.error('No userId in checkout session metadata');
     return;
   }
 
@@ -538,7 +539,7 @@ async function handleCheckoutCompleted(session) {
   });
 
   if (payments.length === 0) {
-    console.warn('No payment record found for session:', session.id);
+    logger.warn('No payment record found for session:', session.id);
     return;
   }
 
@@ -557,7 +558,7 @@ async function handleCheckoutCompleted(session) {
 
   await dbUnified.updateOne('payments', payment.id, updates);
 
-  console.log(`Payment ${payment.id} marked as succeeded`);
+  logger.info(`Payment ${payment.id} marked as succeeded`);
 }
 
 /**
@@ -572,7 +573,7 @@ async function handleSubscriptionCreated(subscription) {
   });
 
   if (payments.length === 0) {
-    console.warn('No payment records found for customer:', customerId);
+    logger.warn('No payment records found for customer:', customerId);
     return;
   }
 
@@ -619,11 +620,11 @@ async function handleSubscriptionCreated(subscription) {
         subscriptionTier: tier,
       };
       await dbUnified.updateOne('users', userId, userUpdates);
-      console.log(`User ${userId} subscription tier set to: ${tier}`);
+      logger.info(`User ${userId} subscription tier set to: ${tier}`);
     }
   }
 
-  console.log(`Subscription ${subscription.id} created for user ${userId}`);
+  logger.info(`Subscription ${subscription.id} created for user ${userId}`);
 }
 
 /**
@@ -636,7 +637,7 @@ async function handleSubscriptionUpdated(subscription) {
   });
 
   if (payments.length === 0) {
-    console.warn('No payment records found for subscription:', subscription.id);
+    logger.warn('No payment records found for subscription:', subscription.id);
     return;
   }
 
@@ -678,12 +679,12 @@ async function handleSubscriptionUpdated(subscription) {
       subscriptionTier: isActive ? tier : 'free',
     };
     await dbUnified.updateOne('users', userId, userUpdates);
-    console.log(
+    logger.info(
       `User ${userId} subscription updated - tier: ${userUpdates.subscriptionTier}, active: ${isActive}`
     );
   }
 
-  console.log(`Subscription ${subscription.id} updated`);
+  logger.info(`Subscription ${subscription.id} updated`);
 }
 
 /**
@@ -696,7 +697,7 @@ async function handleSubscriptionDeleted(subscription) {
   });
 
   if (payments.length === 0) {
-    console.warn('No payment records found for subscription:', subscription.id);
+    logger.warn('No payment records found for subscription:', subscription.id);
     return;
   }
 
@@ -720,10 +721,10 @@ async function handleSubscriptionDeleted(subscription) {
       isPro: false,
       subscriptionTier: 'free',
     });
-    console.log(`User ${userId} subscription deleted - tier reset to free`);
+    logger.info(`User ${userId} subscription deleted - tier reset to free`);
   }
 
-  console.log(`Subscription ${subscription.id} deleted for user ${userId}`);
+  logger.info(`Subscription ${subscription.id} deleted for user ${userId}`);
 }
 
 /**
@@ -735,7 +736,7 @@ async function handlePaymentSucceeded(paymentIntent) {
   });
 
   if (payments.length === 0) {
-    console.warn('No payment record found for payment intent:', paymentIntent.id);
+    logger.warn('No payment record found for payment intent:', paymentIntent.id);
     return;
   }
 
@@ -748,7 +749,7 @@ async function handlePaymentSucceeded(paymentIntent) {
     updatedAt: new Date().toISOString(),
   });
 
-  console.log(`Payment intent ${paymentIntent.id} succeeded`);
+  logger.info(`Payment intent ${paymentIntent.id} succeeded`);
 }
 
 /**
@@ -760,7 +761,7 @@ async function handlePaymentFailed(paymentIntent) {
   });
 
   if (payments.length === 0) {
-    console.warn('No payment record found for payment intent:', paymentIntent.id);
+    logger.warn('No payment record found for payment intent:', paymentIntent.id);
     return;
   }
 
@@ -775,7 +776,7 @@ async function handlePaymentFailed(paymentIntent) {
     updatedAt: new Date().toISOString(),
   });
 
-  console.log(`Payment intent ${paymentIntent.id} failed`);
+  logger.info(`Payment intent ${paymentIntent.id} failed`);
 }
 
 /**
@@ -800,7 +801,7 @@ router.get('/config', authRequired, async (req, res) => {
     // Check database connectivity first
     const dbStatus = dbUnified.getDatabaseStatus();
     if (!dbStatus.connected) {
-      console.error('Database not connected for payment config endpoint. State:', dbStatus.state);
+      logger.error('Database not connected for payment config endpoint. State:', dbStatus.state);
       return res.status(500).json({
         error: 'Payment system temporarily unavailable',
         message: 'Database connection error. Please try again in a few moments.',
@@ -820,7 +821,7 @@ router.get('/config', authRequired, async (req, res) => {
       process.env.STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
     if (!publishableKey) {
-      console.error('Stripe publishable key not configured');
+      logger.error('Stripe publishable key not configured');
       return res.status(503).json({
         error: 'Stripe configuration incomplete',
         message: 'Stripe publishable key is not configured.',
@@ -833,7 +834,7 @@ router.get('/config', authRequired, async (req, res) => {
       proPriceId: STRIPE_PRO_PRICE_ID || null,
     });
   } catch (error) {
-    console.error('Error getting payment config:', error);
+    logger.error('Error getting payment config:', error);
     res.status(500).json({
       error: 'Failed to retrieve payment configuration',
       message: error.message || 'An unexpected error occurred',
@@ -869,7 +870,7 @@ router.get('/', authRequired, async (req, res) => {
       payments: payments,
     });
   } catch (error) {
-    console.error('Error fetching payments:', error);
+    logger.error('Error fetching payments:', error);
     res.status(500).json({
       error: 'Failed to fetch payment history',
       message: error.message,
@@ -917,7 +918,7 @@ router.get('/:id', authRequired, async (req, res) => {
       payment: payments[0],
     });
   } catch (error) {
-    console.error('Error fetching payment:', error);
+    logger.error('Error fetching payment:', error);
     res.status(500).json({
       error: 'Failed to fetch payment',
       message: error.message,

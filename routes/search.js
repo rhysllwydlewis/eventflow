@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { searchLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
@@ -63,7 +64,7 @@ router.get('/suppliers', searchLimiter, async (req, res) => {
       ...results,
     });
   } catch (error) {
-    console.error('Search error:', error);
+    logger.error('Search error:', error);
     res.status(500).json({ error: 'Search failed', details: error.message });
   }
 });
@@ -83,7 +84,7 @@ router.get('/history', searchLimiter, applyAuthRequired, async (req, res) => {
       history,
     });
   } catch (error) {
-    console.error('Get search history error:', error);
+    logger.error('Get search history error:', error);
     res.status(500).json({ error: 'Failed to get search history', details: error.message });
   }
 });
@@ -102,7 +103,7 @@ router.get('/categories', async (req, res) => {
       categories,
     });
   } catch (error) {
-    console.error('Get categories error:', error);
+    logger.error('Get categories error:', error);
     res.status(500).json({ error: 'Failed to get categories', details: error.message });
   }
 });
@@ -121,7 +122,7 @@ router.get('/amenities', async (req, res) => {
       amenities,
     });
   } catch (error) {
-    console.error('Get amenities error:', error);
+    logger.error('Get amenities error:', error);
     res.status(500).json({ error: 'Failed to get amenities', details: error.message });
   }
 });

@@ -642,7 +642,7 @@ router.put(
       await dbUnified.write('marketplace_listings', listings);
       res.json({ ok: true, listing });
     } catch (error) {
-      console.error('Error updating marketplace listing:', error);
+      logger.error('Error updating marketplace listing:', error);
       sentry.captureException(error);
       res.status(500).json({ error: 'Failed to update listing' });
     }
@@ -682,7 +682,7 @@ router.delete(
 
       res.json({ ok: true, deletedImageCount });
     } catch (error) {
-      console.error('Error deleting marketplace listing:', error);
+      logger.error('Error deleting marketplace listing:', error);
       sentry.captureException(error);
       res.status(500).json({ error: 'Failed to delete listing' });
     }

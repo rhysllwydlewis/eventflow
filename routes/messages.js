@@ -10,6 +10,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const validator = require('validator');
 const { createDeprecationMiddleware } = require('../middleware/legacyMessaging');
 
@@ -193,7 +194,7 @@ router.get('/threads', applyAuthRequired, async (req, res) => {
 
     res.json({ threads });
   } catch (error) {
-    console.error('Error fetching threads:', error);
+    logger.error('Error fetching threads:', error);
     res.status(500).json({ error: 'Failed to fetch threads', details: error.message });
   }
 });
@@ -224,7 +225,7 @@ router.get('/threads/:threadId', applyAuthRequired, async (req, res) => {
 
     res.json({ thread });
   } catch (error) {
-    console.error('Error fetching thread:', error);
+    logger.error('Error fetching thread:', error);
     res.status(500).json({ error: 'Failed to fetch thread', details: error.message });
   }
 });
@@ -348,7 +349,7 @@ router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res)
             });
           }
         } catch (emailError) {
-          console.error('Failed to send email notification:', emailError);
+          logger.error('Failed to send email notification:', emailError);
         }
       });
     }
@@ -361,7 +362,7 @@ router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res)
         packageId: packageId || null,
         eventType: eventType || null,
       })
-      .catch(err => console.error('Failed to track enquiry started:', err));
+      .catch(err => logger.error('Failed to track enquiry started:', err));
 
     // Audit log
     auditLog({
@@ -379,7 +380,7 @@ router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res)
       isExisting: false,
     });
   } catch (error) {
-    console.error('Error creating thread:', error);
+    logger.error('Error creating thread:', error);
     res.status(500).json({ error: 'Failed to create thread', details: error.message });
   }
 });
@@ -421,7 +422,7 @@ router.get('/threads/:threadId/messages', applyAuthRequired, async (req, res) =>
 
     res.json({ messages });
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    logger.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Failed to fetch messages', details: error.message });
   }
 });
@@ -514,7 +515,7 @@ router.post(
               threadId,
               messageId: newMessage.id,
             })
-            .catch(err => console.error('Failed to track enquiry sent:', err));
+            .catch(err => logger.error('Failed to track enquiry sent:', err));
         } else if (userRole === 'supplier') {
           // Supplier replied to a message
           supplierAnalytics
@@ -522,13 +523,13 @@ router.post(
               threadId,
               messageId: newMessage.id,
             })
-            .catch(err => console.error('Failed to track message reply:', err));
+            .catch(err => logger.error('Failed to track message reply:', err));
 
           // Trigger badge evaluation for supplier (async, non-blocking)
           const badgeManagement = require('../utils/badgeManagement');
           badgeManagement
             .evaluateSupplierBadges(thread.supplierId)
-            .catch(err => console.error('Failed to evaluate supplier badges:', err));
+            .catch(err => logger.error('Failed to evaluate supplier badges:', err));
         }
 
         // Send email notification to recipient (async, non-blocking)
@@ -577,7 +578,7 @@ router.post(
               });
             }
           } catch (emailError) {
-            console.error('Error sending message notification email:', emailError);
+            logger.error('Error sending message notification email:', emailError);
             // Don't fail the request if email fails
           }
         });
@@ -585,7 +586,7 @@ router.post(
 
       res.status(201).json({ message: newMessage });
     } catch (error) {
-      console.error('Error creating message:', error);
+      logger.error('Error creating message:', error);
       res.status(500).json({ error: 'Failed to create message', details: error.message });
     }
   }
@@ -662,7 +663,7 @@ router.put('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, re
 
     res.json({ message });
   } catch (error) {
-    console.error('Error updating message:', error);
+    logger.error('Error updating message:', error);
     res.status(500).json({ error: 'Failed to update message', details: error.message });
   }
 });
@@ -725,7 +726,7 @@ router.post(
 
       res.json({ success: true, markedRead: updatedCount });
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      logger.error('Error marking messages as read:', error);
       res.status(500).json({ error: 'Failed to mark messages as read', details: error.message });
     }
   }
@@ -770,7 +771,7 @@ router.post(
 
       res.json({ success: true });
     } catch (error) {
-      console.error('Error marking thread as unread:', error);
+      logger.error('Error marking thread as unread:', error);
       res.status(500).json({ error: 'Failed to mark thread as unread', details: error.message });
     }
   }
@@ -796,7 +797,7 @@ router.get('/drafts', applyAuthRequired, async (req, res) => {
 
     res.json({ drafts: messages });
   } catch (error) {
-    console.error('Error fetching drafts:', error);
+    logger.error('Error fetching drafts:', error);
     res.status(500).json({ error: 'Failed to fetch drafts', details: error.message });
   }
 });
@@ -821,7 +822,7 @@ router.get('/sent', applyAuthRequired, async (req, res) => {
 
     res.json({ messages });
   } catch (error) {
-    console.error('Error fetching sent messages:', error);
+    logger.error('Error fetching sent messages:', error);
     res.status(500).json({ error: 'Failed to fetch sent messages', details: error.message });
   }
 });
@@ -859,7 +860,7 @@ router.delete('/:messageId', applyAuthRequired, applyCsrfProtection, async (req,
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting message:', error);
+    logger.error('Error deleting message:', error);
     res.status(500).json({ error: 'Failed to delete message', details: error.message });
   }
 });
@@ -914,7 +915,7 @@ router.post('/:messageId/reactions', applyAuthRequired, applyCsrfProtection, asy
 
     res.json({ reactions: message.reactions });
   } catch (error) {
-    console.error('Error toggling reaction:', error);
+    logger.error('Error toggling reaction:', error);
     res.status(500).json({ error: 'Failed to toggle reaction', details: error.message });
   }
 });
@@ -954,7 +955,7 @@ router.post(
 
       res.json({ success: true, thread });
     } catch (error) {
-      console.error('Error archiving thread:', error);
+      logger.error('Error archiving thread:', error);
       res.status(500).json({ error: 'Failed to archive thread', details: error.message });
     }
   }
@@ -995,7 +996,7 @@ router.post(
 
       res.json({ success: true, thread });
     } catch (error) {
-      console.error('Error unarchiving thread:', error);
+      logger.error('Error unarchiving thread:', error);
       res.status(500).json({ error: 'Failed to unarchive thread', details: error.message });
     }
   }
@@ -1096,7 +1097,7 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
 
     res.json({ conversations });
   } catch (error) {
-    console.error('Error fetching conversations:', error);
+    logger.error('Error fetching conversations:', error);
     res.status(500).json({ error: 'Failed to fetch conversations', details: error.message });
   }
 });
@@ -1119,7 +1120,7 @@ router.get('/unread', applyAuthRequired, async (req, res) => {
 
     res.json({ count: totalUnread });
   } catch (error) {
-    console.error('Error fetching unread count:', error);
+    logger.error('Error fetching unread count:', error);
     res.status(500).json({ error: 'Failed to fetch unread count', details: error.message });
   }
 });
@@ -1161,7 +1162,7 @@ router.get('/:conversationId', applyAuthRequired, async (req, res) => {
 
     res.json({ messages });
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    logger.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Failed to fetch messages', details: error.message });
   }
 });
@@ -1244,7 +1245,7 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
 
     res.status(201).json({ messageId: newMessage.id, message: newMessage });
   } catch (error) {
-    console.error('Error sending message:', error);
+    logger.error('Error sending message:', error);
     res.status(500).json({ error: 'Failed to send message', details: error.message });
   }
 });
@@ -1300,7 +1301,7 @@ router.post('/:conversationId/read', applyAuthRequired, applyCsrfProtection, asy
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error marking messages as read:', error);
+    logger.error('Error marking messages as read:', error);
     res.status(500).json({ error: 'Failed to mark messages as read', details: error.message });
   }
 });

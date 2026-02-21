@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
@@ -135,7 +136,7 @@ router.post('/', authRequired, csrfProtection, reportLimiter, (req, res) => {
   existingReports.push(report);
   write('reports', existingReports);
 
-  console.log(`New report created: ${type} ${targetId} by ${req.user.email}`);
+  logger.info(`New report created: ${type} ${targetId} by ${req.user.email}`);
 
   res.status(201).json({
     message: 'Report submitted successfully',
@@ -291,7 +292,7 @@ router.post(
       },
     });
 
-    console.log(`Report ${id} resolved by ${req.user.email}: ${resolution}`);
+    logger.info(`Report ${id} resolved by ${req.user.email}: ${resolution}`);
 
     res.json({
       message: 'Report resolved successfully',
@@ -350,7 +351,7 @@ router.post(
       },
     });
 
-    console.log(`Report ${id} dismissed by ${req.user.email}`);
+    logger.info(`Report ${id} dismissed by ${req.user.email}`);
 
     res.json({
       message: 'Report dismissed successfully',

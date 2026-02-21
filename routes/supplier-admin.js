@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Dependencies injected by server.js
@@ -120,7 +121,7 @@ router.get(
         count: pending.length,
       });
     } catch (error) {
-      console.error('Error fetching pending verification suppliers:', error);
+      logger.error('Error fetching pending verification suppliers:', error);
       res.status(500).json({ suppliers: [], count: 0, error: 'Failed to fetch pending suppliers' });
     }
   }
@@ -331,7 +332,7 @@ router.post(
 
       res.json({ success: true, supplier: suppliers[supplierIndex] });
     } catch (error) {
-      console.error('Error awarding badge:', error);
+      logger.error('Error awarding badge:', error);
       res.status(500).json({ error: 'Failed to award badge' });
     }
   }
@@ -366,7 +367,7 @@ router.delete(
 
       res.json({ success: true, supplier: suppliers[supplierIndex] });
     } catch (error) {
-      console.error('Error removing badge:', error);
+      logger.error('Error removing badge:', error);
       res.status(500).json({ error: 'Failed to remove badge' });
     }
   }
@@ -445,7 +446,7 @@ router.post(
         results,
       });
     } catch (error) {
-      console.error('Error evaluating badges:', error);
+      logger.error('Error evaluating badges:', error);
       res.status(500).json({ error: 'Failed to evaluate badges' });
     }
   }
@@ -469,7 +470,7 @@ router.post(
         message: 'Default badges initialized',
       });
     } catch (error) {
-      console.error('Error initializing badges:', error);
+      logger.error('Error initializing badges:', error);
       res.status(500).json({ error: 'Failed to initialize badges' });
     }
   }

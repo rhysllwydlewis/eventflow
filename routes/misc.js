@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -156,7 +157,7 @@ router.get('/venues/near', async (req, res) => {
       message: `Found ${nearbyVenues.length} venues within ${radius} miles of ${location}`,
     });
   } catch (error) {
-    console.error('Venue proximity search error:', error);
+    logger.error('Venue proximity search error:', error);
     res.status(500).json({
       error: 'Failed to search venues',
       details: error.message,
@@ -216,7 +217,7 @@ router.get('/maintenance/message', async (req, res) => {
       message: maintenance.message,
     });
   } catch (error) {
-    console.error('Error reading maintenance message:', error);
+    logger.error('Error reading maintenance message:', error);
     // Return default message on error
     res.status(200).json({
       enabled: false,
@@ -229,7 +230,7 @@ router.get('/maintenance/message', async (req, res) => {
 
 // CSP Violation Reporting Endpoint
 router.post('/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
-  console.warn('CSP Violation:', req.body);
+  logger.warn('CSP Violation:', req.body);
   res.status(204).end();
 });
 
