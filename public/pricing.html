@@ -547,6 +547,33 @@
         transform: translateX(0);
       }
     }
+
+    /* Customer notice banner (shown when a customer is logged in) */
+    .pricing-customer-notice-inner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .pricing-customer-notice-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .pricing-customer-notice-title {
+      font-weight: 600;
+      color: #1e40af;
+      margin: 0 0 0.25rem;
+    }
+    .pricing-customer-notice-body {
+      color: #1e3a8a;
+      margin: 0;
+      font-size: 0.9375rem;
+    }
   </style>
   <link rel="stylesheet" href="/assets/css/animations.css?v=18.0.0">
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
@@ -677,7 +704,9 @@
   </section>
 
   <div class="pricing-container">
-    <div class="pricing-grid">
+    <!-- Customer notice: injected by pricing.js when a customer is logged in -->
+    <div id="pricing-customer-notice" style="display:none;"></div>
+    <div class="pricing-grid" id="pricing-grid">
       
       <!-- FREE TIER -->
       <div class="pricing-card">
@@ -694,7 +723,7 @@
           <li>Email support</li>
         </ul>
         
-        <a href="/checkout?plan=starter" class="pricing-cta secondary">Get Started Free</a>
+        <a href="/checkout?plan=starter" class="pricing-cta secondary">Get Started for Free</a>
       </div>
 
       <!-- PRO TIER -->
@@ -1120,7 +1149,7 @@
     <div class="container" style="max-width: 600px;">
       <h2 style="font-size: 2rem; margin-bottom: 1rem; color: #111827;">Ready to grow your business?</h2>
       <p style="font-size: 1.125rem; color: #6b7280; margin-bottom: 2rem;">Join EventFlow today and start receiving quality enquiries from customers looking for your services.</p>
-      <a href="/checkout?plan=starter" class="cta" style="display: inline-block; padding: 1rem 2rem; font-size: 1.125rem;">Get Started Free</a>
+      <a href="/checkout?plan=starter" class="cta" id="pricing-bottom-cta" style="display: inline-block; padding: 1rem 2rem; font-size: 1.125rem;">Get Started for Free</a>
     </div>
   </section>
 </main>

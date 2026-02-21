@@ -29,9 +29,14 @@
       }
 
       if (user) {
-        // User is logged in – update button labels and attach checkout handlers
-        updateButtonsForAuthenticatedUser(user);
-        attachCheckoutHandlers(user);
+        if (user.role === 'customer') {
+          // Customers cannot purchase supplier subscriptions
+          updateButtonsForCustomer();
+        } else {
+          // Supplier (or admin) – update button labels and attach checkout handlers
+          updateButtonsForAuthenticatedUser(user);
+          attachCheckoutHandlers();
+        }
       } else {
         // User is not authenticated – rewrite CTAs to go via auth first
         updateButtonsForUnauthenticatedUser();
@@ -57,17 +62,49 @@
     return expiryTime > Date.now();
   }
 
-  // Update button labels for authenticated users
+  /**
+   * Show a professional notice to customers explaining that subscriptions
+   * are intended for suppliers, and that customers already have full access.
+   */
+  function updateButtonsForCustomer() {
+    // Inject an info banner above the pricing grid
+    const notice = document.getElementById('pricing-customer-notice');
+    if (notice) {
+      notice.style.display = '';
+      notice.innerHTML =
+        '<div class="pricing-customer-notice-inner">' +
+        '<span class="pricing-customer-notice-icon" aria-hidden="true">ℹ️</span>' +
+        '<div>' +
+        '<p class="pricing-customer-notice-title">These plans are for suppliers only</p>' +
+        '<p class="pricing-customer-notice-body">As a customer, you already have full access to EventFlow at no cost — browse suppliers, send enquiries, and manage your event planning for free. Subscriptions unlock premium features for suppliers looking to grow their business on the platform.</p>' +
+        '</div>' +
+        '</div>';
+    }
+
+    // Disable all plan buttons and replace their labels
+    const allPricingButtons = document.querySelectorAll('.pricing-cta, #pricing-bottom-cta');
+    allPricingButtons.forEach(button => {
+      button.textContent = 'For Suppliers Only';
+      button.style.opacity = '0.5';
+      button.style.cursor = 'not-allowed';
+      button.style.pointerEvents = 'none';
+      button.setAttribute('aria-disabled', 'true');
+      button.removeAttribute('href');
+    });
+  }
+
+  // Update button labels for authenticated supplier/admin users
   function updateButtonsForAuthenticatedUser(user) {
     const hasActivePro = isProActive(user);
 
-    // Mark the free plan button as the current plan when user has no active Pro
-    const freeButtons = document.querySelectorAll(
+    // Mark the starter/free plan button as the current plan when the user
+    // is on the Starter tier (no active Pro subscription)
+    const starterButtons = document.querySelectorAll(
       'a[href="/checkout?plan=free"], a[href="/checkout?plan=starter"]'
     );
-    freeButtons.forEach(button => {
+    starterButtons.forEach(button => {
       if (!hasActivePro) {
-        button.textContent = 'Current Plan';
+        button.textContent = 'Your Current Plan';
         button.classList.remove('secondary');
         button.style.opacity = '0.6';
         button.style.cursor = 'default';
@@ -75,19 +112,26 @@
         button.setAttribute('aria-disabled', 'true');
       }
     });
+
+    // Also update the bottom CTA for authenticated suppliers on Starter
+    const bottomCta = document.getElementById('pricing-bottom-cta');
+    if (bottomCta && !hasActivePro) {
+      bottomCta.textContent = 'Your Current Plan';
+      bottomCta.style.opacity = '0.6';
+      bottomCta.style.cursor = 'default';
+      bottomCta.style.pointerEvents = 'none';
+      bottomCta.setAttribute('aria-disabled', 'true');
+    }
   }
 
   // Attach direct checkout click handlers for authenticated users.
   // This replaces the (now-removed) inline script in pricing.html.
-  function attachCheckoutHandlers(user) {
-    const returnUrl =
-      user && user.role === 'customer'
-        ? window.location.origin + '/dashboard-customer.html'
-        : window.location.origin + '/dashboard-supplier.html';
+  function attachCheckoutHandlers() {
+    const returnUrl = `${window.location.origin}/dashboard-supplier.html`;
 
     const pricingButtons = document.querySelectorAll('.pricing-cta');
     pricingButtons.forEach(button => {
-      // Skip buttons that are already disabled (e.g. "Current Plan")
+      // Skip buttons that are already disabled (e.g. "Your Current Plan")
       if (button.getAttribute('aria-disabled') === 'true') {
         return;
       }
@@ -175,7 +219,7 @@
           // back to pricing (not auth) after login, avoiding the loop.
           button.setAttribute(
             'href',
-            `/auth?redirect=${encodeURIComponent('/pricing?plan=' + plan)}`
+            `/auth?redirect=${encodeURIComponent(`/pricing?plan=${plan}`)}`
           );
         }
       }
