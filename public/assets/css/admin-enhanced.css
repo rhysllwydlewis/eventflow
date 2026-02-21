@@ -135,14 +135,10 @@
   }
 }
 
-/* Main Layout with Sidebar */
-body {
+/* Main Layout */
+body.admin {
   margin: 0;
-  margin-left: 260px;
-  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
-  background-attachment: fixed;
   min-height: 100vh;
-  transition: margin-left 0.3s ease;
 }
 
 main.section {
@@ -691,10 +687,6 @@ tbody tr.selected td {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  body {
-    margin-left: 0;
-  }
-
   main.section {
     padding: 1rem;
   }
@@ -1247,16 +1239,8 @@ tbody tr.selected td {
 
 /* Section utilities */
 .section-with-sidebar {
-  margin-left: 260px;
   padding: 2rem;
 }
-
-@media (max-width: 1024px) {
-  .section-with-sidebar {
-    margin-left: 0;
-  }
-}
-
 /* Error text */
 .text-error {
   color: #ef4444;
