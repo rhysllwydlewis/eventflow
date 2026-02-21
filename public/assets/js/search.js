@@ -393,7 +393,7 @@ class GlobalSearch {
             <span>Browse All Suppliers</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/start.html" class="search-result-item">
+          <a href="/start" class="search-result-item">
             <span>Start Planning</span>
             <span style="color: var(--muted);">→</span>
           </a>
@@ -405,7 +405,7 @@ class GlobalSearch {
             <span>Guest List Manager</span>
             <span style="color: var(--muted);">→</span>
           </a>
-          <a href="/faq.html" class="search-result-item">
+          <a href="/faq" class="search-result-item">
             <span>Help & FAQ</span>
             <span style="color: var(--muted);">→</span>
           </a>

@@ -129,7 +129,7 @@
         <p class="small" style="margin-top: 8px;">
           You need a supplier account to manage marketplace listings. 
           <a href="/for-suppliers.html">Learn more about becoming a supplier</a> or 
-          <a href="/contact.html">contact support</a> for help.
+          <a href="/contact">contact support</a> for help.
         </p>
       `;
     }

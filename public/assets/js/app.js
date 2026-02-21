@@ -433,7 +433,7 @@ async function initResults() {
           <p class="empty-state-message">
             No suppliers match your search yet. Try clearing filters, searching by town or city, or starting again from the Start page.
           </p>
-          <a href="/start.html" class="btn btn-primary">Start Over</a>
+          <a href="/start" class="btn btn-primary">Start Over</a>
         </div>
       `;
       return;

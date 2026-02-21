@@ -119,8 +119,8 @@
       '<p><strong>We use cookies</strong></p>' +
       '<p>We use essential cookies to make our site work. With your consent, we may also use non-essential cookies to improve user experience. By clicking "Accept", you agree to our use of cookies.</p>' +
       '<p class="cookie-consent-links">' +
-      '<a href="/privacy.html" target="_blank">Privacy Policy</a> · ' +
-      '<a href="/terms.html" target="_blank">Terms of Service</a>' +
+      '<a href="/privacy" target="_blank">Privacy Policy</a> · ' +
+      '<a href="/terms" target="_blank">Terms of Service</a>' +
       '</p>' +
       '</div>' +
       '<div class="cookie-consent-actions">' +
