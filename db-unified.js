@@ -10,6 +10,7 @@
 'use strict';
 
 const db = require('./db');
+const logger = require('./utils/logger');
 const store = require('./store');
 
 let dbType = null;
@@ -56,20 +57,20 @@ async function initializeDatabase() {
       dbType = 'mongodb';
       initializationState = 'completed';
       initializationError = null;
-      console.log('✅ Using MongoDB for data storage (PRIMARY)');
+      logger.info('✅ Using MongoDB for data storage (PRIMARY)');
       await createIndexes();
       return dbType;
     }
   } catch (error) {
-    console.log('MongoDB not available:', error.message);
+    logger.info('MongoDB not available:', error.message);
     initializationError = error.message;
   }
 
   dbType = 'local';
   initializationState = 'completed';
   initializationError = null;
-  console.log('⚠️  Using local file storage (not suitable for production)');
-  console.log('   Set MONGODB_URI for cloud database storage');
+  logger.info('⚠️  Using local file storage (not suitable for production)');
+  logger.info('   Set MONGODB_URI for cloud database storage');
   return dbType;
 }
 
@@ -79,7 +80,7 @@ async function createIndexes() {
   }
 
   try {
-    console.log('📊 Creating database indexes...');
+    logger.info('📊 Creating database indexes...');
     const usersCollection = mongodb.collection('users');
     await usersCollection.createIndex({ email: 1 }, { unique: true });
     await usersCollection.createIndex({ role: 1 });
@@ -104,9 +105,9 @@ async function createIndexes() {
     await reviewsCollection.createIndex({ supplierId: 1 });
     await reviewsCollection.createIndex({ userId: 1 });
     await reviewsCollection.createIndex({ rating: -1 });
-    console.log('✅ Database indexes created successfully');
+    logger.info('✅ Database indexes created successfully');
   } catch (error) {
-    console.log('ℹ️  Database indexes:', error.message);
+    logger.info('ℹ️  Database indexes:', error.message);
   }
 }
 
@@ -130,9 +131,9 @@ async function read(collectionName) {
       return store.read(collectionName);
     }
   } catch (error) {
-    console.error(`Error reading from ${collectionName}:`, error.message);
+    logger.error(`Error reading from ${collectionName}:`, error.message);
     if (dbType !== 'local') {
-      console.log(`Falling back to local storage for ${collectionName}`);
+      logger.info(`Falling back to local storage for ${collectionName}`);
       return store.read(collectionName);
     }
     return collectionName === 'settings' ? {} : [];
@@ -162,9 +163,9 @@ async function write(collectionName, data) {
       return true;
     }
   } catch (error) {
-    console.error(`Error writing to ${collectionName}:`, error.message);
+    logger.error(`Error writing to ${collectionName}:`, error.message);
     if (dbType !== 'local') {
-      console.warn(
+      logger.warn(
         `⚠️  MongoDB write failed for ${collectionName}, falling back to local storage. ` +
           `Data is saved locally but may not be replicated. Error: ${error.message}`
       );
@@ -172,7 +173,7 @@ async function write(collectionName, data) {
         store.write(collectionName, data);
         return true;
       } catch (fallbackError) {
-        console.error(
+        logger.error(
           `Critical: Both MongoDB and local storage failed for ${collectionName}. ` +
             `MongoDB error: ${error.message}, Local storage error: ${fallbackError.message}`
         );
@@ -205,7 +206,7 @@ async function findOne(collectionName, filter) {
       );
     }
   } catch (error) {
-    console.error(`Error finding in ${collectionName}:`, error.message);
+    logger.error(`Error finding in ${collectionName}:`, error.message);
     return null;
   }
 }
@@ -230,7 +231,7 @@ async function find(collectionName, filter) {
       });
     }
   } catch (error) {
-    console.error(`Error finding in ${collectionName}:`, error.message);
+    logger.error(`Error finding in ${collectionName}:`, error.message);
     return [];
   }
 }
@@ -253,7 +254,7 @@ async function updateOne(collectionName, id, updates) {
       return false;
     }
   } catch (error) {
-    console.error(`Error updating in ${collectionName}:`, error.message);
+    logger.error(`Error updating in ${collectionName}:`, error.message);
     return false;
   }
 }
@@ -272,7 +273,7 @@ async function insertOne(collectionName, document) {
       return document;
     }
   } catch (error) {
-    console.error(`Error inserting into ${collectionName}:`, error.message);
+    logger.error(`Error inserting into ${collectionName}:`, error.message);
     return null;
   }
 }
@@ -294,7 +295,7 @@ async function deleteOne(collectionName, id) {
       return false;
     }
   } catch (error) {
-    console.error(`Error deleting from ${collectionName}:`, error.message);
+    logger.error(`Error deleting from ${collectionName}:`, error.message);
     return false;
   }
 }
@@ -326,7 +327,7 @@ function trackQueryPerformance(operation, duration) {
   queryMetrics.avgQueryTime = sum / queryMetrics.queryTimes.length;
   if (duration > SLOW_QUERY_THRESHOLD) {
     queryMetrics.slowQueries++;
-    console.warn(`⚠️  Slow query detected: ${operation} took ${duration}ms`);
+    logger.warn(`⚠️  Slow query detected: ${operation} took ${duration}ms`);
   }
 }
 
@@ -434,7 +435,7 @@ async function count(collectionName, filter = {}) {
       return all.filter(item => matchesFilter(item, filter)).length;
     }
   } catch (error) {
-    console.error(`Error counting in ${collectionName}:`, error.message);
+    logger.error(`Error counting in ${collectionName}:`, error.message);
     return 0;
   }
 }
@@ -468,7 +469,7 @@ function matchesFilter(item, filter) {
             return regex.test(itemValue);
           }
           default:
-            console.warn(`Unsupported MongoDB operator: ${operator}`);
+            logger.warn(`Unsupported MongoDB operator: ${operator}`);
             return true;
         }
       });
@@ -484,12 +485,12 @@ async function aggregate(collectionName, pipeline) {
       const collection = mongodb.collection(collectionName);
       return await collection.aggregate(pipeline).toArray();
     } else {
-      console.warn(`Aggregation on local storage for ${collectionName} - consider using MongoDB`);
+      logger.warn(`Aggregation on local storage for ${collectionName} - consider using MongoDB`);
       const all = store.read(collectionName);
       return processLocalAggregation(all, pipeline);
     }
   } catch (error) {
-    console.error(`Error aggregating ${collectionName}:`, error.message);
+    logger.error(`Error aggregating ${collectionName}:`, error.message);
     return [];
   }
 }
@@ -510,11 +511,11 @@ function processLocalAggregation(data, pipeline) {
         break;
       }
       case '$group': {
-        console.warn('$group aggregation on local storage has limited support');
+        logger.warn('$group aggregation on local storage has limited support');
         break;
       }
       default:
-        console.warn(`Unsupported aggregation stage: ${stageType}`);
+        logger.warn(`Unsupported aggregation stage: ${stageType}`);
     }
   }
   return result;
@@ -557,7 +558,7 @@ async function findWithOptions(collectionName, filter = {}, options = {}) {
       return all.slice(skip, skip + limit);
     }
   } catch (error) {
-    console.error(`Error finding in ${collectionName}:`, error.message);
+    logger.error(`Error finding in ${collectionName}:`, error.message);
     return [];
   }
 }
@@ -585,7 +586,7 @@ async function writeAndVerify(collectionName, data) {
       data: verified,
     };
   } catch (error) {
-    console.error(`Error in writeAndVerify for ${collectionName}:`, error.message);
+    logger.error(`Error in writeAndVerify for ${collectionName}:`, error.message);
     return {
       success: false,
       verified: false,

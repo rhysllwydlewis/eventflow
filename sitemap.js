@@ -6,6 +6,7 @@
 'use strict';
 
 const dbUnified = require('./db-unified');
+const logger = require('./utils/logger');
 
 /**
  * Generate sitemap XML
@@ -95,7 +96,7 @@ async function generateSitemap(baseUrl) {
       xml += '  </url>\n';
     });
   } catch (error) {
-    console.error('Error generating dynamic sitemap entries:', error);
+    logger.error('Error generating dynamic sitemap entries:', error);
   }
 
   xml += '</urlset>';
