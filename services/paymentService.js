@@ -6,6 +6,7 @@
 'use strict';
 
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 const { uid } = require('../store');
 
 // Initialize Stripe only if configured
@@ -21,7 +22,7 @@ try {
     STRIPE_ENABLED = true;
   }
 } catch (err) {
-  console.error('Failed to initialize Stripe in payment service:', err.message);
+  logger.error('Failed to initialize Stripe in payment service:', err.message);
 }
 
 /**
@@ -58,7 +59,7 @@ async function retryStripeCall(fn, maxRetries = 3) {
 
       // Exponential backoff: 1s, 2s, 4s
       const delay = 2 ** (attempt - 1) * 1000;
-      console.warn(
+      logger.warn(
         `Stripe API call failed (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying in ${delay}ms...`
       );
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -88,7 +89,7 @@ async function getOrCreateStripeCustomer(user) {
     try {
       return await stripe.customers.retrieve(existingCustomerId);
     } catch (err) {
-      console.warn('Failed to retrieve existing customer:', err.message);
+      logger.warn('Failed to retrieve existing customer:', err.message);
     }
   }
 
@@ -308,7 +309,7 @@ async function handleFailedPayment(subscriptionId, invoice) {
   });
 
   // Log the failed payment attempt
-  console.log(`Payment failed for subscription ${subscriptionId}, invoice ${invoice.id}`);
+  logger.info(`Payment failed for subscription ${subscriptionId}, invoice ${invoice.id}`);
 
   // In a production system, you would:
   // 1. Send notification to user about failed payment

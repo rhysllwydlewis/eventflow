@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('./utils/logger');
 
 const { getCollection } = require('./db');
 
@@ -18,7 +19,7 @@ async function read(collectionName) {
     const documents = await collection.find({}).toArray();
     return documents;
   } catch (error) {
-    console.error(`Error reading from ${collectionName}:`, error.message);
+    logger.error(`Error reading from ${collectionName}:`, error.message);
     return [];
   }
 }
@@ -53,7 +54,7 @@ async function write(collectionName, data) {
 
     return true;
   } catch (error) {
-    console.error(`Error writing to ${collectionName}:`, error.message);
+    logger.error(`Error writing to ${collectionName}:`, error.message);
     return false;
   }
 }
@@ -74,7 +75,7 @@ async function insertOne(collectionName, document) {
     }
     return null;
   } catch (error) {
-    console.error(`Error inserting into ${collectionName}:`, error.message);
+    logger.error(`Error inserting into ${collectionName}:`, error.message);
     return null;
   }
 }
@@ -93,7 +94,7 @@ async function updateOne(collectionName, filter, update) {
 
     return result.value;
   } catch (error) {
-    console.error(`Error updating in ${collectionName}:`, error.message);
+    logger.error(`Error updating in ${collectionName}:`, error.message);
     return null;
   }
 }
@@ -110,7 +111,7 @@ async function deleteOne(collectionName, filter) {
     const result = await collection.deleteOne(filter);
     return result.deletedCount > 0;
   } catch (error) {
-    console.error(`Error deleting from ${collectionName}:`, error.message);
+    logger.error(`Error deleting from ${collectionName}:`, error.message);
     return false;
   }
 }
@@ -141,7 +142,7 @@ async function find(collectionName, filter = {}, options = {}) {
 
     return await query.toArray();
   } catch (error) {
-    console.error(`Error finding in ${collectionName}:`, error.message);
+    logger.error(`Error finding in ${collectionName}:`, error.message);
     return [];
   }
 }
@@ -157,7 +158,7 @@ async function findOne(collectionName, filter) {
     const collection = await getCollection(collectionName);
     return await collection.findOne(filter);
   } catch (error) {
-    console.error(`Error finding one in ${collectionName}:`, error.message);
+    logger.error(`Error finding one in ${collectionName}:`, error.message);
     return null;
   }
 }
@@ -173,7 +174,7 @@ async function count(collectionName, filter = {}) {
     const collection = await getCollection(collectionName);
     return await collection.countDocuments(filter);
   } catch (error) {
-    console.error(`Error counting in ${collectionName}:`, error.message);
+    logger.error(`Error counting in ${collectionName}:`, error.message);
     return 0;
   }
 }
@@ -225,18 +226,18 @@ async function migrateFromJson(store) {
         if (success) {
           results.success.push(collectionName);
           results.counts[collectionName] = data.length;
-          console.log(`Migrated ${data.length} documents to ${collectionName}`);
+          logger.info(`Migrated ${data.length} documents to ${collectionName}`);
         } else {
           results.failed.push(collectionName);
-          console.error(`Failed to migrate ${collectionName}`);
+          logger.error(`Failed to migrate ${collectionName}`);
         }
       } else {
         results.counts[collectionName] = 0;
-        console.log(`No data to migrate for ${collectionName}`);
+        logger.info(`No data to migrate for ${collectionName}`);
       }
     } catch (error) {
       results.failed.push(collectionName);
-      console.error(`Error migrating ${collectionName}:`, error.message);
+      logger.error(`Error migrating ${collectionName}:`, error.message);
     }
   }
 
@@ -268,7 +269,7 @@ async function exportToJson() {
     try {
       data[collectionName] = await read(collectionName);
     } catch (error) {
-      console.error(`Error exporting ${collectionName}:`, error.message);
+      logger.error(`Error exporting ${collectionName}:`, error.message);
       data[collectionName] = [];
     }
   }
@@ -285,10 +286,10 @@ async function clearCollection(collectionName) {
   try {
     const collection = await getCollection(collectionName);
     await collection.deleteMany({});
-    console.log(`Cleared collection: ${collectionName}`);
+    logger.info(`Cleared collection: ${collectionName}`);
     return true;
   } catch (error) {
-    console.error(`Error clearing ${collectionName}:`, error.message);
+    logger.error(`Error clearing ${collectionName}:`, error.message);
     return false;
   }
 }
@@ -301,22 +302,22 @@ async function clearCollection(collectionName) {
 async function migrateSuppliers_AddNewFields() {
   const { generateSlug } = require('./services/supplier.service');
 
-  console.log('Starting supplier migration: Adding new fields...');
+  logger.info('Starting supplier migration: Adding new fields...');
 
   try {
     // Create backup first
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const suppliers = await read('suppliers');
 
-    console.log(`Found ${suppliers.length} suppliers to migrate`);
+    logger.info(`Found ${suppliers.length} suppliers to migrate`);
 
     if (suppliers.length === 0) {
-      console.log('No suppliers to migrate');
+      logger.info('No suppliers to migrate');
       return { success: true, migrated: 0, message: 'No suppliers to migrate' };
     }
 
     // Backup data (if using file-based storage, this would be written to disk)
-    console.log(`Creating backup of suppliers data (timestamp: ${timestamp})`);
+    logger.info(`Creating backup of suppliers data (timestamp: ${timestamp})`);
 
     // Process each supplier
     const updated = suppliers.map(s => {
@@ -378,8 +379,8 @@ async function migrateSuppliers_AddNewFields() {
     // Write updated suppliers back to database
     await write('suppliers', updated);
 
-    console.log(`Successfully migrated ${updated.length} suppliers`);
-    console.log('Migration complete! All suppliers now have Phase 1 fields');
+    logger.info(`Successfully migrated ${updated.length} suppliers`);
+    logger.info('Migration complete! All suppliers now have Phase 1 fields');
 
     return {
       success: true,
@@ -388,7 +389,7 @@ async function migrateSuppliers_AddNewFields() {
       backupTimestamp: timestamp,
     };
   } catch (error) {
-    console.error('Migration failed:', error.message);
+    logger.error('Migration failed:', error.message);
     return {
       success: false,
       error: error.message,

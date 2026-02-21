@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { randomInt } = require('crypto');
 const logger = require('../utils/logger');
 
 const dbUnified = require('../db-unified');
@@ -47,8 +48,8 @@ router.post('/send-code', csrfProtection, writeLimiter, authRequired, async (req
       });
     }
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate cryptographically secure 6-digit code
+    const code = randomInt(100000, 1000000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Save code to database

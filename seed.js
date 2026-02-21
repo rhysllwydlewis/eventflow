@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const logger = require('./utils/logger');
 const dbUnified = require('./db-unified');
 const { uid } = require('./store');
 const { getPexelsService } = require('./utils/pexels-service');
@@ -24,7 +25,7 @@ async function getPexelsPhoto(query, size = 'medium', fallback = '') {
     }
     return fallback;
   } catch (error) {
-    console.warn(`Failed to fetch Pexels photo for "${query}":`, error.message);
+    logger.warn(`Failed to fetch Pexels photo for "${query}":`, error.message);
     return fallback;
   }
 }
@@ -77,17 +78,17 @@ async function seed(options = {}) {
             (Array.isArray(localUsers) && localUsers.length > 1); // More than just owner
 
           if (hasLocalData) {
-            console.log('');
-            console.log('🔄 Auto-migration: Detected local data, migrating to MongoDB...');
+            logger.info('');
+            logger.info('🔄 Auto-migration: Detected local data, migrating to MongoDB...');
             const dbUtils = require('./db-utils');
             const migrationResults = await dbUtils.migrateFromJson(store);
 
-            console.log('✅ Auto-migration complete!');
-            console.log(`   Migrated: ${migrationResults.success.join(', ')}`);
+            logger.info('✅ Auto-migration complete!');
+            logger.info(`   Migrated: ${migrationResults.success.join(', ')}`);
             if (migrationResults.failed.length > 0) {
-              console.log(`   Failed: ${migrationResults.failed.join(', ')}`);
+              logger.info(`   Failed: ${migrationResults.failed.join(', ')}`);
             }
-            console.log('');
+            logger.info('');
 
             // Skip seeding since we just migrated real data
             return;
@@ -95,7 +96,7 @@ async function seed(options = {}) {
         }
       }
     } catch (error) {
-      console.log('Auto-migration check skipped:', error.message);
+      logger.info('Auto-migration check skipped:', error.message);
       // Continue with normal seeding
     }
   }
@@ -129,9 +130,9 @@ async function seed(options = {}) {
       };
       existingUsers.push(owner);
       usersModified = true;
-      console.log(`✅ Created owner account: ${ownerEmail}`);
+      logger.info(`✅ Created owner account: ${ownerEmail}`);
       if (!process.env.OWNER_PASSWORD && process.env.NODE_ENV === 'production') {
-        console.warn(
+        logger.warn(
           '⚠️  WARNING: Using default owner password in production. Set OWNER_PASSWORD environment variable.'
         );
       }
@@ -145,7 +146,7 @@ async function seed(options = {}) {
         existingUsers[ownerIdx].verified = true;
         existingUsers[ownerIdx].role = 'admin';
         usersModified = true;
-        console.log(`✅ Updated owner account flags: ${ownerEmail}`);
+        logger.info(`✅ Updated owner account flags: ${ownerEmail}`);
       }
     }
 
@@ -167,7 +168,7 @@ async function seed(options = {}) {
         };
         existingUsers.push(admin);
         usersModified = true;
-        console.log(`Created demo admin user: ${demoAdminEmail}`);
+        logger.info(`Created demo admin user: ${demoAdminEmail}`);
       }
 
       // Check and create demo supplier if it doesn't exist
@@ -186,7 +187,7 @@ async function seed(options = {}) {
         };
         existingUsers.push(supplier);
         usersModified = true;
-        console.log(`Created demo supplier user: ${demoSupplierEmail}`);
+        logger.info(`Created demo supplier user: ${demoSupplierEmail}`);
       }
 
       // Check and create demo customer if it doesn't exist
@@ -205,7 +206,7 @@ async function seed(options = {}) {
         };
         existingUsers.push(customer);
         usersModified = true;
-        console.log(`Created demo customer user: ${demoCustomerEmail}`);
+        logger.info(`Created demo customer user: ${demoCustomerEmail}`);
       }
     }
 
@@ -215,7 +216,7 @@ async function seed(options = {}) {
     }
 
     if (skipIfExists && existingUsers.length > 0) {
-      console.log(`User seed complete (production mode): ${existingUsers.length} users exist`);
+      logger.info(`User seed complete (production mode): ${existingUsers.length} users exist`);
     }
   }
 
@@ -327,14 +328,14 @@ async function seed(options = {}) {
       },
     ];
     await dbUnified.write('categories', categories);
-    console.log('Created categories for 2x3 grid (6 visible, 4 hidden)');
+    logger.info('Created categories for 2x3 grid (6 visible, 4 hidden)');
   }
 
   // Suppliers
   if (seedSuppliers) {
     const existingSuppliers = await dbUnified.read('suppliers');
     if (skipIfExists && existingSuppliers.length > 0) {
-      console.log(
+      logger.info(
         `Supplier seed skipped (production mode): ${existingSuppliers.length} suppliers exist`
       );
     } else if (!Array.isArray(existingSuppliers) || existingSuppliers.length === 0) {
@@ -449,7 +450,7 @@ async function seed(options = {}) {
         },
       ];
       await dbUnified.write('suppliers', defaults);
-      console.log('Created demo suppliers with test data flags');
+      logger.info('Created demo suppliers with test data flags');
     }
   }
 
@@ -457,7 +458,7 @@ async function seed(options = {}) {
   if (seedPackages) {
     const existingPackages = await dbUnified.read('packages');
     if (skipIfExists && existingPackages.length > 0) {
-      console.log('Packages already exist, skipping package seed');
+      logger.info('Packages already exist, skipping package seed');
     } else if (!Array.isArray(existingPackages) || existingPackages.length === 0) {
       // Use same seed batch from suppliers if available, or generate new one
       const seedBatch = global.__SEED_BATCH__ || `seed_${Date.now()}`;
@@ -571,7 +572,7 @@ async function seed(options = {}) {
         },
       ];
       await dbUnified.write('packages', defaults);
-      console.log('Created demo packages with test data flags');
+      logger.info('Created demo packages with test data flags');
     }
   }
 
@@ -599,7 +600,7 @@ async function seed(options = {}) {
   // Seed default badges
   await seedBadges();
 
-  console.log('Seed complete');
+  logger.info('Seed complete');
 }
 
 /**
@@ -609,7 +610,7 @@ async function seedBadges() {
   const existingBadges = await dbUnified.read('badges');
 
   if (existingBadges.length > 0) {
-    console.log(`Badge seed skipped: ${existingBadges.length} badges already exist`);
+    logger.info(`Badge seed skipped: ${existingBadges.length} badges already exist`);
     return;
   }
 
@@ -693,7 +694,7 @@ async function seedBadges() {
   ];
 
   await dbUnified.write('badges', defaultBadges);
-  console.log(`Seeded ${defaultBadges.length} default badges`);
+  logger.info(`Seeded ${defaultBadges.length} default badges`);
 }
 
 module.exports = { seed };

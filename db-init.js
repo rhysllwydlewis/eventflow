@@ -4,6 +4,7 @@
  */
 
 'use strict';
+const logger = require('./utils/logger');
 
 const { getDb } = require('./db');
 const { initializeCollections, createIndexes } = require('./models');
@@ -61,7 +62,7 @@ const ADDITIONAL_COLLECTIONS = [
 async function initializeDatabase() {
   try {
     const db = await getDb();
-    console.log('Initializing database collections and indexes...');
+    logger.info('Initializing database collections and indexes...');
 
     // Initialize core collections from models
     await initializeCollections(db);
@@ -77,10 +78,10 @@ async function initializeDatabase() {
 
       // Create collection if it doesn't exist
       if (!existingNames.includes(name)) {
-        console.log(`Creating collection: ${name}`);
+        logger.info(`Creating collection: ${name}`);
         await db.createCollection(name);
       } else {
-        console.log(`Collection already exists: ${name}`);
+        logger.info(`Collection already exists: ${name}`);
       }
 
       // Create indexes
@@ -91,21 +92,21 @@ async function initializeDatabase() {
           try {
             await collection.createIndex(index.keys, index.options);
             const indexName = Object.keys(index.keys).join('_');
-            console.log(`  ✓ Ensured index on ${name}: ${indexName}`);
+            logger.info(`  ✓ Ensured index on ${name}: ${indexName}`);
           } catch (err) {
             // Ignore duplicate index errors
             if (err.code !== 85 && err.code !== 86) {
-              console.warn(`  ⚠ Could not create index on ${name}:`, err.message);
+              logger.warn(`  ⚠ Could not create index on ${name}:`, err.message);
             }
           }
         }
       }
     }
 
-    console.log('✓ Database initialization complete');
+    logger.info('✓ Database initialization complete');
     return true;
   } catch (error) {
-    console.error('✗ Database initialization failed:', error.message);
+    logger.error('✗ Database initialization failed:', error.message);
     throw error;
   }
 }
@@ -153,7 +154,7 @@ async function getDatabaseStats() {
       collectionCounts: collectionStats,
     };
   } catch (error) {
-    console.error('Error getting database stats:', error.message);
+    logger.error('Error getting database stats:', error.message);
     return null;
   }
 }
