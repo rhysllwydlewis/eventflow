@@ -58,9 +58,9 @@ test.describe('Sitemap Content', () => {
     const content = await response?.text();
 
     // Should include key public pages
-    expect(content).toContain('/suppliers.html');
-    expect(content).toContain('/blog.html');
-    expect(content).toContain('/pricing.html');
+    expect(content).toContain('/suppliers');
+    expect(content).toContain('/blog');
+    expect(content).toContain('/pricing');
   });
 
   test('sitemap.xml should NOT include dashboard pages', async ({ page }) => {

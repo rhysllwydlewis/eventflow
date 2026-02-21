@@ -29,8 +29,8 @@ async function generateSitemap(baseUrl) {
     { url: '/for-suppliers', priority: '0.7', changefreq: 'monthly' },
     { url: '/contact', priority: '0.6', changefreq: 'monthly' },
     { url: '/faq', priority: '0.6', changefreq: 'monthly' },
-    { url: '/privacy.html', priority: '0.5', changefreq: 'monthly' },
-    { url: '/terms.html', priority: '0.5', changefreq: 'monthly' },
+    { url: '/privacy', priority: '0.5', changefreq: 'monthly' },
+    { url: '/terms', priority: '0.5', changefreq: 'monthly' },
   ];
 
   staticPages.forEach(page => {

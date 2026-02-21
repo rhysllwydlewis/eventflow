@@ -138,7 +138,7 @@ test.describe('Mobile Navigation - Burger Menu', () => {
   });
 
   test('should work on multiple pages', async ({ page }) => {
-    const pages = ['/', '/suppliers.html', '/pricing.html', '/blog.html'];
+    const pages = ['/', '/suppliers', '/pricing', '/blog'];
 
     for (const pagePath of pages) {
       await page.goto(pagePath);

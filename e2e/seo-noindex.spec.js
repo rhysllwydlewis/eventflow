@@ -63,7 +63,7 @@ test.describe('SEO Noindex Headers', () => {
 
   // Test that public pages do NOT have noindex header
   test('public pages should NOT have X-Robots-Tag: noindex header', async ({ page }) => {
-    const publicPages = ['/', '/blog.html', '/suppliers.html', '/pricing.html'];
+    const publicPages = ['/', '/blog', '/suppliers', '/pricing'];
 
     for (const pagePath of publicPages) {
       const response = await page.goto(pagePath);
