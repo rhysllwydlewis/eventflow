@@ -772,7 +772,7 @@
             <link rel="stylesheet" href="/assets/css/mobile-optimizations.css">
             <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
           </head>
-          <body style="font-family:sans-serif;padding:2rem;" class="has-admin-navbar">
+          <body style="font-family:sans-serif;padding:2rem;" class="has-admin-navbar admin">
             <h2>Subject: ${safeSubject}</h2>
             <hr>
             <div>${safeBody}</div>

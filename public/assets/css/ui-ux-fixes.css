@@ -916,22 +916,16 @@ html[data-theme="dark"] .thread-item {
    ============================================ */
 
 /* Ensure admin content is properly centered with no left offset */
-body.has-admin-navbar {
-  margin-left: 0 !important;
-  padding-left: 0 !important;
+body.admin {
+  margin-left: 0;
+  padding-left: 0;
 }
 
 .admin-main-content {
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding-left: 24px !important;
-  padding-right: 24px !important;
-}
-
-/* Remove any potential sidebar spacing */
-.admin-sidebar,
-.sidebar-spacer {
-  display: none !important;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 

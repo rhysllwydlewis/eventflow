@@ -120,7 +120,7 @@ class GuestManager {
         const notes = document.getElementById('guest-notes').value.trim();
 
         if (!firstName || !lastName) {
-          Toast.error('Please enter first and last name');
+          window.EventFlowNotifications.error('Please enter first and last name');
           return;
         }
 
@@ -136,7 +136,7 @@ class GuestManager {
             table,
             notes,
           });
-          Toast.success('Guest updated');
+          window.EventFlowNotifications.success('Guest updated');
         } else {
           this.guests.push({
             id: this.generateId(),
@@ -151,7 +151,7 @@ class GuestManager {
             notes,
             createdAt: Date.now(),
           });
-          Toast.success('Guest added');
+          window.EventFlowNotifications.success('Guest added');
         }
 
         this.saveToStorage();
@@ -177,7 +177,7 @@ class GuestManager {
         this.guests = this.guests.filter(g => g.id !== id);
         this.saveToStorage();
         this.render();
-        Toast.success('Guest removed');
+        window.EventFlowNotifications.success('Guest removed');
       },
     });
 
@@ -207,7 +207,7 @@ class GuestManager {
         const file = fileInput.files[0];
 
         if (!file) {
-          Toast.error('Please select a CSV file');
+          window.EventFlowNotifications.error('Please select a CSV file');
           return;
         }
 
@@ -219,9 +219,9 @@ class GuestManager {
             this.guests.push(...imported);
             this.saveToStorage();
             this.render();
-            Toast.success(`Imported ${imported.length} guests`);
+            window.EventFlowNotifications.success(`Imported ${imported.length} guests`);
           } catch (error) {
-            Toast.error('Failed to parse CSV file');
+            window.EventFlowNotifications.error('Failed to parse CSV file');
             console.error(error);
           }
         });
@@ -262,7 +262,7 @@ class GuestManager {
 
   exportGuests() {
     if (this.guests.length === 0) {
-      Toast.warning('No guests to export');
+      window.EventFlowNotifications.warning('No guests to export');
       return;
     }
 
@@ -275,7 +275,7 @@ class GuestManager {
     a.click();
     URL.revokeObjectURL(url);
 
-    Toast.success('Guest list exported successfully');
+    window.EventFlowNotifications.success('Guest list exported successfully');
   }
 
   generateCSV() {

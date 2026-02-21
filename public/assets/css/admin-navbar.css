@@ -372,7 +372,7 @@
 }
 
 /* Content Padding (to account for fixed navbar) */
-body.has-admin-navbar {
+body.admin {
   padding-top: 90px;
 }
 
@@ -451,7 +451,7 @@ body.has-admin-navbar {
     display: none;
   }
   
-  body.has-admin-navbar {
+  body.admin {
     padding-top: 80px;
   }
 }
@@ -477,7 +477,7 @@ body.has-admin-navbar {
     display: none;
   }
   
-  body.has-admin-navbar {
+  body.admin {
     padding-top: 0;
   }
 }
