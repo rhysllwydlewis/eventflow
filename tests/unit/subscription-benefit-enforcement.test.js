@@ -28,8 +28,14 @@ function makeReq(userId = 'usr-1') {
 
 function makeRes() {
   const res = { _status: 200, _body: null };
-  res.status = code => { res._status = code; return res; };
-  res.json = body => { res._body = body; return res; };
+  res.status = code => {
+    res._status = code;
+    return res;
+  };
+  res.json = body => {
+    res._body = body;
+    return res;
+  };
   return res;
 }
 
@@ -48,16 +54,26 @@ let mockUsers = [{ id: 'usr-1', isPro: false }];
 
 function setupMocks() {
   dbUnified.read.mockImplementation(async collection => {
-    if (collection === 'subscriptions') return [...mockSubscriptions];
-    if (collection === 'users') return [...mockUsers];
+    if (collection === 'subscriptions') {
+      return [...mockSubscriptions];
+    }
+    if (collection === 'users') {
+      return [...mockUsers];
+    }
     return [];
   });
   dbUnified.write.mockImplementation(async (collection, data) => {
-    if (collection === 'subscriptions') mockSubscriptions = [...data];
-    if (collection === 'users') mockUsers = [...data];
+    if (collection === 'subscriptions') {
+      mockSubscriptions = [...data];
+    }
+    if (collection === 'users') {
+      mockUsers = [...data];
+    }
   });
   dbUnified.insertOne.mockImplementation(async (collection, data) => {
-    if (collection === 'subscriptions') mockSubscriptions.push(data);
+    if (collection === 'subscriptions') {
+      mockSubscriptions.push(data);
+    }
   });
   dbUnified.updateOne.mockImplementation(async () => {});
 }
@@ -155,7 +171,10 @@ describe('requireSubscription middleware', () => {
 
   it('allows pro user to access pro-tier route', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
       currentPeriodEnd: futureDate(30),
     });
     const req = makeReq();
@@ -168,7 +187,10 @@ describe('requireSubscription middleware', () => {
 
   it('allows pro user to access basic-tier route (higher tier satisfies lower requirement)', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
       currentPeriodEnd: futureDate(30),
     });
     const req = makeReq();
@@ -180,7 +202,10 @@ describe('requireSubscription middleware', () => {
 
   it('blocks basic user from pro-tier route', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'basic', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'basic',
+      status: 'active',
       currentPeriodEnd: futureDate(30),
     });
     const req = makeReq();
@@ -193,7 +218,10 @@ describe('requireSubscription middleware', () => {
 
   it('treats expired subscription (past currentPeriodEnd) as free tier', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
       currentPeriodEnd: pastDate(5),
     });
     // No proExpiresAt on user
@@ -208,7 +236,10 @@ describe('requireSubscription middleware', () => {
 
   it('treats past_due subscription (no future period) as free tier', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'past_due',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'past_due',
       currentPeriodEnd: pastDate(2),
     });
     const req = makeReq();
@@ -220,9 +251,13 @@ describe('requireSubscription middleware', () => {
   });
 
   it('falls back to user.subscriptionTier when no subscription table record', async () => {
-    mockUsers = [{
-      id: 'usr-1', subscriptionTier: 'pro', proExpiresAt: futureDate(15),
-    }];
+    mockUsers = [
+      {
+        id: 'usr-1',
+        subscriptionTier: 'pro',
+        proExpiresAt: futureDate(15),
+      },
+    ];
     const req = makeReq();
     const res = makeRes();
     const next = jest.fn();
@@ -232,9 +267,13 @@ describe('requireSubscription middleware', () => {
   });
 
   it('user.subscriptionTier fallback respects proExpiresAt when expired', async () => {
-    mockUsers = [{
-      id: 'usr-1', subscriptionTier: 'pro', proExpiresAt: pastDate(3),
-    }];
+    mockUsers = [
+      {
+        id: 'usr-1',
+        subscriptionTier: 'pro',
+        proExpiresAt: pastDate(3),
+      },
+    ];
     const req = makeReq();
     const res = makeRes();
     const next = jest.fn();
@@ -255,7 +294,10 @@ describe('requireSubscription middleware', () => {
 
   it('attaches subscription object to req when access is granted', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
       currentPeriodEnd: futureDate(30),
     });
     const req = makeReq();
@@ -290,28 +332,38 @@ describe('subscriptionService.createSubscription', () => {
     expect(dbUnified.updateOne).toHaveBeenCalledWith(
       'users',
       { id: 'usr-1' },
-      expect.objectContaining({ $set: expect.objectContaining({ subscriptionTier: 'pro', isPro: true }) })
+      expect.objectContaining({
+        $set: expect.objectContaining({ subscriptionTier: 'pro', isPro: true }),
+      })
     );
   });
 
   it('sets isPro=true for pro plan', async () => {
     await subscriptionService.createSubscription({
-      userId: 'usr-1', plan: 'pro',
-      stripeSubscriptionId: 'sub_1', stripeCustomerId: 'cus_1',
+      userId: 'usr-1',
+      plan: 'pro',
+      stripeSubscriptionId: 'sub_1',
+      stripeCustomerId: 'cus_1',
     });
     expect(dbUnified.updateOne).toHaveBeenCalledWith(
-      'users', { id: 'usr-1' }, expect.objectContaining({ $set: expect.objectContaining({ isPro: true }) })
+      'users',
+      { id: 'usr-1' },
+      expect.objectContaining({ $set: expect.objectContaining({ isPro: true }) })
     );
   });
 
   it('sets isPro=false for basic plan (basic is below pro)', async () => {
     await subscriptionService.createSubscription({
-      userId: 'usr-1', plan: 'basic',
-      stripeSubscriptionId: 'sub_2', stripeCustomerId: 'cus_1',
+      userId: 'usr-1',
+      plan: 'basic',
+      stripeSubscriptionId: 'sub_2',
+      stripeCustomerId: 'cus_1',
     });
     expect(dbUnified.updateOne).toHaveBeenCalledWith(
-      'users', { id: 'usr-1' }, expect.objectContaining({
-        $set: expect.objectContaining({ isPro: false, subscriptionTier: 'basic' })
+      'users',
+      { id: 'usr-1' },
+      expect.objectContaining({
+        $set: expect.objectContaining({ isPro: false, subscriptionTier: 'basic' }),
       })
     );
   });
@@ -322,16 +374,23 @@ describe('subscriptionService.createSubscription', () => {
 describe('subscriptionService.updateSubscription', () => {
   beforeEach(() => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
-      currentPeriodEnd: futureDate(), billingHistory: [], metadata: {},
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
+      currentPeriodEnd: futureDate(),
+      billingHistory: [],
+      metadata: {},
     });
   });
 
   it('syncs subscriptionTier on user when plan changes to pro_plus', async () => {
     await subscriptionService.updateSubscription('sub-1', { plan: 'pro_plus' });
     expect(dbUnified.updateOne).toHaveBeenCalledWith(
-      'users', { id: 'usr-1' }, expect.objectContaining({
-        $set: expect.objectContaining({ subscriptionTier: 'pro_plus', isPro: true })
+      'users',
+      { id: 'usr-1' },
+      expect.objectContaining({
+        $set: expect.objectContaining({ subscriptionTier: 'pro_plus', isPro: true }),
       })
     );
   });
@@ -339,8 +398,10 @@ describe('subscriptionService.updateSubscription', () => {
   it('syncs subscriptionTier to free and clears isPro when downgraded to free', async () => {
     await subscriptionService.updateSubscription('sub-1', { plan: 'free' });
     expect(dbUnified.updateOne).toHaveBeenCalledWith(
-      'users', { id: 'usr-1' }, expect.objectContaining({
-        $set: expect.objectContaining({ subscriptionTier: 'free', isPro: false })
+      'users',
+      { id: 'usr-1' },
+      expect.objectContaining({
+        $set: expect.objectContaining({ subscriptionTier: 'free', isPro: false }),
       })
     );
   });
@@ -356,7 +417,10 @@ describe('subscriptionService.checkFeatureAccess', () => {
 
   it('returns true for analytics on active pro subscription', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
       currentPeriodEnd: futureDate(),
     });
     const hasAccess = await subscriptionService.checkFeatureAccess('usr-1', 'analytics');
@@ -365,7 +429,10 @@ describe('subscriptionService.checkFeatureAccess', () => {
 
   it('returns false when subscription period is expired', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
       currentPeriodEnd: pastDate(),
     });
     const hasAccess = await subscriptionService.checkFeatureAccess('usr-1', 'analytics');
@@ -373,17 +440,25 @@ describe('subscriptionService.checkFeatureAccess', () => {
   });
 
   it('returns true via user.subscriptionTier fallback when no subscription table record', async () => {
-    mockUsers = [{
-      id: 'usr-1', subscriptionTier: 'pro', proExpiresAt: futureDate(10),
-    }];
+    mockUsers = [
+      {
+        id: 'usr-1',
+        subscriptionTier: 'pro',
+        proExpiresAt: futureDate(10),
+      },
+    ];
     const hasAccess = await subscriptionService.checkFeatureAccess('usr-1', 'analytics');
     expect(hasAccess).toBe(true);
   });
 
   it('returns false via user.subscriptionTier fallback when proExpiresAt is past', async () => {
-    mockUsers = [{
-      id: 'usr-1', subscriptionTier: 'pro', proExpiresAt: pastDate(2),
-    }];
+    mockUsers = [
+      {
+        id: 'usr-1',
+        subscriptionTier: 'pro',
+        proExpiresAt: pastDate(2),
+      },
+    ];
     const hasAccess = await subscriptionService.checkFeatureAccess('usr-1', 'analytics');
     expect(hasAccess).toBe(false);
   });
@@ -394,7 +469,10 @@ describe('subscriptionService.checkFeatureAccess', () => {
 describe('checkFeatureLimit middleware', () => {
   it('allows access when user has the feature', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'active',
       currentPeriodEnd: futureDate(),
     });
     const req = makeReq();
@@ -425,7 +503,10 @@ describe('resolveEffectiveTier', () => {
 
   it('returns active subscription plan', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro_plus', status: 'active',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro_plus',
+      status: 'active',
       currentPeriodEnd: futureDate(),
     });
     const { tier } = await resolveEffectiveTier('usr-1');
@@ -446,7 +527,10 @@ describe('resolveEffectiveTier', () => {
 
   it('returns trialing plan as active', async () => {
     mockSubscriptions.push({
-      id: 'sub-1', userId: 'usr-1', plan: 'pro', status: 'trialing',
+      id: 'sub-1',
+      userId: 'usr-1',
+      plan: 'pro',
+      status: 'trialing',
       currentPeriodEnd: futureDate(14),
     });
     const { tier } = await resolveEffectiveTier('usr-1');
