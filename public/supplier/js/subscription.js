@@ -400,43 +400,59 @@ async function handleSubscribe(planId) {
   }
 
   try {
+    // Fetch CSRF token before POST (required by server CSRF protection)
+    let csrfToken = window.__CSRF_TOKEN__ || '';
+    if (!csrfToken) {
+      try {
+        const csrfResp = await fetch('/api/v1/csrf-token', { credentials: 'include' });
+        if (csrfResp.ok) {
+          const csrfData = await csrfResp.json();
+          csrfToken = csrfData.csrfToken || csrfData.token || '';
+          window.__CSRF_TOKEN__ = csrfToken;
+        }
+      } catch (csrfErr) {
+        console.warn('[Subscription] Could not fetch CSRF token:', csrfErr);
+      }
+    }
+
     // Check if this is the Professional plan and intro pricing is enabled
     const isProfessionalPlan =
       (plan.name.toLowerCase().includes('professional') ||
         plan.name.toLowerCase().includes('pro')) &&
       !plan.name.toLowerCase().includes('plus');
-    const useIntroPricing =
-      stripeConfig?.introPricingEnabled && stripeConfig?.proPriceId && isProfessionalPlan;
-
-    let requestBody;
-
-    if (useIntroPricing) {
-      // Use subscription with intro pricing
-      console.log('[Subscription] Using subscription mode with intro pricing');
+    if (stripeConfig?.proPriceId && isProfessionalPlan) {
+      // Use subscription mode — prefer server-configured priceId
+      console.log('[Subscription] Using subscription mode with server priceId');
       requestBody = {
         type: 'subscription',
         priceId: stripeConfig.proPriceId,
         planName: plan.name,
       };
-    } else {
-      // Fallback to one-time payment
-      console.log('[Subscription] Using one-time payment mode (fallback)');
-      const amount = Math.round(plan.price * 100); // Convert to pence
+    } else if (plan.tier && plan.tier !== 'free') {
+      // Generic subscription fallback: let the server derive the priceId from planId/planName
+      console.log('[Subscription] Using subscription mode (generic fallback)');
       requestBody = {
-        type: 'one_time',
-        amount: amount,
-        currency: 'gbp',
+        type: 'subscription',
         planName: plan.name,
       };
+    } else {
+      // Free plan — nothing to charge
+      window.location.href = '/dashboard-supplier.html';
+      return;
     }
 
     console.log('[Subscription] Creating checkout session with:', requestBody);
 
-    const response = await fetch('/api/payments/create-checkout-session', {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+
+    const response = await fetch('/api/v1/payments/create-checkout-session', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       credentials: 'include',
       body: JSON.stringify(requestBody),
     });
@@ -449,13 +465,16 @@ async function handleSubscribe(planId) {
     if (!response.ok) {
       console.error('[Subscription] API error:', data.error || 'Unknown error');
       console.error('[Subscription] Full response:', data);
-      throw new Error(data.error || 'Failed to create checkout session');
+      throw new Error(data.message || data.error || 'Failed to create checkout session');
     }
 
     // Redirect to Stripe checkout
     if (data.url) {
       console.log('[Subscription] Redirecting to Stripe checkout:', data.url);
       window.location.href = data.url;
+    } else if (data.sessionId) {
+      console.error('[Subscription] No URL, falling back to sessionId redirect');
+      throw new Error('No checkout URL returned');
     } else {
       console.error('[Subscription] No checkout URL in response');
       throw new Error('No checkout URL returned');

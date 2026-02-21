@@ -1238,7 +1238,7 @@
         const planId = planMatch[1];
         
         if (!window.AuthState || !window.AuthState.getUser || !window.AuthState.getUser()) {
-          window.location.href = `/auth.html?returnTo=${encodeURIComponent('/pricing.html?plan=' + planId)}`;
+          window.location.href = `/auth.html?redirect=${encodeURIComponent('/pricing.html?plan=' + planId)}`;
           return;
         }
         
