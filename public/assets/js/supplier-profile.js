@@ -350,7 +350,8 @@
 
   /**
    * Render the dedicated "Badges & Recognition" section on the profile page.
-   * Subscription tier badges are pinned at the top; other badges follow.
+   * Uses a card layout (icon + name + description) for earned badges.
+   * Groups: Subscription → Earned/Performance → Founding/Featured → Verification
    */
   function renderBadgesSection(supplier) {
     const container = document.getElementById('supplier-badges-section');
@@ -358,10 +359,9 @@
       return;
     }
 
-    const allBadges = [];
+    const sections = [];
 
-    // --- Subscription tier badges (always first) ---
-    // Use the shared EFTierIcon helper (loaded via tier-icon.js) for consistent resolution.
+    // --- Group 1: Subscription tier badges ---
     const tier =
       typeof EFTierIcon !== 'undefined'
         ? EFTierIcon.resolve(supplier)
@@ -369,48 +369,95 @@
           supplier.subscription?.tier ||
           (supplier.isPro ? 'pro' : 'free');
 
+    const tierBadgesHtml = [];
     if (tier === 'pro_plus') {
-      allBadges.push(
-        `<span class="badge badge-pro-plus" title="Professional Plus — Premium subscription" aria-label="Pro Plus subscriber">Pro Plus</span>`
+      tierBadgesHtml.push(
+        '<span class="badge badge-pro-plus" title="Professional Plus — Premium subscription" aria-label="Pro Plus subscriber">Pro Plus</span>'
       );
     } else if (tier === 'pro') {
-      allBadges.push(
-        `<span class="badge badge-pro" title="Professional — Enhanced subscription" aria-label="Pro subscriber">Pro</span>`
+      tierBadgesHtml.push(
+        '<span class="badge badge-pro" title="Professional — Enhanced subscription" aria-label="Pro subscriber">Pro</span>'
       );
     }
 
-    // --- Founding badge ---
+    if (tierBadgesHtml.length > 0) {
+      sections.push(`
+        <p class="badges-section__group-label">Subscription</p>
+        <div class="profile-badges">${tierBadgesHtml.join('')}</div>
+      `);
+    }
+
+    // --- Group 2: Earned / auto-awarded performance badges (from badgeDetails) ---
+    const SKIP_TYPES = new Set(['pro', 'pro-plus', 'founder', 'verified', 'featured']);
+    const earnedBadges = Array.isArray(supplier.badgeDetails)
+      ? supplier.badgeDetails.filter(b => !SKIP_TYPES.has(b.type))
+      : [];
+
+    if (earnedBadges.length > 0) {
+      const cards = earnedBadges
+        .map(
+          b => `
+        <div class="badge-card">
+          <div class="badge-card__icon" aria-hidden="true">${b.icon || '🏅'}</div>
+          <div class="badge-card__body">
+            <div class="badge-card__name">${escapeHtml(b.name)}</div>
+            ${b.description ? `<div class="badge-card__desc">${escapeHtml(b.description)}</div>` : ''}
+          </div>
+        </div>
+      `
+        )
+        .join('');
+
+      sections.push(`
+        <p class="badges-section__group-label">Earned Achievements</p>
+        <div class="badge-cards-grid">${cards}</div>
+      `);
+    }
+
+    // --- Group 3: Founding / Featured ---
+    const honorBadges = [];
     if (supplier.isFoundingSupplier || supplier.isFounding || supplier.founding) {
-      allBadges.push(
-        `<span class="badge badge-founding" title="Founding Supplier" aria-label="Founding supplier">⭐ Founding</span>`
+      honorBadges.push(
+        '<span class="badge badge-founding" title="Founding Supplier — One of our first partners" aria-label="Founding supplier">🏆 Founding</span>'
       );
     }
-
-    // --- Featured badge ---
     if (supplier.featured || supplier.featuredSupplier) {
-      allBadges.push(
-        `<span class="badge badge-featured" title="Featured Supplier" aria-label="Featured supplier">★ Featured</span>`
+      honorBadges.push(
+        '<span class="badge badge-featured" title="Featured Supplier" aria-label="Featured supplier">★ Featured</span>'
       );
     }
+    if (honorBadges.length > 0) {
+      sections.push(`
+        <p class="badges-section__group-label">Recognition</p>
+        <div class="profile-badges">${honorBadges.join('')}</div>
+      `);
+    }
 
-    // --- Verification badges ---
+    // --- Group 4: Verification badges ---
+    const verifyBadges = [];
     if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {
-      allBadges.push(
-        `<span class="badge badge-email-verified" title="Email address verified" aria-label="Email verified">✓ Email</span>`
+      verifyBadges.push(
+        '<span class="badge badge-email-verified" title="Email address verified" aria-label="Email verified">✓ Email</span>'
       );
     }
     if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
-      allBadges.push(
-        `<span class="badge badge-phone-verified" title="Phone number verified" aria-label="Phone verified">✓ Phone</span>`
+      verifyBadges.push(
+        '<span class="badge badge-phone-verified" title="Phone number verified" aria-label="Phone verified">✓ Phone</span>'
       );
     }
     if (supplier.businessVerified || supplier.verifications?.business?.verified) {
-      allBadges.push(
-        `<span class="badge badge-business-verified" title="Business documents verified" aria-label="Business verified">✓ Business</span>`
+      verifyBadges.push(
+        '<span class="badge badge-business-verified" title="Business documents verified" aria-label="Business verified">✓ Business</span>'
       );
     }
+    if (verifyBadges.length > 0) {
+      sections.push(`
+        <p class="badges-section__group-label">Verification</p>
+        <div class="profile-badges">${verifyBadges.join('')}</div>
+      `);
+    }
 
-    if (allBadges.length === 0) {
+    if (sections.length === 0) {
       container.style.display = 'none';
       return;
     }
@@ -418,9 +465,7 @@
     container.innerHTML = `
       <div class="badges-section">
         <h2 class="badges-section__title">Badges &amp; Recognition</h2>
-        <div class="profile-badges">
-          ${allBadges.join('\n          ')}
-        </div>
+        ${sections.join('')}
       </div>
     `;
   }

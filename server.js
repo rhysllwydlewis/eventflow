@@ -1086,9 +1086,7 @@ async function startServer() {
           '   You must replace the example values with your actual MongoDB credentials.'
         );
         logger.error('');
-        logger.error(
-          '   Current MONGODB_URI contains placeholder text that needs to be replaced.'
-        );
+        logger.error('   Current MONGODB_URI contains placeholder text that needs to be replaced.');
         logger.error('');
         logger.error('📚 Step-by-step setup guide: MONGODB_SETUP_SIMPLE.md');
         logger.error('   Get your real connection string from: https://cloud.mongodb.com/');
@@ -1360,6 +1358,15 @@ async function startServer() {
           autoMigrateFromLocal: true, // Auto-migrate from local storage if detected
         });
         logger.info('   ✅ Database seeding complete');
+
+        // 4a-2. Initialize default badge definitions
+        try {
+          const badgeManagement = require('./utils/badgeManagement');
+          await badgeManagement.initializeDefaultBadges();
+          logger.info('   ✅ Badge definitions initialized');
+        } catch (badgeInitError) {
+          logger.warn('   ⚠️  Badge initialization failed:', badgeInitError.message);
+        }
 
         // 4b. Validate admin authentication configuration
         logger.info('');

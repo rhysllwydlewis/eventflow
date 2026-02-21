@@ -176,11 +176,36 @@ router.get('/suppliers/:id', async (req, res) => {
     const pkgs = await dbUnified.read('packages');
     const featuredSupplier = pkgs.some(p => p.supplierId === sRaw.id && p.featured);
     const isProActive = await supplierIsProActive(sRaw);
+
+    // Enrich badges array: look up full badge definitions for each badge ID
+    let badgeDetails = [];
+    if (Array.isArray(sRaw.badges) && sRaw.badges.length > 0) {
+      try {
+        const allBadges = await dbUnified.read('badges');
+        // Also include in-memory BADGE_DEFINITIONS as fallback so it works before DB seeding
+        const { BADGE_DEFINITIONS } = require('../utils/badgeManagement');
+        const fallbackDefs = Object.values(BADGE_DEFINITIONS);
+        badgeDetails = sRaw.badges
+          .map(badgeId => {
+            const fromDb = allBadges.find(b => b.id === badgeId);
+            if (fromDb) {
+              return fromDb;
+            }
+            return fallbackDefs.find(b => b.id === badgeId) || null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => (a.displayOrder ?? 99) - (b.displayOrder ?? 99));
+      } catch (badgeErr) {
+        logger.warn('Failed to enrich badge details:', badgeErr.message);
+      }
+    }
+
     const s = {
       ...sRaw,
       featuredSupplier,
       isPro: isProActive,
       proExpiresAt: sRaw.proExpiresAt || null,
+      badgeDetails,
     };
     // Strip sensitive fields from public response (admins/owners get data via authenticated routes)
     delete s.email;

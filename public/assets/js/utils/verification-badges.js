@@ -105,6 +105,35 @@ export function renderVerificationBadges(supplier, options = {}) {
     });
   }
 
+  // Priority 3b: Earned / auto-awarded badges from the badgeDetails array
+  // (populated by the server from the badges collection when enriching the supplier response)
+  const EARNED_TYPE_CLASS = {
+    'fast-responder': 'badge-fast-responder',
+    'top-rated': 'badge-top-rated',
+    expert: 'badge-expert',
+    custom: 'badge-custom',
+  };
+  if (Array.isArray(supplier.badgeDetails) && supplier.badgeDetails.length > 0) {
+    supplier.badgeDetails.forEach(badge => {
+      // Skip tier / founder / featured / verification badges — rendered elsewhere
+      const skipTypes = ['pro', 'pro-plus', 'founder', 'verified', 'featured'];
+      if (skipTypes.includes(badge.type)) {
+        return;
+      }
+      const cssClass =
+        EARNED_TYPE_CLASS[badge.id] || EARNED_TYPE_CLASS[badge.type] || 'badge-custom';
+      badges.push({
+        html: `<span class="badge ${cssClass} ${size === 'small' ? 'badge-sm' : ''}" 
+                     title="${badge.description || badge.name}" 
+                     role="status"
+                     aria-label="${badge.name}">
+                 ${badge.icon ? `${badge.icon} ` : ''}${badge.name}
+               </span>`,
+        priority: 2,
+      });
+    });
+  }
+
   // Priority 4: Verification Badges
   // Email Verified
   if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {

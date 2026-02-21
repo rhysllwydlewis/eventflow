@@ -169,6 +169,130 @@
   border-bottom: 1px solid #f3f4f6;
 }
 
+/* ===== EARNED / PERFORMANCE BADGES (auto-awarded) ===== */
+
+/* Shared base for all earned badges */
+.badge-earned {
+  font-weight: 700;
+}
+
+/* Fast Responder — amber/lightning */
+.badge-fast-responder {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  font-weight: 700;
+}
+
+.badge-fast-responder::before {
+  content: '⚡';
+  margin-right: 0.375rem;
+}
+
+/* Top Rated — star yellow */
+.badge-top-rated {
+  background: linear-gradient(135deg, #fef9c3 0%, #fde047 100%);
+  color: #713f12;
+  border: 1px solid #eab308;
+  font-weight: 700;
+}
+
+.badge-top-rated::before {
+  content: '🌟';
+  margin-right: 0.375rem;
+}
+
+/* Expert — purple */
+.badge-expert {
+  background: linear-gradient(135deg, #ede9fe 0%, #c4b5fd 100%);
+  color: #4c1d95;
+  border: 1px solid #8b5cf6;
+  font-weight: 700;
+}
+
+.badge-expert::before {
+  content: '🎓';
+  margin-right: 0.375rem;
+}
+
+/* Custom / generic earned badge */
+.badge-custom {
+  background: linear-gradient(135deg, #f0fdf4 0%, #bbf7d0 100%);
+  color: #14532d;
+  border: 1px solid #22c55e;
+  font-weight: 700;
+}
+
+/* ===== PROFILE BADGES SECTION — enhanced layout ===== */
+
+/* Group header inside badge section (e.g. "Subscription", "Earned", "Verified") */
+.badges-section__group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin: 0.75rem 0 0.4rem;
+}
+
+.badges-section__group-label:first-child {
+  margin-top: 0;
+}
+
+/* Badge card layout for profile section — icon + text description */
+.badge-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.badge-card:hover {
+  background: #f3f4f6;
+}
+
+.badge-card__icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  flex-shrink: 0;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.badge-card__body {
+  flex: 1;
+}
+
+.badge-card__name {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: #111827;
+  margin-bottom: 0.125rem;
+}
+
+.badge-card__desc {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.badge-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .badge-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Test Data Badge */
 .badge-test-data {
   background: #fef3c7;
