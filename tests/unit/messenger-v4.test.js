@@ -975,6 +975,103 @@ describe('MessengerV4Service', () => {
     });
   });
 
+  describe('deleteMessage', () => {
+    let conversation;
+    let message;
+
+    beforeEach(async () => {
+      conversation = await service.createConversation({
+        type: 'direct',
+        participants: [
+          { userId: 'user1', displayName: 'Alice', role: 'customer' },
+          { userId: 'user2', displayName: 'Bob', role: 'supplier' },
+        ],
+      });
+
+      message = await service.sendMessage(conversation._id.toString(), {
+        senderId: 'user1',
+        senderName: 'Alice',
+        content: 'Message to delete',
+      });
+    });
+
+    it('should soft-delete a message', async () => {
+      await service.deleteMessage(message._id.toString(), 'user1');
+
+      const deleted = await service.messagesCollection.findOne({ _id: message._id });
+      expect(deleted.isDeleted).toBe(true);
+      expect(deleted.content).toBe('This message was deleted');
+    });
+
+    it('should not include deleted messages in getMessages', async () => {
+      await service.deleteMessage(message._id.toString(), 'user1');
+
+      const result = await service.getMessages(conversation._id.toString(), 'user1');
+      expect(result.messages).toHaveLength(0);
+    });
+
+    it('should reject deletion by non-sender', async () => {
+      await expect(service.deleteMessage(message._id.toString(), 'user2')).rejects.toThrow(
+        'Message not found or access denied'
+      );
+    });
+
+    it('should update conversation lastMessage when the last message is deleted', async () => {
+      // Use a fresh conversation so there is exactly one non-deleted message remaining
+      const freshConv = await service.createConversation({
+        type: 'direct',
+        participants: [
+          { userId: 'user1', displayName: 'Alice', role: 'customer' },
+          { userId: 'user2', displayName: 'Bob', role: 'supplier' },
+        ],
+      });
+      const earlier = await service.sendMessage(freshConv._id.toString(), {
+        senderId: 'user2',
+        senderName: 'Bob',
+        content: 'Earlier message',
+      });
+      const latest = await service.sendMessage(freshConv._id.toString(), {
+        senderId: 'user1',
+        senderName: 'Alice',
+        content: 'Latest message',
+      });
+
+      await service.deleteMessage(latest._id.toString(), 'user1');
+
+      const updatedConv = await service.conversationsCollection.findOne({
+        _id: freshConv._id,
+      });
+      expect(updatedConv.lastMessage).not.toBeNull();
+      expect(updatedConv.lastMessage.senderId).toBe(earlier.senderId);
+      expect(updatedConv.lastMessage.content).toContain('Earlier message');
+    });
+
+    it('should set conversation lastMessage to null when the only message is deleted', async () => {
+      await service.deleteMessage(message._id.toString(), 'user1');
+
+      const updatedConv = await service.conversationsCollection.findOne({
+        _id: conversation._id,
+      });
+      expect(updatedConv.lastMessage).toBeNull();
+    });
+
+    it('should not change lastMessage when a non-last message is deleted', async () => {
+      const second = await service.sendMessage(conversation._id.toString(), {
+        senderId: 'user1',
+        senderName: 'Alice',
+        content: 'Second message',
+      });
+
+      // Delete the first message (not the last)
+      await service.deleteMessage(message._id.toString(), 'user1');
+
+      const updatedConv = await service.conversationsCollection.findOne({
+        _id: conversation._id,
+      });
+      expect(updatedConv.lastMessage.content).toContain('Second message');
+    });
+  });
+
   describe('toggleReaction', () => {
     let conversation;
     let message;

@@ -12,18 +12,41 @@ class UnreadBadgeManager {
       '#inboxCount', // Messages page inbox tab
       '.supplier-unread-badge', // Supplier dashboard alternate
       '.notification-badge', // Any generic notification badge
+      '#ef-notification-badge', // Navbar notification bell badge
     ];
 
     this.currentCount = 0;
+    this._pollInterval = null;
+    this._pollIntervalMs = 120000; // 2 minutes
 
     // Listen to unread count updates from messaging system
     this.setupListeners();
+
+    // Fetch on page load
+    this.refresh();
+
+    // Start periodic polling
+    this._startPolling();
+  }
+
+  _startPolling() {
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval);
+    }
+    this._pollInterval = setInterval(() => this.refresh(), this._pollIntervalMs);
   }
 
   setupListeners() {
     // Listen to custom event from MessagingManager
     window.addEventListener('unreadCountUpdated', e => {
       this.updateAll(e.detail.count);
+    });
+
+    // Refresh when tab regains focus
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        this.refresh();
+      }
     });
 
     // Listen to WebSocket events if messaging system is available
@@ -99,7 +122,7 @@ class UnreadBadgeManager {
    */
   async refresh() {
     try {
-      const response = await fetch('/api/v2/messages/unread', {
+      const response = await fetch('/api/v4/messenger/unread-count', {
         credentials: 'include',
       });
 
@@ -108,7 +131,7 @@ class UnreadBadgeManager {
       }
 
       const data = await response.json();
-      const count = data.count || data.unreadCount || 0;
+      const count = data.unreadCount || 0;
 
       this.updateAll(count);
 
