@@ -8,6 +8,8 @@
 
   // Stripe instance (will be initialized after loading config)
   let stripe = null;
+  // Config from backend (includes introPricingEnabled, proPriceId)
+  let stripeConfig = null;
 
   // Pricing plans configuration - aligned with updated pricing
   const PLANS = {
@@ -106,6 +108,9 @@
         showError('Payment configuration error. Please contact support.');
         return false;
       }
+
+      // Store config for use during checkout
+      stripeConfig = config;
 
       // Initialize Stripe
       stripe = Stripe(config.publishableKey);
@@ -278,16 +283,13 @@
         return;
       }
 
-      // For paid plans, ensure Stripe is initialized
+      // For paid plans, ensure Stripe is initialized (also loads stripeConfig)
       if (!stripe) {
         const initialized = await initializeStripe();
         if (!initialized) {
           throw new Error('Payment system unavailable. Please try again later.');
         }
       }
-
-      // Create Stripe checkout session
-      const amount = Math.round(plan.price * 100); // Convert to pence/cents
 
       // Fetch CSRF token if not already available
       if (!window.__CSRF_TOKEN__) {
@@ -311,16 +313,42 @@
         headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
       }
 
-      const response = await fetch('/api/v1/payments/create-checkout-session', {
-        method: 'POST',
-        headers: headers,
-        credentials: 'include',
-        body: JSON.stringify({
+      // Decide payment mode: prefer subscription when a Stripe priceId is available
+      let requestBody;
+
+      if (stripeConfig?.proPriceId && planKey === 'pro') {
+        // Use subscription mode with server-configured price
+        requestBody = {
+          type: 'subscription',
+          priceId: stripeConfig.proPriceId,
+          planName: plan.name,
+        };
+      } else if (stripeConfig?.proPriceId && planKey === 'pro_plus') {
+        // Use subscription mode for pro_plus — falls back to the server-configured proPriceId
+        // when STRIPE_PRO_PLUS_PRICE_ID is not separately set. The server's create-checkout-session
+        // endpoint will select the correct price from env if a dedicated pro_plus price exists.
+        requestBody = {
+          type: 'subscription',
+          priceId: stripeConfig.proPriceId,
+          planName: plan.name,
+        };
+      } else {
+        // Fallback: one-time payment
+        const amount = Math.round(plan.price * 100);
+        requestBody = {
           type: 'one_time',
-          amount: amount,
+          amount,
           currency: 'gbp',
           planName: plan.name,
-        }),
+        };
+      }
+      console.log(`[Checkout] Mode: ${requestBody.type} for plan: ${planKey}`);
+
+      const response = await fetch('/api/v1/payments/create-checkout-session', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -336,18 +364,15 @@
         throw new Error(errorMsg);
       }
 
-      // Use Stripe.js to redirect to checkout (recommended by Stripe)
-      if (data.sessionId) {
-        const result = await stripe.redirectToCheckout({
-          sessionId: data.sessionId,
-        });
-
+      // Prefer direct URL redirect (works for both hosted and embedded checkout)
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.sessionId) {
+        // Fallback: use Stripe.js redirectToCheckout
+        const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
         if (result.error) {
           throw new Error(result.error.message);
         }
-      } else if (data.url) {
-        // Fallback to direct URL redirect
-        window.location.href = data.url;
       } else {
         throw new Error('No checkout session returned');
       }

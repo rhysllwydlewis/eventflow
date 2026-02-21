@@ -180,7 +180,8 @@ router.post(
         });
       }
 
-      const { type, amount, currency = 'gbp', priceId, planName, successUrl, cancelUrl } = req.body;
+      const { type, amount, currency = 'gbp', planName, successUrl, cancelUrl } = req.body;
+      let priceId = req.body.priceId;
       const user = req.user;
 
       // Validation
@@ -195,7 +196,17 @@ router.post(
       }
 
       if (type === 'subscription' && !priceId) {
-        return res.status(400).json({ error: 'Price ID is required for subscriptions.' });
+        // Try to fall back to the configured Pro price ID when planName matches
+        const fallbackTier = planName ? getSubscriptionTier(planName) : 'free';
+        if ((fallbackTier === 'pro' || fallbackTier === 'pro_plus') && STRIPE_PRO_PRICE_ID) {
+          priceId = STRIPE_PRO_PRICE_ID;
+          console.log(`Subscription: using fallback priceId ${priceId} for plan "${planName}"`);
+        } else {
+          return res.status(400).json({
+            error: 'Price ID is required for subscriptions.',
+            message: 'Please contact support or select a plan from the pricing page.',
+          });
+        }
       }
 
       // Check for Professional plan with intro pricing

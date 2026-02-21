@@ -60,16 +60,16 @@ class MessengerSocket {
       window.dispatchEvent(new CustomEvent('messenger:disconnected'));
     });
 
-    this.socket.on('auth:success', (data) => {
+    this.socket.on('auth:success', _data => {
       // Authentication successful
     });
 
     // Messenger v4 events (upgraded naming convention)
-    this.socket.on('messenger:v4:message', (data) => {
+    this.socket.on('messenger:v4:message', data => {
       window.dispatchEvent(new CustomEvent('messenger:new-message', { detail: data }));
     });
 
-    this.socket.on('messenger:v4:typing', (data) => {
+    this.socket.on('messenger:v4:typing', data => {
       this.state.setTyping(data.conversationId, data.userId, data.isTyping);
       window.dispatchEvent(new CustomEvent('messenger:typing', { detail: data }));
     });
@@ -108,14 +108,14 @@ class MessengerSocket {
     });
 
     // Error handling
-    this.socket.on('error', (error) => {
+    this.socket.on('error', error => {
       console.error('WebSocket error:', error);
     });
 
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', error => {
       console.error('Connection error:', error);
       this.reconnectAttempts++;
-      
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         console.warn('Max reconnection attempts reached');
         // Socket.IO will continue trying with exponential backoff

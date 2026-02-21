@@ -73,9 +73,10 @@ async function createSubscription({
 
   await dbUnified.insertOne('subscriptions', subscription);
 
-  // Update user record with subscription reference.
+  // Update user record with subscription reference and tier.
   await persistUserSubscriptionState(userId, {
     subscriptionId: subscription.id,
+    subscriptionTier: plan,
     isPro: !['free', 'basic'].includes(plan),
   });
 
@@ -132,9 +133,10 @@ async function updateSubscription(subscriptionId, updates) {
 
   await dbUnified.write('subscriptions', subscriptions);
 
-  // Update user isPro status if plan changed
+  // Update user isPro status and subscriptionTier if plan changed
   if (updates.plan) {
     await persistUserSubscriptionState(subscription.userId, {
+      subscriptionTier: updates.plan,
       isPro: !['free', 'basic'].includes(updates.plan),
     });
   }
@@ -234,12 +236,25 @@ async function cancelSubscription(subscriptionId, reason = null, immediately = f
 async function checkFeatureAccess(userId, feature) {
   const subscription = await getSubscriptionByUserId(userId);
 
-  if (!subscription) {
-    // No subscription, check free plan
-    return hasFeature('free', feature);
+  if (subscription) {
+    const { plan, status, currentPeriodEnd } = subscription;
+    const periodValid = !currentPeriodEnd || new Date(currentPeriodEnd) > new Date();
+    if ((status === 'active' || status === 'trialing') && periodValid) {
+      return hasFeature(plan, feature);
+    }
   }
 
-  return hasFeature(subscription.plan, feature);
+  // Fallback: check subscriptionTier on user record (set by Stripe webhook)
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === userId);
+  if (user?.subscriptionTier && user.subscriptionTier !== 'free') {
+    if (!user.proExpiresAt || new Date(user.proExpiresAt) > new Date()) {
+      return hasFeature(user.subscriptionTier, feature);
+    }
+  }
+
+  // No subscription, check free plan
+  return hasFeature('free', feature);
 }
 
 /**
@@ -353,10 +368,9 @@ async function getSubscriptionStats() {
     pastDue: subscriptions.filter(s => s.status === 'past_due').length,
     byPlan: {
       free: subscriptions.filter(s => s.plan === 'free').length,
-      basic: subscriptions.filter(
-        s => s.plan === 'basic' || (s.plan === 'pro' && s.status === 'trialing')
-      ).length,
-      pro: subscriptions.filter(s => s.plan === 'pro' && s.status !== 'trialing').length,
+      basic: subscriptions.filter(s => s.plan === 'basic').length,
+      pro: subscriptions.filter(s => s.plan === 'pro').length,
+      pro_plus: subscriptions.filter(s => s.plan === 'pro_plus').length,
       enterprise: subscriptions.filter(s => s.plan === 'enterprise').length,
     },
   };

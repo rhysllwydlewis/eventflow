@@ -3,6 +3,8 @@
  * Validates that advanced-search.js properly uses the CSRF handler
  */
 
+/* global window */
+
 // Mock fetch globally
 global.fetch = jest.fn();
 
@@ -33,7 +35,7 @@ describe('Advanced Search CSRF Integration', () => {
     global.document.cookie = '';
     global.window.__CSRF_TOKEN__ = null;
     global.window.csrfToken = null;
-    
+
     // Create new CSRF handler instance
     global.window.csrfHandler = new CSRFHandler();
   });
@@ -41,7 +43,7 @@ describe('Advanced Search CSRF Integration', () => {
   describe('apiFetch with CSRF Handler', () => {
     it('should use window.csrfHandler.fetch for API calls', async () => {
       global.window.csrfHandler.token = 'test-token';
-      
+
       global.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true, results: [] }),
@@ -64,8 +66,8 @@ describe('Advanced Search CSRF Integration', () => {
         const response = await window.csrfHandler.fetch(url, fetchOptions);
 
         if (!response.ok) {
-          const error = await response.json().catch(() => ({ 
-            error: `HTTP ${response.status}` 
+          const error = await response.json().catch(() => ({
+            error: `HTTP ${response.status}`,
           }));
           throw new Error(error.error || error.message || `Request failed: ${response.status}`);
         }
@@ -74,10 +76,10 @@ describe('Advanced Search CSRF Integration', () => {
       };
 
       const result = await apiFetch('/api/v2/search/advanced?q=test');
-      
+
       expect(result).toEqual({ success: true, results: [] });
       expect(global.fetch).toHaveBeenCalled();
-      
+
       // The CSRF handler adds the token to headers - verify fetch was called correctly
       const fetchCall = global.fetch.mock.calls[0];
       expect(fetchCall[0]).toBe('/api/v2/search/advanced?q=test');
@@ -87,14 +89,16 @@ describe('Advanced Search CSRF Integration', () => {
     it('should throw error if CSRF handler is not available', async () => {
       global.window.csrfHandler = null;
 
-      const apiFetch = async (url, options = {}) => {
+      const apiFetch = async (url, _options = {}) => {
         if (!window.csrfHandler) {
           throw new Error('CSRF handler not available');
         }
         // ... rest of function
       };
 
-      await expect(apiFetch('/api/v2/search/advanced?q=test')).rejects.toThrow('CSRF handler not available');
+      await expect(apiFetch('/api/v2/search/advanced?q=test')).rejects.toThrow(
+        'CSRF handler not available'
+      );
     });
 
     it('should handle 403 CSRF errors with retry', async () => {
@@ -130,8 +134,8 @@ describe('Advanced Search CSRF Integration', () => {
         const response = await window.csrfHandler.fetch(url, fetchOptions);
 
         if (!response.ok) {
-          const error = await response.json().catch(() => ({ 
-            error: `HTTP ${response.status}` 
+          const error = await response.json().catch(() => ({
+            error: `HTTP ${response.status}`,
           }));
           throw new Error(error.error || error.message || `Request failed: ${response.status}`);
         }
@@ -140,7 +144,7 @@ describe('Advanced Search CSRF Integration', () => {
       };
 
       const result = await apiFetch('/api/v2/search/advanced?q=test');
-      
+
       expect(result).toEqual({ success: true, results: ['result1'] });
       // Should have been called 3 times: initial 403, token refresh, retry
       expect(global.fetch).toHaveBeenCalledTimes(3);
@@ -165,21 +169,21 @@ describe('Advanced Search CSRF Integration', () => {
           try {
             await window.csrfHandler.ensureToken();
 
-            const apiFetch = async (url) => {
+            const apiFetch = async url => {
               const response = await window.csrfHandler.fetch(url, {
                 headers: { 'Content-Type': 'application/json' },
               });
-              
+
               if (!response.ok) {
                 throw new Error('Request failed');
               }
-              
+
               return await response.json();
             };
 
             const encodedQuery = encodeURIComponent(query);
             const data = await apiFetch(`/api/v2/search/advanced?q=${encodedQuery}`);
-            
+
             return data;
           } catch (error) {
             if (attempt < retries) {
@@ -192,7 +196,7 @@ describe('Advanced Search CSRF Integration', () => {
       };
 
       const result = await executeSearchWithRetry('test query');
-      
+
       expect(result).toEqual({ success: true, results: ['item1', 'item2'], totalCount: 2 });
       expect(global.fetch).toHaveBeenCalledTimes(3);
     });
@@ -204,7 +208,7 @@ describe('Advanced Search CSRF Integration', () => {
       const executeSearchWithRetry = async (query, retries = 3, delay = 10) => {
         for (let attempt = 1; attempt <= retries; attempt++) {
           try {
-            const apiFetch = async (url) => {
+            const apiFetch = async url => {
               const response = await window.csrfHandler.fetch(url);
               return await response.json();
             };

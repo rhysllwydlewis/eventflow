@@ -1,7 +1,7 @@
 /**
  * EventFlow Grouping - Phase 2
  * Message grouping and organization UI
- * 
+ *
  * Features:
  * - Group by sender, date, status, label, folder, priority
  * - Expand/collapse groups
@@ -96,7 +96,9 @@
           // Messages can have multiple labels, so add to each label group
           if (message.labels && message.labels.length > 0) {
             message.labels.forEach(label => {
-              if (!groups[label]) groups[label] = [];
+              if (!groups[label]) {
+                groups[label] = [];
+              }
               groups[label].push(message);
             });
             return; // Skip the default add below
@@ -127,7 +129,9 @@
   }
 
   function getDateGroup(dateString) {
-    if (!dateString) return 'Unknown Date';
+    if (!dateString) {
+      return 'Unknown Date';
+    }
 
     const date = new Date(dateString);
     const now = new Date();
@@ -137,26 +141,48 @@
     const diffTime = today - messageDate;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return 'This Week';
-    if (diffDays < 30) return 'This Month';
-    if (diffDays < 365) return 'This Year';
-    
+    if (diffDays === 0) {
+      return 'Today';
+    }
+    if (diffDays === 1) {
+      return 'Yesterday';
+    }
+    if (diffDays < 7) {
+      return 'This Week';
+    }
+    if (diffDays < 30) {
+      return 'This Month';
+    }
+    if (diffDays < 365) {
+      return 'This Year';
+    }
+
     return date.getFullYear().toString();
   }
 
   function getStatusGroup(message) {
-    if (message.isStarred) return 'Starred';
-    if (message.isArchived) return 'Archived';
-    if (message.isDraft) return 'Drafts';
-    if (!message.isRead) return 'Unread';
+    if (message.isStarred) {
+      return 'Starred';
+    }
+    if (message.isArchived) {
+      return 'Archived';
+    }
+    if (message.isDraft) {
+      return 'Drafts';
+    }
+    if (!message.isRead) {
+      return 'Unread';
+    }
     return 'Read';
   }
 
   function getPriorityGroup(message) {
-    if (message.priority === 'high' || message.isUrgent) return 'High Priority';
-    if (message.priority === 'low') return 'Low Priority';
+    if (message.priority === 'high' || message.isUrgent) {
+      return 'High Priority';
+    }
+    if (message.priority === 'low') {
+      return 'Low Priority';
+    }
     return 'Normal Priority';
   }
 
@@ -166,21 +192,29 @@
 
   function renderGroupingControls() {
     const container = document.getElementById('grouping-controls');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const html = `
       <div class="grouping-selector">
         <label for="grouping-method">Group by:</label>
         <select id="grouping-method" onchange="window.EF_Grouping.changeGroupingMethod(this.value)">
-          ${Object.entries(GROUPING_METHODS).map(([key, method]) => `
+          ${Object.entries(GROUPING_METHODS)
+            .map(
+              ([key, method]) => `
             <option value="${key}" ${state.groupingMethod === key ? 'selected' : ''}>
               ${method.icon} ${method.label}
             </option>
-          `).join('')}
+          `
+            )
+            .join('')}
         </select>
       </div>
       
-      ${state.groupingMethod !== 'none' ? `
+      ${
+        state.groupingMethod !== 'none'
+          ? `
         <div class="grouping-actions">
           <button onclick="window.EF_Grouping.expandAll()" class="grouping-action-btn" title="Expand all groups">
             ▼ Expand All
@@ -189,7 +223,9 @@
             ▶ Collapse All
           </button>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
     `;
 
     container.innerHTML = html;
@@ -226,12 +262,13 @@
     // Sort groups
     const sortedGroupKeys = sortGroupKeys(groupKeys, state.groupingMethod);
 
-    const html = sortedGroupKeys.map(groupKey => {
-      const groupMessages = state.groupedMessages[groupKey];
-      const isExpanded = state.expandedGroups.has(groupKey);
-      const unreadCount = groupMessages.filter(m => !m.isRead).length;
+    const html = sortedGroupKeys
+      .map(groupKey => {
+        const groupMessages = state.groupedMessages[groupKey];
+        const isExpanded = state.expandedGroups.has(groupKey);
+        const unreadCount = groupMessages.filter(m => !m.isRead).length;
 
-      return `
+        return `
         <div class="message-group" data-group-key="${escapeHtml(groupKey)}">
           <div class="message-group-header" onclick="window.EF_Grouping.toggleGroup('${escapeHtml(groupKey)}')">
             <button class="group-expand-btn">
@@ -261,14 +298,19 @@
               </button>
             </div>
           </div>
-          ${isExpanded ? `
+          ${
+            isExpanded
+              ? `
             <div class="message-group-content">
               ${groupMessages.map(message => renderMessage(message)).join('')}
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     container.innerHTML = html;
   }
@@ -306,11 +348,17 @@
       return keys.sort((a, b) => {
         const aIndex = dateOrder.indexOf(a);
         const bIndex = dateOrder.indexOf(b);
-        
-        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-        if (aIndex !== -1) return -1;
-        if (bIndex !== -1) return 1;
-        
+
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
+        if (aIndex !== -1) {
+          return -1;
+        }
+        if (bIndex !== -1) {
+          return 1;
+        }
+
         // Sort years descending
         return b.localeCompare(a);
       });
@@ -321,7 +369,9 @@
       return keys.sort((a, b) => {
         const aIndex = statusOrder.indexOf(a);
         const bIndex = statusOrder.indexOf(b);
-        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
         return a.localeCompare(b);
       });
     }
@@ -331,7 +381,9 @@
       return keys.sort((a, b) => {
         const aIndex = priorityOrder.indexOf(a);
         const bIndex = priorityOrder.indexOf(b);
-        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
         return a.localeCompare(b);
       });
     }
@@ -387,7 +439,7 @@
       }
 
       let contentDiv = groupElement.querySelector('.message-group-content');
-      
+
       if (isExpanded) {
         if (!contentDiv) {
           contentDiv = document.createElement('div');
@@ -434,7 +486,9 @@
 
   function markGroupAsRead(groupKey) {
     const groupMessages = state.groupedMessages[groupKey];
-    if (!groupMessages) return;
+    if (!groupMessages) {
+      return;
+    }
 
     const unreadMessages = groupMessages.filter(m => !m.isRead);
     if (unreadMessages.length === 0) {
@@ -456,23 +510,31 @@
 
   function showGroupActions(groupKey) {
     const groupMessages = state.groupedMessages[groupKey];
-    if (!groupMessages) return;
+    if (!groupMessages) {
+      return;
+    }
 
     // Remove existing menu
     const existing = document.querySelector('.group-context-menu');
-    if (existing) existing.remove();
+    if (existing) {
+      existing.remove();
+    }
 
     // Get the group header element to position menu
-    const groupHeader = document.querySelector(`[data-group-key="${groupKey}"] .message-group-header`);
-    if (!groupHeader) return;
+    const groupHeader = document.querySelector(
+      `[data-group-key="${groupKey}"] .message-group-header`
+    );
+    if (!groupHeader) {
+      return;
+    }
 
     const rect = groupHeader.getBoundingClientRect();
 
     const menu = document.createElement('div');
     menu.className = 'group-context-menu';
     menu.style.position = 'fixed';
-    menu.style.left = rect.right - 200 + 'px';
-    menu.style.top = rect.bottom + 'px';
+    menu.style.left = `${rect.right - 200}px`;
+    menu.style.top = `${rect.bottom}px`;
 
     menu.innerHTML = `
       <div class="context-menu-item" onclick="window.EF_Grouping.markGroupAsRead('${escapeHtml(groupKey)}')">
@@ -493,7 +555,7 @@
     document.body.appendChild(menu);
 
     // Close menu on click outside
-    const closeMenu = (e) => {
+    const closeMenu = e => {
       if (!menu.contains(e.target)) {
         menu.remove();
         document.removeEventListener('click', closeMenu);
@@ -504,10 +566,12 @@
 
   function starGroup(groupKey) {
     const groupMessages = state.groupedMessages[groupKey];
-    if (!groupMessages) return;
+    if (!groupMessages) {
+      return;
+    }
 
     const messageIds = groupMessages.map(m => m._id);
-    
+
     if (typeof window.starMessages === 'function') {
       window.starMessages(messageIds);
       showSuccess(`Starred ${messageIds.length} message(s)`);
@@ -516,10 +580,12 @@
 
   function archiveGroup(groupKey) {
     const groupMessages = state.groupedMessages[groupKey];
-    if (!groupMessages) return;
+    if (!groupMessages) {
+      return;
+    }
 
     const messageIds = groupMessages.map(m => m._id);
-    
+
     if (typeof window.archiveMessages === 'function') {
       window.archiveMessages(messageIds);
       showSuccess(`Archived ${messageIds.length} message(s)`);
@@ -528,14 +594,16 @@
 
   function deleteGroup(groupKey) {
     const groupMessages = state.groupedMessages[groupKey];
-    if (!groupMessages) return;
+    if (!groupMessages) {
+      return;
+    }
 
     if (!confirm(`Delete all ${groupMessages.length} messages in "${groupKey}"?`)) {
       return;
     }
 
     const messageIds = groupMessages.map(m => m._id);
-    
+
     if (typeof window.deleteMessages === 'function') {
       window.deleteMessages(messageIds);
       showSuccess(`Deleted ${messageIds.length} message(s)`);
@@ -553,18 +621,26 @@
   }
 
   function formatDate(dateString) {
-    if (!dateString) return '';
+    if (!dateString) {
+      return '';
+    }
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;
     const hours = Math.floor(diff / (1000 * 60 * 60));
 
-    if (hours < 1) return 'Just now';
-    if (hours < 24) return `${hours}h ago`;
-    
+    if (hours < 1) {
+      return 'Just now';
+    }
+    if (hours < 24) {
+      return `${hours}h ago`;
+    }
+
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    
+    if (days < 7) {
+      return `${days}d ago`;
+    }
+
     return date.toLocaleDateString();
   }
 
@@ -647,5 +723,4 @@
   } else {
     init();
   }
-
 })();

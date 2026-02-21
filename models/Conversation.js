@@ -5,11 +5,9 @@
 
 'use strict';
 
-const { ObjectId } = require('mongodb');
-
 /**
  * Conversation Schema Definition
- * 
+ *
  * @typedef {Object} Conversation
  * @property {ObjectId} _id - Unique conversation identifier
  * @property {string} type - Conversation type: 'direct', 'marketplace', 'enquiry', 'support'
@@ -25,7 +23,7 @@ const { ObjectId } = require('mongodb');
 
 /**
  * Participant Schema
- * 
+ *
  * @typedef {Object} Participant
  * @property {string} userId - User ID
  * @property {string} displayName - User's display name
@@ -41,7 +39,7 @@ const { ObjectId } = require('mongodb');
 
 /**
  * Message Schema Definition
- * 
+ *
  * @typedef {Object} ChatMessage
  * @property {ObjectId} _id - Unique message identifier
  * @property {ObjectId} conversationId - Reference to parent conversation
@@ -68,31 +66,28 @@ const { ObjectId } = require('mongodb');
  */
 async function createConversationIndexes(db) {
   const collection = db.collection('conversations');
-  
+
   // Index for finding user's conversations sorted by activity
   await collection.createIndex(
     { 'participants.userId': 1, updatedAt: -1 },
     { name: 'user_conversations_by_activity' }
   );
-  
+
   // Index for finding archived/active conversations per user
   await collection.createIndex(
     { 'participants.userId': 1, 'participants.isArchived': 1 },
     { name: 'user_conversations_by_archive_status' }
   );
-  
+
   // Index for finding conversations by context (package, listing, etc)
   await collection.createIndex(
     { 'context.referenceId': 1, 'context.type': 1 },
     { name: 'conversations_by_context' }
   );
-  
+
   // Index for filtering by status
-  await collection.createIndex(
-    { status: 1 },
-    { name: 'conversations_by_status' }
-  );
-  
+  await collection.createIndex({ status: 1 }, { name: 'conversations_by_status' });
+
   console.log('✅ Conversation indexes created successfully');
 }
 
@@ -102,37 +97,28 @@ async function createConversationIndexes(db) {
  */
 async function createMessageIndexes(db) {
   const collection = db.collection('chat_messages');
-  
+
   // Index for retrieving messages in a conversation (most common query)
   await collection.createIndex(
     { conversationId: 1, createdAt: -1 },
     { name: 'conversation_messages_by_date' }
   );
-  
+
   // Index for finding messages by sender
   await collection.createIndex(
     { conversationId: 1, senderId: 1 },
     { name: 'conversation_messages_by_sender' }
   );
-  
+
   // Index for user's sent messages
-  await collection.createIndex(
-    { senderId: 1 },
-    { name: 'messages_by_sender' }
-  );
-  
+  await collection.createIndex({ senderId: 1 }, { name: 'messages_by_sender' });
+
   // Text search index for message content
-  await collection.createIndex(
-    { content: 'text' },
-    { name: 'message_text_search' }
-  );
-  
+  await collection.createIndex({ content: 'text' }, { name: 'message_text_search' });
+
   // Index for filtering deleted messages
-  await collection.createIndex(
-    { isDeleted: 1 },
-    { name: 'messages_by_deleted_status' }
-  );
-  
+  await collection.createIndex({ isDeleted: 1 }, { name: 'messages_by_deleted_status' });
+
   console.log('✅ Chat message indexes created successfully');
 }
 
@@ -158,24 +144,31 @@ async function initializeIndexes(db) {
  * @throws {Error} If validation fails
  */
 function validateConversation(conversation) {
-  if (!conversation.type || !['direct', 'marketplace', 'enquiry', 'support'].includes(conversation.type)) {
+  if (
+    !conversation.type ||
+    !['direct', 'marketplace', 'enquiry', 'support'].includes(conversation.type)
+  ) {
     throw new Error('Invalid conversation type');
   }
-  
-  if (!conversation.participants || !Array.isArray(conversation.participants) || conversation.participants.length === 0) {
+
+  if (
+    !conversation.participants ||
+    !Array.isArray(conversation.participants) ||
+    conversation.participants.length === 0
+  ) {
     throw new Error('Conversation must have at least one participant');
   }
-  
+
   for (const participant of conversation.participants) {
     if (!participant.userId || !participant.displayName || !participant.role) {
       throw new Error('Participant missing required fields');
     }
   }
-  
+
   if (!conversation.status || !['active', 'closed'].includes(conversation.status)) {
     throw new Error('Invalid conversation status');
   }
-  
+
   return true;
 }
 
@@ -189,19 +182,19 @@ function validateMessage(message) {
   if (!message.conversationId) {
     throw new Error('Message must have conversationId');
   }
-  
+
   if (!message.senderId || !message.senderName) {
     throw new Error('Message must have sender information');
   }
-  
+
   if (!message.content && (!message.attachments || message.attachments.length === 0)) {
     throw new Error('Message must have content or attachments');
   }
-  
+
   if (!message.type || !['text', 'image', 'file', 'system'].includes(message.type)) {
     throw new Error('Invalid message type');
   }
-  
+
   return true;
 }
 

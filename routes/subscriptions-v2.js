@@ -77,9 +77,111 @@ router.get('/plans', async (req, res) => {
 });
 
 /**
+ * POST /api/v2/subscriptions/create-checkout-session
+ * Create a Stripe Checkout Session for a given planId.
+ * Used by pricing.html to redirect authenticated users to Stripe.
+ */
+router.post(
+  '/create-checkout-session',
+  authRequired,
+  csrfProtection,
+  writeLimiter,
+  ensureStripeEnabled,
+  async (req, res) => {
+    try {
+      const { planId, returnUrl } = req.body;
+
+      if (!planId) {
+        return res.status(400).json({ error: 'planId is required' });
+      }
+
+      // Map planId to Stripe price (use env vars when available).
+      // 'pro' and 'pro_monthly' are intentional aliases for the same monthly Professional plan.
+      // 'pro_plus' and 'pro_plus_monthly' are intentional aliases for the same monthly Pro Plus plan.
+      const PLAN_PRICE_MAP = {
+        pro: process.env.STRIPE_PRO_PRICE_ID || '', // monthly Professional (alias)
+        pro_monthly: process.env.STRIPE_PRO_PRICE_ID || '', // monthly Professional
+        pro_plus: process.env.STRIPE_PRO_PLUS_PRICE_ID || '',
+        pro_plus_monthly: process.env.STRIPE_PRO_PLUS_PRICE_ID || '',
+        pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || '',
+        pro_plus_yearly: process.env.STRIPE_PRO_PLUS_YEARLY_PRICE_ID || '',
+        // starter/free — no Stripe payment needed
+        starter: null,
+        free: null,
+      };
+
+      if (!(planId in PLAN_PRICE_MAP)) {
+        return res.status(400).json({ error: `Unknown plan: ${planId}` });
+      }
+
+      const priceId = PLAN_PRICE_MAP[planId];
+
+      // Free/starter plan — nothing to charge
+      if (!priceId) {
+        const dest = returnUrl || `${process.env.BASE_URL || ''}/dashboard-supplier.html`;
+        return res.json({ success: true, url: dest });
+      }
+
+      // Get or create Stripe customer
+      const customer = await paymentService.getOrCreateStripeCustomer(req.user);
+
+      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+      const successUrl =
+        returnUrl ||
+        `${baseUrl}/dashboard-supplier.html?billing=success&session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${baseUrl}/pricing.html?checkout=cancelled`;
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          userId: req.user.id,
+          planId,
+        },
+      });
+
+      res.json({ success: true, url: session.url, sessionId: session.id });
+    } catch (error) {
+      console.error('Error creating checkout session (v2):', error);
+      const statusCode = error.type === 'StripeInvalidRequestError' ? 400 : 500;
+      res.status(statusCode).json({
+        error: 'Failed to create checkout session',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
  * @swagger
- * /api/v2/subscriptions:
- *   post:
+ * /api/v2/subscriptions/me:
+ *   get:
+ *     summary: Get current user's subscription
+ *     description: Returns the authenticated user's active subscription, or null with plan 'free' when none exists.
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Subscription retrieved (subscription is null when user has no paid plan)
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/me', authRequired, async (req, res) => {
+  try {
+    const subscription = await subscriptionService.getSubscriptionByUserId(req.user.id);
+    const plan = subscription ? subscription.plan : 'free';
+    res.json({ success: true, subscription, plan });
+  } catch (error) {
+    console.error('Error fetching current user subscription:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription', message: error.message });
+  }
+});
+
+/**
  *     summary: Subscribe to a plan
  *     tags: [Subscriptions]
  *     security:

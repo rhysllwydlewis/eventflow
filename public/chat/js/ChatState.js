@@ -158,7 +158,8 @@ class ChatState {
       const query = this.state.searchQuery.toLowerCase();
       conversations = conversations.filter(c => {
         const lastMessage = c.lastMessage?.content?.toLowerCase() || '';
-        const participants = c.participants?.map(p => p.displayName?.toLowerCase() || '').join(' ') || '';
+        const participants =
+          c.participants?.map(p => p.displayName?.toLowerCase() || '').join(' ') || '';
         return lastMessage.includes(query) || participants.includes(query);
       });
     }
@@ -205,7 +206,10 @@ class ChatState {
     const existing = this.state.messages.get(conversationId) || [];
     this.state.messages.set(conversationId, [...messages, ...existing]);
     if (conversationId === this.state.activeConversationId) {
-      this.emit('messages:updated', { conversationId, messages: this.state.messages.get(conversationId) });
+      this.emit('messages:updated', {
+        conversationId,
+        messages: this.state.messages.get(conversationId),
+      });
     }
   }
 
@@ -270,7 +274,9 @@ class ChatState {
    * Get active conversation messages
    */
   getActiveMessages() {
-    if (!this.state.activeConversationId) return [];
+    if (!this.state.activeConversationId) {
+      return [];
+    }
     return this.state.messages.get(this.state.activeConversationId) || [];
   }
 
@@ -328,7 +334,9 @@ class ChatState {
    */
   getTypingUsers(conversationId) {
     const users = this.state.typingUsers.get(conversationId);
-    return users ? Array.from(users.entries()).map(([userId, userName]) => ({ userId, userName })) : [];
+    return users
+      ? Array.from(users.entries()).map(([userId, userName]) => ({ userId, userName }))
+      : [];
   }
 
   /**

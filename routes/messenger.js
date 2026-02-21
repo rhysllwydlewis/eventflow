@@ -176,6 +176,10 @@ function sanitizeInput(text) {
     .substring(0, 10000); // Max 10k chars
 }
 
+function isValidObjectId(id) {
+  return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
+}
+
 /**
  * Store attachment file
  */
@@ -357,6 +361,9 @@ router.get('/conversations', applyAuthRequired, ensureServices, async (req, res)
 router.get('/conversations/:id', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+    }
     const userId = req.user.id;
 
     const conversation = await (await getMessengerService()).getConversation(id, userId);
@@ -388,8 +395,11 @@ router.patch(
   async (req, res) => {
     try {
       const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
-      const { isPinned, isMuted, isArchived } = req.body;
+      const { isPinned, isMuted, isArchived, markUnread } = req.body;
 
       const updates = {};
       if (isPinned !== undefined) {
@@ -400,6 +410,9 @@ router.patch(
       }
       if (isArchived !== undefined) {
         updates.isArchived = isArchived;
+      }
+      if (markUnread !== undefined) {
+        updates.markUnread = markUnread;
       }
 
       const conversation = await (
@@ -434,6 +447,9 @@ router.delete(
   async (req, res) => {
     try {
       const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
 
       await (await getMessengerService()).deleteConversation(id, userId);
@@ -464,6 +480,7 @@ router.post(
   applyAuthRequired,
   applyCsrfProtection,
   applyWriteLimiter,
+  applyUploadLimiter,
   ensureServices,
   (req, res, next) => {
     // Apply multer middleware
@@ -497,10 +514,11 @@ router.post(
   async (req, res) => {
     try {
       const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
       const { message: content, replyToId } = req.body;
-
-      // Validate content or attachments
       if (!content && (!req.files || req.files.length === 0)) {
         return res.status(400).json({
           error: 'Message must have content or attachments',
@@ -591,12 +609,21 @@ router.post(
 router.get('/conversations/:id/messages', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+    }
     const userId = req.user.id;
     const { before, limit = 50 } = req.query;
+    const clampedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+
+    // Validate optional cursor (before) parameter
+    if (before && !isValidObjectId(before)) {
+      return res.status(400).json({ error: 'Invalid cursor', code: 'INVALID_CURSOR' });
+    }
 
     const result = await (
       await getMessengerService()
-    ).getMessages(conversationId, userId, before, parseInt(limit, 10));
+    ).getMessages(conversationId, userId, before, clampedLimit);
 
     res.json({
       success: true,
@@ -625,6 +652,9 @@ router.patch(
   async (req, res) => {
     try {
       const { id: messageId } = req.params;
+      if (!isValidObjectId(messageId)) {
+        return res.status(400).json({ error: 'Invalid message ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
       const { content } = req.body;
 
@@ -676,6 +706,9 @@ router.delete(
   async (req, res) => {
     try {
       const { id: messageId } = req.params;
+      if (!isValidObjectId(messageId)) {
+        return res.status(400).json({ error: 'Invalid message ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
 
       // Get message first to retrieve conversationId for WebSocket
@@ -739,6 +772,9 @@ router.post(
   async (req, res) => {
     try {
       const { id: conversationId } = req.params;
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
 
       const result = await (await getMessengerService()).markAsRead(conversationId, userId);
@@ -775,6 +811,9 @@ router.post(
   async (req, res) => {
     try {
       const { id: messageId } = req.params;
+      if (!isValidObjectId(messageId)) {
+        return res.status(400).json({ error: 'Invalid message ID', code: 'INVALID_ID' });
+      }
       const userId = req.user.id;
       const { emoji } = req.body;
 
@@ -785,7 +824,12 @@ router.post(
         });
       }
 
-      const message = await (await getMessengerService()).toggleReaction(messageId, userId, emoji);
+      // Validate emoji - limit to reasonable length (emoji can be 1-4 chars; up to 8 for compound)
+      const emojiStr = String(emoji).substring(0, 8);
+
+      const message = await (
+        await getMessengerService()
+      ).toggleReaction(messageId, userId, emojiStr);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToRoom) {
@@ -826,6 +870,11 @@ router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
         error: 'Search query must be at least 2 characters',
         code: 'INVALID_QUERY',
       });
+    }
+
+    // Validate optional conversationId filter
+    if (conversationId && !isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
     }
 
     const messages = await (
@@ -903,6 +952,9 @@ router.get('/unread-count', applyAuthRequired, ensureServices, async (req, res) 
 router.post('/conversations/:id/typing', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+    }
     const userId = req.user.id;
     const { isTyping } = req.body;
 

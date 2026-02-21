@@ -23,7 +23,9 @@ function readModelTypes() {
     'utf8'
   );
   const match = src.match(/const CONVERSATION_V4_TYPES\s*=\s*(\[[^\]]+\])/);
-  if (!match) throw new Error('CONVERSATION_V4_TYPES not found in ConversationV4.js');
+  if (!match) {
+    throw new Error('CONVERSATION_V4_TYPES not found in ConversationV4.js');
+  }
   // Replace single quotes with double quotes so JSON.parse works
   return JSON.parse(match[1].replace(/'/g, '"'));
 }

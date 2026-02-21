@@ -62,24 +62,30 @@ class MessageBubbleV4 {
    * @returns {string}
    */
   static renderReactions(reactions, messageId) {
-    if (!reactions || !reactions.length) return '';
+    if (!reactions || !reactions.length) {
+      return '';
+    }
 
     // Group by emoji
     const grouped = {};
     reactions.forEach(r => {
-      if (!grouped[r.emoji]) grouped[r.emoji] = { emoji: r.emoji, count: 0, userIds: [] };
+      if (!grouped[r.emoji]) {
+        grouped[r.emoji] = { emoji: r.emoji, count: 0, userIds: [] };
+      }
       grouped[r.emoji].count++;
       grouped[r.emoji].userIds.push(r.userId);
     });
 
-    const items = Object.values(grouped).map(g => {
-      return `<button class="messenger-v4__reaction"
+    const items = Object.values(grouped)
+      .map(g => {
+        return `<button class="messenger-v4__reaction"
                       aria-label="React with ${MessageBubbleV4.escape(g.emoji)}, ${g.count} reaction${g.count !== 1 ? 's' : ''}"
                       data-emoji="${MessageBubbleV4.escape(g.emoji)}"
                       data-message-id="${MessageBubbleV4.escape(messageId)}">
                 ${MessageBubbleV4.escape(g.emoji)} <span class="messenger-v4__reaction-count">${g.count}</span>
               </button>`;
-    }).join('');
+      })
+      .join('');
 
     return `<div class="messenger-v4__reactions-bar" aria-label="Reactions">${items}</div>`;
   }
@@ -90,7 +96,9 @@ class MessageBubbleV4 {
    * @returns {string}
    */
   static renderAttachment(attachment) {
-    if (!attachment || !attachment.url) return '';
+    if (!attachment || !attachment.url) {
+      return '';
+    }
 
     // Backend stores mimeType (not type) and filename (not name)
     const mimeType = attachment.mimeType || attachment.type || '';
@@ -104,7 +112,7 @@ class MessageBubbleV4 {
                alt="${MessageBubbleV4.escape(fileName || 'Image attachment')}"
                loading="lazy"
                class="messenger-v4__attachment-image"
-               onerror="this.onerror=null;this.classList.add('messenger-v4__attachment-error');if(this.parentNode){var l=document.createElement('span');l.className='messenger-v4__attachment-error-label';l.textContent='Image unavailable';this.parentNode.appendChild(l);}" />
+               onerror="this.onerror=null;this.classList.add('messenger-v4__attachment-error');if(this.parentNode){var w=document.createElement('span');w.className='messenger-v4__attachment-error-label';w.title='Image unavailable';var l=document.createElement('span');l.textContent='Image unavailable';var h=document.createElement('span');h.className='messenger-v4__attachment-error-hint';h.textContent='The file may have been removed';w.appendChild(l);w.appendChild(h);this.parentNode.appendChild(w);}" />
         </div>`;
     }
 
@@ -131,10 +139,14 @@ class MessageBubbleV4 {
    * @returns {string}
    */
   static renderReplyTo(replyTo) {
-    if (!replyTo) return '';
+    if (!replyTo) {
+      return '';
+    }
     const preview = replyTo.content
       ? MessageBubbleV4.escape(replyTo.content.substring(0, 80))
-      : replyTo.attachments?.length ? '📎 Attachment' : '';
+      : replyTo.attachments?.length
+        ? '📎 Attachment'
+        : '';
 
     return `
       <div class="messenger-v4__reply-preview" aria-label="Reply to ${MessageBubbleV4.escape(replyTo.senderName || 'message')}">
@@ -153,8 +165,15 @@ class MessageBubbleV4 {
     let label = 'Sent';
     let cls = 'messenger-v4__read-receipt';
 
-    if (status === 'delivered') { icon = '✓✓'; label = 'Delivered'; }
-    if (status === 'read') { icon = '✓✓'; label = 'Read'; cls += ' messenger-v4__read-receipt--read'; }
+    if (status === 'delivered') {
+      icon = '✓✓';
+      label = 'Delivered';
+    }
+    if (status === 'read') {
+      icon = '✓✓';
+      label = 'Read';
+      cls += ' messenger-v4__read-receipt--read';
+    }
 
     return `<span class="${cls}" aria-label="${label}" title="${label}">${icon}</span>`;
   }
@@ -188,21 +207,31 @@ class MessageBubbleV4 {
   // ---------------------------------------------------------------------------
 
   static _formatTime(dateStr) {
-    if (!dateStr) return '';
+    if (!dateStr) {
+      return '';
+    }
     const d = new Date(dateStr);
-    if (isNaN(d)) return '';
+    if (isNaN(d)) {
+      return '';
+    }
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   /** Returns true if message was created within the 15-minute edit window. */
   static _withinEditWindow(createdAt) {
-    if (!createdAt) return false;
+    if (!createdAt) {
+      return false;
+    }
     return Date.now() - new Date(createdAt).getTime() < 15 * 60 * 1000;
   }
 
   static _formatFileSize(bytes) {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
@@ -212,7 +241,9 @@ class MessageBubbleV4 {
    * @returns {string}
    */
   static escape(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) {
+      return '';
+    }
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -229,10 +260,14 @@ class MessageBubbleV4 {
    * @returns {string}
    */
   static safeUrl(url) {
-    if (!url || typeof url !== 'string') return '#';
+    if (!url || typeof url !== 'string') {
+      return '#';
+    }
     const trimmed = url.trim();
     // Block dangerous schemes (case-insensitive, handles encoding tricks)
-    if (/^(javascript|data|vbscript):/i.test(trimmed)) return '#';
+    if (/^(javascript|data|vbscript):/i.test(trimmed)) {
+      return '#';
+    }
     return MessageBubbleV4.escape(trimmed);
   }
 }

@@ -130,11 +130,23 @@ class ConversationListV4 {
   /** Show empty-state illustration and message. */
   renderEmpty() {
     const tabMessages = {
-      pinned: { icon: '📌', title: 'No pinned conversations', sub: 'Pin a conversation to find it quickly.' },
+      pinned: {
+        icon: '📌',
+        title: 'No pinned conversations',
+        sub: 'Pin a conversation to find it quickly.',
+      },
       unread: { icon: '✅', title: 'All caught up!', sub: 'You have no unread conversations.' },
-      archived: { icon: '🗂️', title: 'No archived conversations', sub: 'Archived conversations will appear here.' },
+      archived: {
+        icon: '🗂️',
+        title: 'No archived conversations',
+        sub: 'Archived conversations will appear here.',
+      },
     };
-    const cfg = tabMessages[this.activeTab] || { icon: '💬', title: 'No conversations yet', sub: 'Start a new conversation to get going.' };
+    const cfg = tabMessages[this.activeTab] || {
+      icon: '💬',
+      title: 'No conversations yet',
+      sub: 'Start a new conversation to get going.',
+    };
 
     // Build using DOM methods so values are always escaped even if source changes
     const wrapper = document.createElement('div');
@@ -293,12 +305,21 @@ class ConversationListV4 {
     // Remove any existing context menus
     document.querySelectorAll('.messenger-v4__conv-context-menu').forEach(m => m.remove());
 
+    // Determine whether the conversation is currently unread for the toggle label
+    const currentUser = this.state.currentUser;
+    const uid = currentUser?.id || currentUser?._id;
+    const conv = (this.state.conversations || []).find(c => c._id === id);
+    const me = conv && uid ? conv.participants?.find(p => p.userId === uid) : null;
+    const isUnread = me ? (me.unreadCount || 0) > 0 : false;
+    const markLabel = isUnread ? '✉️ Mark as Read' : '✉️ Mark as Unread';
+    const markAction = isUnread ? 'mark-read' : 'mark-unread';
+
     const menu = document.createElement('div');
     menu.className = 'messenger-v4__conv-context-menu';
     menu.setAttribute('role', 'menu');
     menu.setAttribute('aria-label', 'Conversation options');
     menu.innerHTML = `
-      <button class="messenger-v4__conv-context-menu-item" data-action="mark-unread" data-id="${this.escape(id)}" role="menuitem">✉️ Mark as Unread</button>
+      <button class="messenger-v4__conv-context-menu-item" data-action="${this.escape(markAction)}" data-id="${this.escape(id)}" role="menuitem">${this.escape(markLabel)}</button>
       <button class="messenger-v4__conv-context-menu-item" data-action="pin" data-id="${this.escape(id)}" role="menuitem">📌 Pin</button>
       <button class="messenger-v4__conv-context-menu-item" data-action="archive" data-id="${this.escape(id)}" role="menuitem">🗂️ Archive</button>
       <button class="messenger-v4__conv-context-menu-item messenger-v4__conv-context-menu-item--danger" data-action="delete" data-id="${this.escape(id)}" role="menuitem">🗑️ Delete</button>
@@ -321,7 +342,9 @@ class ConversationListV4 {
 
     // Setup close-on-outside-mousedown BEFORE wiring buttons so references are available
     let menuClicked = false;
-    menu.addEventListener('mousedown', () => { menuClicked = true; });
+    menu.addEventListener('mousedown', () => {
+      menuClicked = true;
+    });
 
     const removeListeners = () => {
       document.removeEventListener('mousedown', closeMenu);
@@ -353,16 +376,29 @@ class ConversationListV4 {
         removeListeners();
         switch (action) {
           case 'mark-unread':
-            window.dispatchEvent(new CustomEvent('messenger:mark-unread', { detail: { id: convId } }));
+            window.dispatchEvent(
+              new CustomEvent('messenger:mark-unread', { detail: { id: convId } })
+            );
+            break;
+          case 'mark-read':
+            window.dispatchEvent(
+              new CustomEvent('messenger:mark-read', { detail: { id: convId } })
+            );
             break;
           case 'pin':
-            window.dispatchEvent(new CustomEvent('messenger:pin-conversation', { detail: { id: convId } }));
+            window.dispatchEvent(
+              new CustomEvent('messenger:pin-conversation', { detail: { id: convId } })
+            );
             break;
           case 'archive':
-            window.dispatchEvent(new CustomEvent('messenger:archive-conversation', { detail: { id: convId } }));
+            window.dispatchEvent(
+              new CustomEvent('messenger:archive-conversation', { detail: { id: convId } })
+            );
             break;
           case 'delete':
-            window.dispatchEvent(new CustomEvent('messenger:delete-conversation', { detail: { id: convId } }));
+            window.dispatchEvent(
+              new CustomEvent('messenger:delete-conversation', { detail: { id: convId } })
+            );
             break;
         }
       });

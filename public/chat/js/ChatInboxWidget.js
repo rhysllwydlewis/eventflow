@@ -23,6 +23,7 @@ class ChatInboxWidget {
     this.conversations = [];
     this.unreadCount = 0;
     this.refreshInterval = null;
+    this.currentUserId = null;
 
     this.init();
   }
@@ -32,13 +33,51 @@ class ChatInboxWidget {
    */
   async init() {
     this.render();
+    await this._loadCurrentUser();
     await this.loadConversations();
     await this.loadUnreadCount();
-    
+
     // Refresh every 30 seconds
     this.refreshInterval = setInterval(() => {
       this.refresh();
     }, 30000);
+  }
+
+  /**
+   * Load current user from cookie or API to identify the "other" participant
+   */
+  async _loadCurrentUser() {
+    try {
+      const userCookie = this._getCookie('user');
+      if (userCookie) {
+        const parsed = JSON.parse(decodeURIComponent(userCookie));
+        this.currentUserId = parsed.id || parsed._id || null;
+        return;
+      }
+      const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        this.currentUserId = (data.user || data).id || (data.user || data)._id || null;
+      }
+    } catch (_) {
+      // Non-critical — fall back to first participant
+    }
+  }
+
+  /**
+   * Read a cookie value by name
+   * @param {string} name
+   * @returns {string|null}
+   */
+  _getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [key, ...rest] = cookie.trim().split('=');
+      if (key === name) {
+        return rest.join('=') || null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -50,7 +89,7 @@ class ChatInboxWidget {
         unreadOnly: this.options.showUnreadOnly,
         limit: this.options.maxConversations,
       });
-      
+
       this.conversations = result.conversations || [];
       this.renderConversations();
     } catch (error) {
@@ -76,10 +115,7 @@ class ChatInboxWidget {
    * Refresh data
    */
   async refresh() {
-    await Promise.all([
-      this.loadConversations(),
-      this.loadUnreadCount(),
-    ]);
+    await Promise.all([this.loadConversations(), this.loadUnreadCount()]);
   }
 
   /**
@@ -110,7 +146,9 @@ class ChatInboxWidget {
    */
   renderConversations() {
     const content = this.container.querySelector('#widgetContent');
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
     if (this.conversations.length === 0) {
       content.innerHTML = `
@@ -121,17 +159,19 @@ class ChatInboxWidget {
       return;
     }
 
-    content.innerHTML = this.conversations.map(conv => {
-      const participant = this.getOtherParticipant(conv);
-      const lastMessage = conv.lastMessage || {};
-      const unreadCount = this.getUnreadCount(conv);
-      
-      return `
+    content.innerHTML = this.conversations
+      .map(conv => {
+        const participant = this.getOtherParticipant(conv);
+        const lastMessage = conv.lastMessage || {};
+        const unreadCount = this.getUnreadCount(conv);
+
+        return `
         <a href="/chat/?conversation=${conv._id}" class="widget-conversation ${unreadCount > 0 ? 'unread' : ''}">
           <div class="widget-avatar">
-            ${participant.avatar 
-              ? `<img src="${this.escapeHtml(participant.avatar)}" alt="${this.escapeHtml(participant.displayName)}">` 
-              : `<span>${this.getInitials(participant.displayName)}</span>`
+            ${
+              participant.avatar
+                ? `<img src="${this.escapeHtml(participant.avatar)}" alt="${this.escapeHtml(participant.displayName)}">`
+                : `<span>${this.getInitials(participant.displayName)}</span>`
             }
           </div>
           <div class="widget-info">
@@ -144,7 +184,8 @@ class ChatInboxWidget {
           </div>
         </a>
       `;
-    }).join('');
+      })
+      .join('');
   }
 
   /**
@@ -152,7 +193,9 @@ class ChatInboxWidget {
    */
   renderError() {
     const content = this.container.querySelector('#widgetContent');
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
     content.innerHTML = `
       <div class="widget-error">
@@ -167,7 +210,9 @@ class ChatInboxWidget {
    */
   renderUnreadBadge() {
     const badge = this.container.querySelector('#widgetUnreadBadge');
-    if (!badge) return;
+    if (!badge) {
+      return;
+    }
 
     if (this.unreadCount > 0) {
       badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
@@ -181,29 +226,41 @@ class ChatInboxWidget {
    * Get other participant (not current user)
    */
   getOtherParticipant(conversation) {
-    // TODO: Get current user ID from cookie/session
-    // For now, return first participant
-    return conversation.participants && conversation.participants.length > 0
-      ? conversation.participants[0]
-      : { displayName: 'Unknown', avatar: null };
+    if (!conversation.participants || conversation.participants.length === 0) {
+      return { displayName: 'Unknown', avatar: null };
+    }
+    if (this.currentUserId) {
+      const other = conversation.participants.find(p => p.userId !== this.currentUserId);
+      if (other) {
+        return other;
+      }
+    }
+    // Fall back to first participant when current user is unknown
+    return conversation.participants[0];
   }
 
   /**
    * Get unread count for current user
    */
   getUnreadCount(conversation) {
-    // TODO: Get current user ID
-    const participant = conversation.participants && conversation.participants.length > 0
-      ? conversation.participants[0]
-      : null;
-    return participant ? participant.unreadCount || 0 : 0;
+    if (!conversation.participants || conversation.participants.length === 0) {
+      return 0;
+    }
+    if (this.currentUserId) {
+      const me = conversation.participants.find(p => p.userId === this.currentUserId);
+      return me ? me.unreadCount || 0 : 0;
+    }
+    // Fall back to first participant
+    return conversation.participants[0].unreadCount || 0;
   }
 
   /**
    * Get initials from name
    */
   getInitials(name) {
-    if (!name) return '?';
+    if (!name) {
+      return '?';
+    }
     return name
       .split(' ')
       .map(word => word[0])
@@ -216,8 +273,10 @@ class ChatInboxWidget {
    * Format timestamp
    */
   formatTime(timestamp) {
-    if (!timestamp) return '';
-    
+    if (!timestamp) {
+      return '';
+    }
+
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
@@ -226,11 +285,19 @@ class ChatInboxWidget {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m`;
-    if (hours < 24) return `${hours}h`;
-    if (days < 7) return `${days}d`;
-    
+    if (minutes < 1) {
+      return 'Just now';
+    }
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+    if (hours < 24) {
+      return `${hours}h`;
+    }
+    if (days < 7) {
+      return `${days}d`;
+    }
+
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
@@ -238,7 +305,9 @@ class ChatInboxWidget {
    * Escape HTML to prevent XSS
    */
   escapeHtml(text) {
-    if (!text) return '';
+    if (!text) {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;

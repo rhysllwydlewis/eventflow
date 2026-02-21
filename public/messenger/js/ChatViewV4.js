@@ -116,7 +116,7 @@ class ChatViewV4 {
       }
     });
     // Escape key closes lightbox (WCAG 2.1 modal pattern)
-    this._onKeyDown = (e) => {
+    this._onKeyDown = e => {
       if (e.key === 'Escape' && this._lightboxOpen) {
         e.preventDefault();
         e.stopPropagation();
@@ -149,9 +149,17 @@ class ChatViewV4 {
     });
     this.container.querySelector('#v4MarkUnreadBtn').addEventListener('click', () => {
       if (this.conversationId) {
-        window.dispatchEvent(
-          new CustomEvent('messenger:mark-unread', { detail: { id: this.conversationId } })
-        );
+        const btn = this.container.querySelector('#v4MarkUnreadBtn');
+        const isCurrentlyUnread = btn.dataset.unread === 'true';
+        if (isCurrentlyUnread) {
+          window.dispatchEvent(
+            new CustomEvent('messenger:mark-read', { detail: { id: this.conversationId } })
+          );
+        } else {
+          window.dispatchEvent(
+            new CustomEvent('messenger:mark-unread', { detail: { id: this.conversationId } })
+          );
+        }
       }
     });
     this.container.querySelector('#v4BackBtn').addEventListener('click', () => {
@@ -347,7 +355,9 @@ class ChatViewV4 {
    * @param {string} name - The name of the typing user
    */
   showTyping(name) {
-    if (!name || typeof name !== 'string') return;
+    if (!name || typeof name !== 'string') {
+      return;
+    }
     this.hideTyping(); // remove any existing
     const el = document.createElement('div');
     el.id = 'v4TypingBubble';
@@ -426,9 +436,34 @@ class ChatViewV4 {
     const dot = this.container.querySelector('#v4HeaderPresenceDot');
     dot.classList.toggle('messenger-v4__presence-dot--online', isOnline);
 
+    // Set mark-read/unread toggle button based on conversation state
+    const me = conv.participants?.find(p => p.userId === uid);
+    const isUnread = me ? (me.unreadCount || 0) > 0 : false;
+    this._updateMarkUnreadBtn(isUnread);
+
     // Show back button on mobile
     if (window.innerWidth <= 768) {
       this.container.querySelector('#v4BackBtn').style.display = '';
+    }
+  }
+
+  /**
+   * Update the mark-read/unread toggle button label and state.
+   * @param {boolean} isUnread - Whether the conversation is currently unread
+   */
+  _updateMarkUnreadBtn(isUnread) {
+    const btn = this.container.querySelector('#v4MarkUnreadBtn');
+    if (!btn) {
+      return;
+    }
+    if (isUnread) {
+      btn.setAttribute('aria-label', 'Mark as read');
+      btn.setAttribute('title', 'Mark as read');
+      btn.dataset.unread = 'true';
+    } else {
+      btn.setAttribute('aria-label', 'Mark as unread');
+      btn.setAttribute('title', 'Mark as unread');
+      btn.dataset.unread = 'false';
     }
   }
 

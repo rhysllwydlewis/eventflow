@@ -1071,9 +1071,16 @@
   display: inline-block;
   padding: 8px 12px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--ef-text-muted, #888);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
   font-size: 0.8125rem;
+}
+
+.messenger-v4__attachment-error-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 /* File attachment card */

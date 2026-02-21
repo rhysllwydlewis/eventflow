@@ -17,7 +17,7 @@ class ConversationView {
     this.scrollContainer = null;
     this.isLoadingMore = false;
     this.hasMoreMessages = true;
-    
+
     this.init();
   }
 
@@ -100,10 +100,12 @@ class ConversationView {
    * Handle scroll for infinite loading
    */
   handleScroll() {
-    if (this.isLoadingMore || !this.hasMoreMessages) return;
+    if (this.isLoadingMore || !this.hasMoreMessages) {
+      return;
+    }
 
-    const { scrollTop, scrollHeight, clientHeight } = this.scrollContainer;
-    
+    const { scrollTop } = this.scrollContainer;
+
     // Load more when scrolled to top (inverse scroll for chat)
     if (scrollTop < 100) {
       this.loadMoreMessages();
@@ -114,19 +116,21 @@ class ConversationView {
    * Load more messages (pagination)
    */
   async loadMoreMessages() {
-    if (!this.state.activeConversationId || this.isLoadingMore) return;
+    if (!this.state.activeConversationId || this.isLoadingMore) {
+      return;
+    }
 
     this.isLoadingMore = true;
     const conversationId = this.state.activeConversationId;
     const messages = this.state.getMessages(conversationId);
-    
+
     // Get cursor from oldest message
     const oldestMessage = messages[0];
     const cursor = oldestMessage ? oldestMessage._id : null;
 
     try {
       const response = await this.api.getMessages(conversationId, cursor);
-      
+
       if (response.messages && response.messages.length > 0) {
         // Prepend older messages to state (not append - they're older!)
         this.state.prependMessages(conversationId, response.messages);
@@ -183,7 +187,8 @@ class ConversationView {
       messageEl.classList.add('messenger-v4__message--deleted');
       const contentEl = messageEl.querySelector('.messenger-v4__message-content');
       if (contentEl) {
-        contentEl.innerHTML = '<em class="messenger-v4__message-deleted-text">This message was deleted</em>';
+        contentEl.innerHTML =
+          '<em class="messenger-v4__message-deleted-text">This message was deleted</em>';
       }
     }
   }
@@ -193,14 +198,14 @@ class ConversationView {
    */
   handleTypingChanged(data) {
     const { conversationId, typingUsers } = data;
-    
+
     if (conversationId !== this.state.activeConversationId) {
       return;
     }
 
     // Filter out current user
     const otherTypingUsers = typingUsers.filter(userId => userId !== this.currentUser?._id);
-    
+
     if (otherTypingUsers.length > 0) {
       const conversation = this.state.getConversation(conversationId);
       const names = otherTypingUsers.map(userId => {
@@ -208,9 +213,8 @@ class ConversationView {
         return participant?.displayName || 'Someone';
       });
 
-      const typingText = names.length === 1 
-        ? `${names[0]} is typing...`
-        : `${names.join(', ')} are typing...`;
+      const typingText =
+        names.length === 1 ? `${names[0]} is typing...` : `${names.join(', ')} are typing...`;
 
       this.typingIndicator.querySelector('.messenger-v4__typing-text').textContent = typingText;
       this.typingIndicator.style.display = 'flex';
@@ -237,7 +241,7 @@ class ConversationView {
     try {
       // Get conversation details
       const conversation = this.state.getConversation(conversationId);
-      
+
       // Show context banner if conversation has context
       if (conversation?.context) {
         this.renderContextBanner(conversation.context);
@@ -247,7 +251,7 @@ class ConversationView {
 
       // Load messages
       const messages = this.state.getMessages(conversationId);
-      
+
       if (messages && messages.length > 0) {
         this.renderMessages();
         this.emptyState.style.display = 'none';
@@ -277,7 +281,9 @@ class ConversationView {
    * Render context banner
    */
   renderContextBanner(context) {
-    if (!context || !context.type) return;
+    if (!context || !context.type) {
+      return;
+    }
 
     const iconMap = {
       package: '📦',
@@ -300,7 +306,9 @@ class ConversationView {
    * Render all messages
    */
   renderMessages() {
-    if (!this.state.activeConversationId) return;
+    if (!this.state.activeConversationId) {
+      return;
+    }
 
     const messages = this.state.getMessages(this.state.activeConversationId);
     if (!messages || messages.length === 0) {
@@ -310,10 +318,10 @@ class ConversationView {
     }
 
     this.emptyState.style.display = 'none';
-    
+
     // Group messages by date
     const groupedMessages = this.groupMessagesByDate(messages);
-    
+
     let html = '';
     for (const [date, msgs] of Object.entries(groupedMessages)) {
       html += `<div class="messenger-v4__date-divider">${date}</div>`;
@@ -331,11 +339,11 @@ class ConversationView {
    */
   groupMessagesByDate(messages) {
     const groups = {};
-    
+
     messages.forEach(message => {
       const date = new Date(message.createdAt);
       const dateKey = this.formatDate(date);
-      
+
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -369,7 +377,10 @@ class ConversationView {
     const isSent = message.senderId === this.currentUser?._id;
     const messageClass = isSent ? 'messenger-v4__message--sent' : 'messenger-v4__message--received';
     const deletedClass = message.isDeleted ? 'messenger-v4__message--deleted' : '';
-    const time = new Date(message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const time = new Date(message.createdAt).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
     return `
       <div class="messenger-v4__message ${messageClass} ${deletedClass}" data-message-id="${message._id}">
@@ -387,7 +398,9 @@ class ConversationView {
             ${this.renderReadReceipts(message.readBy)}
           </div>
         </div>
-        ${isSent ? `<div class="messenger-v4__message-actions">
+        ${
+          isSent
+            ? `<div class="messenger-v4__message-actions">
           <button class="messenger-v4__message-action" data-action="react" title="React">
             <span>😊</span>
           </button>
@@ -397,7 +410,9 @@ class ConversationView {
           <button class="messenger-v4__message-action" data-action="delete" title="Delete">
             <span>🗑️</span>
           </button>
-        </div>` : ''}
+        </div>`
+            : ''
+        }
       </div>
     `;
   }
@@ -411,10 +426,8 @@ class ConversationView {
     // Try to get avatar from conversation participants
     const conversation = this.state.getActiveConversation();
     if (conversation && conversation.participants) {
-      const participant = conversation.participants.find(
-        p => (p.userId || p._id) === userId
-      );
-      
+      const participant = conversation.participants.find(p => (p.userId || p._id) === userId);
+
       if (participant) {
         // Return avatar URL if available
         if (participant.avatar) {
@@ -425,7 +438,7 @@ class ConversationView {
         return this.getInitials(participant);
       }
     }
-    
+
     // Fallback to first character of userId
     return userId?.charAt(0)?.toUpperCase() || '?';
   }
@@ -437,8 +450,10 @@ class ConversationView {
    */
   getInitials(participant) {
     const displayName = participant.displayName || participant.name || '';
-    if (!displayName) return '?';
-    
+    if (!displayName) {
+      return '?';
+    }
+
     const parts = displayName.trim().split(/\s+/);
     if (parts.length >= 2) {
       return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
@@ -450,23 +465,27 @@ class ConversationView {
    * Render attachments
    */
   renderAttachments(attachments) {
-    if (!attachments || attachments.length === 0) return '';
+    if (!attachments || attachments.length === 0) {
+      return '';
+    }
 
     return `
       <div class="messenger-v4__message-attachments">
-        ${attachments.map(att => {
-          if (att.type?.startsWith('image/')) {
-            return `<img src="${att.url}" alt="${att.name}" class="messenger-v4__message-image" loading="lazy"/>`;
-          } else {
-            return `
+        ${attachments
+          .map(att => {
+            if (att.type?.startsWith('image/')) {
+              return `<img src="${att.url}" alt="${att.name}" class="messenger-v4__message-image" loading="lazy"/>`;
+            } else {
+              return `
               <a href="${att.url}" target="_blank" class="messenger-v4__message-file">
                 <span class="messenger-v4__message-file-icon">📄</span>
                 <span class="messenger-v4__message-file-name">${this.escapeHtml(att.name)}</span>
                 <span class="messenger-v4__message-file-size">${this.formatFileSize(att.size)}</span>
               </a>
             `;
-          }
-        }).join('')}
+            }
+          })
+          .join('')}
       </div>
     `;
   }
@@ -475,7 +494,9 @@ class ConversationView {
    * Render reactions
    */
   renderReactions(reactions, messageId) {
-    if (!reactions || reactions.length === 0) return '';
+    if (!reactions || reactions.length === 0) {
+      return '';
+    }
 
     // Group reactions by emoji
     const reactionGroups = {};
@@ -488,12 +509,16 @@ class ConversationView {
 
     return `
       <div class="messenger-v4__message-reactions">
-        ${Object.entries(reactionGroups).map(([emoji, userIds]) => `
+        ${Object.entries(reactionGroups)
+          .map(
+            ([emoji, userIds]) => `
           <button class="messenger-v4__reaction" data-emoji="${emoji}" data-message-id="${messageId}" title="${userIds.length} reaction(s)">
             <span class="messenger-v4__reaction-emoji">${emoji}</span>
             <span class="messenger-v4__reaction-count">${userIds.length}</span>
           </button>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
   }
@@ -502,7 +527,9 @@ class ConversationView {
    * Render read receipts
    */
   renderReadReceipts(readBy) {
-    if (!readBy || readBy.length === 0) return '';
+    if (!readBy || readBy.length === 0) {
+      return '';
+    }
 
     const count = readBy.length;
     return `<span class="messenger-v4__message-read-receipt" title="${count} read">✓✓</span>`;
@@ -561,7 +588,7 @@ class ConversationView {
   async handleReact(event) {
     const messageEl = event.currentTarget.closest('.messenger-v4__message');
     const messageId = messageEl.dataset.messageId;
-    
+
     // Use custom emoji picker modal
     const emoji = await window.MessengerModals.showEmojiPicker();
     if (emoji) {
@@ -580,8 +607,10 @@ class ConversationView {
     const messageEl = event.currentTarget.closest('.messenger-v4__message');
     const messageId = messageEl.dataset.messageId;
     const message = this.state.getMessage(messageId);
-    
-    if (!message || message.isDeleted) return;
+
+    if (!message || message.isDeleted) {
+      return;
+    }
 
     // Use custom edit modal
     const newContent = await window.MessengerModals.showEditPrompt(message.content);
@@ -601,7 +630,7 @@ class ConversationView {
   async handleDelete(event) {
     const messageEl = event.currentTarget.closest('.messenger-v4__message');
     const messageId = messageEl.dataset.messageId;
-    
+
     // Use custom confirmation modal
     const confirmed = await window.MessengerModals.showConfirm(
       'Delete Message',
@@ -609,7 +638,7 @@ class ConversationView {
       'Delete',
       'Cancel'
     );
-    
+
     if (confirmed) {
       try {
         await this.api.deleteMessage(messageId);
@@ -626,7 +655,7 @@ class ConversationView {
     const btn = event.currentTarget;
     const emoji = btn.dataset.emoji;
     const messageId = btn.dataset.messageId;
-    
+
     try {
       await this.api.toggleReaction(messageId, emoji);
     } catch (error) {
@@ -638,7 +667,9 @@ class ConversationView {
    * Scroll to bottom
    */
   scrollToBottom(smooth = false) {
-    if (!this.scrollContainer) return;
+    if (!this.scrollContainer) {
+      return;
+    }
 
     if (smooth) {
       this.scrollContainer.scrollTo({
@@ -654,9 +685,13 @@ class ConversationView {
    * Format file size
    */
   formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   /**
@@ -685,7 +720,7 @@ class ConversationView {
     this.state.off('messageDeleted', this.handleMessageDeleted);
     this.state.off('typingChanged', this.handleTypingChanged);
     this.state.off('conversationChanged', this.handleConversationChanged);
-    
+
     if (this.scrollContainer) {
       this.scrollContainer.removeEventListener('scroll', this.handleScroll);
     }

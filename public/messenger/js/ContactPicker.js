@@ -13,15 +13,15 @@ class ContactPicker {
     this.contacts = [];
     this.filteredContacts = [];
     this.selectedContact = null;
-    
+
     this.searchInput = null;
     this.contactList = null;
     this.closeButton = null;
     this.overlay = null;
-    
+
     this.searchDebounceTimer = null;
     this.isLoading = false;
-    
+
     this.init();
   }
 
@@ -63,12 +63,12 @@ class ContactPicker {
     }
 
     // Search input
-    this.searchInput.addEventListener('input', (e) => {
+    this.searchInput.addEventListener('input', e => {
       this.handleSearch(e.target.value);
     });
 
     // Keyboard shortcuts
-    this.modal.addEventListener('keydown', (e) => {
+    this.modal.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
         this.close();
       }
@@ -106,14 +106,16 @@ class ContactPicker {
    * Search contacts via API
    */
   async searchContacts(query) {
-    if (this.isLoading) return;
+    if (this.isLoading) {
+      return;
+    }
 
     this.isLoading = true;
     this.showLoading();
 
     try {
       const response = await this.api.searchContacts(query);
-      
+
       if (response && response.contacts) {
         this.filteredContacts = response.contacts;
         this.renderContacts();
@@ -130,14 +132,16 @@ class ContactPicker {
    * Load initial contacts
    */
   async loadContacts() {
-    if (this.isLoading) return;
+    if (this.isLoading) {
+      return;
+    }
 
     this.isLoading = true;
     this.showLoading();
 
     try {
       const response = await this.api.searchContacts('');
-      
+
       if (response && response.contacts) {
         this.contacts = response.contacts;
         this.filteredContacts = response.contacts;
@@ -155,7 +159,9 @@ class ContactPicker {
    * Render contacts list
    */
   renderContacts() {
-    if (!this.contactList) return;
+    if (!this.contactList) {
+      return;
+    }
 
     if (this.filteredContacts.length === 0) {
       this.contactList.innerHTML = `
@@ -216,7 +222,7 @@ class ContactPicker {
     if (contact.avatar) {
       return `<img src="${this.escapeHtml(contact.avatar)}" alt="${this.escapeHtml(contact.displayName || 'User')}" class="messenger-avatar__image">`;
     }
-    
+
     const initial = (contact.displayName || contact.name || '?').charAt(0).toUpperCase();
     return `<span class="messenger-avatar__text">${initial}</span>`;
   }
@@ -244,7 +250,7 @@ class ContactPicker {
     try {
       // Check if conversation already exists
       const existingConversation = this.findExistingConversation(userId);
-      
+
       if (existingConversation) {
         // Open existing conversation
         this.state.setActiveConversation(existingConversation._id);
@@ -265,11 +271,13 @@ class ContactPicker {
         this.state.addConversation(response.conversation);
         this.state.setActiveConversation(response.conversation._id);
         this.close();
-        
+
         // Dispatch event for UI update
-        window.dispatchEvent(new CustomEvent('messenger:conversation-created', {
-          detail: { conversation: response.conversation },
-        }));
+        window.dispatchEvent(
+          new CustomEvent('messenger:conversation-created', {
+            detail: { conversation: response.conversation },
+          })
+        );
       }
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -283,7 +291,9 @@ class ContactPicker {
   findExistingConversation(userId) {
     const conversations = this.state.getConversations();
     return conversations.find(conv => {
-      if (conv.type !== 'direct') return false;
+      if (conv.type !== 'direct') {
+        return false;
+      }
       return conv.participants.some(p => p.userId === userId);
     });
   }
@@ -292,8 +302,10 @@ class ContactPicker {
    * Show loading state
    */
   showLoading() {
-    if (!this.contactList) return;
-    
+    if (!this.contactList) {
+      return;
+    }
+
     this.contactList.innerHTML = `
       <div class="messenger-loading">
         <div class="messenger-spinner"></div>
@@ -306,8 +318,10 @@ class ContactPicker {
    * Show error message
    */
   showError(message) {
-    if (!this.contactList) return;
-    
+    if (!this.contactList) {
+      return;
+    }
+
     this.contactList.innerHTML = `
       <div class="messenger-error-state">
         <p>${this.escapeHtml(message)}</p>
@@ -319,18 +333,20 @@ class ContactPicker {
    * Open the modal
    */
   async open() {
-    if (!this.modal) return;
+    if (!this.modal) {
+      return;
+    }
 
     // Reset state
     this.selectedContact = null;
     this.searchInput.value = '';
-    
+
     // Show modal
     this.modal.style.display = 'flex';
-    
+
     // Load contacts
     await this.loadContacts();
-    
+
     // Focus search input
     setTimeout(() => {
       this.searchInput.focus();
@@ -344,7 +360,9 @@ class ContactPicker {
    * Close the modal
    */
   close() {
-    if (!this.modal) return;
+    if (!this.modal) {
+      return;
+    }
 
     this.modal.style.display = 'none';
     this.selectedContact = null;

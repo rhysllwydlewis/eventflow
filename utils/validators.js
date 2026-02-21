@@ -125,6 +125,7 @@ function isValidFolderLabelName(name, maxLength = 100) {
     typeof name === 'string' &&
     name.trim().length > 0 &&
     name.length <= maxLength &&
+    // eslint-disable-next-line no-control-regex
     !/[<>:"/\\|?*\x00-\x1f]/.test(name) // No invalid file system chars
   );
 }

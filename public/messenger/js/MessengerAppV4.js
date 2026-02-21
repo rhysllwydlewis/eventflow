@@ -109,7 +109,10 @@ class MessengerAppV4 {
         currentUserRole: this.state.currentUser?.role || null,
       });
     } else {
-      console.warn('[MessengerAppV4] ContactPickerV4 not initialized: container or class missing.', { pickerContainer, ContactPickerV4: !!window.ContactPickerV4 });
+      console.warn(
+        '[MessengerAppV4] ContactPickerV4 not initialized: container or class missing.',
+        { pickerContainer, ContactPickerV4: !!window.ContactPickerV4 }
+      );
     }
 
     // Context banner
@@ -241,14 +244,18 @@ class MessengerAppV4 {
     });
     window.addEventListener('messenger:archive-conversation', async e => {
       const { id } = e.detail || {};
-      if (!id) return;
+      if (!id) {
+        return;
+      }
       await this._toggleArchive(id);
       // If the user just archived the currently-open conversation, navigate back to the list
       if (id === this._activeConversationId) {
         this._activeConversationId = null;
         this.state.setActiveConversation(null);
         this.chatView?.reset();
-        if (this.composer) this.composer.options.conversationId = null;
+        if (this.composer) {
+          this.composer.options.conversationId = null;
+        }
         this.socket?.leaveConversation(id);
         this.contextBanner?.hide();
         this.handleMobilePanel('sidebar');
@@ -303,14 +310,76 @@ class MessengerAppV4 {
       }
       try {
         await this.api.markAsUnread(id);
+        // Optimistic: update local participant state so button updates immediately
+        const uid = this._getCurrentUserId();
+        if (uid) {
+          const conv = this.state.conversations.find(c => c._id === id);
+          if (conv) {
+            const me = conv.participants?.find(p => p.userId === uid);
+            if (me) {
+              me.unreadCount = (me.unreadCount || 0) + 1;
+              this.state.updateConversation(conv);
+            }
+          }
+        }
+        if (this.chatView && this._activeConversationId === id) {
+          this.chatView._updateMarkUnreadBtn(true);
+        }
         await this._loadConversations();
       } catch (err) {
         console.error('[MessengerAppV4] Mark as unread failed:', err);
       }
     });
 
+    // Mark conversation as read (toggle counterpart to mark-unread)
+    window.addEventListener('messenger:mark-read', async e => {
+      const { id } = e.detail || {};
+      if (!id) {
+        return;
+      }
+      try {
+        await this.api.markAsRead(id);
+        // Optimistic: clear local unread count
+        const uid = this._getCurrentUserId();
+        if (uid) {
+          const conv = this.state.conversations.find(c => c._id === id);
+          if (conv) {
+            const me = conv.participants?.find(p => p.userId === uid);
+            if (me) {
+              me.unreadCount = 0;
+              this.state.updateConversation(conv);
+              const totalUnread = this.state.conversations.reduce((sum, c) => {
+                const p = c.participants?.find(q => q.userId === uid);
+                return sum + (p?.unreadCount || 0);
+              }, 0);
+              this.state.setUnreadCount(totalUnread);
+              window.dispatchEvent(
+                new CustomEvent('messenger:unread-count', { detail: { count: totalUnread } })
+              );
+            }
+          }
+        }
+        if (this.chatView && this._activeConversationId === id) {
+          this.chatView._updateMarkUnreadBtn(false);
+        }
+        await this._loadConversations();
+      } catch (err) {
+        console.error('[MessengerAppV4] Mark as read failed:', err);
+      }
+    });
+
     // Open contact picker
-    window.addEventListener('messenger:open-contact-picker', () => this.contactPicker?.open());
+    window.addEventListener('messenger:open-contact-picker', () => {
+      if (this.contactPicker) {
+        this.contactPicker.open();
+      } else {
+        console.warn('[MessengerAppV4] Contact picker is not available.');
+        // Show a user-facing toast if the global helper is available
+        if (typeof window.showToast === 'function') {
+          window.showToast('Unable to open contact picker. Please refresh and try again.', 'error');
+        }
+      }
+    });
 
     // Deep-link: open contact picker pre-targeted at a specific userId (from MessengerTrigger ?recipientId=)
     window.addEventListener('messenger:open-contact-by-id', async e => {
@@ -442,13 +511,17 @@ class MessengerAppV4 {
     // Another session deleted this conversation — remove from local state and reset chat if active
     window.addEventListener('messenger:conversation-deleted', e => {
       const { conversationId } = e.detail || {};
-      if (!conversationId) return;
+      if (!conversationId) {
+        return;
+      }
       this.state.setConversations(this.state.conversations.filter(c => c._id !== conversationId));
       if (this._activeConversationId === conversationId) {
         this._activeConversationId = null;
         this.state.setActiveConversation(null);
         this.chatView?.reset();
-        if (this.composer) this.composer.options.conversationId = null;
+        if (this.composer) {
+          this.composer.options.conversationId = null;
+        }
         this.socket?.leaveConversation(conversationId);
         this.contextBanner?.hide();
         this.handleMobilePanel('sidebar');
@@ -591,6 +664,10 @@ class MessengerAppV4 {
               window.dispatchEvent(
                 new CustomEvent('messenger:unread-count', { detail: { count: totalUnread } })
               );
+              // Update the toggle button to reflect the now-read state
+              if (this.chatView && this._activeConversationId === id) {
+                this.chatView._updateMarkUnreadBtn(false);
+              }
             }
           }
         }
@@ -689,11 +766,13 @@ class MessengerAppV4 {
 
     if (conversationId) {
       this.selectConversation(conversationId);
-    } else if ((openNew === 'true' || openNew === '1') || contactId) {
+    } else if (openNew === 'true' || openNew === '1' || contactId) {
       if (contactId) {
         // Dispatch event so _setupEventBus can create/find the conversation
         window.dispatchEvent(
-          new CustomEvent('messenger:open-contact-by-id', { detail: { userId: contactId, context, prefill } })
+          new CustomEvent('messenger:open-contact-by-id', {
+            detail: { userId: contactId, context, prefill },
+          })
         );
       } else {
         this.contactPicker?.open();
@@ -806,7 +885,9 @@ class MessengerAppV4 {
   async _togglePin(conversationId) {
     try {
       const uid = this._getCurrentUserId();
-      if (!uid) return;
+      if (!uid) {
+        return;
+      }
       const conv = this.state.conversations.find(c => c._id === conversationId);
       const me = conv?.participants?.find(p => p.userId === uid);
       const newPinned = !(me?.isPinned || false);
@@ -826,7 +907,9 @@ class MessengerAppV4 {
   async _toggleArchive(conversationId) {
     try {
       const uid = this._getCurrentUserId();
-      if (!uid) return;
+      if (!uid) {
+        return;
+      }
       const conv = this.state.conversations.find(c => c._id === conversationId);
       const me = conv?.participants?.find(p => p.userId === uid);
       const newArchived = !(me?.isArchived || false);
@@ -887,7 +970,12 @@ class MessengerAppV4 {
     try {
       const confirmed =
         window.MessengerModals && typeof window.MessengerModals.showConfirm === 'function'
-          ? await window.MessengerModals.showConfirm('Delete Message', 'Are you sure you want to delete this message?', 'Delete', 'Cancel')
+          ? await window.MessengerModals.showConfirm(
+              'Delete Message',
+              'Are you sure you want to delete this message?',
+              'Delete',
+              'Cancel'
+            )
           : // eslint-disable-next-line no-alert
             window.confirm('Delete this message?');
 

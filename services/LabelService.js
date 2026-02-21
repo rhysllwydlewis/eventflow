@@ -14,8 +14,6 @@ const {
   createDefaultLabels,
 } = require('../models/MessageLabel');
 const { COLLECTIONS: MESSAGE_COLLECTIONS } = require('../models/Message');
-const { withTransaction, validateObjectId } = require('../utils/mongoHelpers');
-const { isValidFolderLabelName, isValidHexColor } = require('../utils/validators');
 
 class LabelService {
   constructor(db) {
@@ -604,7 +602,7 @@ class LabelService {
    */
   async createAutoRule(userId, labelId, rule) {
     try {
-      const label = await this.getLabel(userId, labelId);
+      await this.getLabel(userId, labelId);
 
       const newRule = {
         _id: new ObjectId(),
@@ -615,7 +613,7 @@ class LabelService {
         appliedCount: 0,
       };
 
-      const result = await this.labelsCollection.findOneAndUpdate(
+      await this.labelsCollection.findOneAndUpdate(
         { _id: new ObjectId(labelId), userId },
         {
           $push: { autoRules: newRule },
@@ -646,12 +644,18 @@ class LabelService {
       await this.getLabel(userId, labelId);
 
       const updateFields = {};
-      if (updates.name !== undefined) updateFields['autoRules.$.name'] = updates.name;
-      if (updates.condition !== undefined)
+      if (updates.name !== undefined) {
+        updateFields['autoRules.$.name'] = updates.name;
+      }
+      if (updates.condition !== undefined) {
         updateFields['autoRules.$.condition'] = updates.condition;
-      if (updates.confidence !== undefined)
+      }
+      if (updates.confidence !== undefined) {
         updateFields['autoRules.$.confidence'] = updates.confidence;
-      if (updates.isActive !== undefined) updateFields['autoRules.$.isActive'] = updates.isActive;
+      }
+      if (updates.isActive !== undefined) {
+        updateFields['autoRules.$.isActive'] = updates.isActive;
+      }
 
       const result = await this.labelsCollection.findOneAndUpdate(
         {

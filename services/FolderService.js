@@ -36,7 +36,9 @@ class FolderService {
     try {
       // Validate name
       if (!isValidFolderLabelName(name)) {
-        throw new Error('Invalid folder name. Must be 1-100 characters and contain no special characters.');
+        throw new Error(
+          'Invalid folder name. Must be 1-100 characters and contain no special characters.'
+        );
       }
 
       // Validate input
@@ -728,7 +730,7 @@ class FolderService {
    */
   async createRule(userId, folderId, rule) {
     try {
-      const folder = await this.getFolder(userId, folderId);
+      await this.getFolder(userId, folderId);
 
       const newRule = {
         _id: new ObjectId(),
@@ -739,7 +741,7 @@ class FolderService {
         appliedCount: 0,
       };
 
-      const result = await this.foldersCollection.findOneAndUpdate(
+      await this.foldersCollection.findOneAndUpdate(
         { _id: new ObjectId(folderId), userId },
         {
           $push: { rules: newRule },
@@ -770,10 +772,18 @@ class FolderService {
       await this.getFolder(userId, folderId);
 
       const updateFields = {};
-      if (updates.name !== undefined) updateFields['rules.$.name'] = updates.name;
-      if (updates.condition !== undefined) updateFields['rules.$.condition'] = updates.condition;
-      if (updates.action !== undefined) updateFields['rules.$.action'] = updates.action;
-      if (updates.isActive !== undefined) updateFields['rules.$.isActive'] = updates.isActive;
+      if (updates.name !== undefined) {
+        updateFields['rules.$.name'] = updates.name;
+      }
+      if (updates.condition !== undefined) {
+        updateFields['rules.$.condition'] = updates.condition;
+      }
+      if (updates.action !== undefined) {
+        updateFields['rules.$.action'] = updates.action;
+      }
+      if (updates.isActive !== undefined) {
+        updateFields['rules.$.isActive'] = updates.isActive;
+      }
 
       const result = await this.foldersCollection.findOneAndUpdate(
         {

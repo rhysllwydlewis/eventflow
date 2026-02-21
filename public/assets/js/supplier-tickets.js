@@ -4,7 +4,7 @@
  */
 
 import ticketingSystem from './ticketing.js?v=18.3.0';
-import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
+import { showEmptyState } from './utils/skeleton-loader.js';
 import {
   getCurrentUser,
   escapeHtml,

@@ -21,7 +21,9 @@ class MessengerAPI {
     for (const cookie of cookies) {
       const trimmed = cookie.trim();
       const eqIndex = trimmed.indexOf('=');
-      if (eqIndex === -1) continue;
+      if (eqIndex === -1) {
+        continue;
+      }
       const name = trimmed.substring(0, eqIndex);
       if (name === 'csrf' || name === 'csrfToken') {
         try {
@@ -34,11 +36,17 @@ class MessengerAPI {
 
     // Fallback to meta tag
     const metaTag = document.querySelector('meta[name="csrf-token"]');
-    if (metaTag && metaTag.content) return metaTag.content;
+    if (metaTag && metaTag.content) {
+      return metaTag.content;
+    }
 
     // Fallback to globals set by csrf-handler.js
-    if (window.__CSRF_TOKEN__) return window.__CSRF_TOKEN__;
-    if (window.csrfToken) return window.csrfToken;
+    if (window.__CSRF_TOKEN__) {
+      return window.__CSRF_TOKEN__;
+    }
+    if (window.csrfToken) {
+      return window.csrfToken;
+    }
 
     return '';
   }
@@ -74,7 +82,7 @@ class MessengerAPI {
         const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
         if (isReadOperation) {
           // Wait briefly before retry (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 500));
+          await new Promise(resolve => setTimeout(resolve, 2 ** retryCount * 500));
           return this.request(endpoint, options, retryCount + 1);
         }
       }
@@ -90,7 +98,7 @@ class MessengerAPI {
       if (error.name === 'TypeError' && retryCount < 2) {
         const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
         if (isReadOperation) {
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 500));
+          await new Promise(resolve => setTimeout(resolve, 2 ** retryCount * 500));
           return this.request(endpoint, options, retryCount + 1);
         }
       }

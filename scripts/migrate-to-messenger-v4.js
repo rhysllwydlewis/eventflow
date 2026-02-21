@@ -5,7 +5,7 @@
 
 'use strict';
 
-const { MongoClient, ObjectId } = require('mongodb');
+const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 const logger = console;
@@ -189,7 +189,7 @@ class MessengerV4Migrator {
         }
 
         // Build participants array
-        const participants = users.map((user) => ({
+        const participants = users.map(user => ({
           userId: user._id,
           displayName: user.displayName || user.businessName || user.email || 'Unknown',
           avatar: user.avatar || null,
@@ -248,7 +248,7 @@ class MessengerV4Migrator {
         // Add last message if available
         if (threadMessages.length > 0) {
           const lastMsg = threadMessages[threadMessages.length - 1];
-          const lastSender = users.find((u) => u._id === lastMsg.senderId);
+          const lastSender = users.find(u => u._id === lastMsg.senderId);
 
           conversation.lastMessage = {
             content: (lastMsg.content || '').substring(0, 100),
@@ -269,7 +269,7 @@ class MessengerV4Migrator {
         // Migrate messages
         for (const msg of threadMessages) {
           try {
-            const sender = users.find((u) => u._id === msg.senderId);
+            const sender = users.find(u => u._id === msg.senderId);
 
             const migratedMessage = {
               conversationId,
@@ -329,7 +329,7 @@ class MessengerV4Migrator {
 
     // Check if v3 collections exist
     const collections = await this.db.listCollections().toArray();
-    const hasV3Conversations = collections.some((c) => c.name === 'conversations');
+    const hasV3Conversations = collections.some(c => c.name === 'conversations');
 
     if (!hasV3Conversations) {
       logger.info('No v3 conversations collection found, skipping');

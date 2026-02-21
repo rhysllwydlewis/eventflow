@@ -10,13 +10,13 @@ class MessengerModals {
    * Show emoji picker modal
    */
   static async showEmojiPicker() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const modal = document.createElement('div');
       modal.className = 'messenger-modal messenger-modal--emoji';
       modal.setAttribute('role', 'dialog');
       modal.setAttribute('aria-modal', 'true');
       modal.setAttribute('aria-labelledby', 'emojiPickerTitle');
-      
+
       const emojis = [
         { emoji: '👍', label: 'Thumbs up' },
         { emoji: '❤️', label: 'Heart' },
@@ -46,11 +46,15 @@ class MessengerModals {
           </header>
           <div class="messenger-modal__body">
             <div class="messenger-emoji-picker">
-              ${emojis.map(({ emoji, label }) => `
+              ${emojis
+                .map(
+                  ({ emoji, label }) => `
                 <button class="messenger-emoji-picker__item" data-emoji="${emoji}" title="${label}" aria-label="${label}">
                   ${emoji}
                 </button>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
           </div>
         </div>
@@ -61,7 +65,9 @@ class MessengerModals {
       // Focus first emoji
       requestAnimationFrame(() => {
         const firstEmoji = modal.querySelector('.messenger-emoji-picker__item');
-        if (firstEmoji) firstEmoji.focus();
+        if (firstEmoji) {
+          firstEmoji.focus();
+        }
       });
 
       // Handle emoji selection
@@ -76,7 +82,7 @@ class MessengerModals {
       // Handle close
       const closeBtn = modal.querySelector('.messenger-modal__close');
       const overlay = modal.querySelector('.messenger-modal__overlay');
-      
+
       const close = () => {
         cleanup();
         resolve(null);
@@ -86,7 +92,7 @@ class MessengerModals {
       overlay.addEventListener('click', close);
 
       // Handle keyboard
-      modal.addEventListener('keydown', (e) => {
+      modal.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
           close();
         }
@@ -108,7 +114,7 @@ class MessengerModals {
    * Show edit message modal
    */
   static async showEditPrompt(currentContent) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const modal = document.createElement('div');
       modal.className = 'messenger-modal messenger-modal--edit';
       modal.setAttribute('role', 'dialog');
@@ -185,7 +191,7 @@ class MessengerModals {
       overlay.addEventListener('click', cancel);
 
       // Handle keyboard
-      textarea.addEventListener('keydown', (e) => {
+      textarea.addEventListener('keydown', e => {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
           save();
         } else if (e.key === 'Escape') {
@@ -209,7 +215,7 @@ class MessengerModals {
    * Show confirmation dialog
    */
   static async showConfirm(title, message, confirmText = 'Confirm', cancelText = 'Cancel') {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const modal = document.createElement('div');
       modal.className = 'messenger-modal messenger-modal--confirm';
       modal.setAttribute('role', 'alertdialog');
@@ -273,7 +279,7 @@ class MessengerModals {
       overlay.addEventListener('click', cancel);
 
       // Handle keyboard: Enter activates focused button; Escape cancels
-      modal.addEventListener('keydown', (e) => {
+      modal.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
           // Only confirm when focus is on the confirm button or somewhere outside the cancel button
           if (document.activeElement !== cancelBtn) {

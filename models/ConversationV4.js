@@ -5,8 +5,6 @@
 
 'use strict';
 
-const { ObjectId } = require('mongodb');
-
 /** Canonical list of valid conversation types — used by the route validator and service. */
 const CONVERSATION_V4_TYPES = ['direct', 'marketplace', 'enquiry', 'supplier_network', 'support'];
 
@@ -197,8 +195,12 @@ function validateConversation(data) {
 
   if (data.participants) {
     data.participants.forEach((p, i) => {
-      if (!p.userId) errors.push(`Participant ${i}: userId is required`);
-      if (!p.displayName) errors.push(`Participant ${i}: displayName is required`);
+      if (!p.userId) {
+        errors.push(`Participant ${i}: userId is required`);
+      }
+      if (!p.displayName) {
+        errors.push(`Participant ${i}: displayName is required`);
+      }
       if (!p.role || !['customer', 'supplier', 'admin'].includes(p.role)) {
         errors.push(`Participant ${i}: invalid role`);
       }
@@ -232,7 +234,10 @@ function validateMessage(data) {
 
   // Content is required unless the message has attachments (attachment-only messages are valid)
   const hasAttachments = Array.isArray(data.attachments) && data.attachments.length > 0;
-  if (!hasAttachments && (!data.content || typeof data.content !== 'string' || data.content.trim().length === 0)) {
+  if (
+    !hasAttachments &&
+    (!data.content || typeof data.content !== 'string' || data.content.trim().length === 0)
+  ) {
     errors.push('content is required and must be a non-empty string');
   }
 

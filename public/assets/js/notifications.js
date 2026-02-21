@@ -209,7 +209,8 @@
     const messageNotifications = state.notifications.filter(
       n =>
         n.type === 'message' &&
-        (n.metadata?.conversationId === conversationId || n.metadata?.threadId === conversationId) &&
+        (n.metadata?.conversationId === conversationId ||
+          n.metadata?.threadId === conversationId) &&
         !n.isRead
     );
 
@@ -399,7 +400,7 @@
   function addMessageNotification(notification) {
     // Generate a unique ID if not provided
     if (!notification.id) {
-      notification.id = 'msg-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+      notification.id = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     }
 
     // Add to state

@@ -27,8 +27,14 @@ describe('Messenger client-side fixes', () => {
     messengerAppSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerAppV4.js'), 'utf8');
     messengerApiSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerAPI.js'), 'utf8');
     chatViewSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ChatViewV4.js'), 'utf8');
-    conversationListSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ConversationListV4.js'), 'utf8');
-    contactPickerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContactPickerV4.js'), 'utf8');
+    conversationListSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'ConversationListV4.js'),
+      'utf8'
+    );
+    contactPickerSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'ContactPickerV4.js'),
+      'utf8'
+    );
     triggerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerTrigger.js'), 'utf8');
     serviceSrc = fs.readFileSync(path.join(SERVICES_DIR, 'messenger-v4.service.js'), 'utf8');
   });
@@ -72,7 +78,7 @@ describe('Messenger client-side fixes', () => {
   // ── getContacts supports role filter ────────────────────────────────────────
 
   it('MessengerAPI.getContacts accepts and forwards role option as query param', () => {
-    expect(messengerApiSrc).toContain("options.role");
+    expect(messengerApiSrc).toContain('options.role');
     expect(messengerApiSrc).toContain("params.append('role'");
   });
 
@@ -87,7 +93,7 @@ describe('Messenger client-side fixes', () => {
   it('MessengerTrigger uses AuthStateManager (not the non-existent AuthState)', () => {
     expect(triggerSrc).toContain('AuthStateManager');
     // The old broken check should be gone
-    expect(triggerSrc).not.toContain("window.AuthState && window.AuthState.isAuthenticated");
+    expect(triggerSrc).not.toContain('window.AuthState && window.AuthState.isAuthenticated');
   });
 
   // ── handleDeepLink handles ?new=true ───────────────────────────────────────
@@ -148,7 +154,7 @@ describe('Messenger client-side fixes', () => {
 
   it('MessengerAppV4 uses MessengerModals.showConfirm for delete (not native confirm)', () => {
     // Should reference showConfirm for delete conversation
-    expect(messengerAppSrc).toContain("showConfirm");
+    expect(messengerAppSrc).toContain('showConfirm');
   });
 
   it('MessengerAppV4 calls showEditPrompt (correct method name, not showEdit)', () => {
@@ -176,7 +182,7 @@ describe('Messenger client-side fixes', () => {
   it('ContextBannerV4 only allows relative (same-origin) paths for thumbnail src', () => {
     const bannerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContextBannerV4.js'), 'utf8');
     // Validates imageUrl starts with '/' (relative path)
-    expect(bannerSrc).toContain("/^\\//");
+    expect(bannerSrc).toContain('/^\\//');
   });
 
   // ── MessengerState filter fixes ─────────────────────────────────────────────
@@ -276,15 +282,268 @@ describe('Messenger client-side fixes', () => {
   // ── conversation-deleted WebSocket event ────────────────────────────────────
 
   it('MessengerSocket forwards messenger:v4:conversation-deleted to window event', () => {
-    const socketSrc = fs.readFileSync(
-      path.join(MESSENGER_DIR, 'js', 'MessengerSocket.js'),
-      'utf8'
-    );
+    const socketSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerSocket.js'), 'utf8');
     expect(socketSrc).toContain("'messenger:v4:conversation-deleted'");
     expect(socketSrc).toContain("'messenger:conversation-deleted'");
   });
 
   it('MessengerAppV4 handles messenger:conversation-deleted event from other sessions', () => {
     expect(messengerAppSrc).toContain("'messenger:conversation-deleted'");
+  });
+
+  // ── A) Image unavailable placeholder readability ────────────────────────────
+
+  it('messenger-v4-polish.css error label uses white text (color: #fff)', () => {
+    const cssSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'css', 'messenger-v4-polish.css'),
+      'utf8'
+    );
+    expect(cssSrc).toContain('.messenger-v4__attachment-error-label');
+    // Must use white (#fff) so text is readable on the dark bubble background
+    expect(cssSrc).toMatch(/\.messenger-v4__attachment-error-label\s*\{[^}]*color:\s*#fff/);
+  });
+
+  it('messenger-v4-polish.css error label has a secondary hint class defined', () => {
+    const cssSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'css', 'messenger-v4-polish.css'),
+      'utf8'
+    );
+    expect(cssSrc).toContain('.messenger-v4__attachment-error-hint');
+  });
+
+  it('MessageBubbleV4 onerror handler adds title attribute for accessibility', () => {
+    const bubbleSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessageBubbleV4.js'), 'utf8');
+    expect(bubbleSrc).toContain("w.title='Image unavailable'");
+  });
+
+  it('MessageBubbleV4 onerror handler appends a secondary hint about file removal', () => {
+    const bubbleSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessageBubbleV4.js'), 'utf8');
+    expect(bubbleSrc).toContain('messenger-v4__attachment-error-hint');
+    expect(bubbleSrc).toContain('The file may have been removed');
+  });
+
+  // ── C) Mark read/unread toggle ──────────────────────────────────────────────
+
+  it('ChatViewV4 _updateMarkUnreadBtn updates aria-label based on unread state', () => {
+    expect(chatViewSrc).toContain('_updateMarkUnreadBtn(');
+    expect(chatViewSrc).toContain("'Mark as read'");
+    expect(chatViewSrc).toContain("'Mark as unread'");
+  });
+
+  it('ChatViewV4 mark-unread button dispatches messenger:mark-read when conversation is unread', () => {
+    expect(chatViewSrc).toContain("'messenger:mark-read'");
+  });
+
+  it('ChatViewV4 mark-unread button dispatches messenger:mark-unread when conversation is read', () => {
+    expect(chatViewSrc).toContain("'messenger:mark-unread'");
+  });
+
+  it('ChatViewV4 _renderHeader calls _updateMarkUnreadBtn to reflect conversation state', () => {
+    expect(chatViewSrc).toContain('_updateMarkUnreadBtn(');
+  });
+
+  it('MessengerAppV4 handles messenger:mark-read event (toggle counterpart)', () => {
+    expect(messengerAppSrc).toContain("'messenger:mark-read'");
+  });
+
+  it('MessengerAppV4 mark-read handler calls api.markAsRead', () => {
+    expect(messengerAppSrc).toContain('api.markAsRead(id)');
+  });
+
+  it('MessengerAppV4 mark-unread handler does optimistic local state update', () => {
+    expect(messengerAppSrc).toMatch(/mark-unread[\s\S]*?me\.unreadCount\s*=/);
+  });
+
+  it('MessengerAppV4 mark-unread handler calls chatView._updateMarkUnreadBtn(true)', () => {
+    expect(messengerAppSrc).toContain('chatView._updateMarkUnreadBtn(true)');
+  });
+
+  it('MessengerAppV4 mark-read handler calls chatView._updateMarkUnreadBtn(false)', () => {
+    expect(messengerAppSrc).toContain('chatView._updateMarkUnreadBtn(false)');
+  });
+
+  // ── D) New conversation plus icon and defensive picker handling ─────────────
+
+  it('ConversationListV4 empty-state CTA includes a plus sign prefix', () => {
+    expect(conversationListSrc).toContain('+ New Conversation');
+  });
+
+  it('MessengerAppV4 open-contact-picker handler warns when contact picker is unavailable', () => {
+    expect(messengerAppSrc).toContain('Contact picker is not available');
+  });
+
+  // ── ESLint strict-equality fixes (== null → === null || === undefined) ───────
+
+  it('ContactPickerV4 escape() uses strict equality (=== null || === undefined)', () => {
+    expect(contactPickerSrc).not.toContain('str == null');
+    expect(contactPickerSrc).toContain('str === null || str === undefined');
+  });
+
+  it('ContextBannerV4 escape() uses strict equality (=== null || === undefined)', () => {
+    const bannerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContextBannerV4.js'), 'utf8');
+    expect(bannerSrc).not.toContain('str == null');
+    expect(bannerSrc).toContain('str === null || str === undefined');
+  });
+
+  it('TypingIndicatorV4 _escape() uses strict equality (=== null || === undefined)', () => {
+    const typingSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'TypingIndicatorV4.js'),
+      'utf8'
+    );
+    expect(typingSrc).not.toContain('str == null');
+    expect(typingSrc).toContain('str === null || str === undefined');
+  });
+
+  it('MessageComposerV4 escape() uses strict equality (=== null || === undefined)', () => {
+    const composerSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'MessageComposerV4.js'),
+      'utf8'
+    );
+    expect(composerSrc).not.toContain('str == null');
+    expect(composerSrc).toContain('str === null || str === undefined');
+  });
+
+  // ── ConversationListV4 context menu read/unread toggle ──────────────────────
+
+  it('ConversationListV4 right-click menu dispatches messenger:mark-read', () => {
+    expect(conversationListSrc).toContain("'messenger:mark-read'");
+  });
+
+  it('ConversationListV4 context menu uses dynamic mark action based on unread state', () => {
+    // The menu action should be determined at menu-show time from the conversation state
+    expect(conversationListSrc).toContain("'mark-read'");
+    expect(conversationListSrc).toContain("'mark-unread'");
+    // Should branch on isUnread to choose the right action and label
+    expect(conversationListSrc).toContain('isUnread');
+    expect(conversationListSrc).toContain('Mark as Read');
+    expect(conversationListSrc).toContain('Mark as Unread');
+  });
+
+  it('ConversationListV4 context menu reads participant unreadCount for toggle', () => {
+    expect(conversationListSrc).toContain('isUnread = me ? (me.unreadCount || 0) > 0 : false');
+  });
+
+  // ── Backend: unused variables / imports fixed ────────────────────────────────
+
+  it('messenger.service.js does not fetch creator info unnecessarily in existing-conv path', () => {
+    const svcSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'services', 'messenger.service.js'),
+      'utf8'
+    );
+    // The dead getUserInfo call before sendMessage in existing-conv branch should be gone
+    // If it existed it would appear right before sendMessage inside the initialMessage block
+    expect(svcSrc).not.toMatch(/if\s*\(initialMessage\)\s*\{[^}]*getUserInfo\(creatorId\)/s);
+  });
+
+  it('routes/messenger.js applies applyUploadLimiter to the attachment route', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    // applyUploadLimiter must be applied to the POST messages route
+    expect(routeSrc).toContain('applyUploadLimiter');
+    // It should appear in the route definition (not just in the function declaration)
+    expect(routeSrc).toMatch(/router\.post\([^)]*messages[\s\S]*?applyUploadLimiter/);
+  });
+
+  it('LabelService does not import unused withTransaction/validateObjectId', () => {
+    const svcSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'services', 'LabelService.js'),
+      'utf8'
+    );
+    expect(svcSrc).not.toContain("require('../utils/mongoHelpers')");
+    expect(svcSrc).not.toContain("require('../utils/validators')");
+  });
+
+  it('models/ConversationV4.js does not import unused ObjectId', () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'models', 'ConversationV4.js'),
+      'utf8'
+    );
+    expect(src).not.toContain("require('mongodb')");
+  });
+
+  it('routes/advanced-search.js applies CSRF protection to POST /validate', () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'advanced-search.js'),
+      'utf8'
+    );
+    expect(src).toContain('applyCsrfProtection');
+    // Should appear in the POST validate route handler (may be inline or multi-line)
+    expect(src).toMatch(/router\.post\([\s\S]*?['"]\/validate['"][\s\S]*?applyCsrfProtection/);
+  });
+
+  // ── messenger.service.js markUnread support ─────────────────────────────────
+
+  it('messenger.service.js handles markUnread by setting unreadCount=1 and resetting lastReadAt', () => {
+    const svc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'services', 'messenger.service.js'),
+      'utf8'
+    );
+    expect(svc).toContain('updates.markUnread');
+    expect(svc).toContain('participants.$[participant].unreadCount');
+    expect(svc).toContain('participants.$[participant].lastReadAt');
+  });
+
+  // ── routes/messenger.js: ObjectId validation + markUnread passthrough ────────
+
+  it('routes/messenger.js has isValidObjectId helper', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    expect(routeSrc).toContain('function isValidObjectId');
+    expect(routeSrc).toContain('/^[a-fA-F0-9]{24}$/');
+  });
+
+  it('routes/messenger.js validates conversation ID in GET /conversations/:id', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    expect(routeSrc).toContain('isValidObjectId(id)');
+    expect(routeSrc).toContain('Invalid conversation ID');
+  });
+
+  it('routes/messenger.js passes markUnread from body to updateConversation', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    expect(routeSrc).toContain('markUnread');
+    expect(routeSrc).toContain('updates.markUnread = markUnread');
+  });
+
+  // ── ChatInboxWidget: currentUserId resolved from cookie/API ─────────────────
+
+  it('ChatInboxWidget._loadCurrentUser resolves user from cookie then API', () => {
+    const widgetSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'chat', 'js', 'ChatInboxWidget.js'),
+      'utf8'
+    );
+    expect(widgetSrc).toContain('_loadCurrentUser');
+    expect(widgetSrc).toContain('_getCookie');
+    expect(widgetSrc).toContain('/api/v1/auth/me');
+    expect(widgetSrc).toContain('this.currentUserId');
+  });
+
+  it('ChatInboxWidget.getOtherParticipant uses currentUserId to find the other party', () => {
+    const widgetSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'chat', 'js', 'ChatInboxWidget.js'),
+      'utf8'
+    );
+    // Should filter participants by userId !== currentUserId
+    expect(widgetSrc).toContain('p.userId !== this.currentUserId');
+    // Should no longer have the TODO comment
+    expect(widgetSrc).not.toContain('TODO: Get current user ID from cookie/session');
+  });
+
+  it('ChatInboxWidget.getUnreadCount uses currentUserId to find own participant', () => {
+    const widgetSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'public', 'chat', 'js', 'ChatInboxWidget.js'),
+      'utf8'
+    );
+    expect(widgetSrc).toContain('p.userId === this.currentUserId');
+    expect(widgetSrc).not.toContain('TODO: Get current user ID');
   });
 });

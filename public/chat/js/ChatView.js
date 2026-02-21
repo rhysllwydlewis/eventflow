@@ -60,7 +60,7 @@ class ChatView {
    */
   bindEvents() {
     // ChatState events
-    this.chatState.on('messages:updated', (data) => {
+    this.chatState.on('messages:updated', data => {
       const activeId = this.activeConversation?._id || this.activeConversation?.id;
       if (data.conversationId === activeId) {
         this.messages = data.messages;
@@ -71,11 +71,11 @@ class ChatView {
       }
     });
 
-    this.chatState.on('conversation:active', (conversationId) => {
+    this.chatState.on('conversation:active', conversationId => {
       this.loadConversation(conversationId);
     });
 
-    this.chatState.on('typing:updated', (data) => {
+    this.chatState.on('typing:updated', data => {
       if (data.conversationId === this.activeConversation?.id) {
         if (data.isTyping) {
           this.typingUsers.add(data.userId);
@@ -89,8 +89,8 @@ class ChatView {
     // Message input events
     if (this.messageInput) {
       this.messageInput.addEventListener('input', () => this.handleInput());
-      this.messageInput.addEventListener('keydown', (e) => this.handleKeydown(e));
-      
+      this.messageInput.addEventListener('keydown', e => this.handleKeydown(e));
+
       // Typing indicator
       let typingTimeout;
       this.messageInput.addEventListener('input', () => {
@@ -136,15 +136,15 @@ class ChatView {
       const conversation = this.chatState.getConversation(conversationId);
       this.activeConversation = conversation;
       this.hasMore = true;
-      
+
       // Load messages
       const messages = await this.chatAPI.getMessages(conversationId);
       this.messages = messages;
       this.chatState.updateMessages(conversationId, messages);
-      
+
       this.renderMessages();
       this.scrollToBottom();
-      
+
       // Mark as read
       if (conversation && conversation.unreadCount > 0) {
         await this.chatAPI.markAsRead(conversationId);
@@ -153,7 +153,6 @@ class ChatView {
 
       // Update header
       this.updateHeader();
-      
     } catch (error) {
       console.error('Failed to load conversation:', error);
       this.showError('Failed to load messages');
@@ -165,7 +164,9 @@ class ChatView {
    */
   updateHeader() {
     const header = this.container.querySelector('.chat-header-info');
-    if (!header || !this.activeConversation) return;
+    if (!header || !this.activeConversation) {
+      return;
+    }
 
     const name = this.escapeHtml(this.activeConversation.name);
     const status = this.activeConversation.online ? 'Online' : 'Offline';
@@ -181,7 +182,9 @@ class ChatView {
    * Handle message input
    */
   handleInput() {
-    if (!this.messageInput) return;
+    if (!this.messageInput) {
+      return;
+    }
 
     const value = this.messageInput.value;
     const length = value.length;
@@ -189,7 +192,7 @@ class ChatView {
     // Auto-expand textarea
     this.messageInput.style.height = 'auto';
     const newHeight = Math.min(this.messageInput.scrollHeight, 120);
-    this.messageInput.style.height = newHeight + 'px';
+    this.messageInput.style.height = `${newHeight}px`;
 
     // Update character counter
     if (this.charCounter) {
@@ -223,22 +226,26 @@ class ChatView {
    * Send a message
    */
   async sendMessage() {
-    if (!this.messageInput || !this.activeConversation) return;
+    if (!this.messageInput || !this.activeConversation) {
+      return;
+    }
 
     const content = this.messageInput.value.trim();
-    if (!content || content.length > this.maxChars) return;
+    if (!content || content.length > this.maxChars) {
+      return;
+    }
 
     const currentUser = this.chatState.getCurrentUser();
     const userId = currentUser?.userId || currentUser?.id;
-    
-    const tempId = 'temp_' + Date.now();
+
+    const tempId = `temp_${Date.now()}`;
     const tempMessage = {
       id: tempId,
       conversationId: this.activeConversation._id || this.activeConversation.id,
       senderId: userId,
       content: content,
       timestamp: new Date().toISOString(),
-      status: 'sending'
+      status: 'sending',
     };
 
     // Add to UI immediately
@@ -255,32 +262,31 @@ class ChatView {
 
     try {
       const conversationId = this.activeConversation._id || this.activeConversation.id;
-      
+
       // Send via API
       const result = await this.chatAPI.sendMessage(conversationId, {
         content,
         type: 'text',
       });
-      
+
       const message = result.message;
-      
+
       // Replace temp message with real one
       const index = this.messages.findIndex(m => m.id === tempId);
       if (index !== -1) {
         this.messages[index] = message;
         this.chatState.setMessages(conversationId, this.messages);
       }
-      
     } catch (error) {
       console.error('Failed to send message:', error);
-      
+
       // Mark message as failed
       const index = this.messages.findIndex(m => m.id === tempId);
       if (index !== -1) {
         this.messages[index].status = 'failed';
         this.renderMessages();
       }
-      
+
       this.showError('Failed to send message');
     }
   }
@@ -289,13 +295,15 @@ class ChatView {
    * Handle scroll events
    */
   handleScroll() {
-    if (!this.messagesContainer) return;
+    if (!this.messagesContainer) {
+      return;
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = this.messagesContainer;
-    
+
     // Check if at bottom
     this.isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
-    
+
     // Toggle scroll to bottom button
     if (this.scrollToBottomBtn) {
       this.scrollToBottomBtn.style.display = this.isAtBottom ? 'none' : 'flex';
@@ -311,7 +319,9 @@ class ChatView {
    * Load more messages (infinite scroll)
    */
   async loadMoreMessages() {
-    if (!this.activeConversation || this.isLoadingMore || !this.hasMore) return;
+    if (!this.activeConversation || this.isLoadingMore || !this.hasMore) {
+      return;
+    }
 
     this.isLoadingMore = true;
     const oldScrollHeight = this.messagesContainer.scrollHeight;
@@ -319,20 +329,22 @@ class ChatView {
     try {
       const oldestMessage = this.messages[0];
       const before = oldestMessage ? oldestMessage.timestamp : null;
-      
-      const olderMessages = await this.chatAPI.getMessages(this.activeConversation.id, { before, limit: 20 });
-      
+
+      const olderMessages = await this.chatAPI.getMessages(this.activeConversation.id, {
+        before,
+        limit: 20,
+      });
+
       if (olderMessages.length === 0) {
         this.hasMore = false;
       } else {
         this.messages = [...olderMessages, ...this.messages];
         this.renderMessages();
-        
+
         // Restore scroll position
         const newScrollHeight = this.messagesContainer.scrollHeight;
         this.messagesContainer.scrollTop = newScrollHeight - oldScrollHeight;
       }
-      
     } catch (error) {
       console.error('Failed to load more messages:', error);
     } finally {
@@ -345,12 +357,14 @@ class ChatView {
    * @param {boolean} smooth - Use smooth scrolling
    */
   scrollToBottom(smooth = false) {
-    if (!this.messagesContainer) return;
-    
+    if (!this.messagesContainer) {
+      return;
+    }
+
     const behavior = smooth ? 'smooth' : 'auto';
     this.messagesContainer.scrollTo({
       top: this.messagesContainer.scrollHeight,
-      behavior: behavior
+      behavior: behavior,
     });
     this.isAtBottom = true;
   }
@@ -359,7 +373,9 @@ class ChatView {
    * Update typing indicator
    */
   updateTypingIndicator() {
-    if (!this.typingIndicator) return;
+    if (!this.typingIndicator) {
+      return;
+    }
 
     if (this.typingUsers.size > 0) {
       this.typingIndicator.style.display = 'flex';
@@ -379,18 +395,18 @@ class ChatView {
 
     messages.forEach(message => {
       const messageDate = new Date(message.timestamp).toDateString();
-      
+
       if (messageDate !== currentDate) {
         currentDate = messageDate;
         groups.push({
           type: 'date',
-          date: message.timestamp
+          date: message.timestamp,
         });
       }
-      
+
       groups.push({
         type: 'message',
-        data: message
+        data: message,
       });
     });
 
@@ -433,7 +449,9 @@ class ChatView {
    * @returns {string}
    */
   escapeHtml(str) {
-    if (!str) return '';
+    if (!str) {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
@@ -459,10 +477,15 @@ class ChatView {
    */
   renderMessage(message) {
     const isSent = message.senderId === this.chatState.currentUser?.id;
-    const statusIcon = message.status === 'sending' ? '🕐' : 
-                       message.status === 'failed' ? '❌' : 
-                       message.read ? '✓✓' : '✓';
-    
+    const statusIcon =
+      message.status === 'sending'
+        ? '🕐'
+        : message.status === 'failed'
+          ? '❌'
+          : message.read
+            ? '✓✓'
+            : '✓';
+
     return `
       <div class="message ${isSent ? 'sent' : 'received'}" data-message-id="${message.id}">
         <div class="message-bubble">
@@ -480,7 +503,9 @@ class ChatView {
    * Render empty state
    */
   renderEmptyState() {
-    if (!this.messagesContainer) return;
+    if (!this.messagesContainer) {
+      return;
+    }
 
     this.messagesContainer.innerHTML = `
       <div class="empty-state">
@@ -490,15 +515,21 @@ class ChatView {
     `;
 
     // Disable input
-    if (this.messageInput) this.messageInput.disabled = true;
-    if (this.sendButton) this.sendButton.disabled = true;
+    if (this.messageInput) {
+      this.messageInput.disabled = true;
+    }
+    if (this.sendButton) {
+      this.sendButton.disabled = true;
+    }
   }
 
   /**
    * Render messages
    */
   renderMessages() {
-    if (!this.messagesContainer) return;
+    if (!this.messagesContainer) {
+      return;
+    }
 
     if (!this.activeConversation) {
       this.renderEmptyState();
@@ -506,17 +537,21 @@ class ChatView {
     }
 
     // Enable input
-    if (this.messageInput) this.messageInput.disabled = false;
+    if (this.messageInput) {
+      this.messageInput.disabled = false;
+    }
 
     const grouped = this.groupMessagesByDate(this.messages);
-    
-    const html = grouped.map(item => {
-      if (item.type === 'date') {
-        return this.renderDateDivider(item.date);
-      } else {
-        return this.renderMessage(item.data);
-      }
-    }).join('');
+
+    const html = grouped
+      .map(item => {
+        if (item.type === 'date') {
+          return this.renderDateDivider(item.date);
+        } else {
+          return this.renderMessage(item.data);
+        }
+      })
+      .join('');
 
     this.messagesContainer.innerHTML = html;
   }

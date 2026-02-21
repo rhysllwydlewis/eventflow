@@ -30,15 +30,6 @@
   // CONSTANTS
   // ==========================================
 
-  const DEFAULT_COLORS = {
-    urgent: { bg: '#FEE2E2', text: '#991B1B' },
-    important: { bg: '#FEF3C7', text: '#92400E' },
-    work: { bg: '#DBEAFE', text: '#1E40AF' },
-    personal: { bg: '#E0E7FF', text: '#3730A3' },
-    finance: { bg: '#D1FAE5', text: '#065F46' },
-    followup: { bg: '#FCE7F3', text: '#9F1239' },
-  };
-
   const API_BASE = '/api/v2/labels';
 
   // ==========================================
@@ -483,7 +474,7 @@
   // ==========================================
 
   function showCreateLabelModal() {
-    const modal = createModal(
+    createModal(
       'Create Label',
       `
       <form id="create-label-form" class="label-form">
@@ -529,7 +520,7 @@
     const previewIcon = document.getElementById('preview-icon');
     const previewName = document.getElementById('preview-name');
 
-    form.addEventListener('input', e => {
+    form.addEventListener('input', _e => {
       const name = document.getElementById('label-name').value || 'Preview';
       const icon = document.getElementById('label-icon').value;
       const bgColor = document.getElementById('label-bg-color').value;
@@ -566,7 +557,7 @@
       return;
     }
 
-    const modal = createModal(
+    createModal(
       'Edit Label',
       `
       <form id="edit-label-form" class="label-form">
@@ -612,7 +603,7 @@
     const previewIcon = document.getElementById('edit-preview-icon');
     const previewName = document.getElementById('edit-preview-name');
 
-    form.addEventListener('input', e => {
+    form.addEventListener('input', _e => {
       const name = document.getElementById('edit-label-name').value;
       const icon = document.getElementById('edit-label-icon').value;
       const bgColor = document.getElementById('edit-label-bg-color').value;
@@ -649,7 +640,7 @@
       return;
     }
 
-    const modal = createModal(
+    createModal(
       'Delete Label',
       `
       <div class="label-delete-warning">

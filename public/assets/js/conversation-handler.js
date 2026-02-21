@@ -61,11 +61,10 @@
         thread.participants = participants.filter(Boolean);
       }
 
-      // Resolve recipientId for peer-to-peer threads
-      // eslint-disable-next-line no-unused-vars
-      let recipientId = null;
+      // For peer-to-peer threads, track the other party's userId
       if (thread.recipientId && thread.recipientId !== currentUserId) {
-        recipientId = thread.recipientId;
+        const recipientId = thread.recipientId;
+        thread._peerRecipientId = recipientId;
       }
 
       renderThreadHeader();
