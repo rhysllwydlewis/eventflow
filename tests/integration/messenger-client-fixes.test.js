@@ -27,8 +27,14 @@ describe('Messenger client-side fixes', () => {
     messengerAppSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerAppV4.js'), 'utf8');
     messengerApiSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerAPI.js'), 'utf8');
     chatViewSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ChatViewV4.js'), 'utf8');
-    conversationListSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ConversationListV4.js'), 'utf8');
-    contactPickerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContactPickerV4.js'), 'utf8');
+    conversationListSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'ConversationListV4.js'),
+      'utf8'
+    );
+    contactPickerSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'ContactPickerV4.js'),
+      'utf8'
+    );
     triggerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerTrigger.js'), 'utf8');
     serviceSrc = fs.readFileSync(path.join(SERVICES_DIR, 'messenger-v4.service.js'), 'utf8');
   });
@@ -72,7 +78,7 @@ describe('Messenger client-side fixes', () => {
   // ── getContacts supports role filter ────────────────────────────────────────
 
   it('MessengerAPI.getContacts accepts and forwards role option as query param', () => {
-    expect(messengerApiSrc).toContain("options.role");
+    expect(messengerApiSrc).toContain('options.role');
     expect(messengerApiSrc).toContain("params.append('role'");
   });
 
@@ -87,7 +93,7 @@ describe('Messenger client-side fixes', () => {
   it('MessengerTrigger uses AuthStateManager (not the non-existent AuthState)', () => {
     expect(triggerSrc).toContain('AuthStateManager');
     // The old broken check should be gone
-    expect(triggerSrc).not.toContain("window.AuthState && window.AuthState.isAuthenticated");
+    expect(triggerSrc).not.toContain('window.AuthState && window.AuthState.isAuthenticated');
   });
 
   // ── handleDeepLink handles ?new=true ───────────────────────────────────────
@@ -148,7 +154,7 @@ describe('Messenger client-side fixes', () => {
 
   it('MessengerAppV4 uses MessengerModals.showConfirm for delete (not native confirm)', () => {
     // Should reference showConfirm for delete conversation
-    expect(messengerAppSrc).toContain("showConfirm");
+    expect(messengerAppSrc).toContain('showConfirm');
   });
 
   it('MessengerAppV4 calls showEditPrompt (correct method name, not showEdit)', () => {
@@ -176,7 +182,7 @@ describe('Messenger client-side fixes', () => {
   it('ContextBannerV4 only allows relative (same-origin) paths for thumbnail src', () => {
     const bannerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContextBannerV4.js'), 'utf8');
     // Validates imageUrl starts with '/' (relative path)
-    expect(bannerSrc).toContain("/^\\//");
+    expect(bannerSrc).toContain('/^\\//');
   });
 
   // ── MessengerState filter fixes ─────────────────────────────────────────────
@@ -276,15 +282,93 @@ describe('Messenger client-side fixes', () => {
   // ── conversation-deleted WebSocket event ────────────────────────────────────
 
   it('MessengerSocket forwards messenger:v4:conversation-deleted to window event', () => {
-    const socketSrc = fs.readFileSync(
-      path.join(MESSENGER_DIR, 'js', 'MessengerSocket.js'),
-      'utf8'
-    );
+    const socketSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessengerSocket.js'), 'utf8');
     expect(socketSrc).toContain("'messenger:v4:conversation-deleted'");
     expect(socketSrc).toContain("'messenger:conversation-deleted'");
   });
 
   it('MessengerAppV4 handles messenger:conversation-deleted event from other sessions', () => {
     expect(messengerAppSrc).toContain("'messenger:conversation-deleted'");
+  });
+
+  // ── A) Image unavailable placeholder readability ────────────────────────────
+
+  it('messenger-v4-polish.css error label uses white text (color: #fff)', () => {
+    const cssSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'css', 'messenger-v4-polish.css'),
+      'utf8'
+    );
+    expect(cssSrc).toContain('.messenger-v4__attachment-error-label');
+    // Must use white (#fff) so text is readable on the dark bubble background
+    expect(cssSrc).toMatch(/\.messenger-v4__attachment-error-label\s*\{[^}]*color:\s*#fff/);
+  });
+
+  it('messenger-v4-polish.css error label has a secondary hint class defined', () => {
+    const cssSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'css', 'messenger-v4-polish.css'),
+      'utf8'
+    );
+    expect(cssSrc).toContain('.messenger-v4__attachment-error-hint');
+  });
+
+  it('MessageBubbleV4 onerror handler adds title attribute for accessibility', () => {
+    const bubbleSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessageBubbleV4.js'), 'utf8');
+    expect(bubbleSrc).toContain("w.title='Image unavailable'");
+  });
+
+  it('MessageBubbleV4 onerror handler appends a secondary hint about file removal', () => {
+    const bubbleSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'MessageBubbleV4.js'), 'utf8');
+    expect(bubbleSrc).toContain('messenger-v4__attachment-error-hint');
+    expect(bubbleSrc).toContain('The file may have been removed');
+  });
+
+  // ── C) Mark read/unread toggle ──────────────────────────────────────────────
+
+  it('ChatViewV4 _updateMarkUnreadBtn updates aria-label based on unread state', () => {
+    expect(chatViewSrc).toContain('_updateMarkUnreadBtn(');
+    expect(chatViewSrc).toContain("'Mark as read'");
+    expect(chatViewSrc).toContain("'Mark as unread'");
+  });
+
+  it('ChatViewV4 mark-unread button dispatches messenger:mark-read when conversation is unread', () => {
+    expect(chatViewSrc).toContain("'messenger:mark-read'");
+  });
+
+  it('ChatViewV4 mark-unread button dispatches messenger:mark-unread when conversation is read', () => {
+    expect(chatViewSrc).toContain("'messenger:mark-unread'");
+  });
+
+  it('ChatViewV4 _renderHeader calls _updateMarkUnreadBtn to reflect conversation state', () => {
+    expect(chatViewSrc).toContain('_updateMarkUnreadBtn(');
+  });
+
+  it('MessengerAppV4 handles messenger:mark-read event (toggle counterpart)', () => {
+    expect(messengerAppSrc).toContain("'messenger:mark-read'");
+  });
+
+  it('MessengerAppV4 mark-read handler calls api.markAsRead', () => {
+    expect(messengerAppSrc).toContain('api.markAsRead(id)');
+  });
+
+  it('MessengerAppV4 mark-unread handler does optimistic local state update', () => {
+    expect(messengerAppSrc).toMatch(/mark-unread[\s\S]*?me\.unreadCount\s*=/);
+  });
+
+  it('MessengerAppV4 mark-unread handler calls chatView._updateMarkUnreadBtn(true)', () => {
+    expect(messengerAppSrc).toContain('chatView._updateMarkUnreadBtn(true)');
+  });
+
+  it('MessengerAppV4 mark-read handler calls chatView._updateMarkUnreadBtn(false)', () => {
+    expect(messengerAppSrc).toContain('chatView._updateMarkUnreadBtn(false)');
+  });
+
+  // ── D) New conversation plus icon and defensive picker handling ─────────────
+
+  it('ConversationListV4 empty-state CTA includes a plus sign prefix', () => {
+    expect(conversationListSrc).toContain('+ New Conversation');
+  });
+
+  it('MessengerAppV4 open-contact-picker handler warns when contact picker is unavailable', () => {
+    expect(messengerAppSrc).toContain('Contact picker is not available');
   });
 });
