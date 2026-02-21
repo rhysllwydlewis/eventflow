@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const crypto = require('crypto');
 
 const dbUnified = require('../db-unified');
@@ -85,7 +86,7 @@ router.post('/send-verification', resendEmailLimiter, authRequired, async (req, 
         expiresIn: 86400, // 24 hours in seconds
       });
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      logger.error('Failed to send verification email:', emailError);
       res.status(500).json({
         ok: false,
         error: 'Failed to send verification email',
@@ -93,7 +94,7 @@ router.post('/send-verification', resendEmailLimiter, authRequired, async (req, 
       });
     }
   } catch (error) {
-    console.error('Send verification error:', error);
+    logger.error('Send verification error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to send verification email',
@@ -160,7 +161,7 @@ router.get('/verify-email/:token', async (req, res) => {
       message: 'Email verified successfully',
     });
   } catch (error) {
-    console.error('Email verification error:', error);
+    logger.error('Email verification error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to verify email',
@@ -184,7 +185,7 @@ router.get('/email-status', authRequired, async (req, res) => {
       email: user?.email,
     });
   } catch (error) {
-    console.error('Email status error:', error);
+    logger.error('Email status error:', error);
     res.status(500).json({
       ok: false,
       error: 'Failed to get email status',

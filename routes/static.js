@@ -71,7 +71,8 @@ router.get('/index.html', (req, res) => {
  * Redirect to canonical marketplace URL
  */
 router.get('/marketplace.html', (req, res) => {
-  res.redirect(301, '/marketplace');
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(301, `/marketplace${qs}`);
 });
 
 /**
@@ -79,7 +80,8 @@ router.get('/marketplace.html', (req, res) => {
  * Redirect to canonical suppliers URL
  */
 router.get('/suppliers.html', (req, res) => {
-  res.redirect(301, '/suppliers');
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(301, `/suppliers${qs}`);
 });
 
 module.exports = router;

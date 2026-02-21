@@ -7,6 +7,7 @@
 'use strict';
 
 const express = require('express');
+const logger = require('../utils/logger');
 const router = express.Router();
 const crypto = require('crypto');
 const validator = require('validator');
@@ -105,7 +106,7 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
         messageStream: 'outbound',
       });
     } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError);
+      logger.error('Failed to send confirmation email:', emailError);
       // Return error to user so they know email failed
       return res.status(500).json({
         error: 'Failed to send confirmation email. Please try again later.',
@@ -117,7 +118,7 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
       message: 'Please check your email to confirm your subscription',
     });
   } catch (error) {
-    console.error('Newsletter subscription error:', error);
+    logger.error('Newsletter subscription error:', error);
     res.status(500).json({
       error: 'Failed to process subscription. Please try again later.',
     });
@@ -178,13 +179,13 @@ router.get('/confirm', async (req, res) => {
         messageStream: 'outbound',
       });
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
+      logger.error('Failed to send welcome email:', emailError);
       // Continue anyway - subscription is confirmed
     }
 
     res.redirect('/newsletter/confirmed.html');
   } catch (error) {
-    console.error('Newsletter confirmation error:', error);
+    logger.error('Newsletter confirmation error:', error);
     res.redirect('/newsletter/expired.html');
   }
 });
@@ -227,7 +228,7 @@ router.post('/unsubscribe', async (req, res) => {
       message: 'Successfully unsubscribed from newsletter',
     });
   } catch (error) {
-    console.error('Newsletter unsubscribe error:', error);
+    logger.error('Newsletter unsubscribe error:', error);
     res.status(500).json({
       error: 'Failed to unsubscribe. Please try again later.',
     });
