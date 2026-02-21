@@ -329,8 +329,8 @@ describe('Subscription Service Integration Tests', () => {
     it('should return all available plans', () => {
       const plans = subscriptionService.getAllPlans();
 
-      expect(plans).toHaveLength(4);
-      expect(plans.map(p => p.id)).toEqual(['free', 'basic', 'pro', 'enterprise']);
+      expect(plans).toHaveLength(5);
+      expect(plans.map(p => p.id)).toEqual(['free', 'basic', 'pro', 'pro_plus', 'enterprise']);
       expect(plans[0].price).toBe(0);
       expect(plans[2].features.apiAccess).toBe(true);
     });

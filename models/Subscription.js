@@ -244,7 +244,7 @@ function hasFeature(plan, feature) {
  * @returns {Array} Array of plan configurations
  */
 function getAllPlans() {
-  const orderedPlans = ['free', 'basic', 'pro', 'enterprise'];
+  const orderedPlans = ['free', 'basic', 'pro', 'pro_plus', 'enterprise'];
   return orderedPlans.map(planId => ({
     id: planId,
     ...PLAN_FEATURES[planId],
@@ -257,4 +257,6 @@ module.exports = {
   getPlanFeatures,
   hasFeature,
   getAllPlans,
+  /** Tier level ordering — single source of truth for gate middleware */
+  TIER_LEVELS: { free: 0, basic: 1, pro: 2, pro_plus: 3, enterprise: 4 },
 };

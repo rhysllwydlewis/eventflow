@@ -11,6 +11,21 @@ const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
 /**
+ * Resolve a Stripe plan name string to an internal tier key.
+ * Checks pro_plus before pro to avoid false substring matches.
+ * @param {string} planName - Raw plan name from Stripe metadata or price nickname
+ * @returns {string} Tier: 'enterprise' | 'pro_plus' | 'pro' | 'free'
+ */
+function resolvePlanTier(planName) {
+  const lc = (planName || '').toLowerCase();
+  if (lc.includes('enterprise')) { return 'enterprise'; }
+  if (lc.includes('pro_plus') || lc.includes('proplus')) { return 'pro_plus'; }
+  if (lc.includes('pro')) { return 'pro'; }
+  if (lc.includes('basic')) { return 'basic'; }
+  return 'free';
+}
+
+/**
  * Handle invoice.created event
  * @param {Object} invoice - Stripe invoice object
  */
@@ -201,14 +216,8 @@ async function handleSubscriptionCreated(stripeSubscription) {
   const planName =
     stripeSubscription.metadata?.planName ||
     stripeSubscription.items.data[0]?.price?.nickname ||
-    'pro';
-  const plan = planName.toLowerCase().includes('enterprise')
-    ? 'enterprise'
-    : planName.toLowerCase().includes('pro_plus') || planName.toLowerCase().includes('proplus')
-      ? 'pro_plus'
-      : planName.toLowerCase().includes('pro')
-        ? 'pro'
-        : 'free';
+    '';
+  const plan = resolvePlanTier(planName);
 
   // Create subscription record
   const trialEnd = stripeSubscription.trial_end
@@ -251,6 +260,18 @@ async function handleSubscriptionUpdated(stripeSubscription) {
     updates.canceledAt = new Date(stripeSubscription.canceled_at * 1000).toISOString();
   }
 
+  // Detect plan change from Stripe price metadata
+  const planName =
+    stripeSubscription.metadata?.planName ||
+    stripeSubscription.items.data[0]?.price?.nickname ||
+    '';
+  if (planName) {
+    const newPlan = resolvePlanTier(planName);
+    if (newPlan && newPlan !== subscription.plan) {
+      updates.plan = newPlan;
+    }
+  }
+
   await subscriptionService.updateSubscription(subscription.id, updates);
 }
 
@@ -270,7 +291,6 @@ async function handleSubscriptionTrialWillEnd(stripeSubscription) {
   }
 
   // Get user details for sending email
-  const dbUnified = require('../db-unified');
   const users = await dbUnified.read('users');
   const user = users.find(u => u.id === subscription.userId);
 
@@ -326,6 +346,15 @@ async function handleSubscriptionDeleted(stripeSubscription) {
     plan: 'free',
     canceledAt: new Date().toISOString(),
   });
+
+  // Also clear proExpiresAt on the user record so the gate sees them as free immediately
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === subscription.userId);
+  if (user) {
+    user.proExpiresAt = null;
+    user.updatedAt = new Date().toISOString();
+    await dbUnified.write('users', users);
+  }
 }
 
 /**

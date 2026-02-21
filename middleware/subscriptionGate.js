@@ -6,10 +6,47 @@
 'use strict';
 
 const subscriptionService = require('../services/subscriptionService');
+const dbUnified = require('../db-unified');
+const { TIER_LEVELS } = require('../models/Subscription');
+
+/**
+ * Resolve the effective tier for a user, considering:
+ * 1. Active subscriptions table record (period not expired, not past_due/canceled without renewal)
+ * 2. User record subscriptionTier field (set by Stripe webhook on purchase)
+ * 3. Default: 'free'
+ */
+async function resolveEffectiveTier(userId) {
+  // Check subscriptions table first (most authoritative)
+  const subscription = await subscriptionService.getSubscriptionByUserId(userId);
+
+  if (subscription) {
+    const { plan, status, currentPeriodEnd } = subscription;
+    // Treat as active when status is active/trialing OR period hasn't yet ended
+    const periodStillValid =
+      !currentPeriodEnd || new Date(currentPeriodEnd) > new Date();
+    if ((status === 'active' || status === 'trialing') && periodStillValid) {
+      return { tier: plan, subscription };
+    }
+    // past_due or canceled with expired period → fall through to user field
+  }
+
+  // Fallback: user record subscriptionTier set directly by Stripe webhook
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === userId);
+  if (user?.subscriptionTier && user.subscriptionTier !== 'free') {
+    // Honour proExpiresAt if present
+    if (user.proExpiresAt && new Date(user.proExpiresAt) < new Date()) {
+      return { tier: 'free', subscription: null };
+    }
+    return { tier: user.subscriptionTier, subscription: null };
+  }
+
+  return { tier: 'free', subscription: null };
+}
 
 /**
  * Require a minimum subscription tier
- * @param {string} minTier - Minimum tier required (free, pro, pro_plus, enterprise)
+ * @param {string} minTier - Minimum tier required (free, basic, pro, pro_plus, enterprise)
  * @returns {Function} Express middleware
  */
 function requireSubscription(minTier = 'free') {
@@ -19,19 +56,17 @@ function requireSubscription(minTier = 'free') {
     }
 
     try {
-      const subscription = await subscriptionService.getSubscriptionByUserId(req.user.id);
-      const currentTier = subscription?.plan || 'free';
+      const { tier, subscription } = await resolveEffectiveTier(req.user.id);
 
-      const tierLevels = { free: 0, pro: 1, pro_plus: 2, enterprise: 3 };
-
-      if (tierLevels[currentTier] >= tierLevels[minTier]) {
+      if ((TIER_LEVELS[tier] ?? 0) >= (TIER_LEVELS[minTier] ?? 0)) {
         req.subscription = subscription; // Attach to request
+        req.subscriptionTier = tier;
         return next();
       }
 
       return res.status(403).json({
         error: 'Subscription upgrade required',
-        currentTier,
+        currentTier: tier,
         requiredTier: minTier,
         upgradeUrl: '/supplier/subscription.html',
       });
@@ -71,4 +106,4 @@ function checkFeatureLimit(feature) {
   };
 }
 
-module.exports = { requireSubscription, checkFeatureLimit };
+module.exports = { requireSubscription, checkFeatureLimit, resolveEffectiveTier, TIER_LEVELS };
