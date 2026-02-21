@@ -82,7 +82,7 @@ class MessengerAPI {
         const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
         if (isReadOperation) {
           // Wait briefly before retry (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 500));
+          await new Promise(resolve => setTimeout(resolve, 2 ** retryCount * 500));
           return this.request(endpoint, options, retryCount + 1);
         }
       }
@@ -98,7 +98,7 @@ class MessengerAPI {
       if (error.name === 'TypeError' && retryCount < 2) {
         const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
         if (isReadOperation) {
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 500));
+          await new Promise(resolve => setTimeout(resolve, 2 ** retryCount * 500));
           return this.request(endpoint, options, retryCount + 1);
         }
       }
