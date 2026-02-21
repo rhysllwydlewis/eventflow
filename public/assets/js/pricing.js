@@ -47,19 +47,35 @@
     }
   }
 
-  // Check if user's Pro plan is active (mirrors server.js logic)
-  function isProActive(user) {
-    if (!user || !user.isPro) {
-      return false;
+  // Resolve the user's active subscription tier.
+  // Uses subscriptionTier from auth/me (most accurate) with isPro/proExpiresAt as fallback.
+  function getActiveTier(user) {
+    if (!user) {
+      return 'free';
     }
-    if (!user.proExpiresAt) {
-      return !!user.isPro;
+    // Prefer the explicit tier field now returned by auth/me
+    const tier = user.subscriptionTier || 'free';
+    if (tier !== 'free') {
+      // Honour proExpiresAt when tier is elevated via legacy isPro field
+      if (user.proExpiresAt) {
+        const expiryTime = Date.parse(user.proExpiresAt);
+        if (!isNaN(expiryTime) && expiryTime <= Date.now()) {
+          return 'free';
+        }
+      }
+      return tier;
     }
-    const expiryTime = Date.parse(user.proExpiresAt);
-    if (isNaN(expiryTime)) {
-      return !!user.isPro;
+    // Fallback: legacy isPro boolean
+    if (user.isPro) {
+      if (user.proExpiresAt) {
+        const expiryTime = Date.parse(user.proExpiresAt);
+        if (!isNaN(expiryTime) && expiryTime <= Date.now()) {
+          return 'free';
+        }
+      }
+      return 'pro';
     }
-    return expiryTime > Date.now();
+    return 'free';
   }
 
   /**
@@ -93,34 +109,50 @@
     });
   }
 
+  // Disable a button in place and label it "Your Current Plan"
+  function markAsCurrentPlan(button) {
+    button.textContent = 'Your Current Plan';
+    button.classList.remove('secondary');
+    button.style.opacity = '0.6';
+    button.style.cursor = 'default';
+    button.style.pointerEvents = 'none';
+    button.setAttribute('aria-disabled', 'true');
+  }
+
   // Update button labels for authenticated supplier/admin users
   function updateButtonsForAuthenticatedUser(user) {
-    const hasActivePro = isProActive(user);
+    const tier = getActiveTier(user);
 
-    // Mark the starter/free plan button as the current plan when the user
-    // is on the Starter tier (no active Pro subscription)
-    const starterButtons = document.querySelectorAll(
-      'a[href="/checkout?plan=free"], a[href="/checkout?plan=starter"]'
-    );
-    starterButtons.forEach(button => {
-      if (!hasActivePro) {
-        button.textContent = 'Your Current Plan';
-        button.classList.remove('secondary');
-        button.style.opacity = '0.6';
-        button.style.cursor = 'default';
-        button.style.pointerEvents = 'none';
-        button.setAttribute('aria-disabled', 'true');
+    // Map plan query-string keys to their subscription tier
+    const PLAN_TIERS = {
+      starter: 'free',
+      free: 'free',
+      pro: 'pro',
+      pro_plus: 'pro_plus',
+    };
+
+    // Mark the current-plan button as inactive; offer upgrades/downgrades appropriately
+    document.querySelectorAll('a[href*="/checkout?plan="]').forEach(button => {
+      const href = button.getAttribute('href') || '';
+      const match = href.match(/plan=(\w+)/);
+      if (!match) {
+        return;
+      }
+      const planKey = match[1];
+      const planTier = PLAN_TIERS[planKey] || planKey;
+
+      if (planTier === tier) {
+        markAsCurrentPlan(button);
       }
     });
 
-    // Also update the bottom CTA for authenticated suppliers on Starter
+    // Also update the bottom CTA when user is on the Starter (free) tier
     const bottomCta = document.getElementById('pricing-bottom-cta');
-    if (bottomCta && !hasActivePro) {
-      bottomCta.textContent = 'Your Current Plan';
-      bottomCta.style.opacity = '0.6';
-      bottomCta.style.cursor = 'default';
-      bottomCta.style.pointerEvents = 'none';
-      bottomCta.setAttribute('aria-disabled', 'true');
+    if (bottomCta && tier === 'free') {
+      markAsCurrentPlan(bottomCta);
+    } else if (bottomCta) {
+      // On a paid plan – hide the bottom CTA (it links to starter plan checkout)
+      bottomCta.style.display = 'none';
     }
   }
 

@@ -1118,6 +1118,7 @@ router.get('/me', async (req, res) => {
           badges: u.badges || [],
           isPro: u.isPro || false,
           proExpiresAt: u.proExpiresAt || null,
+          subscriptionTier: u.subscriptionTier || 'free',
           notify: u.notify !== false,
           notify_account: u.notify_account !== false,
           notify_marketing: u.notify_marketing === true,

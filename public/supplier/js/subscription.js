@@ -328,8 +328,11 @@ function renderSubscriptionPlans() {
 
   const plansHtml = Object.values(PLANS)
     .map(plan => {
+      // Match by tier (from auth/me subscriptionTier) or by Stripe planId in subscription record
+      const currentTier = currentUser?.subscriptionTier || 'free';
       const isCurrentPlan =
-        currentSubscription && currentSubscription.subscriptionDetails?.planId?.includes(plan.id);
+        plan.tier === currentTier ||
+        (currentSubscription && currentSubscription.subscriptionDetails?.planId?.includes(plan.id));
       const isFeatured = plan.tier === 'pro_plus';
 
       return `
@@ -356,13 +359,13 @@ function renderSubscriptionPlans() {
         ${
           isCurrentPlan
             ? `
-          <button class="btn btn-current" disabled>Current Plan</button>
+          <button class="btn btn-current" disabled>Your Current Plan</button>
         `
             : `
           <button class="btn btn-primary" 
                   data-plan-id="${plan.id}"
                   onclick="handleSubscribe('${plan.id}')">
-            ${currentSubscription ? 'Switch Plan' : 'Start Free Trial'}
+            ${currentSubscription && currentTier !== 'free' ? 'Switch Plan' : 'Start Free Trial'}
           </button>
         `
         }
@@ -388,6 +391,13 @@ async function handleSubscribe(planId) {
   if (!plan) {
     console.error('[Subscription] Invalid plan selected:', planId);
     showError('Invalid plan selected');
+    return;
+  }
+
+  // Guard: prevent purchasing a plan the user already has
+  const currentTier = currentUser?.subscriptionTier || 'free';
+  if (plan.tier === currentTier) {
+    showError(`You are already subscribed to the ${plan.name} plan.`);
     return;
   }
 
