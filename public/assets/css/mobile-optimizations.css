@@ -271,31 +271,6 @@
    ============================================ */
 
 @media (max-width: 768px) {
-  /* Sidebar becomes top navigation */
-  .dashboard-layout {
-    grid-template-columns: 1fr;
-  }
-  
-  .dashboard-sidebar {
-    position: fixed;
-    top: 60px;
-    left: -280px;
-    width: 280px;
-    height: calc(100vh - 60px);
-    background: white;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-    transition: left 0.3s ease;
-    z-index: 99;
-  }
-  
-  .dashboard-sidebar.is-open {
-    left: 0;
-  }
-  
-  .dashboard-main {
-    padding: 16px;
-  }
-  
   /* Dashboard cards */
   .dashboard-grid {
     grid-template-columns: 1fr;
@@ -1137,61 +1112,23 @@ h4 {
    ============================================ */
 
 @media (max-width: 768px) {
-  /* Sidebar collapse to hamburger menu */
-  .dashboard-sidebar {
-    position: fixed;
-    left: -280px;
-    top: 0;
-    height: 100vh;
-    width: 280px;
-    background: white;
-    z-index: 1000;
-    transition: left 0.3s ease-out;
-    overflow-y: auto;
-  }
-  
-  html[data-theme="dark"] .dashboard-sidebar {
-    background: #1F2937;
-  }
-  
-  .dashboard-sidebar.is-open {
-    left: 0;
-  }
-  
-  /* Overlay for sidebar */
-  .dashboard-sidebar.is-open::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 280px;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    pointer-events: none;
-  }
-  
-  .dashboard-main,
   .admin-main {
     margin-left: 0;
     width: 100%;
   }
   
   /* Stats grid single column on mobile */
-  .dashboard-stats,
   .admin-stats {
     grid-template-columns: 1fr;
     gap: 12px;
   }
   
   /* Action buttons stack vertically */
-  .dashboard-actions,
   .admin-actions {
     flex-direction: column;
     gap: 12px;
   }
   
-  .dashboard-actions button,
   .admin-actions button {
     width: 100%;
   }
