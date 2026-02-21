@@ -609,9 +609,17 @@ router.post(
 router.get('/conversations/:id/messages', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
+    }
     const userId = req.user.id;
     const { before, limit = 50 } = req.query;
     const clampedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+
+    // Validate optional cursor (before) parameter
+    if (before && !isValidObjectId(before)) {
+      return res.status(400).json({ error: 'Invalid cursor', code: 'INVALID_CURSOR' });
+    }
 
     const result = await (
       await getMessengerService()
@@ -816,7 +824,12 @@ router.post(
         });
       }
 
-      const message = await (await getMessengerService()).toggleReaction(messageId, userId, emoji);
+      // Validate emoji - limit to reasonable length (emoji can be 1-4 chars; up to 8 for compound)
+      const emojiStr = String(emoji).substring(0, 8);
+
+      const message = await (
+        await getMessengerService()
+      ).toggleReaction(messageId, userId, emojiStr);
 
       // Emit WebSocket event
       if (wsServer && wsServer.emitToRoom) {
@@ -857,6 +870,11 @@ router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
         error: 'Search query must be at least 2 characters',
         code: 'INVALID_QUERY',
       });
+    }
+
+    // Validate optional conversationId filter
+    if (conversationId && !isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID', code: 'INVALID_ID' });
     }
 
     const messages = await (
