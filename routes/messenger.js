@@ -610,10 +610,11 @@ router.get('/conversations/:id/messages', applyAuthRequired, ensureServices, asy
     const { id: conversationId } = req.params;
     const userId = req.user.id;
     const { before, limit = 50 } = req.query;
+    const clampedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
 
     const result = await (
       await getMessengerService()
-    ).getMessages(conversationId, userId, before, parseInt(limit, 10));
+    ).getMessages(conversationId, userId, before, clampedLimit);
 
     res.json({
       success: true,

@@ -119,6 +119,7 @@ router.get('/', searchLimiter, applyAuthRequired, ensureServices, async (req, re
   try {
     const userId = req.user.id;
     const { q: query, page = 1, pageSize = 25, sortBy = 'relevance' } = req.query;
+    const clampedPageSize = Math.min(Math.max(parseInt(pageSize, 10) || 25, 1), 100);
 
     if (!query) {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
@@ -136,7 +137,7 @@ router.get('/', searchLimiter, applyAuthRequired, ensureServices, async (req, re
     // Execute search
     const result = await searchService.search(userId, query, {
       page: parseInt(page, 10),
-      pageSize: parseInt(pageSize, 10),
+      pageSize: clampedPageSize,
       sortBy,
     });
 
