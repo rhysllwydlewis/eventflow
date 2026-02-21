@@ -127,34 +127,6 @@
     }
   }
 
-  async function validateQuery(query) {
-    try {
-      const data = await apiFetch(`${API_BASE}/validate`, {
-        method: 'POST',
-        body: JSON.stringify({ query }),
-      });
-
-      return data.valid || false;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  async function getAutocomplete(query, cursorPosition) {
-    try {
-      const data = await apiFetch(
-        `${API_BASE}/autocomplete?q=${encodeURIComponent(query)}&pos=${cursorPosition}`
-      );
-
-      if (data.success && Array.isArray(data.suggestions)) {
-        state.autocompleteSuggestions = data.suggestions;
-        showAutocompleteSuggestions(data.suggestions);
-      }
-    } catch (error) {
-      state.autocompleteSuggestions = [];
-    }
-  }
-
   async function loadOperators() {
     try {
       const data = await apiFetch(`${API_BASE}/operators`);
@@ -269,7 +241,7 @@
 
     const html = suggestions
       .map(
-        (suggestion, index) => `
+        suggestion => `
       <div 
         class="autocomplete-item" 
         data-suggestion="${escapeHtml(suggestion.text)}"
@@ -414,7 +386,7 @@
       return;
     }
 
-    const modal = createModal(
+    createModal(
       'Save Search',
       `
       <form id="save-search-form" class="search-form">
@@ -451,7 +423,7 @@
   // ==========================================
 
   function showSearchHelp() {
-    const modal = createModal(
+    createModal(
       'Search Operators',
       `
       <div class="search-help">

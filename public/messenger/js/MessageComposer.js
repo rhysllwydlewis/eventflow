@@ -137,7 +137,7 @@ class MessageComposer {
     });
 
     // Keyboard shortcuts
-    this.textarea.addEventListener('keydown', (e) => {
+    this.textarea.addEventListener('keydown', e => {
       // Enter to send (Shift+Enter for new line)
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -156,7 +156,7 @@ class MessageComposer {
     });
 
     // File input
-    this.fileInput.addEventListener('change', (e) => {
+    this.fileInput.addEventListener('change', e => {
       this.handleFileSelect(e.target.files);
       this.fileInput.value = ''; // Reset so same file can be selected again
     });
@@ -167,7 +167,7 @@ class MessageComposer {
     });
 
     // Drag and drop
-    this.container.addEventListener('dragover', (e) => {
+    this.container.addEventListener('dragover', e => {
       e.preventDefault();
       this.container.classList.add('message-composer--dragover');
     });
@@ -176,7 +176,7 @@ class MessageComposer {
       this.container.classList.remove('message-composer--dragover');
     });
 
-    this.container.addEventListener('drop', (e) => {
+    this.container.addEventListener('drop', e => {
       e.preventDefault();
       this.container.classList.remove('message-composer--dragover');
       this.handleFileSelect(e.dataTransfer.files);
@@ -188,7 +188,7 @@ class MessageComposer {
    */
   autoGrow() {
     this.textarea.style.height = 'auto';
-    this.textarea.style.height = Math.min(this.textarea.scrollHeight, 200) + 'px';
+    this.textarea.style.height = `${Math.min(this.textarea.scrollHeight, 200)}px`;
   }
 
   /**
@@ -197,11 +197,11 @@ class MessageComposer {
   updateCharCount() {
     const length = this.textarea.value.length;
     this.charCurrent.textContent = length;
-    
+
     // Show count when getting close to limit
     if (length > this.options.maxLength * 0.8) {
       this.charCount.style.display = 'inline';
-      
+
       // Warn when approaching limit
       if (length > this.options.maxLength * 0.95) {
         this.charCount.classList.add('message-composer__char-count--warning');
@@ -225,7 +225,9 @@ class MessageComposer {
    * Handle typing indicator
    */
   handleTyping() {
-    if (!this.options.onTyping) return;
+    if (!this.options.onTyping) {
+      return;
+    }
 
     const hasContent = this.textarea.value.trim().length > 0;
 
@@ -263,7 +265,9 @@ class MessageComposer {
 
       // Check file size
       if (file.size > this.options.maxFileSize) {
-        this.showError(`${file.name} is too large (max ${this.formatFileSize(this.options.maxFileSize)})`);
+        this.showError(
+          `${file.name} is too large (max ${this.formatFileSize(this.options.maxFileSize)})`
+        );
         continue;
       }
 
@@ -296,7 +300,9 @@ class MessageComposer {
     }
 
     this.attachmentsContainer.style.display = 'block';
-    this.attachmentsContainer.innerHTML = this.attachedFiles.map((file, index) => `
+    this.attachmentsContainer.innerHTML = this.attachedFiles
+      .map(
+        (file, index) => `
       <div class="message-composer__attachment" data-index="${index}">
         <div class="message-composer__attachment-icon">
           ${this.getFileIcon(file)}
@@ -313,15 +319,19 @@ class MessageComposer {
           ×
         </button>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     // Add remove handlers
-    this.attachmentsContainer.querySelectorAll('.message-composer__attachment-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const index = parseInt(btn.dataset.index, 10);
-        this.removeAttachment(index);
+    this.attachmentsContainer
+      .querySelectorAll('.message-composer__attachment-remove')
+      .forEach(btn => {
+        btn.addEventListener('click', () => {
+          const index = parseInt(btn.dataset.index, 10);
+          this.removeAttachment(index);
+        });
       });
-    });
   }
 
   /**
@@ -342,9 +352,9 @@ class MessageComposer {
    */
   showEmojiPicker() {
     const emojis = ['😊', '😂', '❤️', '👍', '👎', '🎉', '🔥', '✨', '💯', '🙏'];
-    const emojiHtml = emojis.map(emoji => 
-      `<button type="button" class="emoji-picker__emoji">${emoji}</button>`
-    ).join('');
+    const emojiHtml = emojis
+      .map(emoji => `<button type="button" class="emoji-picker__emoji">${emoji}</button>`)
+      .join('');
 
     // Create or update picker
     let picker = this.container.querySelector('.emoji-picker');
@@ -355,7 +365,7 @@ class MessageComposer {
       this.container.appendChild(picker);
 
       // Add emoji click handlers
-      picker.querySelectorAll('.emoji-picker__emoji').forEach((btn) => {
+      picker.querySelectorAll('.emoji-picker__emoji').forEach(btn => {
         btn.addEventListener('click', () => {
           this.insertEmoji(btn.textContent);
           picker.remove();
@@ -364,11 +374,15 @@ class MessageComposer {
 
       // Click outside to close
       setTimeout(() => {
-        document.addEventListener('click', (e) => {
-          if (!picker.contains(e.target) && e.target !== this.emojiBtn) {
-            picker.remove();
-          }
-        }, { once: true });
+        document.addEventListener(
+          'click',
+          e => {
+            if (!picker.contains(e.target) && e.target !== this.emojiBtn) {
+              picker.remove();
+            }
+          },
+          { once: true }
+        );
       }, 0);
     }
   }
@@ -380,11 +394,11 @@ class MessageComposer {
     const start = this.textarea.selectionStart;
     const end = this.textarea.selectionEnd;
     const text = this.textarea.value;
-    
+
     this.textarea.value = text.substring(0, start) + emoji + text.substring(end);
     this.textarea.selectionStart = this.textarea.selectionEnd = start + emoji.length;
     this.textarea.focus();
-    
+
     this.autoGrow();
     this.updateCharCount();
     this.updateSendButton();
@@ -394,11 +408,15 @@ class MessageComposer {
    * Send message
    */
   async send() {
-    if (this.isSending) return;
+    if (this.isSending) {
+      return;
+    }
 
     const content = this.textarea.value.trim();
-    
-    if (!content && this.attachedFiles.length === 0) return;
+
+    if (!content && this.attachedFiles.length === 0) {
+      return;
+    }
 
     if (!this.options.onSend) {
       console.error('MessageComposer: onSend callback not provided');
@@ -412,10 +430,10 @@ class MessageComposer {
 
     try {
       await this.options.onSend(content, this.attachedFiles);
-      
+
       // Clear on success
       this.clear();
-      
+
       // Success animation
       this.sendBtn.classList.add('message-composer__btn--sent');
       setTimeout(() => {
@@ -441,7 +459,7 @@ class MessageComposer {
     this.updateCharCount();
     this.renderAttachments();
     this.updateSendButton();
-    
+
     if (this.isTyping) {
       this.isTyping = false;
       if (this.options.onTyping) {
@@ -483,11 +501,11 @@ class MessageComposer {
     toast.className = 'message-composer__toast message-composer__toast--error';
     toast.textContent = message;
     this.container.appendChild(toast);
-    
+
     setTimeout(() => {
       toast.classList.add('message-composer__toast--visible');
     }, 10);
-    
+
     setTimeout(() => {
       toast.classList.remove('message-composer__toast--visible');
       setTimeout(() => toast.remove(), 300);
@@ -498,11 +516,13 @@ class MessageComposer {
    * Format file size
    */
   formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) {
+      return '0 Bytes';
+    }
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
   }
 
   /**

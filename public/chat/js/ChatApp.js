@@ -53,7 +53,6 @@ class ChatApp {
 
       this.isInitialized = true;
       this.hideLoadingState();
-
     } catch (error) {
       console.error('Failed to initialize chat app:', error);
       this.showError('Failed to initialize chat. Please refresh the page.');
@@ -78,7 +77,7 @@ class ChatApp {
 
       // Fall back to API
       const response = await fetch('/api/v1/auth/me', {
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -87,11 +86,10 @@ class ChatApp {
 
       const data = await response.json();
       this.currentUser = data.user || data;
-
     } catch (error) {
       console.error('Failed to load current user:', error);
       // Redirect to login
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       throw error;
     }
   }
@@ -104,7 +102,9 @@ class ChatApp {
   getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    if (parts.length === 2) {
+      return parts.pop().split(';').shift();
+    }
     return null;
   }
 
@@ -156,7 +156,7 @@ class ChatApp {
     // Search input
     const searchInput = document.getElementById('conversationSearch');
     if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
+      searchInput.addEventListener('input', e => {
         this.chatState.setSearchQuery(e.target.value);
       });
     }
@@ -178,23 +178,23 @@ class ChatApp {
     }
 
     // WebSocket events
-    this.chatSocket.on('message:new', (message) => {
+    this.chatSocket.on('message:new', message => {
       this.handleNewMessage(message);
     });
 
-    this.chatSocket.on('message:read', (data) => {
+    this.chatSocket.on('message:read', data => {
       this.handleMessageRead(data);
     });
 
-    this.chatSocket.on('typing', (data) => {
+    this.chatSocket.on('typing', data => {
       this.chatState.updateTyping(data.conversationId, data.userId, data.isTyping);
     });
 
-    this.chatSocket.on('user:online', (data) => {
+    this.chatSocket.on('user:online', data => {
       this.chatState.updateUserOnlineStatus(data.userId, true);
     });
 
-    this.chatSocket.on('user:offline', (data) => {
+    this.chatSocket.on('user:offline', data => {
       this.chatState.updateUserOnlineStatus(data.userId, false);
     });
 
@@ -206,13 +206,13 @@ class ChatApp {
       this.updateConnectionStatus(false);
     });
 
-    this.chatSocket.on('error', (error) => {
+    this.chatSocket.on('error', error => {
       console.error('WebSocket error:', error);
       this.showError('Connection error. Reconnecting...');
     });
 
     // Listen for active conversation changes
-    this.chatState.on('conversation:active', (conversationId) => {
+    this.chatState.on('conversation:active', conversationId => {
       if (conversationId) {
         this.updateURL(conversationId);
         if (this.isMobile) {
@@ -228,12 +228,11 @@ class ChatApp {
   async loadInitialData() {
     try {
       this.conversationList.showLoading();
-      
+
       const conversations = await this.chatAPI.getConversations();
       this.chatState.setConversations(conversations);
-      
+
       this.conversationList.hideLoading();
-      
     } catch (error) {
       console.error('Failed to load conversations:', error);
       this.conversationList.hideLoading();
@@ -247,10 +246,10 @@ class ChatApp {
   connectWebSocket() {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
-    
+
     this.chatSocket.connect(wsUrl, {
       userId: this.currentUser.id,
-      token: this.getCookie('token') || ''
+      token: this.getCookie('token') || '',
     });
   }
 
@@ -260,7 +259,7 @@ class ChatApp {
   handleRouting() {
     const urlParams = new URLSearchParams(window.location.search);
     const conversationId = urlParams.get('conversation');
-    
+
     if (conversationId) {
       this.chatState.setActiveConversation(conversationId);
     }
@@ -283,7 +282,7 @@ class ChatApp {
     const handleResize = () => {
       const wasMobile = this.isMobile;
       this.isMobile = window.innerWidth <= 768;
-      
+
       // If switching from mobile to desktop, show both panels
       if (wasMobile && !this.isMobile) {
         this.showBothPanels();
@@ -299,9 +298,13 @@ class ChatApp {
   showSidebar() {
     const sidebar = document.querySelector('.chat-sidebar');
     const chatContainer = document.querySelector('.chat-container');
-    
-    if (sidebar) sidebar.classList.remove('hidden');
-    if (chatContainer) chatContainer.classList.add('hidden');
+
+    if (sidebar) {
+      sidebar.classList.remove('hidden');
+    }
+    if (chatContainer) {
+      chatContainer.classList.add('hidden');
+    }
   }
 
   /**
@@ -310,9 +313,13 @@ class ChatApp {
   showChatView() {
     const sidebar = document.querySelector('.chat-sidebar');
     const chatContainer = document.querySelector('.chat-container');
-    
-    if (sidebar) sidebar.classList.add('hidden');
-    if (chatContainer) chatContainer.classList.remove('hidden');
+
+    if (sidebar) {
+      sidebar.classList.add('hidden');
+    }
+    if (chatContainer) {
+      chatContainer.classList.remove('hidden');
+    }
   }
 
   /**
@@ -321,9 +328,13 @@ class ChatApp {
   showBothPanels() {
     const sidebar = document.querySelector('.chat-sidebar');
     const chatContainer = document.querySelector('.chat-container');
-    
-    if (sidebar) sidebar.classList.remove('hidden');
-    if (chatContainer) chatContainer.classList.remove('hidden');
+
+    if (sidebar) {
+      sidebar.classList.remove('hidden');
+    }
+    if (chatContainer) {
+      chatContainer.classList.remove('hidden');
+    }
   }
 
   /**
@@ -337,19 +348,21 @@ class ChatApp {
       const messages = this.chatState.getMessages(message.conversationId) || [];
       messages.push(message);
       this.chatState.updateMessages(message.conversationId, messages);
-      
+
       // Update conversation last message
       this.chatState.updateConversationLastMessage(message.conversationId, message);
-      
+
       // If not the active conversation, increment unread count
-      if (message.conversationId !== this.chatState.activeConversationId && 
-          message.senderId !== this.currentUser.id) {
+      if (
+        message.conversationId !== this.chatState.activeConversationId &&
+        message.senderId !== this.currentUser.id
+      ) {
         this.chatState.incrementUnreadCount(message.conversationId);
-        
+
         // Play notification sound or show notification
         this.showNotification(conversation.name, message.content);
       }
-      
+
       // If active conversation, mark as read
       if (message.conversationId === this.chatState.activeConversationId) {
         this.chatAPI.markAsRead(message.conversationId).catch(err => {
@@ -381,7 +394,7 @@ class ChatApp {
    */
   updateConnectionStatus(isConnected) {
     let statusIndicator = document.getElementById('connectionStatus');
-    
+
     if (!statusIndicator) {
       statusIndicator = document.createElement('div');
       statusIndicator.id = 'connectionStatus';
@@ -414,7 +427,7 @@ class ChatApp {
         body: body,
         icon: '/images/logo.png',
         badge: '/images/badge.png',
-        tag: 'chat-message'
+        tag: 'chat-message',
       });
     } else if ('Notification' in window && Notification.permission !== 'denied') {
       // Request permission
@@ -422,7 +435,7 @@ class ChatApp {
         if (permission === 'granted') {
           new Notification(title, {
             body: body,
-            icon: '/images/logo.png'
+            icon: '/images/logo.png',
           });
         }
       });
@@ -459,7 +472,7 @@ class ChatApp {
    */
   showError(message) {
     let errorToast = document.getElementById('errorToast');
-    
+
     if (!errorToast) {
       errorToast = document.createElement('div');
       errorToast.id = 'errorToast';

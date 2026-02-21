@@ -89,7 +89,7 @@ describe('Advanced Search CSRF Integration', () => {
     it('should throw error if CSRF handler is not available', async () => {
       global.window.csrfHandler = null;
 
-      const apiFetch = async (url, options = {}) => {
+      const apiFetch = async (url, _options = {}) => {
         if (!window.csrfHandler) {
           throw new Error('CSRF handler not available');
         }

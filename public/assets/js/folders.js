@@ -364,7 +364,7 @@
   // ==========================================
 
   function showCreateFolderModal(parentId = null) {
-    const modal = createModal(
+    createModal(
       'Create Folder',
       `
       <form id="create-folder-form" class="folder-form">
@@ -437,7 +437,7 @@
       return;
     }
 
-    const modal = createModal(
+    createModal(
       'Edit Folder',
       `
       <form id="edit-folder-form" class="folder-form">
@@ -488,7 +488,7 @@
       return;
     }
 
-    const modal = createModal(
+    createModal(
       'Delete Folder',
       `
       <div class="folder-delete-warning">

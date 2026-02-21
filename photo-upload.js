@@ -98,14 +98,14 @@ const MAX_FILE_SIZE_MARKETPLACE = uploadValidation.MAX_FILE_SIZE_MARKETPLACE;
  */
 function generateFilename(originalname) {
   // Validate and provide fallback for originalname
-  if (!originalname || typeof originalname !== 'string') {
+  const safeName = !originalname || typeof originalname !== 'string' ? 'image.jpg' : originalname;
+  if (safeName !== originalname) {
     logger.warn('Invalid originalname provided to generateFilename', {
       originalname,
       type: typeof originalname,
     });
-    originalname = 'image.jpg'; // Fallback name with extension
   }
-  const ext = path.extname(originalname).toLowerCase();
+  const ext = path.extname(safeName).toLowerCase();
   const hash = crypto.randomBytes(16).toString('hex');
   const timestamp = Date.now();
   return `${timestamp}-${hash}${ext}`;

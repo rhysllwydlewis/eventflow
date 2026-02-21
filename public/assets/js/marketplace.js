@@ -536,45 +536,45 @@
     if (messageToggleBtn && inlineComposer) {
       // If QuickComposeV4 is handling this button, skip inline composer setup
       if (messageToggleBtn.dataset.quickCompose !== 'true' || !window.QuickComposeV4) {
-      const composerInput = inlineComposer.querySelector('.listing-inline-composer-input');
-      const composerStatus = inlineComposer.querySelector('.listing-inline-composer-status');
-      const composerSendBtn = inlineComposer.querySelector('.listing-inline-composer-send');
-      const composerCancelBtn = inlineComposer.querySelector('.listing-inline-composer-cancel');
+        const composerInput = inlineComposer.querySelector('.listing-inline-composer-input');
+        const composerStatus = inlineComposer.querySelector('.listing-inline-composer-status');
+        const composerSendBtn = inlineComposer.querySelector('.listing-inline-composer-send');
+        const composerCancelBtn = inlineComposer.querySelector('.listing-inline-composer-cancel');
 
-      const hideComposer = () => {
-        inlineComposer.classList.remove('open');
-        setTimeout(() => {
-          inlineComposer.hidden = true;
-          messageToggleBtn.hidden = false;
-        }, 220);
-      };
+        const hideComposer = () => {
+          inlineComposer.classList.remove('open');
+          setTimeout(() => {
+            inlineComposer.hidden = true;
+            messageToggleBtn.hidden = false;
+          }, 220);
+        };
 
-      messageToggleBtn.addEventListener('click', () => {
-        inlineComposer.hidden = false;
-        requestAnimationFrame(() => inlineComposer.classList.add('open'));
-        messageToggleBtn.hidden = true;
-        composerInput.focus();
-        composerInput.setSelectionRange(composerInput.value.length, composerInput.value.length);
-      });
-
-      composerCancelBtn.addEventListener('click', hideComposer);
-
-      composerSendBtn.addEventListener('click', async () => {
-        const message = composerInput.value.trim();
-        if (!message) {
-          composerStatus.textContent = 'Please enter a message.';
-          composerStatus.style.color = '#dc2626';
-          return;
-        }
-
-        await submitMarketplaceMessage({
-          listing,
-          listingTitle: listing.title,
-          message,
-          statusEl: composerStatus,
-          sendBtn: composerSendBtn,
+        messageToggleBtn.addEventListener('click', () => {
+          inlineComposer.hidden = false;
+          requestAnimationFrame(() => inlineComposer.classList.add('open'));
+          messageToggleBtn.hidden = true;
+          composerInput.focus();
+          composerInput.setSelectionRange(composerInput.value.length, composerInput.value.length);
         });
-      });
+
+        composerCancelBtn.addEventListener('click', hideComposer);
+
+        composerSendBtn.addEventListener('click', async () => {
+          const message = composerInput.value.trim();
+          if (!message) {
+            composerStatus.textContent = 'Please enter a message.';
+            composerStatus.style.color = '#dc2626';
+            return;
+          }
+
+          await submitMarketplaceMessage({
+            listing,
+            listingTitle: listing.title,
+            message,
+            statusEl: composerStatus,
+            sendBtn: composerSendBtn,
+          });
+        });
       } // end if inline composer
     }
 
@@ -646,7 +646,7 @@
       }
 
       const csrfToken = await fetchCsrfToken();
-      
+
       // Use v4 API for conversation creation (2-step: create conversation, then send message)
       let threadRes = await fetch('/api/v4/messenger/conversations', {
         method: 'POST',
@@ -667,13 +667,12 @@
       });
 
       let conversationId = null;
-      let useV4 = false;
 
       if (threadRes.ok) {
         // v4 API succeeded - now send the initial message
         const data = await threadRes.json();
         conversationId = data.conversation?._id || data.conversation?.id;
-        
+
         if (conversationId && message.trim()) {
           // Step 2: Send initial message to the conversation
           try {
@@ -691,7 +690,6 @@
             // Continue anyway - conversation was created
           }
         }
-        useV4 = true;
       } else {
         // Fall back to v1 API for backward compatibility
         threadRes = await fetch('/api/v1/threads/start', {

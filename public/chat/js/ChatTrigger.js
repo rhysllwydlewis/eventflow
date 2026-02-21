@@ -41,17 +41,25 @@ class ChatTrigger {
     button.className = `chat-trigger-btn ${buttonClass}`;
     button.setAttribute('data-recipient-id', recipientId);
     button.setAttribute('data-recipient-name', recipientName);
-    if (recipientAvatar) button.setAttribute('data-recipient-avatar', recipientAvatar);
+    if (recipientAvatar) {
+      button.setAttribute('data-recipient-avatar', recipientAvatar);
+    }
     button.setAttribute('data-recipient-role', recipientRole);
     button.setAttribute('data-conversation-type', conversationType);
-    if (context) button.setAttribute('data-context', JSON.stringify(context));
+    if (context) {
+      button.setAttribute('data-context', JSON.stringify(context));
+    }
 
     button.innerHTML = `
-      ${showIcon ? `
+      ${
+        showIcon
+          ? `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
-      ` : ''}
+      `
+          : ''
+      }
       <span>${buttonText}</span>
     `;
 
@@ -68,9 +76,6 @@ class ChatTrigger {
   static async handleClick(button) {
     try {
       const recipientId = button.getAttribute('data-recipient-id');
-      const recipientName = button.getAttribute('data-recipient-name');
-      const recipientAvatar = button.getAttribute('data-recipient-avatar');
-      const recipientRole = button.getAttribute('data-recipient-role');
       const conversationType = button.getAttribute('data-conversation-type');
       const contextStr = button.getAttribute('data-context');
       const context = contextStr ? JSON.parse(contextStr) : null;
@@ -93,22 +98,6 @@ class ChatTrigger {
         button.innerHTML = originalContent;
         return;
       }
-
-      // Build participants array
-      const participants = [
-        {
-          userId: currentUser.userId || currentUser.id,
-          displayName: currentUser.name || currentUser.email || 'You',
-          avatar: currentUser.avatar || null,
-          role: currentUser.role || 'customer',
-        },
-        {
-          userId: recipientId,
-          displayName: recipientName,
-          avatar: recipientAvatar,
-          role: recipientRole,
-        },
-      ];
 
       // Create conversation
       const api = new ChatAPI();
@@ -149,9 +138,7 @@ class ChatTrigger {
       }
 
       // Fallback: try to parse from cookie
-      const userCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('user='));
+      const userCookie = document.cookie.split('; ').find(row => row.startsWith('user='));
 
       if (userCookie) {
         const userData = decodeURIComponent(userCookie.split('=')[1]);
@@ -198,10 +185,6 @@ class ChatTrigger {
     triggers.forEach(element => {
       const recipientId = element.getAttribute('data-recipient-id');
       const recipientName = element.getAttribute('data-recipient-name');
-      const recipientAvatar = element.getAttribute('data-recipient-avatar');
-      const recipientRole = element.getAttribute('data-recipient-role') || 'customer';
-      const conversationType = element.getAttribute('data-conversation-type') || 'direct';
-      const contextStr = element.getAttribute('data-context');
 
       if (!recipientId || !recipientName) {
         console.warn('Chat trigger missing required attributes:', element);
