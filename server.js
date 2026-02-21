@@ -463,6 +463,11 @@ const canonicalPages = [
   'contact',
   'legal',
   'credits',
+  'checkout',
+  'privacy',
+  'terms',
+  'payment-success',
+  'payment-cancel',
 ];
 
 canonicalPages.forEach(page => {

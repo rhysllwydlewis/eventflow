@@ -1,6 +1,7 @@
 /**
  * Pricing Page JavaScript
- * Handles authentication state and dynamic button text updates
+ * Handles authentication state and dynamic button text updates.
+ * Owns all pricing CTA click handling (single authoritative handler).
  */
 
 (function () {
@@ -9,27 +10,30 @@
   // Check authentication and get user info
   async function checkAuthAndUpdateButtons() {
     try {
-      const response = await fetch('/api/v1/auth/me', {
-        credentials: 'include',
-      });
+      let user = null;
 
-      if (response.ok) {
-        const data = await response.json();
-        // Handle both wrapped ({user: ...}) and unwrapped response formats
-        const user = data.user || data;
-
-        if (user) {
-          // User is logged in, update buttons based on their current plan
-          updateButtonsForAuthenticatedUser(user);
-        } else {
-          // No user data in response
-          updateButtonsForUnauthenticatedUser();
-        }
-      } else if (response.status === 401) {
-        // User is not authenticated - this is expected, not an error
-        updateButtonsForUnauthenticatedUser();
+      // Prefer the centralised auth state manager to avoid duplicate API calls
+      if (window.AuthStateManager) {
+        const authState = await window.AuthStateManager.init();
+        user = authState && authState.user;
       } else {
-        // Other error status
+        const response = await fetch('/api/v1/auth/me', {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Handle both wrapped ({user: ...}) and unwrapped response formats
+          user = data.user || data;
+        }
+      }
+
+      if (user) {
+        // User is logged in – update button labels and attach checkout handlers
+        updateButtonsForAuthenticatedUser(user);
+        attachCheckoutHandlers(user);
+      } else {
+        // User is not authenticated – rewrite CTAs to go via auth first
         updateButtonsForUnauthenticatedUser();
       }
     } catch (error) {
@@ -38,7 +42,7 @@
     }
   }
 
-  // Check if user's Pro plan is active (copied from server.js logic)
+  // Check if user's Pro plan is active (mirrors server.js logic)
   function isProActive(user) {
     if (!user || !user.isPro) {
       return false;
@@ -53,16 +57,16 @@
     return expiryTime > Date.now();
   }
 
-  // Update buttons for authenticated users
+  // Update button labels for authenticated users
   function updateButtonsForAuthenticatedUser(user) {
-    // Check if user has Pro plan active
     const hasActivePro = isProActive(user);
 
-    // Update free plan button
-    const freeButtons = document.querySelectorAll('a[href="/checkout.html?plan=free"]');
+    // Mark the free plan button as the current plan when user has no active Pro
+    const freeButtons = document.querySelectorAll(
+      'a[href="/checkout.html?plan=free"], a[href="/checkout.html?plan=starter"]'
+    );
     freeButtons.forEach(button => {
       if (!hasActivePro) {
-        // User is on free plan (not Pro or Pro has expired)
         button.textContent = 'Current Plan';
         button.classList.remove('secondary');
         button.style.opacity = '0.6';
@@ -71,15 +75,94 @@
         button.setAttribute('aria-disabled', 'true');
       }
     });
-
-    // If user has active Pro, you could also update those buttons to show "Current Plan"
-    // This would require knowing which specific pro plan they have
-    // For now, we'll just handle the free plan case
   }
 
-  // Update buttons for unauthenticated users to redirect to auth
+  // Attach direct checkout click handlers for authenticated users.
+  // This replaces the (now-removed) inline script in pricing.html.
+  function attachCheckoutHandlers(user) {
+    const returnUrl =
+      user && user.role === 'customer'
+        ? window.location.origin + '/dashboard-customer.html'
+        : window.location.origin + '/dashboard-supplier.html';
+
+    const pricingButtons = document.querySelectorAll('.pricing-cta');
+    pricingButtons.forEach(button => {
+      // Skip buttons that are already disabled (e.g. "Current Plan")
+      if (button.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
+
+      button.setAttribute('data-original-text', button.textContent);
+
+      button.addEventListener('click', async function (e) {
+        const href = this.getAttribute('href');
+        const planMatch = href && href.match(/plan=(\w+)/);
+
+        if (!planMatch) {
+          // No plan in href – allow default navigation
+          return;
+        }
+
+        e.preventDefault();
+        const planId = planMatch[1];
+
+        try {
+          this.disabled = true;
+          this.textContent = 'Processing...';
+
+          const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
+          if (!csrfResponse.ok) {
+            throw new Error('Failed to get CSRF token');
+          }
+          const csrfData = await csrfResponse.json();
+          const csrfToken = csrfData.token || csrfData.csrfToken;
+
+          const response = await fetch('/api/v2/subscriptions/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              planId: planId,
+              returnUrl: returnUrl,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.error || errorData.message || 'Failed to create checkout session'
+            );
+          }
+
+          const data = await response.json();
+          if (data.url || data.checkoutUrl) {
+            window.location.href = data.url || data.checkoutUrl;
+          } else {
+            throw new Error('No checkout URL returned');
+          }
+        } catch (error) {
+          console.error('Checkout error:', error);
+          if (window.showNotification) {
+            window.showNotification(
+              error.message || 'Failed to start checkout. Please try again.',
+              'error'
+            );
+          } else {
+            alert(error.message || 'Failed to start checkout. Please try again.');
+          }
+          this.disabled = false;
+          this.textContent = this.getAttribute('data-original-text') || 'Upgrade';
+        }
+      });
+    });
+  }
+
+  // Rewrite CTAs for unauthenticated users to go via the auth page first.
+  // Uses canonical (extensionless) paths in the redirect parameter.
   function updateButtonsForUnauthenticatedUser() {
-    // Find all pricing CTAs and update them to redirect to auth with plan parameter
     const allPricingButtons = document.querySelectorAll('a[href*="/checkout.html?plan="]');
     allPricingButtons.forEach(button => {
       const originalHref = button.getAttribute('href');
@@ -88,11 +171,12 @@
         const plan = url.searchParams.get('plan');
 
         if (plan) {
-          // Redirect to auth with plan and redirect parameters
-          const authUrl = new URL('/auth.html', window.location.origin);
-          authUrl.searchParams.set('redirect', originalHref);
-          authUrl.searchParams.set('plan', plan);
-          button.setAttribute('href', authUrl.toString());
+          // Use canonical extensionless redirect path so auth page can send user
+          // back to pricing (not auth) after login, avoiding the loop.
+          button.setAttribute(
+            'href',
+            `/auth?redirect=${encodeURIComponent('/pricing?plan=' + plan)}`
+          );
         }
       }
     });

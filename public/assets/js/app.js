@@ -151,7 +151,9 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/settings.html',
       '/plan.html',
       '/pricing.html',
+      '/pricing',
       '/checkout.html',
+      '/checkout',
       '/supplier/subscription.html',
       '/my-marketplace-listings.html',
       '/supplier/marketplace-new-listing.html',
@@ -166,7 +168,9 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/settings.html',
       '/plan.html',
       '/pricing.html',
+      '/pricing',
       '/checkout.html',
+      '/checkout',
       '/my-marketplace-listings.html',
       '/marketplace',
       '/marketplace.html',
@@ -4060,15 +4064,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (existing && loginStatus) {
           const label = existing.name || existing.email || existing.role || 'your account';
           loginStatus.textContent = `You are already signed in as ${label}. Redirecting…`;
+
+          // Honour a valid redirect param (e.g. coming from the pricing page)
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          let destination = null;
+
+          if (redirectParam && validateRedirectForRole(redirectParam, existing.role)) {
+            destination = redirectParam;
+          } else if (existing.role === 'admin') {
+            destination = '/admin.html';
+          } else if (existing.role === 'supplier') {
+            destination = '/dashboard-supplier.html';
+          } else {
+            destination = '/dashboard-customer.html';
+          }
+
           setTimeout(() => {
-            // Use role-based routing, ignore any redirect params if already logged in
-            if (existing.role === 'admin') {
-              location.href = '/admin.html';
-            } else if (existing.role === 'supplier') {
-              location.href = '/dashboard-supplier.html';
-            } else {
-              location.href = '/dashboard-customer.html';
-            }
+            location.href = destination;
           }, 600);
         }
       } catch (_) {
