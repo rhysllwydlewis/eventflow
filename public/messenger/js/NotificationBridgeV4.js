@@ -39,6 +39,7 @@ class NotificationBridgeV4 {
       this.options.bellSelector,
       '#headerNotificationBadge',
       '#notificationBadge',
+      '#ef-notification-badge',
       '.messenger-unread-badge',
     ];
 

@@ -553,6 +553,42 @@ class MessengerV4Service {
       }
     );
 
+    // Recalculate conversation's lastMessage if the deleted message was the preview
+    const conversation = await this.conversationsCollection.findOne({
+      _id: message.conversationId,
+      'lastMessage.sentAt': message.createdAt,
+      'lastMessage.senderId': message.senderId,
+    });
+
+    if (conversation) {
+      const prevMessages = await this.messagesCollection
+        .find({
+          conversationId: message.conversationId,
+          isDeleted: false,
+        })
+        .sort({ createdAt: -1 })
+        .limit(1)
+        .toArray();
+      const prevMessage = prevMessages[0] || null;
+
+      await this.conversationsCollection.updateOne(
+        { _id: message.conversationId },
+        {
+          $set: {
+            lastMessage: prevMessage
+              ? {
+                  content: prevMessage.content.substring(0, 100),
+                  senderId: prevMessage.senderId,
+                  senderName: prevMessage.senderName,
+                  sentAt: prevMessage.createdAt,
+                  type: prevMessage.type,
+                }
+              : null,
+          },
+        }
+      );
+    }
+
     return true;
   }
 

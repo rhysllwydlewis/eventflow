@@ -169,10 +169,20 @@
       }
     }
 
-    // Update title
+    // Update title with inline tier icon
     const heroTitle = document.getElementById('hero-title');
     if (heroTitle) {
       heroTitle.textContent = supplier.name;
+      const tierIconEl = document.getElementById('hero-tier-icon');
+      if (tierIconEl) {
+        // Prefer shared EFTierIcon helper (tier-icon.js), fall back to module-imported renderTierIcon
+        const iconFn =
+          (typeof EFTierIcon !== 'undefined' && EFTierIcon.render) ||
+          (typeof renderTierIcon !== 'undefined' && renderTierIcon);
+        if (iconFn) {
+          tierIconEl.innerHTML = iconFn(supplier);
+        }
+      }
     }
 
     // Update breadcrumb
@@ -238,15 +248,16 @@
         const recipientId = supplier.ownerUserId;
         if (!recipientId) {
           if (window.EventFlowNotifications) {
-            window.EventFlowNotifications.info('This supplier cannot receive messages at this time.');
+            window.EventFlowNotifications.info(
+              'This supplier cannot receive messages at this time.'
+            );
           }
           return;
         }
         // Sanitize supplier name for safe use in prefill message
         // Remove potentially harmful characters while preserving readability
-        const supplierName = (supplier.name || 'Supplier')
-          .replace(/[<>'"&]/g, '')
-          .trim() || 'Supplier';
+        const supplierName =
+          (supplier.name || 'Supplier').replace(/[<>'"&]/g, '').trim() || 'Supplier';
 
         // Use QuickComposeV4 slide-up panel if available
         if (window.QuickComposeV4) {
@@ -267,7 +278,7 @@
           contextType: 'supplier',
           contextId: supplier.id,
           contextTitle: supplier.name,
-          prefill: `Hi ${supplierName}! I'd like to enquire about your services.`
+          prefill: `Hi ${supplierName}! I'd like to enquire about your services.`,
         });
         window.location.href = `/messenger/?${params.toString()}`;
       };
@@ -338,6 +349,128 @@
   }
 
   /**
+   * Render the dedicated "Badges & Recognition" section on the profile page.
+   * Uses a card layout (icon + name + description) for earned badges.
+   * Groups: Subscription → Earned/Performance → Founding/Featured → Verification
+   */
+  function renderBadgesSection(supplier) {
+    const container = document.getElementById('supplier-badges-section');
+    if (!container || !supplier) {
+      return;
+    }
+
+    const sections = [];
+
+    // --- Group 1: Subscription tier badges ---
+    const tier =
+      typeof EFTierIcon !== 'undefined'
+        ? EFTierIcon.resolve(supplier)
+        : supplier.subscriptionTier ||
+          supplier.subscription?.tier ||
+          (supplier.isPro ? 'pro' : 'free');
+
+    const tierBadgesHtml = [];
+    if (tier === 'pro_plus') {
+      tierBadgesHtml.push(
+        '<span class="badge badge-pro-plus" title="Professional Plus — Premium subscription" aria-label="Pro Plus subscriber">Pro Plus</span>'
+      );
+    } else if (tier === 'pro') {
+      tierBadgesHtml.push(
+        '<span class="badge badge-pro" title="Professional — Enhanced subscription" aria-label="Pro subscriber">Pro</span>'
+      );
+    }
+
+    if (tierBadgesHtml.length > 0) {
+      sections.push(`
+        <p class="badges-section__group-label">Subscription</p>
+        <div class="profile-badges">${tierBadgesHtml.join('')}</div>
+      `);
+    }
+
+    // --- Group 2: Earned / auto-awarded performance badges (from badgeDetails) ---
+    const SKIP_TYPES = new Set(['pro', 'pro-plus', 'founder', 'verified', 'featured']);
+    const earnedBadges = Array.isArray(supplier.badgeDetails)
+      ? supplier.badgeDetails.filter(b => !SKIP_TYPES.has(b.type))
+      : [];
+
+    if (earnedBadges.length > 0) {
+      const cards = earnedBadges
+        .map(
+          b => `
+        <div class="badge-card">
+          <div class="badge-card__icon" aria-hidden="true">${b.icon || '🏅'}</div>
+          <div class="badge-card__body">
+            <div class="badge-card__name">${escapeHtml(b.name)}</div>
+            ${b.description ? `<div class="badge-card__desc">${escapeHtml(b.description)}</div>` : ''}
+          </div>
+        </div>
+      `
+        )
+        .join('');
+
+      sections.push(`
+        <p class="badges-section__group-label">Earned Achievements</p>
+        <div class="badge-cards-grid">${cards}</div>
+      `);
+    }
+
+    // --- Group 3: Founding / Featured ---
+    const honorBadges = [];
+    if (supplier.isFoundingSupplier || supplier.isFounding || supplier.founding) {
+      honorBadges.push(
+        '<span class="badge badge-founding" title="Founding Supplier — One of our first partners" aria-label="Founding supplier">🏆 Founding</span>'
+      );
+    }
+    if (supplier.featured || supplier.featuredSupplier) {
+      honorBadges.push(
+        '<span class="badge badge-featured" title="Featured Supplier" aria-label="Featured supplier">★ Featured</span>'
+      );
+    }
+    if (honorBadges.length > 0) {
+      sections.push(`
+        <p class="badges-section__group-label">Recognition</p>
+        <div class="profile-badges">${honorBadges.join('')}</div>
+      `);
+    }
+
+    // --- Group 4: Verification badges ---
+    const verifyBadges = [];
+    if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {
+      verifyBadges.push(
+        '<span class="badge badge-email-verified" title="Email address verified" aria-label="Email verified">✓ Email</span>'
+      );
+    }
+    if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
+      verifyBadges.push(
+        '<span class="badge badge-phone-verified" title="Phone number verified" aria-label="Phone verified">✓ Phone</span>'
+      );
+    }
+    if (supplier.businessVerified || supplier.verifications?.business?.verified) {
+      verifyBadges.push(
+        '<span class="badge badge-business-verified" title="Business documents verified" aria-label="Business verified">✓ Business</span>'
+      );
+    }
+    if (verifyBadges.length > 0) {
+      sections.push(`
+        <p class="badges-section__group-label">Verification</p>
+        <div class="profile-badges">${verifyBadges.join('')}</div>
+      `);
+    }
+
+    if (sections.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="badges-section">
+        <h2 class="badges-section__title">Badges &amp; Recognition</h2>
+        ${sections.join('')}
+      </div>
+    `;
+  }
+
+  /**
    * Load supplier data and render hero
    */
   async function loadSupplierData() {
@@ -361,6 +494,9 @@
 
       // Render hero section
       renderHeroSection(supplierData);
+
+      // Render dedicated badges section
+      renderBadgesSection(supplierData);
     } catch (error) {
       console.error('Error loading supplier data:', error);
       const heroTitle = document.getElementById('hero-title');

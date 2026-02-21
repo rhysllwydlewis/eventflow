@@ -48,17 +48,24 @@ function createSupplierCard(supplier, position) {
   const shortlistBtnClass = isInShortlist ? 'btn-shortlist-active' : '';
   const shortlistBtnText = isInShortlist ? '❤️ Saved' : '♡ Save';
 
-  // Build badges
+  // Build badges — use subscriptionTier field first (most reliable), then isPro fallback
+  const tier =
+    supplier.subscriptionTier || supplier.subscription?.tier || (supplier.isPro ? 'pro' : null);
   const badges = [];
   if (supplier.verified) {
     badges.push('<span class="badge badge-verified">✓ Verified</span>');
   }
-  if (supplier.isPro) {
+  if (tier === 'pro_plus') {
+    badges.push('<span class="badge badge-pro-plus">Pro Plus</span>');
+  } else if (tier === 'pro') {
     badges.push('<span class="badge badge-pro">Pro</span>');
   }
   if (supplier.featuredSupplier) {
     badges.push('<span class="badge badge-featured">Featured</span>');
   }
+
+  // Inline tier icon — use shared EFTierIcon helper if available (tier-icon.js)
+  const tierIcon = typeof EFTierIcon !== 'undefined' ? EFTierIcon.render(supplier) : '';
 
   const rating = supplier.rating ? `⭐ ${supplier.rating}` : '';
   const priceDisplay = supplier.price_display || 'Contact for quote';
@@ -72,7 +79,7 @@ function createSupplierCard(supplier, position) {
              data-position="${position}"
              class="supplier-card-link">
             ${escapeHtml(supplier.name)}
-          </a>
+          </a>${tierIcon}
         </h3>
         <div class="supplier-card-meta">
           ${escapeHtml(supplier.category || '')}
@@ -86,7 +93,9 @@ function createSupplierCard(supplier, position) {
           <button class="btn btn-primary btn-quote" data-supplier-id="${escapeHtml(supplier.id)}">
             Request Quote
           </button>
-          ${supplier.ownerUserId ? `
+          ${
+            supplier.ownerUserId
+              ? `
           <button class="btn btn-secondary btn-contact-supplier"
                   data-quick-compose="true"
                   data-recipient-id="${escapeHtml(supplier.ownerUserId)}"
@@ -96,7 +105,9 @@ function createSupplierCard(supplier, position) {
                   style="font-size: 13px; padding: 6px 12px;">
             💬 Message
           </button>
-          ` : ''}
+          `
+              : ''
+          }
           <button class="btn btn-secondary btn-shortlist ${shortlistBtnClass}" 
                   data-supplier-id="${escapeHtml(supplier.id)}"
                   data-supplier-name="${escapeHtml(supplier.name)}"

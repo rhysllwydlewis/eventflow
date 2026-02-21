@@ -5,6 +5,38 @@
  */
 
 /**
+ * Resolve the active subscription tier for a supplier object.
+ * Uses subscriptionTier field first, then subscription.tier, then isPro boolean.
+ * @param {Object} supplier
+ * @returns {'pro_plus'|'pro'|'free'}
+ */
+function resolveSupplierTier(supplier) {
+  if (!supplier) {
+    return 'free';
+  }
+  const tier =
+    supplier.subscriptionTier || supplier.subscription?.tier || (supplier.isPro ? 'pro' : 'free');
+  return tier === 'pro_plus' ? 'pro_plus' : tier === 'pro' ? 'pro' : 'free';
+}
+
+/**
+ * Render a small inline tier icon (star or diamond) to appear next to a name.
+ * Returns an empty string when the supplier is on the free tier.
+ * @param {Object} supplier - Supplier object
+ * @returns {string} HTML string — a single <span> or empty string
+ */
+export function renderTierIcon(supplier) {
+  const tier = resolveSupplierTier(supplier);
+  if (tier === 'pro_plus') {
+    return `<span class="tier-icon tier-icon-pro-plus" title="Professional Plus subscriber" aria-label="Pro Plus">💎</span>`;
+  }
+  if (tier === 'pro') {
+    return `<span class="tier-icon tier-icon-pro" title="Professional subscriber" aria-label="Pro">⭐</span>`;
+  }
+  return '';
+}
+
+/**
  * Generate verification badges HTML for a supplier
  * @param {Object} supplier - Supplier object with verification fields
  * @param {Object} options - Rendering options
@@ -36,21 +68,22 @@ export function renderVerificationBadges(supplier, options = {}) {
     });
   }
 
-  // Priority 2: Subscription Tier Badges
-  if (supplier.subscription?.tier === 'pro_plus' || supplier.proPlan === 'Pro+') {
+  // Priority 2: Subscription Tier Badges — always at top (priority 1 reserved for Founding)
+  const tier = resolveSupplierTier(supplier);
+  if (tier === 'pro_plus') {
     badges.push({
       html: `<span class="badge badge-pro-plus ${size === 'small' ? 'badge-sm' : ''}" 
-                   title="Pro Plus Tier - Premium features" 
+                   title="Professional Plus — Premium subscription" 
                    role="status"
-                   aria-label="Pro plus subscriber">
-               Pro+
+                   aria-label="Pro Plus subscriber">
+               Pro Plus
              </span>`,
       priority: 2,
     });
-  } else if (supplier.subscription?.tier === 'pro' || supplier.isPro) {
+  } else if (tier === 'pro') {
     badges.push({
       html: `<span class="badge badge-pro ${size === 'small' ? 'badge-sm' : ''}" 
-                   title="Pro Tier - Enhanced features" 
+                   title="Professional — Enhanced subscription" 
                    role="status"
                    aria-label="Pro subscriber">
                Pro
@@ -72,13 +105,38 @@ export function renderVerificationBadges(supplier, options = {}) {
     });
   }
 
+  // Priority 3b: Earned / auto-awarded badges from the badgeDetails array
+  // (populated by the server from the badges collection when enriching the supplier response)
+  const EARNED_TYPE_CLASS = {
+    'fast-responder': 'badge-fast-responder',
+    'top-rated': 'badge-top-rated',
+    expert: 'badge-expert',
+    custom: 'badge-custom',
+  };
+  if (Array.isArray(supplier.badgeDetails) && supplier.badgeDetails.length > 0) {
+    supplier.badgeDetails.forEach(badge => {
+      // Skip tier / founder / featured / verification badges — rendered elsewhere
+      const skipTypes = ['pro', 'pro-plus', 'founder', 'verified', 'featured'];
+      if (skipTypes.includes(badge.type)) {
+        return;
+      }
+      const cssClass =
+        EARNED_TYPE_CLASS[badge.id] || EARNED_TYPE_CLASS[badge.type] || 'badge-custom';
+      badges.push({
+        html: `<span class="badge ${cssClass} ${size === 'small' ? 'badge-sm' : ''}" 
+                     title="${badge.description || badge.name}" 
+                     role="status"
+                     aria-label="${badge.name}">
+                 ${badge.icon ? `${badge.icon} ` : ''}${badge.name}
+               </span>`,
+        priority: 2,
+      });
+    });
+  }
+
   // Priority 4: Verification Badges
   // Email Verified
-  if (
-    supplier.emailVerified ||
-    supplier.verifications?.email?.verified ||
-    supplier.verified
-  ) {
+  if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {
     if (showAll) {
       badges.push({
         html: `<span class="badge badge-email-verified ${size === 'small' ? 'badge-sm' : ''}" 
@@ -188,9 +246,7 @@ export function renderVerificationSection(supplier) {
   verifications.push({
     icon: emailVerified ? '✓' : '○',
     title: 'Email Address',
-    description: emailVerified
-      ? `Verified ${emailDate}`
-      : 'Not yet verified',
+    description: emailVerified ? `Verified ${emailDate}` : 'Not yet verified',
     verified: emailVerified,
     class: 'email',
   });
@@ -202,9 +258,7 @@ export function renderVerificationSection(supplier) {
   verifications.push({
     icon: phoneVerified ? '✓' : '○',
     title: 'Phone Number',
-    description: phoneVerified
-      ? `Verified ${phoneDate}`
-      : 'Not yet verified',
+    description: phoneVerified ? `Verified ${phoneDate}` : 'Not yet verified',
     verified: phoneVerified,
     class: 'phone',
   });
@@ -216,9 +270,7 @@ export function renderVerificationSection(supplier) {
   verifications.push({
     icon: businessVerified ? '✓' : '○',
     title: 'Business Documents',
-    description: businessVerified
-      ? `Verified ${businessDate}`
-      : 'Not yet verified',
+    description: businessVerified ? `Verified ${businessDate}` : 'Not yet verified',
     verified: businessVerified,
     class: 'business',
   });
@@ -301,12 +353,19 @@ export function getVerificationSummary(supplier) {
     percentage,
     isFullyVerified: verified === total,
     verificationLevel:
-      percentage === 100 ? 'Complete' : percentage >= 66 ? 'High' : percentage >= 33 ? 'Partial' : 'Low',
+      percentage === 100
+        ? 'Complete'
+        : percentage >= 66
+          ? 'High'
+          : percentage >= 33
+            ? 'Partial'
+            : 'Low',
   };
 }
 
 // Export default object with all functions
 export default {
+  renderTierIcon,
   renderVerificationBadges,
   renderVerificationSection,
   hasVerificationBadges,

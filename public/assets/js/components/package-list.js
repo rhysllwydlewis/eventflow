@@ -456,7 +456,7 @@ class PackageList {
         );
       } else if (tier === 'pro_plus') {
         supplierBadges.push(
-          '<span class="badge badge-pro-plus" style="font-size: 0.65rem; padding: 2px 6px;">Pro+</span>'
+          '<span class="badge badge-pro-plus" style="font-size: 0.65rem; padding: 2px 6px;">Pro Plus</span>'
         );
       } else if (tier === 'pro') {
         supplierBadges.push(
@@ -486,6 +486,9 @@ class PackageList {
           ? `<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">${supplierBadges.join('')}</div>`
           : '';
 
+      // Inline tier icon — use shared EFTierIcon helper if available (tier-icon.js)
+      const tierIcon = typeof EFTierIcon !== 'undefined' ? EFTierIcon.render(supplier) : '';
+
       if (supplierId) {
         supplierHtml = `
           <div class="package-card-supplier">
@@ -493,7 +496,7 @@ class PackageList {
               <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
               <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: ${PackageList.generateGradient(pkg.supplier.name || supplierName)}; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
               <div style="flex: 1;">
-                <span class="package-card-supplier-name">${supplierName}</span>
+                <span class="package-card-supplier-name">${supplierName}</span>${tierIcon}
                 ${supplierBadgesHtml}
               </div>
             </a>
@@ -506,7 +509,7 @@ class PackageList {
               <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
               <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: ${PackageList.generateGradient(pkg.supplier.name || supplierName)}; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
               <div style="flex: 1;">
-                <span class="package-card-supplier-name">${supplierName}</span>
+                <span class="package-card-supplier-name">${supplierName}</span>${tierIcon}
                 ${supplierBadgesHtml}
               </div>
             </div>

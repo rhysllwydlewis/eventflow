@@ -2345,46 +2345,58 @@
             if (!container) return;
 
             try {
-              // Load subscription status from payments API
-              const response = await fetch('/api/payments', {
-                credentials: 'include',
-              });
+              // Load current user data (most reliable for tier)
+              const authResponse = await fetch('/api/v1/auth/me', { credentials: 'include' });
+              const authData = authResponse.ok ? await authResponse.json() : null;
+              const user = authData?.user || null;
+              const currentTier = user?.subscriptionTier || 'free';
 
-              if (response.ok) {
-                const data = await response.json();
+              const TIER_LABELS = {
+                pro: 'Professional',
+                pro_plus: 'Professional Plus',
+                free: 'Starter (Free)',
+              };
+              const TIER_BADGES = {
+                pro: '<span style="display:inline-block;background:#7c3aed;color:#fff;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:0.2em 0.6em;border-radius:999px;margin-left:0.5rem;">PRO</span>',
+                pro_plus: '<span style="display:inline-block;background:#d97706;color:#fff;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:0.2em 0.6em;border-radius:999px;margin-left:0.5rem;">PRO+</span>',
+                free: '',
+              };
 
-                // Find active subscription
-                const activeSubscription = data.payments.find(
+              // Also load payment record for billing details
+              const paymentsResponse = await fetch('/api/payments', { credentials: 'include' });
+              let activeSubscription = null;
+              if (paymentsResponse.ok) {
+                const data = await paymentsResponse.json();
+                activeSubscription = (data.payments || []).find(
                   p =>
                     p.type === 'subscription' &&
                     p.status === 'succeeded' &&
                     p.subscriptionDetails &&
                     !p.subscriptionDetails.cancelAtPeriodEnd
                 );
+              }
 
-                if (activeSubscription) {
-                  const details = activeSubscription.subscriptionDetails;
-                  const endDate = new Date(details.currentPeriodEnd);
+              if (currentTier !== 'free') {
+                const planLabel = TIER_LABELS[currentTier] || currentTier;
+                const badge = TIER_BADGES[currentTier] || '';
+                let billingHtml = '';
+                if (activeSubscription?.subscriptionDetails?.currentPeriodEnd) {
+                  const endDate = new Date(activeSubscription.subscriptionDetails.currentPeriodEnd);
+                  billingHtml = `<p class="small"><strong>Renews:</strong> ${endDate.toLocaleDateString('en-GB')}</p>`;
+                }
 
-                  container.innerHTML = `
-            <p class="small"><strong>Active Plan:</strong> ${details.planName || 'Pro Plan'}</p>
-            <p class="small"><strong>Renews:</strong> ${endDate.toLocaleDateString('en-GB')}</p>
+                container.innerHTML = `
+            <p class="small"><strong>Active Plan:</strong> ${planLabel}${badge}</p>
+            ${billingHtml}
             <p class="small"><strong>Status:</strong> <span class="subscription-status-active">✓ Active</span></p>
             <a href="/supplier/subscription.html" class="btn btn-secondary subscription-action-btn">Manage Subscription</a>
           `;
-                } else {
-                  container.innerHTML = `
-            <p class="small">You're currently on the <strong>Free Plan</strong></p>
-            <p class="small">Upgrade to unlock premium features and boost your visibility!</p>
-            <a href="/supplier/subscription.html" class="btn btn-primary subscription-action-btn">Upgrade to Pro</a>
-          `;
-                }
               } else {
-                // API error - show basic message
                 container.innerHTML = `
-          <p class="small">Manage your subscription and unlock premium features.</p>
-          <a href="/supplier/subscription.html" class="btn btn-secondary subscription-action-btn">View Plans</a>
-        `;
+            <p class="small">You're currently on the <strong>Starter (Free) Plan</strong></p>
+            <p class="small">Upgrade to Pro or Professional Plus to unlock premium features and boost your visibility!</p>
+            <a href="/pricing" class="btn btn-primary subscription-action-btn">View Upgrade Options</a>
+          `;
               }
 
               // Update package limit display

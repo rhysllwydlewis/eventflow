@@ -465,6 +465,8 @@ class MessengerAppV4 {
         if (el) {
           el.remove();
         }
+        // Reload conversation list so lastMessage preview stays accurate
+        this._loadConversations().catch(() => {});
       }
     });
 
@@ -990,6 +992,8 @@ class MessengerAppV4 {
       if (el) {
         el.remove();
       }
+      // Reload conversations so the list preview (lastMessage) reflects the deletion
+      await this._loadConversations();
     } catch (err) {
       console.error('[MessengerAppV4] Delete message failed:', err);
     }

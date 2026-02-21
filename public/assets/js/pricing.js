@@ -29,9 +29,14 @@
       }
 
       if (user) {
-        // User is logged in – update button labels and attach checkout handlers
-        updateButtonsForAuthenticatedUser(user);
-        attachCheckoutHandlers(user);
+        if (user.role === 'customer') {
+          // Customers cannot purchase supplier subscriptions
+          updateButtonsForCustomer();
+        } else {
+          // Supplier (or admin) – update button labels and attach checkout handlers
+          updateButtonsForAuthenticatedUser(user);
+          attachCheckoutHandlers();
+        }
       } else {
         // User is not authenticated – rewrite CTAs to go via auth first
         updateButtonsForUnauthenticatedUser();
@@ -42,52 +47,123 @@
     }
   }
 
-  // Check if user's Pro plan is active (mirrors server.js logic)
-  function isProActive(user) {
-    if (!user || !user.isPro) {
-      return false;
+  // Resolve the user's active subscription tier.
+  // Uses subscriptionTier from auth/me (most accurate) with isPro/proExpiresAt as fallback.
+  function getActiveTier(user) {
+    if (!user) {
+      return 'free';
     }
-    if (!user.proExpiresAt) {
-      return !!user.isPro;
+    // Prefer the explicit tier field now returned by auth/me
+    const tier = user.subscriptionTier || 'free';
+    if (tier !== 'free') {
+      // Honour proExpiresAt when tier is elevated via legacy isPro field
+      if (user.proExpiresAt) {
+        const expiryTime = Date.parse(user.proExpiresAt);
+        if (!isNaN(expiryTime) && expiryTime <= Date.now()) {
+          return 'free';
+        }
+      }
+      return tier;
     }
-    const expiryTime = Date.parse(user.proExpiresAt);
-    if (isNaN(expiryTime)) {
-      return !!user.isPro;
+    // Fallback: legacy isPro boolean
+    if (user.isPro) {
+      if (user.proExpiresAt) {
+        const expiryTime = Date.parse(user.proExpiresAt);
+        if (!isNaN(expiryTime) && expiryTime <= Date.now()) {
+          return 'free';
+        }
+      }
+      return 'pro';
     }
-    return expiryTime > Date.now();
+    return 'free';
   }
 
-  // Update button labels for authenticated users
-  function updateButtonsForAuthenticatedUser(user) {
-    const hasActivePro = isProActive(user);
+  /**
+   * Show a professional notice to customers explaining that subscriptions
+   * are intended for suppliers, and that customers already have full access.
+   */
+  function updateButtonsForCustomer() {
+    // Inject an info banner above the pricing grid
+    const notice = document.getElementById('pricing-customer-notice');
+    if (notice) {
+      notice.style.display = '';
+      notice.innerHTML =
+        '<div class="pricing-customer-notice-inner">' +
+        '<span class="pricing-customer-notice-icon" aria-hidden="true">ℹ️</span>' +
+        '<div>' +
+        '<p class="pricing-customer-notice-title">These plans are for suppliers only</p>' +
+        '<p class="pricing-customer-notice-body">As a customer, you already have full access to EventFlow at no cost — browse suppliers, send enquiries, and manage your event planning for free. Subscriptions unlock premium features for suppliers looking to grow their business on the platform.</p>' +
+        '</div>' +
+        '</div>';
+    }
 
-    // Mark the free plan button as the current plan when user has no active Pro
-    const freeButtons = document.querySelectorAll(
-      'a[href="/checkout?plan=free"], a[href="/checkout?plan=starter"]'
-    );
-    freeButtons.forEach(button => {
-      if (!hasActivePro) {
-        button.textContent = 'Current Plan';
-        button.classList.remove('secondary');
-        button.style.opacity = '0.6';
-        button.style.cursor = 'default';
-        button.style.pointerEvents = 'none';
-        button.setAttribute('aria-disabled', 'true');
+    // Disable all plan buttons and replace their labels
+    const allPricingButtons = document.querySelectorAll('.pricing-cta, #pricing-bottom-cta');
+    allPricingButtons.forEach(button => {
+      button.textContent = 'For Suppliers Only';
+      button.style.opacity = '0.5';
+      button.style.cursor = 'not-allowed';
+      button.style.pointerEvents = 'none';
+      button.setAttribute('aria-disabled', 'true');
+      button.removeAttribute('href');
+    });
+  }
+
+  // Disable a button in place and label it "Your Current Plan"
+  function markAsCurrentPlan(button) {
+    button.textContent = 'Your Current Plan';
+    button.classList.remove('secondary');
+    button.style.opacity = '0.6';
+    button.style.cursor = 'default';
+    button.style.pointerEvents = 'none';
+    button.setAttribute('aria-disabled', 'true');
+  }
+
+  // Update button labels for authenticated supplier/admin users
+  function updateButtonsForAuthenticatedUser(user) {
+    const tier = getActiveTier(user);
+
+    // Map plan query-string keys to their subscription tier
+    const PLAN_TIERS = {
+      starter: 'free',
+      free: 'free',
+      pro: 'pro',
+      pro_plus: 'pro_plus',
+    };
+
+    // Mark the current-plan button as inactive; offer upgrades/downgrades appropriately
+    document.querySelectorAll('a[href*="/checkout?plan="]').forEach(button => {
+      const href = button.getAttribute('href') || '';
+      const match = href.match(/plan=(\w+)/);
+      if (!match) {
+        return;
+      }
+      const planKey = match[1];
+      const planTier = PLAN_TIERS[planKey] || planKey;
+
+      if (planTier === tier) {
+        markAsCurrentPlan(button);
       }
     });
+
+    // Also update the bottom CTA when user is on the Starter (free) tier
+    const bottomCta = document.getElementById('pricing-bottom-cta');
+    if (bottomCta && tier === 'free') {
+      markAsCurrentPlan(bottomCta);
+    } else if (bottomCta) {
+      // On a paid plan – hide the bottom CTA (it links to starter plan checkout)
+      bottomCta.style.display = 'none';
+    }
   }
 
   // Attach direct checkout click handlers for authenticated users.
   // This replaces the (now-removed) inline script in pricing.html.
-  function attachCheckoutHandlers(user) {
-    const returnUrl =
-      user && user.role === 'customer'
-        ? window.location.origin + '/dashboard-customer.html'
-        : window.location.origin + '/dashboard-supplier.html';
+  function attachCheckoutHandlers() {
+    const returnUrl = `${window.location.origin}/dashboard-supplier.html`;
 
     const pricingButtons = document.querySelectorAll('.pricing-cta');
     pricingButtons.forEach(button => {
-      // Skip buttons that are already disabled (e.g. "Current Plan")
+      // Skip buttons that are already disabled (e.g. "Your Current Plan")
       if (button.getAttribute('aria-disabled') === 'true') {
         return;
       }
@@ -175,7 +251,7 @@
           // back to pricing (not auth) after login, avoiding the loop.
           button.setAttribute(
             'href',
-            `/auth?redirect=${encodeURIComponent('/pricing?plan=' + plan)}`
+            `/auth?redirect=${encodeURIComponent(`/pricing?plan=${plan}`)}`
           );
         }
       }
