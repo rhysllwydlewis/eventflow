@@ -82,8 +82,12 @@ class ContactPickerV4 {
 
   attachEventListeners() {
     // Close handlers
-    this.container.querySelector('#v4ContactPickerClose').addEventListener('click', () => this.close());
-    this.container.querySelector('#v4ContactPickerOverlay').addEventListener('click', () => this.close());
+    this.container
+      .querySelector('#v4ContactPickerClose')
+      .addEventListener('click', () => this.close());
+    this.container
+      .querySelector('#v4ContactPickerOverlay')
+      .addEventListener('click', () => this.close());
 
     // Search with 300 ms debounce
     this.searchInput.addEventListener('input', e => {
@@ -93,7 +97,8 @@ class ContactPickerV4 {
         this.resultsEl.innerHTML = this._buildRecentHTML();
         return;
       }
-      this.resultsEl.innerHTML = '<div class="messenger-v4__skeleton--text messenger-v4__skeleton--long"></div>';
+      this.resultsEl.innerHTML =
+        '<div class="messenger-v4__skeleton--text messenger-v4__skeleton--long"></div>';
       this._searchTimer = setTimeout(() => this.search(q), 300);
     });
 
@@ -149,7 +154,8 @@ class ContactPickerV4 {
       this._attachResultListeners();
     } catch (err) {
       console.error('[ContactPickerV4] Search failed:', err);
-      this.resultsEl.innerHTML = '<div class="messenger-v4__empty-state">Search failed. Please try again.</div>';
+      this.resultsEl.innerHTML =
+        '<div class="messenger-v4__empty-state">Search failed. Please try again.</div>';
     }
   }
 
@@ -164,7 +170,9 @@ class ContactPickerV4 {
       if (existing) {
         // Auto-redirect to existing conversation
         this.close();
-        window.dispatchEvent(new CustomEvent('messenger:conversation-selected', { detail: { id: existing._id } }));
+        window.dispatchEvent(
+          new CustomEvent('messenger:conversation-selected', { detail: { id: existing._id } })
+        );
         return;
       }
     } catch (err) {
@@ -200,7 +208,9 @@ class ContactPickerV4 {
   // ---------------------------------------------------------------------------
 
   _onKeyDown(e) {
-    if (e.key === 'Escape') this.close();
+    if (e.key === 'Escape') {
+      this.close();
+    }
   }
 
   /**
@@ -262,7 +272,10 @@ class ContactPickerV4 {
     this.resultsEl.querySelectorAll('.messenger-v4__contact-item').forEach(el => {
       el.addEventListener('click', () => this._handleContactClick(el));
       el.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._handleContactClick(el); }
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this._handleContactClick(el);
+        }
       });
     });
   }
@@ -279,12 +292,16 @@ class ContactPickerV4 {
 
   async _findExistingConversation(participantId) {
     try {
-      const data = await this.api.request(`/conversations?participantId=${encodeURIComponent(participantId)}`);
+      const data = await this.api.request(
+        `/conversations?participantId=${encodeURIComponent(participantId)}`
+      );
       const convs = data.conversations || data || [];
-      return convs.find(c => {
-        const ids = (c.participants || []).map(p => p.userId);
-        return ids.includes(participantId) && ids.includes(this.options.currentUserId);
-      }) || null;
+      return (
+        convs.find(c => {
+          const ids = (c.participants || []).map(p => p.userId);
+          return ids.includes(participantId) && ids.includes(this.options.currentUserId);
+        }) || null
+      );
     } catch {
       return null;
     }
@@ -311,7 +328,9 @@ class ContactPickerV4 {
   }
 
   escape(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) {
+      return '';
+    }
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

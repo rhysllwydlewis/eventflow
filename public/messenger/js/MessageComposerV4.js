@@ -30,10 +30,74 @@ class MessageComposerV4 {
 
     // Categorized emoji for picker
     this._emojis = {
-      'Smileys': ['😀','😂','😍','🥰','😎','😊','🤣','😭','😅','🤔','😏','😢','😤','🥺','😜'],
-      'Gestures': ['👋','👍','👎','✌️','🤞','👏','🙌','🤜','🤝','🫶','🫂','👌','🤙','💪','🖐️'],
-      'Objects':  ['💻','📱','📷','🎵','🎉','🎁','💡','🔑','📌','✅','❌','⭐','🔥','💯','🚀'],
-      'Food':     ['🍕','🍔','🌮','🍜','🍣','🍰','☕','🍺','🥑','🍇','🍓','🍩','🎂','🥗','🍦'],
+      Smileys: [
+        '😀',
+        '😂',
+        '😍',
+        '🥰',
+        '😎',
+        '😊',
+        '🤣',
+        '😭',
+        '😅',
+        '🤔',
+        '😏',
+        '😢',
+        '😤',
+        '🥺',
+        '😜',
+      ],
+      Gestures: [
+        '👋',
+        '👍',
+        '👎',
+        '✌️',
+        '🤞',
+        '👏',
+        '🙌',
+        '🤜',
+        '🤝',
+        '🫶',
+        '🫂',
+        '👌',
+        '🤙',
+        '💪',
+        '🖐️',
+      ],
+      Objects: [
+        '💻',
+        '📱',
+        '📷',
+        '🎵',
+        '🎉',
+        '🎁',
+        '💡',
+        '🔑',
+        '📌',
+        '✅',
+        '❌',
+        '⭐',
+        '🔥',
+        '💯',
+        '🚀',
+      ],
+      Food: [
+        '🍕',
+        '🍔',
+        '🌮',
+        '🍜',
+        '🍣',
+        '🍰',
+        '☕',
+        '🍺',
+        '🥑',
+        '🍇',
+        '🍓',
+        '🍩',
+        '🎂',
+        '🥗',
+        '🍦',
+      ],
     };
 
     this.init();
@@ -115,13 +179,17 @@ class MessageComposerV4 {
   }
 
   _buildEmojiPickerHTML() {
-    return Object.entries(this._emojis).map(([category, emojis]) => `
+    return Object.entries(this._emojis)
+      .map(
+        ([category, emojis]) => `
       <div class="messenger-emoji-picker__category">
         <h4 class="messenger-emoji-picker__label">${this.escape(category)}</h4>
         <div class="messenger-emoji-picker__grid">
           ${emojis.map(e => `<button type="button" class="messenger-emoji-picker__item" data-emoji="${this.escape(e)}" aria-label="${this.escape(e)}">${e}</button>`).join('')}
         </div>
-      </div>`).join('');
+      </div>`
+      )
+      .join('');
   }
 
   // ---------------------------------------------------------------------------
@@ -138,32 +206,51 @@ class MessageComposerV4 {
     this.sendBtn.addEventListener('click', () => this.send());
 
     // Emoji button
-    this.container.querySelector('#v4EmojiBtn').addEventListener('click', () => this._toggleEmojiPicker());
+    this.container
+      .querySelector('#v4EmojiBtn')
+      .addEventListener('click', () => this._toggleEmojiPicker());
 
     // Emoji item selection (delegated)
     this.emojiPicker.addEventListener('click', e => {
       const item = e.target.closest('.messenger-emoji-picker__item');
-      if (item) this._insertEmoji(item.dataset.emoji);
+      if (item) {
+        this._insertEmoji(item.dataset.emoji);
+      }
     });
 
     // Attach button → file input
-    this.container.querySelector('#v4AttachBtn').addEventListener('click', () => this.fileInput.click());
-    this.fileInput.addEventListener('change', e => this._handleFileSelect(Array.from(e.target.files)));
+    this.container
+      .querySelector('#v4AttachBtn')
+      .addEventListener('click', () => this.fileInput.click());
+    this.fileInput.addEventListener('change', e =>
+      this._handleFileSelect(Array.from(e.target.files))
+    );
 
     // Reply cancel
-    this.container.querySelector('#v4ReplyCancelBtn').addEventListener('click', () => this.clearReply());
+    this.container
+      .querySelector('#v4ReplyCancelBtn')
+      .addEventListener('click', () => this.clearReply());
 
     // Drag and drop on the whole composer
-    this.container.addEventListener('dragenter', e => { e.preventDefault(); this.dropOverlay.style.display = 'flex'; });
-    this.container.addEventListener('dragover', e => { e.preventDefault(); });
+    this.container.addEventListener('dragenter', e => {
+      e.preventDefault();
+      this.dropOverlay.style.display = 'flex';
+    });
+    this.container.addEventListener('dragover', e => {
+      e.preventDefault();
+    });
     this.container.addEventListener('dragleave', e => {
-      if (!this.container.contains(e.relatedTarget)) this.dropOverlay.style.display = 'none';
+      if (!this.container.contains(e.relatedTarget)) {
+        this.dropOverlay.style.display = 'none';
+      }
     });
     this.container.addEventListener('drop', e => {
       e.preventDefault();
       this.dropOverlay.style.display = 'none';
       const files = Array.from(e.dataTransfer.files);
-      if (files.length) this._handleFileSelect(files);
+      if (files.length) {
+        this._handleFileSelect(files);
+      }
     });
 
     // Close emoji picker when clicking outside
@@ -202,7 +289,9 @@ class MessageComposerV4 {
   /** Send the current message (validates, dispatches event, resets). */
   async send() {
     const content = this.textarea.value.trim();
-    if ((!content && !this.attachedFiles.length) || this.isSending) return;
+    if ((!content && !this.attachedFiles.length) || this.isSending) {
+      return;
+    }
 
     // Guard: don't send if no conversation is active
     if (!this.options.conversationId) {
@@ -282,11 +371,15 @@ class MessageComposerV4 {
 
   _onPaste(e) {
     const items = e.clipboardData?.items;
-    if (!items) return;
+    if (!items) {
+      return;
+    }
     for (const item of items) {
       if (item.kind === 'file' && item.type.startsWith('image/')) {
         const file = item.getAsFile();
-        if (file) this._handleFileSelect([file]);
+        if (file) {
+          this._handleFileSelect([file]);
+        }
       }
     }
   }
@@ -308,7 +401,10 @@ class MessageComposerV4 {
     if (len >= threshold) {
       this.charCount.textContent = `${len} / ${max}`;
       this.charCount.style.display = 'block';
-      this.charCount.classList.toggle('messenger-v4__char-count--warning', len >= Math.floor(max * 0.95));
+      this.charCount.classList.toggle(
+        'messenger-v4__char-count--warning',
+        len >= Math.floor(max * 0.95)
+      );
     } else {
       this.charCount.style.display = 'none';
     }
@@ -320,16 +416,20 @@ class MessageComposerV4 {
     if (typeof this.options.onTyping === 'function') {
       this.options.onTyping(true);
     }
-    window.dispatchEvent(new CustomEvent('messenger:typing', {
-      detail: { conversationId: this.options.conversationId, isTyping: true },
-    }));
+    window.dispatchEvent(
+      new CustomEvent('messenger:typing', {
+        detail: { conversationId: this.options.conversationId, isTyping: true },
+      })
+    );
     this._typingDebounce = setTimeout(() => {
       if (typeof this.options.onTyping === 'function') {
         this.options.onTyping(false);
       }
-      window.dispatchEvent(new CustomEvent('messenger:typing', {
-        detail: { conversationId: this.options.conversationId, isTyping: false },
-      }));
+      window.dispatchEvent(
+        new CustomEvent('messenger:typing', {
+          detail: { conversationId: this.options.conversationId, isTyping: false },
+        })
+      );
     }, 2000);
   }
 
@@ -378,7 +478,9 @@ class MessageComposerV4 {
     });
 
     if (oversized.length) {
-      this._showInlineError(`${oversized.map(n => `"${n}"`).join(', ')} exceed${oversized.length === 1 ? 's' : ''} the 10 MB limit and ${oversized.length === 1 ? 'was' : 'were'} not attached.`);
+      this._showInlineError(
+        `${oversized.map(n => `"${n}"`).join(', ')} exceed${oversized.length === 1 ? 's' : ''} the 10 MB limit and ${oversized.length === 1 ? 'was' : 'were'} not attached.`
+      );
     }
 
     if (typeof this.options.onFileSelect === 'function') {
@@ -400,11 +502,15 @@ class MessageComposerV4 {
     }
 
     this.filePreviewList.style.display = 'flex';
-    this.filePreviewList.innerHTML = this.attachedFiles.map((file, i) => `
+    this.filePreviewList.innerHTML = this.attachedFiles
+      .map(
+        (file, i) => `
       <div class="messenger-v4__file-chip" data-index="${i}">
         <span class="messenger-v4__file-chip-name" title="${this.escape(file.name)}">${this.escape(file.name)}</span>
         <button type="button" class="messenger-v4__file-chip-remove" data-index="${i}" aria-label="Remove ${this.escape(file.name)}">✕</button>
-      </div>`).join('');
+      </div>`
+      )
+      .join('');
 
     this.filePreviewList.querySelectorAll('.messenger-v4__file-chip-remove').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -428,11 +534,15 @@ class MessageComposerV4 {
     errEl.textContent = message;
     errEl.style.display = 'block';
     clearTimeout(this._errorTimer);
-    this._errorTimer = setTimeout(() => { errEl.style.display = 'none'; }, 4000);
+    this._errorTimer = setTimeout(() => {
+      errEl.style.display = 'none';
+    }, 4000);
   }
 
   escape(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) {
+      return '';
+    }
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

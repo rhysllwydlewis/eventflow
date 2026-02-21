@@ -371,4 +371,105 @@ describe('Messenger client-side fixes', () => {
   it('MessengerAppV4 open-contact-picker handler warns when contact picker is unavailable', () => {
     expect(messengerAppSrc).toContain('Contact picker is not available');
   });
+
+  // ── ESLint strict-equality fixes (== null → === null || === undefined) ───────
+
+  it('ContactPickerV4 escape() uses strict equality (=== null || === undefined)', () => {
+    expect(contactPickerSrc).not.toContain('str == null');
+    expect(contactPickerSrc).toContain('str === null || str === undefined');
+  });
+
+  it('ContextBannerV4 escape() uses strict equality (=== null || === undefined)', () => {
+    const bannerSrc = fs.readFileSync(path.join(MESSENGER_DIR, 'js', 'ContextBannerV4.js'), 'utf8');
+    expect(bannerSrc).not.toContain('str == null');
+    expect(bannerSrc).toContain('str === null || str === undefined');
+  });
+
+  it('TypingIndicatorV4 _escape() uses strict equality (=== null || === undefined)', () => {
+    const typingSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'TypingIndicatorV4.js'),
+      'utf8'
+    );
+    expect(typingSrc).not.toContain('str == null');
+    expect(typingSrc).toContain('str === null || str === undefined');
+  });
+
+  it('MessageComposerV4 escape() uses strict equality (=== null || === undefined)', () => {
+    const composerSrc = fs.readFileSync(
+      path.join(MESSENGER_DIR, 'js', 'MessageComposerV4.js'),
+      'utf8'
+    );
+    expect(composerSrc).not.toContain('str == null');
+    expect(composerSrc).toContain('str === null || str === undefined');
+  });
+
+  // ── ConversationListV4 context menu read/unread toggle ──────────────────────
+
+  it('ConversationListV4 right-click menu dispatches messenger:mark-read', () => {
+    expect(conversationListSrc).toContain("'messenger:mark-read'");
+  });
+
+  it('ConversationListV4 context menu uses dynamic mark action based on unread state', () => {
+    // The menu action should be determined at menu-show time from the conversation state
+    expect(conversationListSrc).toContain("'mark-read'");
+    expect(conversationListSrc).toContain("'mark-unread'");
+    // Should branch on isUnread to choose the right action and label
+    expect(conversationListSrc).toContain('isUnread');
+    expect(conversationListSrc).toContain('Mark as Read');
+    expect(conversationListSrc).toContain('Mark as Unread');
+  });
+
+  it('ConversationListV4 context menu reads participant unreadCount for toggle', () => {
+    expect(conversationListSrc).toContain('isUnread = me ? (me.unreadCount || 0) > 0 : false');
+  });
+
+  // ── Backend: unused variables / imports fixed ────────────────────────────────
+
+  it('messenger.service.js does not fetch creator info unnecessarily in existing-conv path', () => {
+    const svcSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'services', 'messenger.service.js'),
+      'utf8'
+    );
+    // The dead getUserInfo call before sendMessage in existing-conv branch should be gone
+    // If it existed it would appear right before sendMessage inside the initialMessage block
+    expect(svcSrc).not.toMatch(/if\s*\(initialMessage\)\s*\{[^}]*getUserInfo\(creatorId\)/s);
+  });
+
+  it('routes/messenger.js applies applyUploadLimiter to the attachment route', () => {
+    const routeSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'messenger.js'),
+      'utf8'
+    );
+    // applyUploadLimiter must be applied to the POST messages route
+    expect(routeSrc).toContain('applyUploadLimiter');
+    // It should appear in the route definition (not just in the function declaration)
+    expect(routeSrc).toMatch(/router\.post\([^)]*messages[\s\S]*?applyUploadLimiter/);
+  });
+
+  it('LabelService does not import unused withTransaction/validateObjectId', () => {
+    const svcSrc = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'services', 'LabelService.js'),
+      'utf8'
+    );
+    expect(svcSrc).not.toContain("require('../utils/mongoHelpers')");
+    expect(svcSrc).not.toContain("require('../utils/validators')");
+  });
+
+  it('models/ConversationV4.js does not import unused ObjectId', () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'models', 'ConversationV4.js'),
+      'utf8'
+    );
+    expect(src).not.toContain("require('mongodb')");
+  });
+
+  it('routes/advanced-search.js applies CSRF protection to POST /validate', () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'routes', 'advanced-search.js'),
+      'utf8'
+    );
+    expect(src).toContain('applyCsrfProtection');
+    // Should appear in the POST validate route handler
+    expect(src).toMatch(/router\.post\(['"]\/validate['"]\s*,[\s\S]*?applyCsrfProtection/);
+  });
 });

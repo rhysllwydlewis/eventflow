@@ -53,7 +53,9 @@ class ContextBannerV4 {
    *   type: 'package' | 'supplier' | 'marketplace'
    */
   show(context) {
-    if (!context) return;
+    if (!context) {
+      return;
+    }
     this._currentContext = context;
 
     const iconMap = { package: '📦', supplier: '🏢', marketplace: '🛒' };
@@ -110,7 +112,9 @@ class ContextBannerV4 {
   }
 
   escape(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) {
+      return '';
+    }
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -121,9 +125,13 @@ class ContextBannerV4 {
 
   /** Block javascript: / data: / vbscript: href values. Returns '#' for unsafe URLs. */
   _safeUrl(url) {
-    if (!url || typeof url !== 'string') return '#';
+    if (!url || typeof url !== 'string') {
+      return '#';
+    }
     const trimmed = url.trim();
-    if (/^(javascript|data|vbscript):/i.test(trimmed)) return '#';
+    if (/^(javascript|data|vbscript):/i.test(trimmed)) {
+      return '#';
+    }
     return this.escape(trimmed);
   }
 }

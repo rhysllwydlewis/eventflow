@@ -1,7 +1,7 @@
 /**
  * EventFlow Advanced Search - Phase 2
  * Advanced message search with operators and autocomplete
- * 
+ *
  * Features:
  * - 17+ search operators (from:, to:, subject:, etc.)
  * - Boolean logic (AND, OR, NOT)
@@ -62,30 +62,26 @@
       throw new Error('CSRF handler not available');
     }
 
-    try {
-      // Add Content-Type header if not present
-      const fetchOptions = {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options.headers || {}),
-        },
-      };
+    // Add Content-Type header if not present
+    const fetchOptions = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    };
 
-      // Use CSRF handler's fetch method (includes automatic token handling and retry)
-      const response = await window.csrfHandler.fetch(url, fetchOptions);
+    // Use CSRF handler's fetch method (includes automatic token handling and retry)
+    const response = await window.csrfHandler.fetch(url, fetchOptions);
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ 
-          error: `HTTP ${response.status}` 
-        }));
-        throw new Error(error.error || error.message || `Request failed: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      throw error;
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        error: `HTTP ${response.status}`,
+      }));
+      throw new Error(error.error || error.message || `Request failed: ${response.status}`);
     }
+
+    return await response.json();
   }
 
   async function executeSearch(query, retries = 3, delay = 1000) {
@@ -102,13 +98,13 @@
 
         const encodedQuery = encodeURIComponent(query);
         const data = await apiFetch(`${API_BASE}?q=${encodedQuery}`);
-        
+
         if (data.success && Array.isArray(data.results)) {
           state.searchResults = data.results;
           displaySearchResults(data.results, data.totalCount);
           showSuccess(`Found ${data.totalCount} message(s)`);
         }
-        
+
         // Success - break out of retry loop
         state.isSearching = false;
         updateSearchUI();
@@ -162,7 +158,7 @@
   async function loadOperators() {
     try {
       const data = await apiFetch(`${API_BASE}/operators`);
-      
+
       if (data.success && Array.isArray(data.operators)) {
         state.operators = data.operators;
       }
@@ -242,11 +238,15 @@
         </div>
         <div class="search-result-subject">${escapeHtml(result.subject || '(No subject)')}</div>
         ${result.preview ? `<div class="search-result-preview">${escapeHtml(result.preview)}</div>` : ''}
-        ${result.labels?.length > 0 ? `
+        ${
+          result.labels?.length > 0
+            ? `
           <div class="search-result-labels">
             ${result.labels.map(label => `<span class="result-label">${escapeHtml(label)}</span>`).join('')}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
   }
@@ -257,7 +257,9 @@
 
   function showAutocompleteSuggestions(suggestions) {
     const dropdown = document.getElementById('search-autocomplete');
-    if (!dropdown) return;
+    if (!dropdown) {
+      return;
+    }
 
     if (!suggestions || suggestions.length === 0) {
       dropdown.style.display = 'none';
@@ -265,7 +267,9 @@
       return;
     }
 
-    const html = suggestions.map((suggestion, index) => `
+    const html = suggestions
+      .map(
+        (suggestion, index) => `
       <div 
         class="autocomplete-item" 
         data-suggestion="${escapeHtml(suggestion.text)}"
@@ -274,7 +278,9 @@
         <div class="autocomplete-operator">${escapeHtml(suggestion.operator || '')}</div>
         <div class="autocomplete-description">${escapeHtml(suggestion.description || suggestion.text)}</div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     dropdown.innerHTML = html;
     dropdown.style.display = 'block';
@@ -291,27 +297,29 @@
 
   function applySuggestion(suggestion) {
     const searchBox = document.getElementById('advanced-search-input');
-    if (!searchBox) return;
+    if (!searchBox) {
+      return;
+    }
 
     // Insert suggestion at cursor position or append
     const cursorPos = searchBox.selectionStart;
     const currentValue = searchBox.value;
-    
+
     // Find the start of the current word
     let wordStart = cursorPos;
     while (wordStart > 0 && !/\s/.test(currentValue[wordStart - 1])) {
       wordStart--;
     }
 
-    const newValue = 
-      currentValue.substring(0, wordStart) + 
-      suggestion + 
+    const newValue =
+      currentValue.substring(0, wordStart) +
+      suggestion +
       (suggestion.endsWith(':') ? '' : ' ') +
       currentValue.substring(cursorPos);
 
     searchBox.value = newValue;
     searchBox.focus();
-    
+
     // Set cursor position after suggestion
     const newCursorPos = wordStart + suggestion.length + (suggestion.endsWith(':') ? 0 : 1);
     searchBox.setSelectionRange(newCursorPos, newCursorPos);
@@ -324,7 +332,9 @@
   // ==========================================
 
   function saveSearch(query, name) {
-    if (!query || !name) return;
+    if (!query || !name) {
+      return;
+    }
 
     const savedSearch = {
       id: Date.now().toString(),
@@ -348,7 +358,9 @@
 
   function loadSavedSearch(id) {
     const saved = state.savedSearches.find(s => s.id === id);
-    if (!saved) return;
+    if (!saved) {
+      return;
+    }
 
     const searchBox = document.getElementById('advanced-search-input');
     if (searchBox) {
@@ -359,7 +371,9 @@
 
   function renderSavedSearches() {
     const container = document.getElementById('saved-searches-list');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     if (state.savedSearches.length === 0) {
       container.innerHTML = `
@@ -370,7 +384,9 @@
       return;
     }
 
-    const html = state.savedSearches.map(saved => `
+    const html = state.savedSearches
+      .map(
+        saved => `
       <div class="saved-search-item">
         <div class="saved-search-content" onclick="window.EF_Search.loadSavedSearch('${saved.id}')">
           <div class="saved-search-name">${escapeHtml(saved.name)}</div>
@@ -384,7 +400,9 @@
           ×
         </button>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     container.innerHTML = html;
   }
@@ -396,7 +414,9 @@
       return;
     }
 
-    const modal = createModal('Save Search', `
+    const modal = createModal(
+      'Save Search',
+      `
       <form id="save-search-form" class="search-form">
         <div class="form-group">
           <label for="search-name">Search Name *</label>
@@ -413,13 +433,14 @@
           <button type="submit" class="btn-primary">Save Search</button>
         </div>
       </form>
-    `);
+    `
+    );
 
-    document.getElementById('save-search-form').addEventListener('submit', (e) => {
+    document.getElementById('save-search-form').addEventListener('submit', e => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const name = formData.get('name');
-      
+
       saveSearch(currentQuery, name);
       closeModal();
     });
@@ -430,17 +451,23 @@
   // ==========================================
 
   function showSearchHelp() {
-    const modal = createModal('Search Operators', `
+    const modal = createModal(
+      'Search Operators',
+      `
       <div class="search-help">
         <p class="search-help-intro">Use these operators to refine your search:</p>
         
         <div class="operators-list">
-          ${Object.entries(SEARCH_OPERATORS).map(([op, desc]) => `
+          ${Object.entries(SEARCH_OPERATORS)
+            .map(
+              ([op, desc]) => `
             <div class="operator-item">
               <code class="operator-code">${op}</code>
               <span class="operator-desc">${desc}</span>
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
         
         <div class="search-help-examples">
@@ -457,7 +484,8 @@
           <button onclick="window.EF_Search.closeModal()" class="btn-primary">Got it</button>
         </div>
       </div>
-    `);
+    `
+    );
   }
 
   // ==========================================
@@ -473,7 +501,7 @@
     while (wordStart > 0 && !/\s/.test(query[wordStart - 1])) {
       wordStart--;
     }
-    
+
     const currentWord = query.substring(wordStart, cursorPos);
 
     // Show autocomplete for operators
@@ -494,7 +522,7 @@
     } else if (currentWord.includes(':')) {
       // Show value suggestions based on operator
       const [operator] = currentWord.split(':');
-      const operatorKey = operator + ':';
+      const operatorKey = `${operator}:`;
 
       if (operatorKey === 'is:') {
         const suggestions = STATUS_VALUES.map(value => ({
@@ -573,7 +601,9 @@
 
   function createModal(title, content) {
     const existingModal = document.querySelector('.modal-overlay');
-    if (existingModal) existingModal.remove();
+    if (existingModal) {
+      existingModal.remove();
+    }
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -591,14 +621,14 @@
     document.body.appendChild(modal);
 
     // Close on overlay click
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', e => {
       if (e.target === modal) {
         closeModal();
       }
     });
 
     // Close on Escape key
-    const escapeHandler = (e) => {
+    const escapeHandler = e => {
       if (e.key === 'Escape') {
         closeModal();
         document.removeEventListener('keydown', escapeHandler);
@@ -611,7 +641,9 @@
 
   function closeModal() {
     const modal = document.querySelector('.modal-overlay');
-    if (modal) modal.remove();
+    if (modal) {
+      modal.remove();
+    }
   }
 
   function escapeHtml(text) {
@@ -621,16 +653,24 @@
   }
 
   function formatDate(dateString) {
-    if (!dateString) return '';
+    if (!dateString) {
+      return '';
+    }
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
-    
+    if (days === 0) {
+      return 'Today';
+    }
+    if (days === 1) {
+      return 'Yesterday';
+    }
+    if (days < 7) {
+      return `${days} days ago`;
+    }
+
     return date.toLocaleDateString();
   }
 
@@ -702,10 +742,10 @@
     }
 
     // Close autocomplete when clicking outside
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', e => {
       const dropdown = document.getElementById('search-autocomplete');
       const searchBox = document.getElementById('advanced-search-input');
-      
+
       if (dropdown && searchBox && !dropdown.contains(e.target) && e.target !== searchBox) {
         hideAutocomplete();
       }
@@ -737,5 +777,4 @@
   } else {
     init();
   }
-
 })();

@@ -25,14 +25,23 @@ class MessengerService {
    * @param {string} initialMessage - Optional initial message text
    * @returns {Promise<Object>} Created conversation with initial message if provided
    */
-  async createConversation(creatorId, recipientId, context = null, metadata = {}, initialMessage = null) {
+  async createConversation(
+    creatorId,
+    recipientId,
+    context = null,
+    metadata = {},
+    initialMessage = null
+  ) {
     // Check for existing direct conversation between these users with same context
-    const existingConversation = await this._findExistingConversation(creatorId, recipientId, context);
-    
+    const existingConversation = await this._findExistingConversation(
+      creatorId,
+      recipientId,
+      context
+    );
+
     if (existingConversation) {
       // If there's an initial message, append it to existing conversation
       if (initialMessage) {
-        const creator = await this._getUserInfo(creatorId);
         const message = await this.sendMessage(
           existingConversation._id.toString(),
           creatorId,
@@ -204,15 +213,15 @@ class MessengerService {
   async updateConversation(conversationId, userId, updates) {
     // Build update query for specific participant
     const updateFields = {};
-    
+
     if (updates.isPinned !== undefined) {
       updateFields['participants.$[participant].isPinned'] = updates.isPinned;
     }
-    
+
     if (updates.isMuted !== undefined) {
       updateFields['participants.$[participant].isMuted'] = updates.isMuted;
     }
-    
+
     if (updates.isArchived !== undefined) {
       updateFields['participants.$[participant].isArchived'] = updates.isArchived;
     }
@@ -259,7 +268,7 @@ class MessengerService {
   async sendMessage(conversationId, senderId, content, attachments = [], replyToId = null) {
     // Verify conversation exists and user has access
     const conversation = await this.getConversation(conversationId, senderId);
-    
+
     // Get sender info
     const sender = conversation.participants.find(p => p.userId === senderId);
     if (!sender) {
@@ -433,7 +442,7 @@ class MessengerService {
    */
   async markAsRead(conversationId, userId) {
     const now = new Date();
-    
+
     // Update participant's lastReadAt and reset unreadCount
     const result = await this.db.collection('conversations').updateOne(
       { _id: new ObjectId(conversationId), 'participants.userId': userId },
@@ -518,11 +527,11 @@ class MessengerService {
       };
     }
 
-    const result = await this.db.collection('chat_messages').findOneAndUpdate(
-      { _id: new ObjectId(messageId) },
-      updateOperation,
-      { returnDocument: 'after' }
-    );
+    const result = await this.db
+      .collection('chat_messages')
+      .findOneAndUpdate({ _id: new ObjectId(messageId) }, updateOperation, {
+        returnDocument: 'after',
+      });
 
     return result.value;
   }
@@ -667,7 +676,7 @@ class MessengerService {
    */
   async _updateConversationAfterMessage(conversationId, message, senderId) {
     const now = new Date();
-    
+
     // Update conversation with new message and increment counters
     await this.db.collection('conversations').updateOne(
       { _id: new ObjectId(conversationId) },

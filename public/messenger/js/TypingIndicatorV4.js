@@ -48,7 +48,9 @@ class TypingIndicatorV4 {
    * @param {string} name - Display name of the typing user
    */
   show(name) {
-    if (!this.indicatorEl) return;
+    if (!this.indicatorEl) {
+      return;
+    }
 
     clearTimeout(this._autoHideTimer);
 
@@ -81,7 +83,9 @@ class TypingIndicatorV4 {
   // ---------------------------------------------------------------------------
 
   _escape(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) {
+      return '';
+    }
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

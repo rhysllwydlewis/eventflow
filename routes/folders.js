@@ -6,7 +6,6 @@
 'use strict';
 
 const express = require('express');
-const { ObjectId } = require('mongodb');
 const { writeLimiter } = require('../middleware/rateLimits');
 
 // Dependencies injected by server.js

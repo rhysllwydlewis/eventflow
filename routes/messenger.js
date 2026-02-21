@@ -464,6 +464,7 @@ router.post(
   applyAuthRequired,
   applyCsrfProtection,
   applyWriteLimiter,
+  applyUploadLimiter,
   ensureServices,
   (req, res, next) => {
     // Apply multer middleware

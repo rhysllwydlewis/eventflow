@@ -195,29 +195,36 @@ router.get('/autocomplete', applyAuthRequired, ensureServices, async (req, res) 
  * Body:
  * - query: Search query string
  */
-router.post('/validate', applyAuthRequired, ensureServices, async (req, res) => {
-  try {
-    const { query } = req.body;
+router.post(
+  '/validate',
+  searchLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { query } = req.body;
 
-    if (!query) {
-      return res.status(400).json({ error: 'Query is required' });
+      if (!query) {
+        return res.status(400).json({ error: 'Query is required' });
+      }
+
+      const validation = searchService.validateQuery(query);
+
+      res.json({
+        success: true,
+        isValid: validation.isValid,
+        errors: validation.errors,
+      });
+    } catch (error) {
+      logger.error('Validate query API error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Validation failed',
+        message: error.message,
+      });
     }
-
-    const validation = searchService.validateQuery(query);
-
-    res.json({
-      success: true,
-      isValid: validation.isValid,
-      errors: validation.errors,
-    });
-  } catch (error) {
-    logger.error('Validate query API error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Validation failed',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /api/v2/search/operators
