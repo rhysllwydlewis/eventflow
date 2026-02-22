@@ -24,6 +24,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add X-Robots-Tag: noindex, nofollow for private/authenticated pages
+// This mirrors the behavior of middleware/seo.js in the main server
+const noindexPatterns = [
+  /^\/(auth|reset-password|dashboard|dashboard-customer|dashboard-supplier|messages|guests|checkout|my-marketplace-listings)(\.html)?($|\?)/,
+  /^\/(admin)([-/].+)?(\.html)?($|\?)/,
+];
+app.use((req, res, next) => {
+  const isNoindex = noindexPatterns.some(pattern => pattern.test(req.path));
+  if (isNoindex) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  }
+  next();
+});
+
 // Stub /api/health endpoint for Playwright health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', mode: 'static' });
