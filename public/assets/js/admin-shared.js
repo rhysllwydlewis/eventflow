@@ -1757,6 +1757,7 @@ const AdminShared = (function () {
     highlightActivePage();
     loadBadgeCounts();
     initKeyboardShortcuts();
+    initSidebarToggle();
 
     // Refresh badge counts every 60 seconds
     setInterval(loadBadgeCounts, 60000);
