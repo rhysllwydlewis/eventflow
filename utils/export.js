@@ -75,7 +75,7 @@ function exportToExcel(data, options = {}) {
   const { filename = 'export.xlsx', sheetName = 'Sheet1', headers = null } = options;
 
   try {
-    // eslint-disable-next-line global-require, node/no-missing-require
+    // eslint-disable-next-line global-require, node/no-missing-require, node/no-unpublished-require
     const XLSX = require('xlsx');
 
     // Create workbook
