@@ -1025,7 +1025,10 @@
         AdminShared.showToast('Category saved successfully!', 'success');
       } else {
         const errorData = await response.json();
-        AdminShared.showToast(`Failed to save category: ${errorData.error || 'Unknown error'}`, 'error');
+        AdminShared.showToast(
+          `Failed to save category: ${errorData.error || 'Unknown error'}`,
+          'error'
+        );
       }
     } catch (error) {
       console.error('Error saving category:', error);
@@ -1068,7 +1071,10 @@
         AdminShared.showToast('Category deleted successfully!', 'success');
       } else {
         const errorData = await response.json();
-        AdminShared.showToast(`Failed to delete category: ${errorData.error || 'Unknown error'}`, 'error');
+        AdminShared.showToast(
+          `Failed to delete category: ${errorData.error || 'Unknown error'}`,
+          'error'
+        );
       }
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -1102,7 +1108,10 @@
         }
       } else {
         const errorData = await response.json();
-        AdminShared.showToast(`Failed to toggle visibility: ${errorData.error || 'Unknown error'}`, 'error');
+        AdminShared.showToast(
+          `Failed to toggle visibility: ${errorData.error || 'Unknown error'}`,
+          'error'
+        );
         // Revert toggle
         const toggle = document.querySelector(`.visibility-toggle[data-id="${categoryId}"]`);
         if (toggle) {
@@ -1141,7 +1150,10 @@
       displayPexelsResults(data.photos || []);
     } catch (error) {
       console.error('Error searching Pexels:', error);
-      AdminShared.showToast('Failed to search Pexels. Please check your API key configuration.', 'error');
+      AdminShared.showToast(
+        'Failed to search Pexels. Please check your API key configuration.',
+        'error'
+      );
     } finally {
       searchPexelsBtn.disabled = false;
       searchPexelsBtn.textContent = 'Search';

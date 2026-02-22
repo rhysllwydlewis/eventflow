@@ -454,7 +454,8 @@
   async function importDemoSuppliers() {
     const confirmed = await AdminShared.showConfirmModal({
       title: 'Import Demo Suppliers',
-      message: 'Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.',
+      message:
+        'Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.',
       confirmText: 'Import',
     });
     if (!confirmed) {
@@ -557,7 +558,8 @@
   window.deleteSupplier = async function (id) {
     const confirmed = await AdminShared.showConfirmModal({
       title: 'Delete Supplier',
-      message: 'Are you sure you want to delete this supplier? This will also delete all their packages.',
+      message:
+        'Are you sure you want to delete this supplier? This will also delete all their packages.',
       confirmText: 'Delete',
     });
     if (confirmed) {
