@@ -41,9 +41,15 @@
 
   async function _adminConfirm(msg) {
     if (window.AdminShared && window.AdminShared.showConfirmModal) {
-      return window.AdminShared.showConfirmModal({ title: 'Confirm', message: msg, confirmText: 'OK' });
+      return window.AdminShared.showConfirmModal({
+        title: 'Confirm',
+        message: msg,
+        confirmText: 'OK',
+      });
     }
-    return true;
+    // AdminShared not available — refuse the action to prevent silent destructive operations
+    console.warn('[Admin] AdminShared not available, action blocked:', msg);
+    return false;
   }
 
   function api(url, method, body) {
@@ -761,9 +767,10 @@
         modal.show();
       } else {
         if (
-          !await _adminConfirm(
+          !(await _adminConfirm(
             'Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.'
-        )) {
+          ))
+        ) {
           return;
         }
         api(`/api/admin/suppliers/${id}/subscription`, 'DELETE')
@@ -863,7 +870,11 @@
       });
       modal.show();
     } else {
-      if (!await _adminConfirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      if (
+        !(await _adminConfirm(
+          'Are you sure you want to delete this user? This action cannot be undone.'
+        ))
+      ) {
         return;
       }
       api(`/api/admin/users/${id}`, 'DELETE')
@@ -1018,7 +1029,7 @@
       });
       modal.show();
     } else {
-      if (!await _adminConfirm('Grant admin privileges to this user?')) {
+      if (!(await _adminConfirm('Grant admin privileges to this user?'))) {
         return;
       }
       api(`/api/admin/users/${id}/grant-admin`, 'POST')
@@ -1127,7 +1138,10 @@
           });
         });
       } else {
-        _adminToast('Admin management requires AdminShared utilities. Please reload the page.', 'error');
+        _adminToast(
+          'Admin management requires AdminShared utilities. Please reload the page.',
+          'error'
+        );
       }
     }
   };
@@ -1161,7 +1175,7 @@
       });
       modal.show();
     } else {
-      if (!await _adminConfirm("Manually verify this user's email address?")) {
+      if (!(await _adminConfirm("Manually verify this user's email address?"))) {
         return;
       }
       api(`/api/admin/users/${id}/verify`, 'POST')
@@ -1186,7 +1200,7 @@
 
   // Supplier management functions
   window.deleteSupplier = async function (id) {
-    return safeExecute(() => {
+    return safeExecute(async () => {
       if (typeof Modal !== 'undefined') {
         const modal = new Modal({
           title: 'Delete Supplier',
@@ -1217,9 +1231,10 @@
         modal.show();
       } else {
         if (
-          !await _adminConfirm(
+          !(await _adminConfirm(
             'Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.'
-        )) {
+          ))
+        ) {
           return;
         }
         api(`/api/admin/suppliers/${id}`, 'DELETE')
@@ -1340,7 +1355,10 @@
           modal.show();
         } else {
           // Fallback if Modal is not available
-          _adminToast('Supplier editing requires the Modal component. Please reload the page.', 'error');
+          _adminToast(
+            'Supplier editing requires the Modal component. Please reload the page.',
+            'error'
+          );
         }
       })
       .catch(err => {
@@ -1355,7 +1373,7 @@
 
   // Package management functions
   window.deletePackage = async function (id) {
-    return safeExecute(() => {
+    return safeExecute(async () => {
       if (typeof Modal !== 'undefined') {
         const modal = new Modal({
           title: 'Delete Package',
@@ -1386,7 +1404,9 @@
         modal.show();
       } else {
         if (
-          !await _adminConfirm('Are you sure you want to delete this package? This action cannot be undone.')
+          !(await _adminConfirm(
+            'Are you sure you want to delete this package? This action cannot be undone.'
+          ))
         ) {
           return;
         }
@@ -1500,7 +1520,10 @@
           modal.show();
         } else {
           // Fallback if Modal is not available
-          _adminToast('Package editing requires the Modal component. Please reload the page.', 'error');
+          _adminToast(
+            'Package editing requires the Modal component. Please reload the page.',
+            'error'
+          );
         }
       })
       .catch(err => {
@@ -1832,7 +1855,10 @@
           });
         });
       } else {
-        _adminToast('User creation requires AdminShared utilities. Please reload the page.', 'error');
+        _adminToast(
+          'User creation requires AdminShared utilities. Please reload the page.',
+          'error'
+        );
       }
     }
   };
@@ -2097,7 +2123,7 @@
         return;
       }
 
-      if (!await _adminConfirm(`Approve ${selected.length} supplier(s)?`)) {
+      if (!(await _adminConfirm(`Approve ${selected.length} supplier(s)?`))) {
         return;
       }
 
@@ -2127,7 +2153,7 @@
         return;
       }
 
-      if (!await _adminConfirm(`Reject ${selected.length} supplier(s)?`)) {
+      if (!(await _adminConfirm(`Reject ${selected.length} supplier(s)?`))) {
         return;
       }
 
@@ -2157,7 +2183,7 @@
         return;
       }
 
-      if (!await _adminConfirm(`DELETE ${selected.length} supplier(s)? This cannot be undone.`)) {
+      if (!(await _adminConfirm(`DELETE ${selected.length} supplier(s)? This cannot be undone.`))) {
         return;
       }
 
@@ -2187,7 +2213,7 @@
         return;
       }
 
-      if (!await _adminConfirm(`Approve ${selected.length} package(s)?`)) {
+      if (!(await _adminConfirm(`Approve ${selected.length} package(s)?`))) {
         return;
       }
 
@@ -2219,7 +2245,7 @@
         return;
       }
 
-      if (!await _adminConfirm(`Feature ${selected.length} package(s)?`)) {
+      if (!(await _adminConfirm(`Feature ${selected.length} package(s)?`))) {
         return;
       }
 
@@ -2251,7 +2277,7 @@
         return;
       }
 
-      if (!await _adminConfirm(`DELETE ${selected.length} package(s)? This cannot be undone.`)) {
+      if (!(await _adminConfirm(`DELETE ${selected.length} package(s)? This cannot be undone.`))) {
         return;
       }
 

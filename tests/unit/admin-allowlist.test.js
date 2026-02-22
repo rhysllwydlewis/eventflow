@@ -28,7 +28,12 @@ function parseAdminPages() {
   }
   return match[1]
     .split('\n')
-    .map(line => line.trim().replace(/^['"]|['"],?$/g, '').trim())
+    .map(line =>
+      line
+        .trim()
+        .replace(/^['"]|['"],?$/g, '')
+        .trim()
+    )
     .filter(line => line.startsWith('/'));
 }
 
@@ -79,18 +84,10 @@ describe('Admin Pages Allowlist Sync', () => {
 // ─── Native Dialog Ban Tests ───────────────────────────────────────────────
 
 describe('Admin Page JS - No Native Dialogs', () => {
-  // Regex to find native dialog calls that are not inside string literals
-  // or comments. We use a simple heuristic: match word boundary \bconfirm(,
-  // \balert(, \bprompt( not preceded by . (to exclude e.g. result.confirmed)
-  const NATIVE_DIALOG_PATTERN = /(?<!\w\.|\/\/[^\n]*)\b(window\.)?(alert|confirm|prompt)\s*\(/;
-  const ALLOWED_PATTERNS = [
-    // These are helper function definitions or references, not calls
-    /function\s+_adminConfirm/,
-    /async function _adminConfirm/,
-    /_adminConfirm\(/,
-    // Comments
-    /\/\//,
-  ];
+  // Match native dialog function calls, using a simple heuristic:
+  // word boundary before alert/confirm/prompt followed by (
+  // Lines are pre-filtered to skip comments before this pattern is applied.
+  const NATIVE_DIALOG_PATTERN = /\b(window\.)?(alert|confirm|prompt)\s*\(/;
 
   let adminJsFiles = [];
   try {
@@ -109,17 +106,18 @@ describe('Admin Page JS - No Native Dialogs', () => {
 
       const violations = [];
       lines.forEach((line, idx) => {
-        // Skip comment lines
+        // Skip comment lines and blank lines
         const trimmed = line.trimStart();
-        if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed === '') {
+          return;
+        }
+        // Skip lines that are part of admin helper definitions/calls
+        if (/_adminConfirm|_adminToast|AdminShared\.show/.test(line)) {
           return;
         }
         // Check for native dialog patterns
         if (NATIVE_DIALOG_PATTERN.test(line)) {
-          // Skip if it's a helper definition or reference
-          if (!/_adminConfirm|AdminShared\.show/.test(line)) {
-            violations.push(`  Line ${idx + 1}: ${line.trim()}`);
-          }
+          violations.push(`  Line ${idx + 1}: ${line.trim()}`);
         }
       });
 

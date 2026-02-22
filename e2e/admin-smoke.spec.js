@@ -103,7 +103,18 @@ test.describe('Admin Pages - Smoke Test', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ items: [], users: [], suppliers: [], tickets: [], payments: [], photos: [], reports: [], packages: [], reviews: [], counts: {} }),
+        body: JSON.stringify({
+          items: [],
+          users: [],
+          suppliers: [],
+          tickets: [],
+          payments: [],
+          photos: [],
+          reports: [],
+          packages: [],
+          reviews: [],
+          counts: {},
+        }),
       })
     );
 
@@ -160,7 +171,7 @@ test.describe('Admin Pages - Smoke Test', () => {
       await dialog.dismiss();
       throw new Error(
         `Native dialog detected on admin page (type: ${type}, message: "${message}"). ` +
-        'Admin pages must use AdminShared modals instead of native dialogs.'
+          'Admin pages must use AdminShared modals instead of native dialogs.'
       );
     });
   });
@@ -189,7 +200,7 @@ test.describe('Admin Pages - Smoke Test', () => {
       await page.waitForTimeout(waitTime);
 
       // Should still be on the admin page (not redirected away)
-      expect(page.url()).toContain(adminPage.replace('/admin', '/admin'));
+      expect(page.url()).toContain(adminPage);
 
       // Should have admin navbar
       const navbar = page.locator('.admin-top-navbar, .admin-navbar');
@@ -197,9 +208,7 @@ test.describe('Admin Pages - Smoke Test', () => {
 
       // No console errors
       if (consoleErrors.length > 0) {
-        throw new Error(
-          `Console errors on ${adminPage}:\n  ${consoleErrors.join('\n  ')}`
-        );
+        throw new Error(`Console errors on ${adminPage}:\n  ${consoleErrors.join('\n  ')}`);
       }
     });
   });
