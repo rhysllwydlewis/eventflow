@@ -185,7 +185,7 @@ describe('Admin Supplier Subscription API', () => {
           ...BASE_SUPPLIER,
           isPro: true,
           proPlan: 'Pro',
-          proPlanExpiry: new Date(Date.now() + 86400000).toISOString(),
+          proPlanExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           subscription: { tier: 'pro', status: 'active' },
         },
       ];
