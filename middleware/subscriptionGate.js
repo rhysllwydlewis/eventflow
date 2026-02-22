@@ -23,8 +23,7 @@ async function resolveEffectiveTier(userId) {
   if (subscription) {
     const { plan, status, currentPeriodEnd } = subscription;
     // Treat as active when status is active/trialing OR period hasn't yet ended
-    const periodStillValid =
-      !currentPeriodEnd || new Date(currentPeriodEnd) > new Date();
+    const periodStillValid = !currentPeriodEnd || new Date(currentPeriodEnd) > new Date();
     if ((status === 'active' || status === 'trialing') && periodStillValid) {
       return { tier: plan, subscription };
     }

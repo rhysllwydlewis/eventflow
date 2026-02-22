@@ -13,7 +13,7 @@
     // Wait for suppliers to be loaded
     const observer = new MutationObserver(() => {
       const supplierCards = document.querySelectorAll('.supplier-card, [data-supplier-id]');
-      
+
       if (supplierCards.length > 0) {
         supplierCards.forEach(card => {
           // Add new badge if supplier is new
@@ -35,7 +35,9 @@
     });
 
     // Start observing
-    const container = document.querySelector('#suppliers-list, .suppliers-container, #results-container');
+    const container = document.querySelector(
+      '#suppliers-list, .suppliers-container, #results-container'
+    );
     if (container) {
       observer.observe(container, { childList: true, subtree: true });
     }
@@ -48,7 +50,7 @@
         if (card.querySelector('.new-badge')) {
           return;
         }
-        
+
         const createdAt = card.dataset.createdAt || card.dataset.supplierCreated;
         if (createdAt && typeof addNewBadgeIfApplicable === 'function') {
           addNewBadgeIfApplicable(card, createdAt);
@@ -81,13 +83,13 @@
       if (!container) {
         container = document.createElement('div');
         container.id = 'breadcrumb-container';
-        
+
         const mainContent = document.querySelector('main, #main-content, .container');
         if (mainContent) {
           mainContent.insertBefore(container, mainContent.firstChild);
         }
       }
-      
+
       renderBreadcrumbs(breadcrumbs);
     }
   }

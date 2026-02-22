@@ -28,8 +28,10 @@ class GlobalSearch {
    * Initialize autocomplete for search inputs
    */
   initAutocomplete() {
-    const searchInputs = document.querySelectorAll('input[type="search"], .search-input, [data-search-autocomplete]');
-    
+    const searchInputs = document.querySelectorAll(
+      'input[type="search"], .search-input, [data-search-autocomplete]'
+    );
+
     searchInputs.forEach(input => {
       this.attachAutocomplete(input);
     });
@@ -42,46 +44,46 @@ class GlobalSearch {
     if (input.dataset.autocompleteAttached) {
       return;
     }
-    
+
     input.dataset.autocompleteAttached = 'true';
-    
+
     const dropdown = document.createElement('div');
     dropdown.className = 'search-autocomplete-dropdown';
     dropdown.style.display = 'none';
-    
+
     input.parentElement.style.position = 'relative';
     input.parentElement.appendChild(dropdown);
-    
-    const debouncedSearch = this.debounce((query) => {
+
+    const debouncedSearch = this.debounce(query => {
       this.fetchSuggestions(query, input, dropdown);
     }, 300);
-    
-    input.addEventListener('input', (e) => {
+
+    input.addEventListener('input', e => {
       const query = e.target.value.trim();
-      
+
       if (query.length >= 2) {
         debouncedSearch(query);
       } else {
         dropdown.style.display = 'none';
       }
     });
-    
-    input.addEventListener('keydown', (e) => {
+
+    input.addEventListener('keydown', e => {
       this.handleAutocompleteKeyboard(e, dropdown);
     });
-    
+
     input.addEventListener('blur', () => {
       setTimeout(() => {
         dropdown.style.display = 'none';
       }, 200);
     });
-    
-    document.addEventListener('click', (e) => {
+
+    document.addEventListener('click', e => {
       if (!input.contains(e.target) && !dropdown.contains(e.target)) {
         dropdown.style.display = 'none';
       }
     });
-    
+
     if (!document.getElementById('autocomplete-styles')) {
       this.addAutocompleteStyles();
     }
@@ -95,24 +97,24 @@ class GlobalSearch {
       this.renderSuggestions(this.autocompleteCache.get(query), input, dropdown);
       return;
     }
-    
+
     try {
       const endpoints = [
         `/api/search/suggestions?q=${encodeURIComponent(query)}`,
-        `/api/v2/search/autocomplete?q=${encodeURIComponent(query)}`
+        `/api/v2/search/autocomplete?q=${encodeURIComponent(query)}`,
       ];
-      
+
       let suggestions = null;
-      
+
       for (const endpoint of endpoints) {
         try {
           const response = await fetch(endpoint, {
             credentials: 'include',
             headers: {
-              'Accept': 'application/json'
-            }
+              Accept: 'application/json',
+            },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             suggestions = data.suggestions || data.items || data.results || [];
@@ -122,20 +124,19 @@ class GlobalSearch {
           continue;
         }
       }
-      
+
       if (!suggestions) {
         suggestions = this.generateMockSuggestions(query);
       }
-      
+
       this.autocompleteCache.set(query, suggestions);
-      
+
       if (this.autocompleteCache.size > 50) {
         const firstKey = this.autocompleteCache.keys().next().value;
         this.autocompleteCache.delete(firstKey);
       }
-      
+
       this.renderSuggestions(suggestions, input, dropdown);
-      
     } catch (error) {
       console.error('Autocomplete error:', error);
       dropdown.style.display = 'none';
@@ -149,12 +150,16 @@ class GlobalSearch {
     const lowerQuery = query.toLowerCase();
     const mockData = [
       { text: 'Wedding venues', type: 'category', url: '/suppliers.html?category=venues' },
-      { text: 'Photography services', type: 'category', url: '/suppliers.html?category=photography' },
+      {
+        text: 'Photography services',
+        type: 'category',
+        url: '/suppliers.html?category=photography',
+      },
       { text: 'Catering services', type: 'category', url: '/suppliers.html?category=catering' },
       { text: 'Entertainment', type: 'category', url: '/suppliers.html?category=entertainment' },
       { text: 'Flowers & décor', type: 'category', url: '/suppliers.html?category=flowers' },
     ];
-    
+
     return mockData.filter(item => item.text.toLowerCase().includes(lowerQuery));
   }
 
@@ -166,31 +171,33 @@ class GlobalSearch {
       dropdown.style.display = 'none';
       return;
     }
-    
-    const html = suggestions.map((item, index) => {
-      const text = item.text || item.name || item.title || '';
-      const icon = this.getSuggestionIcon(item.type);
-      
-      return `
+
+    const html = suggestions
+      .map((item, index) => {
+        const text = item.text || item.name || item.title || '';
+        const icon = this.getSuggestionIcon(item.type);
+
+        return `
         <div class="autocomplete-item" data-index="${index}" data-url="${item.url || ''}" data-value="${this.escapeHtml(text)}">
           <span class="autocomplete-icon">${icon}</span>
           <span class="autocomplete-text">${this.escapeHtml(text)}</span>
           ${item.type ? `<span class="autocomplete-type">${this.escapeHtml(item.type)}</span>` : ''}
         </div>
       `;
-    }).join('');
-    
+      })
+      .join('');
+
     dropdown.innerHTML = html;
     dropdown.style.display = 'block';
-    
+
     dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
       item.addEventListener('click', () => {
         const value = item.dataset.value;
         const url = item.dataset.url;
-        
+
         input.value = value;
         dropdown.style.display = 'none';
-        
+
         if (url) {
           window.location.href = url;
         } else {
@@ -208,10 +215,10 @@ class GlobalSearch {
     if (items.length === 0) {
       return;
     }
-    
+
     const current = dropdown.querySelector('.autocomplete-item.active');
     let index = current ? parseInt(current.dataset.index) : -1;
-    
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -233,7 +240,7 @@ class GlobalSearch {
       default:
         return;
     }
-    
+
     items.forEach((item, i) => {
       if (i === index) {
         item.classList.add('active');
@@ -254,9 +261,9 @@ class GlobalSearch {
       location: '📍',
       package: '📦',
       page: '📄',
-      help: '❓'
+      help: '❓',
     };
-    
+
     return icons[type] || '🔍';
   }
 

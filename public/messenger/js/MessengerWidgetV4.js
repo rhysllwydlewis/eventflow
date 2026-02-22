@@ -482,7 +482,9 @@
             <p class="small" style="margin-top:0.75rem;"><a href="/messenger/" style="color:#0B8073">Open full inbox</a></p>
           </div>
         </div>`;
-      this.container.querySelector('.mwv4__retry-btn')?.addEventListener('click', () => this._fetchConversations());
+      this.container
+        .querySelector('.mwv4__retry-btn')
+        ?.addEventListener('click', () => this._fetchConversations());
     }
 
     // ── Event handling ────────────────────────────────────────────────────────

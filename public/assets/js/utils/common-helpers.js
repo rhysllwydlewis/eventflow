@@ -61,7 +61,11 @@ export function showToast(message, type = 'info') {
  * @param {HTMLElement} previouslyFocusedElement - Element to restore focus to
  * @returns {Function} Close function
  */
-export function createModalCloseHandler(modal, cleanupCallbacks = [], previouslyFocusedElement = null) {
+export function createModalCloseHandler(
+  modal,
+  cleanupCallbacks = [],
+  previouslyFocusedElement = null
+) {
   return () => {
     // Run all cleanup callbacks
     cleanupCallbacks.forEach(callback => {

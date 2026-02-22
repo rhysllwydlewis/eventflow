@@ -29,17 +29,20 @@ Both paths point to the same endpoints and use identical logic.
 ### 1. Get Conversations List
 
 **V1:**
+
 ```
 GET /api/messages/conversations
 GET /api/v1/messages/conversations
 ```
 
 **V2:**
+
 ```
 GET /api/v2/messages/conversations
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -60,12 +63,14 @@ GET /api/v2/messages/conversations
 ### 2. Get Messages in Thread
 
 **V1:**
+
 ```
 GET /api/messages/threads/:threadId/messages
 GET /api/messages/:conversationId
 ```
 
 **V2:**
+
 ```
 GET /api/v2/messages/:threadId
 ```
@@ -75,16 +80,19 @@ GET /api/v2/messages/:threadId
 ### 3. Send Message
 
 **V1:**
+
 ```
 POST /api/messages/threads/:threadId/messages
 ```
 
 **V2:**
+
 ```
 POST /api/v2/messages/:threadId
 ```
 
 **Request Body:**
+
 ```json
 {
   "message": "Message text",
@@ -97,17 +105,20 @@ POST /api/v2/messages/:threadId
 ### 4. Mark Thread as Read
 
 **V1:**
+
 ```
 POST /api/messages/threads/:threadId/mark-read
 ```
 
 **V2 (Both paths supported):**
+
 ```
 POST /api/v2/messages/threads/:threadId/read
 POST /api/v2/messages/conversations/:conversationId/read
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -122,16 +133,19 @@ POST /api/v2/messages/conversations/:conversationId/read
 ### 5. Get Unread Count
 
 **V1:**
+
 ```
 GET /api/messages/unread
 ```
 
 **V2:**
+
 ```
 GET /api/v2/messages/unread
 ```
 
 **Response:**
+
 ```json
 {
   "count": 12
@@ -149,6 +163,7 @@ POST /api/v2/messages/bulk-delete
 ```
 
 **Request Body:**
+
 ```json
 {
   "messageIds": ["id1", "id2", "id3"],
@@ -158,6 +173,7 @@ POST /api/v2/messages/bulk-delete
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -170,10 +186,12 @@ POST /api/v2/messages/bulk-delete
 ```
 
 **Limits:**
+
 - Maximum 100 messages per request
 - 30-second timeout
 
 **Error Response:**
+
 ```json
 {
   "error": "Cannot delete more than 100 messages at once",
@@ -194,6 +212,7 @@ POST /api/v2/messages/bulk-mark-read
 ```
 
 **Request Body:**
+
 ```json
 {
   "messageIds": ["id1", "id2", "id3"],
@@ -202,6 +221,7 @@ POST /api/v2/messages/bulk-mark-read
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -212,6 +232,7 @@ POST /api/v2/messages/bulk-mark-read
 ```
 
 **Limits:**
+
 - Maximum 100 messages per request
 - 30-second timeout
 
@@ -224,6 +245,7 @@ POST /api/v2/messages/operations/:operationId/undo
 ```
 
 **Request Body:**
+
 ```json
 {
   "undoToken": "token-from-original-operation"
@@ -231,6 +253,7 @@ POST /api/v2/messages/operations/:operationId/undo
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -242,6 +265,7 @@ POST /api/v2/messages/operations/:operationId/undo
 ```
 
 **Error Response (Expired):**
+
 ```json
 {
   "error": "Undo window has expired",
@@ -252,6 +276,7 @@ POST /api/v2/messages/operations/:operationId/undo
 ```
 
 **Notes:**
+
 - Undo window is 30 seconds from the original operation
 - Returns 410 Gone status if undo window expired
 
@@ -266,6 +291,7 @@ POST /api/v2/messages/:id/flag
 ```
 
 **Request Body:**
+
 ```json
 {
   "isFlagged": true
@@ -281,6 +307,7 @@ POST /api/v2/messages/:id/archive
 ```
 
 **Request Body:**
+
 ```json
 {
   "action": "archive" // or "unarchive"
@@ -292,11 +319,13 @@ POST /api/v2/messages/:id/archive
 ### 3. Archive Thread
 
 **V1:**
+
 ```
 POST /api/messages/threads/:threadId/archive
 ```
 
 **V2:**
+
 ```
 POST /api/v2/messages/threads/:threadId/archive
 ```
@@ -314,23 +343,23 @@ All V2 endpoints return structured errors:
   "error": "Human-readable error message",
   "retriable": true, // or false
   "code": "ERROR_CODE",
-  "hint": "Helpful suggestion for resolving the error",
+  "hint": "Helpful suggestion for resolving the error"
   // Additional context fields
 }
 ```
 
 ### Error Codes
 
-| Code | Meaning | Retriable | Status |
-|------|---------|-----------|--------|
-| `MISSING_THREAD_ID` | Thread ID not provided | No | 400 |
-| `THREAD_NOT_FOUND` | Thread doesn't exist | No | 404 |
-| `ACCESS_DENIED` | User lacks permission | No | 403 |
-| `INVALID_MESSAGE_IDS` | Invalid ID format | No | 400 |
-| `TOO_MANY_MESSAGES` | Exceeded batch limit | No | 400 |
-| `TIMEOUT` | Operation timed out | Yes | 504 |
-| `INTERNAL_ERROR` | Server error | Yes | 500 |
-| `UNDO_EXPIRED` | Undo window passed | No | 410 |
+| Code                  | Meaning                | Retriable | Status |
+| --------------------- | ---------------------- | --------- | ------ |
+| `MISSING_THREAD_ID`   | Thread ID not provided | No        | 400    |
+| `THREAD_NOT_FOUND`    | Thread doesn't exist   | No        | 404    |
+| `ACCESS_DENIED`       | User lacks permission  | No        | 403    |
+| `INVALID_MESSAGE_IDS` | Invalid ID format      | No        | 400    |
+| `TOO_MANY_MESSAGES`   | Exceeded batch limit   | No        | 400    |
+| `TIMEOUT`             | Operation timed out    | Yes       | 504    |
+| `INTERNAL_ERROR`      | Server error           | Yes       | 500    |
+| `UNDO_EXPIRED`        | Undo window passed     | No        | 410    |
 
 ---
 
@@ -351,6 +380,7 @@ The frontend automatically retries failed requests using exponential backoff:
 ### Retry Conditions
 
 **Retries on:**
+
 - Network errors
 - Server errors (5xx)
 - Timeouts (408, 504)
@@ -358,6 +388,7 @@ The frontend automatically retries failed requests using exponential backoff:
 - Backend sets `retriable: true`
 
 **Does NOT retry on:**
+
 - Client errors (400, 403, 404)
 - Backend sets `retriable: false`
 - After 3 failed attempts
@@ -414,8 +445,9 @@ headers: {
 ```
 
 CSRF token available in meta tag:
+
 ```html
-<meta name="csrf-token" content="...">
+<meta name="csrf-token" content="..." />
 ```
 
 ---
@@ -425,6 +457,7 @@ CSRF token available in meta tag:
 Real-time updates available via Socket.IO:
 
 **Events:**
+
 - `message:new` - New message received
 - `message:read` - Messages marked as read
 - `message:typing` - User is typing
@@ -438,10 +471,9 @@ Real-time updates available via Socket.IO:
 
 ```javascript
 // Use retryWithBackoff() wrapper
-const result = await retryWithBackoff(
-  async () => messagingSystem.bulkDelete(ids, threadId),
-  { maxAttempts: 3 }
-);
+const result = await retryWithBackoff(async () => messagingSystem.bulkDelete(ids, threadId), {
+  maxAttempts: 3,
+});
 ```
 
 ### 2. Handle Errors Gracefully
@@ -483,10 +515,7 @@ console.log('Undo available for 30 seconds:', result.operationId);
 
 // Show undo button with countdown
 // If user clicks undo within 30 seconds:
-await messagingSystem.undoOperation(
-  result.operationId,
-  result.undoToken
-);
+await messagingSystem.undoOperation(result.operationId, result.undoToken);
 ```
 
 ---
@@ -536,17 +565,12 @@ curl -X POST \
 
 ```javascript
 // Test bulk delete
-await messagingSystem.bulkDelete(
-  ['msg-id-1', 'msg-id-2'], 
-  'thread-id',
-  'Testing bulk delete'
-);
+await messagingSystem.bulkDelete(['msg-id-1', 'msg-id-2'], 'thread-id', 'Testing bulk delete');
 
 // Test with retry
-await retryWithBackoff(
-  async () => messagingSystem.bulkMarkRead(['msg-id-1'], true),
-  { maxAttempts: 3 }
-);
+await retryWithBackoff(async () => messagingSystem.bulkMarkRead(['msg-id-1'], true), {
+  maxAttempts: 3,
+});
 ```
 
 ---

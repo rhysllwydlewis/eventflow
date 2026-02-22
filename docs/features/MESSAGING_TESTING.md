@@ -24,6 +24,7 @@ npm run dev
 ### Test Users
 
 Create test users with different roles:
+
 - Customer user: `customer@test.com`
 - Supplier user: `supplier@test.com`
 - Admin user: `admin@event-flow.co.uk`
@@ -45,12 +46,14 @@ Create test users with different roles:
 7. Check `localStorage` for queued messages
 
 **Expected Results:**
+
 - Message queued in localStorage
 - Visual "sending" indicator
 - Auto-retry on reconnect
 - Message delivered within 2 seconds
 
 **API Tests:**
+
 ```bash
 # Add to queue
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -82,12 +85,14 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" \
 5. Test filters (participant, date range, attachments)
 
 **Expected Results:**
+
 - Results appear within 200ms
 - Matched terms highlighted
 - Pagination works correctly
 - Filters apply correctly
 
 **API Tests:**
+
 ```bash
 # Basic search
 curl -H "Authorization: Bearer $TOKEN" \
@@ -119,18 +124,21 @@ curl -H "Authorization: Bearer $TOKEN" \
 7. Click badge to view edit history
 
 **Time Window Test:**
+
 1. Send a message
 2. Wait 16 minutes
 3. Try to edit
 4. Verify error: "Can only edit within 15 minutes"
 
 **Expected Results:**
+
 - Edit saves within 100ms
 - Real-time update for all participants
 - Edit history preserved
 - Time limit enforced
 
 **API Tests:**
+
 ```bash
 # Edit message
 curl -X PUT -H "Authorization: Bearer $TOKEN" \
@@ -165,12 +173,14 @@ curl -H "Authorization: Bearer $TOKEN" \
 7. Verify messages reappear
 
 **Expected Results:**
+
 - Block takes effect immediately
 - Existing threads remain accessible
 - Cannot receive new messages from blocked user
 - Unblock restores normal messaging
 
 **API Tests:**
+
 ```bash
 # Block user
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -199,6 +209,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 6. Verify confirmation message
 
 **Admin Test:**
+
 1. Log in as admin
 2. Navigate to `/admin/moderation`
 3. View reported messages
@@ -207,6 +218,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 6. Update status to "reviewed"
 
 **API Tests:**
+
 ```bash
 # Report message
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -237,12 +249,14 @@ curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" \
 6. Verify it returns to normal position
 
 **Expected Results:**
+
 - Max 10 pinned threads enforced
 - Pinned threads sort by lastMessageAt
 - Pin persists across page refreshes
 - Per-user pinning (doesn't affect other participants)
 
 **API Tests:**
+
 ```bash
 # Pin thread
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -265,12 +279,14 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 6. Verify notifications resume
 
 **Expected Results:**
+
 - No notifications while muted
 - Visual muted indicator
 - Mute expires after duration
 - Forever mute requires manual unmute
 
 **API Tests:**
+
 ```bash
 # Mute thread
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -295,12 +311,14 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 6. Check "Forwarded from [user]" header
 
 **Expected Results:**
+
 - Multiple recipients supported
 - Original attachments included
 - Forwarding header visible
 - New thread created if needed
 
 **API Tests:**
+
 ```bash
 # Forward message
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -321,12 +339,14 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 6. Verify preview renders in sent message
 
 **Expected Results:**
+
 - Preview loads within 2 seconds
 - Graceful fallback if fetch fails
 - Preview cached for 30 days
 - Lazy-load images
 
 **API Tests:**
+
 ```bash
 # Generate link preview
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -349,26 +369,31 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 **Test Scenario:** Verify spam prevention
 
 **Rate Limit Test:**
+
 1. Send 31 messages rapidly
 2. Verify 31st message is rejected
 3. Wait 1 minute
 4. Verify rate limit resets
 
 **Duplicate Test:**
+
 1. Send message "Test 123"
 2. Send same message within 5 seconds
 3. Verify second message rejected
 
 **URL Spam Test:**
+
 1. Send message with 6+ URLs
 2. Verify warning or rejection
 
 **Keyword Test:**
+
 1. Configure spam keywords in `.env`
 2. Send message with spam keyword
 3. Verify rejection or flagging
 
 **API Tests:**
+
 ```bash
 # Test rate limit (send 31 messages)
 for i in {1..31}; do
@@ -391,6 +416,7 @@ done
 4. Verify bold formatting preserved
 
 **Expected Results:**
+
 - Malicious scripts removed
 - Safe formatting preserved
 - Links sanitized with rel="noopener"
@@ -447,12 +473,14 @@ npm run load-test:report
 ```
 
 **Load Test Scenarios:**
+
 - 100 concurrent users sending messages
 - 50 users uploading files
 - 500 WebSocket connections
 - 1000 searches per minute
 
 **Success Criteria:**
+
 - 95th percentile response time < 500ms
 - WebSocket reconnect time < 2s
 - Zero message loss under load
@@ -462,21 +490,25 @@ npm run load-test:report
 ## Performance Benchmarks
 
 ### Message Search
+
 - **Target:** < 200ms for 10,000+ messages
 - **Test:** Run search with 10,000 messages in database
 - **Command:** `time curl "http://localhost:3000/api/v2/messages/search?q=test"`
 
 ### Message Queue Retry
+
 - **Target:** 2s, 4s, 8s, 16s, 30s intervals
 - **Test:** Queue message and observe retry attempts
 - **Verify:** Check `nextRetry` timestamp in database
 
 ### Link Preview Cache
+
 - **Target:** 30-day TTL
 - **Test:** Fetch same URL twice
 - **Verify:** Second fetch returns cached result (< 10ms)
 
 ### Spam Detection
+
 - **Target:** < 1ms per check
 - **Test:** Check 1000 messages for spam
 - **Command:** Run unit test with performance measurement
@@ -490,6 +522,7 @@ npm run load-test:report
 **Problem:** Text search returns no results
 
 **Debug Steps:**
+
 1. Check if text index exists:
    ```bash
    mongo eventflow --eval "db.messages.getIndexes()"
@@ -503,6 +536,7 @@ npm run load-test:report
 **Problem:** Users getting rate limited incorrectly
 
 **Debug Steps:**
+
 1. Check `MAX_MESSAGES_PER_MINUTE` in `.env`
 2. Clear rate limit cache (restart server)
 3. Check system clock (time sync issues)
@@ -513,6 +547,7 @@ npm run load-test:report
 **Problem:** Link preview endpoint returns errors
 
 **Debug Steps:**
+
 1. Test URL directly: `curl -I https://example.com`
 2. Check firewall rules
 3. Verify DNS resolution
@@ -524,6 +559,7 @@ npm run load-test:report
 **Problem:** Migration script fails
 
 **Debug Steps:**
+
 1. Check MongoDB connection string
 2. Verify database permissions
 3. Check for existing indexes
@@ -544,33 +580,33 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       mongodb:
         image: mongo:6
         ports:
           - 27017:27017
-    
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run migration
         run: node scripts/migrate-messaging-features.js
         env:
           MONGODB_LOCAL_URI: mongodb://localhost:27017/eventflow-test
-      
+
       - name: Run unit tests
         run: npm run test:unit
-      
+
       - name: Run E2E tests
         run: npm run test:e2e
-      
+
       - name: Run load tests
         run: npm run load-test
 ```
@@ -582,6 +618,7 @@ jobs:
 ### Sentry Error Tracking
 
 Key events to monitor:
+
 - Message send failures after max retries
 - WebSocket connection failures
 - Search query timeouts
@@ -611,19 +648,19 @@ const Message = require('./models/Message');
 async function seed() {
   const client = await MongoClient.connect(process.env.MONGODB_URI);
   const db = client.db('eventflow');
-  
+
   // Create 1000 test messages
   for (let i = 0; i < 1000; i++) {
     const message = Message.createMessage({
       threadId: 'test-thread-1',
       senderId: 'user1',
       recipientIds: ['user2'],
-      content: `Test message ${i} with searchable keywords like meeting, urgent, deadline`
+      content: `Test message ${i} with searchable keywords like meeting, urgent, deadline`,
     });
-    
+
     await db.collection('messages').insertOne(message);
   }
-  
+
   console.log('✅ Seeded 1000 test messages');
   await client.close();
 }
@@ -666,6 +703,7 @@ Before each release, verify:
 ## Contact & Support
 
 For testing issues or questions:
+
 - Create GitHub issue with `[Testing]` label
 - Include error logs and reproduction steps
 - Tag @rhysllwydlewis for urgent issues

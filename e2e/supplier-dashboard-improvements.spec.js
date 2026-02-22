@@ -14,16 +14,16 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     // Find the mobile nav pills container
     const navPills = page.locator('.mobile-nav-pills');
-    
+
     if ((await navPills.count()) > 0) {
       // Check if the container exists
       await expect(navPills).toBeVisible();
-      
+
       // Verify the justify-content style is set to center
       const justifyContent = await navPills.evaluate(el => {
         return window.getComputedStyle(el).justifyContent;
       });
-      
+
       expect(justifyContent).toBe('center');
     }
   });
@@ -33,7 +33,7 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
     await page.waitForLoadState('networkidle');
 
     const navPills = page.locator('.mobile-nav-pills');
-    
+
     if ((await navPills.count()) > 0) {
       // Check for expected navigation items
       await expect(page.getByTestId('nav-overview')).toBeVisible();
@@ -61,10 +61,10 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     // Check if onboarding card is displayed
     const onboardingCard = dismissButton.locator('..');
-    
+
     if ((await onboardingCard.count()) > 0) {
       await expect(onboardingCard).toBeVisible();
-      
+
       // Check for key elements in the new design
       await expect(page.locator('text=Welcome to Your Supplier Dashboard!')).toBeVisible();
       await expect(page.locator('text=Complete your supplier profile')).toBeVisible();
@@ -85,20 +85,20 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     const dismissButton = page.locator('#ef-onboarding-dismiss');
     await expect(dismissButton).toBeVisible({ timeout: 5000 });
-    
+
     if ((await dismissButton.count()) > 0) {
       // Click the "Got it" button
       await dismissButton.click();
-      
+
       // Check if the card was removed
       const onboardingCard = page.locator('#ef-onboarding-dismiss').locator('..');
       await expect(onboardingCard).not.toBeVisible();
-      
+
       // Verify localStorage was set
       const dismissedFlag = await page.evaluate(() => {
         return localStorage.getItem('ef_onboarding_dismissed');
       });
-      
+
       expect(dismissedFlag).toBe('1');
     }
   });
@@ -132,24 +132,24 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
     await expect(dismissButton).toBeVisible({ timeout: 5000 });
 
     const onboardingCard = dismissButton.locator('..');
-    
+
     if ((await onboardingCard.count()) > 0) {
       // Check for teal gradient background (should contain teal colors)
       const background = await onboardingCard.evaluate(el => {
         return window.getComputedStyle(el).background;
       });
-      
+
       expect(background).toContain('gradient');
-      
+
       // Check for liquid glass effects
       const backdropFilter = await onboardingCard.evaluate(el => {
         return window.getComputedStyle(el).backdropFilter;
       });
       expect(backdropFilter).toContain('blur');
-      
+
       // Check for emoji icon with accessibility attributes
       await expect(page.locator('[role="img"][aria-label="celebration"]')).toBeVisible();
-      
+
       // Check button has teal color (#0B8073)
       const buttonColor = await dismissButton.evaluate(el => {
         return window.getComputedStyle(el).color;
@@ -157,27 +157,27 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
       // RGB equivalent of #0B8073 is rgb(11, 128, 115)
       // Check for the teal color (should contain 'rgb(11, 128, 115)' or similar)
       expect(buttonColor).toMatch(/rgb\(11,\s*128,\s*115\)/i);
-      
+
       // Check for the new CTA text
-      await expect(page.locator('text=Got it! Let\'s go 🚀')).toBeVisible();
+      await expect(page.locator("text=Got it! Let's go 🚀")).toBeVisible();
     }
   });
 
   test('navigation pills should be scrollable on narrow viewports', async ({ page }) => {
     // Set a narrow viewport to test horizontal scrolling
     await page.setViewportSize({ width: 375, height: 667 }); // iPhone SE size
-    
+
     await page.goto('/dashboard-supplier.html');
     await page.waitForLoadState('networkidle');
 
     const navPills = page.locator('.mobile-nav-pills');
-    
+
     if ((await navPills.count()) > 0) {
       // Check if overflow-x is set to auto
       const overflowX = await navPills.evaluate(el => {
         return window.getComputedStyle(el).overflowX;
       });
-      
+
       expect(overflowX).toBe('auto');
     }
   });
@@ -194,16 +194,16 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     const dismissButton = page.locator('#ef-onboarding-dismiss');
     await expect(dismissButton).toBeVisible({ timeout: 5000 });
-    
+
     if ((await dismissButton.count()) > 0) {
       // Hover over the button
       await dismissButton.hover();
-      
+
       // The transform should be applied (though exact value varies by browser)
       const transform = await dismissButton.evaluate(el => {
         return window.getComputedStyle(el).transform;
       });
-      
+
       // Just verify transform property exists and is not 'none'
       expect(transform).toBeTruthy();
       expect(transform).not.toBe('none');

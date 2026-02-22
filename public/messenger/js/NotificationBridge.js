@@ -5,14 +5,14 @@
 
 'use strict';
 
-(function() {
+(function () {
   // Configuration constants
   const NOTIFICATION_AUTO_CLOSE_DELAY = 5000; // 5 seconds
   const UNREAD_COUNT_POLL_INTERVAL = 120000; // 2 minutes
   const BADGE_SELECTORS = [
     '#ef-notification-badge',
     '#unread-messages-count',
-    '.messenger-unread-badge'
+    '.messenger-unread-badge',
   ];
 
   let notificationPermission = 'default';
@@ -78,16 +78,16 @@
   function createNotification(senderName, messagePreview, conversationId) {
     const title = senderName || 'New Message';
     const body = messagePreview || 'You have a new message';
-    
+
     const notification = new Notification(title, {
       body: body,
       icon: '/assets/images/logo.png',
       badge: '/assets/images/logo.png',
       tag: `messenger-${conversationId}`,
-      requireInteraction: false
+      requireInteraction: false,
     });
 
-    notification.onclick = function() {
+    notification.onclick = function () {
       window.focus();
       window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
       notification.close();
@@ -110,20 +110,22 @@
     }
 
     // Dispatch custom event for other parts of the app
-    window.dispatchEvent(new CustomEvent('messenger:notification', {
-      detail: {
-        conversationId: conversationId,
-        message: message,
-        sender: sender
-      }
-    }));
+    window.dispatchEvent(
+      new CustomEvent('messenger:notification', {
+        detail: {
+          conversationId: conversationId,
+          message: message,
+          sender: sender,
+        },
+      })
+    );
 
     // Show desktop notification if not on messenger page
     if (!window.location.pathname.startsWith('/messenger')) {
       showDesktopNotification({
         senderName: sender?.name || 'Unknown User',
         messagePreview: message?.content || message?.text || 'New message',
-        conversationId: conversationId
+        conversationId: conversationId,
       });
     }
   }
@@ -136,26 +138,26 @@
     if (window.io && typeof window.io === 'function') {
       try {
         const socket = window.io();
-        
-        socket.on('messenger:new-message', (data) => {
+
+        socket.on('messenger:new-message', data => {
           handleNewMessage(data);
         });
 
         // Also listen for notification events (v2 compatibility)
-        socket.on('notification:received', (data) => {
+        socket.on('notification:received', data => {
           if (data.type === 'message' || data.category === 'message') {
             handleNewMessage(data);
           }
         });
 
-        socket.on('notification', (data) => {
+        socket.on('notification', data => {
           if (data.type === 'message' || data.category === 'message') {
             handleNewMessage(data);
           }
         });
 
         // Handle connection errors
-        socket.on('error', (error) => {
+        socket.on('error', error => {
           console.error('WebSocket error:', error);
         });
 
@@ -183,8 +185,8 @@
       const response = await fetch('/api/v4/messenger/conversations?unreadOnly=true&limit=100', {
         credentials: 'include',
         headers: {
-          'Accept': 'application/json'
-        }
+          Accept: 'application/json',
+        },
       });
 
       if (!response.ok) {
@@ -247,6 +249,6 @@
     init,
     destroy,
     updateUnreadBadge,
-    fetchUnreadCount
+    fetchUnreadCount,
   };
 })();

@@ -15,18 +15,14 @@ From the original problem statement, the following issues needed to be fixed:
 - [ ] **Issue 1:** Customer/supplier dashboard message send flow posts correct payload for v2 API
   - Use `content` and `attachments` fields (not `message`)
   - Maintain backward compatibility for callers still sending `message`
-  
 - [ ] **Issue 2:** Fix mark-read requests to use v2 endpoint shape
   - Use `/api/v2/messages/threads/:threadId/read` (not `/api/v2/messages/:threadId/read`)
   - Update client-side helper methods accordingly
-  
 - [ ] **Issue 3:** Prefer centralized API version config
   - Use `public/assets/js/config/api-version.js` where feasible
-  
 - [ ] **Issue 4:** Improve client-side error handling
   - 400/500 responses should surface clear error messages
   - Not generic "Something went wrong"
-  
 - [ ] **Issue 5:** Confirm supplier inbox/unread badge handling
   - Should still work after changes
 
@@ -166,13 +162,12 @@ From the original problem statement, the following issues needed to be fixed:
 - [ ] All requirements met ✅
 - [ ] Ready for production deployment ✅
 
-**Reviewer:** ___________________  
-**Date:** ___________________  
-**Approved:** [ ] YES  [ ] NO
+**Reviewer:** **\*\*\*\***\_\_\_**\*\*\*\***  
+**Date:** **\*\*\*\***\_\_\_**\*\*\*\***  
+**Approved:** [ ] YES [ ] NO
 
 ---
 
 ## Notes
 
 _Add any additional notes or observations here_
-

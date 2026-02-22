@@ -12,6 +12,7 @@
 **Status:** VERIFIED AS WORKING
 
 **Analysis:**
+
 - Current pattern: `window.__CSRF_TOKEN__ || ''`
 - Used in: customer-messages.js, supplier-messages.js
 - **Verdict:** This is the **standard EventFlow pattern**
@@ -20,6 +21,7 @@
   - More robust alternative exists in MessengerAPI.js (cookie + meta tag)
 
 **Evidence:**
+
 ```javascript
 // Standard pattern across EventFlow
 'X-CSRF-Token': window.__CSRF_TOKEN__ || ''
@@ -29,7 +31,7 @@ getCsrfToken() {
   // Try cookie first
   const match = document.cookie.match(/csrfToken=([^;]+)/);
   if (match) return match[1];
-  
+
   // Fallback to meta tag
   const meta = document.querySelector('meta[name="csrf-token"]');
   return meta ? meta.content : '';
@@ -45,23 +47,26 @@ getCsrfToken() {
 **Status:** VERIFIED AS CORRECT
 
 **Analysis:**
+
 - Frontend endpoint: `/messages/{messageId}` (PATCH)
 - Backend route: `routes/messenger-v4.js:447` - `router.patch('/messages/:id')`
 - **Verdict:** Endpoints **match perfectly**
 
 **Backend Implementation:**
+
 ```javascript
 // routes/messenger-v4.js:447
 router.patch('/messages/:id', authRequired, csrfProtection, async (req, res) => {
   const { id } = req.params;
   const userId = req.user._id;
   const { content } = req.body;
-  
+
   const message = await messengerService.editMessage(id, userId, content);
   // conversationId is retrieved from message object
 ```
 
 **Frontend Implementation:**
+
 ```javascript
 // MessengerAPI.js:191
 async editMessage(messageId, newContent) {
@@ -81,6 +86,7 @@ async editMessage(messageId, newContent) {
 **Status:** VERIFIED AND WORKING
 
 **Integration Path:**
+
 ```
 server.js
   └─> mountRoutes() from routes/index.js
@@ -93,6 +99,7 @@ server.js
 **Deprecation Middleware:**
 
 **v1 (routes/messages.js):**
+
 ```javascript
 router.use((req, res, next) => {
   res.setHeader('X-API-Deprecation', 'true');
@@ -105,6 +112,7 @@ router.use((req, res, next) => {
 ```
 
 **v2 (routes/messaging-v2.js):**
+
 ```javascript
 router.use((req, res, next) => {
   res.setHeader('X-API-Deprecation', 'true');
@@ -117,6 +125,7 @@ router.use((req, res, next) => {
 ```
 
 **v3 (routes/messenger.js):**
+
 ```javascript
 router.use((req, res, next) => {
   res.setHeader('X-API-Deprecation', 'true');
@@ -137,23 +146,27 @@ router.use((req, res, next) => {
 **Status:** REVIEWED - ACCEPTABLE AS-IS
 
 **Analysis:**
+
 - Found: 2 instances of `console.error()` in MessengerAPI.js (client-side)
 - Location: Lines 61, 161
 - **Verdict:** **Acceptable for client-side debugging**
 
 **Rationale:**
+
 - MessengerAPI.js runs in browser, not Node.js
 - `console.error()` is standard for browser-side error logging
 - Backend routes properly use `logger.error()` or `logger.warn()`
 - Client-side console statements help with debugging
 
 **Backend Example (correct usage):**
+
 ```javascript
 // routes/messenger-v4.js
 logger.error('Error editing message:', error);
 ```
 
 **Client-side Example (acceptable usage):**
+
 ```javascript
 // MessengerAPI.js (browser code)
 console.error('API request failed:', error);
@@ -168,6 +181,7 @@ console.error('API request failed:', error);
 **Status:** IMPROVED - ERROR BOUNDARIES ADDED
 
 **Problem:**
+
 ```
 Step 1: Create conversation ✓
 Step 2: Send message ✗
@@ -177,20 +191,26 @@ Original Result: Generic error, conversation orphaned
 **Solution Implemented:**
 
 **File: message-supplier-panel.js**
+
 ```javascript
 // Step 2 with error boundary
 let messageSent = false;
 try {
-  const messageResponse = await fetch(`/api/v4/messenger/conversations/${conversationId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify({ message })
-  });
+  const messageResponse = await fetch(
+    `/api/v4/messenger/conversations/${conversationId}/messages`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }
+  );
 
   if (!messageResponse.ok) {
     // Conversation created but message failed
-    throw new Error(`Message failed. Conversation was created - you can continue in the messenger.`);
+    throw new Error(
+      `Message failed. Conversation was created - you can continue in the messenger.`
+    );
   }
-  
+
   messageSent = true;
 } catch (msgError) {
   // Redirect to conversation anyway
@@ -204,11 +224,12 @@ try {
 ```
 
 **File: supplier-conversation.js**
+
 ```javascript
 // Similar error boundary
 try {
   const messageResponse = await fetch(...);
-  
+
   if (!messageResponse.ok) {
     // Redirect to conversation with warning
     closeModal();
@@ -218,7 +239,7 @@ try {
     window.location.href = `/messenger/?conversation=${encodeURIComponent(conversationId)}`;
     return;
   }
-  
+
   messageSent = true;
 } catch (msgError) {
   // Same graceful handling
@@ -230,6 +251,7 @@ try {
 ```
 
 **Improvements:**
+
 1. ✅ Nested try-catch for Step 2
 2. ✅ Graceful degradation on message failure
 3. ✅ Redirect to conversation if created
@@ -237,6 +259,7 @@ try {
 5. ✅ User can retry from messenger
 
 **New Behavior:**
+
 ```
 Step 1: Create conversation ✓
 Step 2: Send message ✗
@@ -252,20 +275,24 @@ New Result: Warning shown, redirect to conversation for retry
 ### All Checks Passed ✅
 
 **2-Step Conversation Pattern:**
+
 - ✅ Message Panel - Step 1 (create conversation)
 - ✅ Message Panel - Step 2 (send message)
 - ✅ Supplier Conv - Step 1 (create conversation)
 - ✅ Supplier Conv - Step 2 (send message)
 
 **Error Handling:**
+
 - ✅ Message Panel: Nested error boundaries
 - ✅ Supplier Conv: Nested error boundaries
 
 **Graceful Degradation:**
+
 - ✅ Message Panel: Redirects on Step 2 failure
 - ✅ Supplier Conv: Redirects on Step 2 failure
 
 **V4 API Endpoint Usage:**
+
 - ✅ api-version.js: CURRENT='v4'
 - ✅ MessengerAPI.js: baseUrl='/api/v4/messenger'
 - ✅ customer-messages.js: Using v4
@@ -274,6 +301,7 @@ New Result: Warning shown, redirect to conversation for retry
 - ✅ supplier-conversation.js: Using v4
 
 **Deprecation Headers:**
+
 - ✅ v1 Messages: Headers configured, sunset 2026-12-31
 - ✅ v2 Messaging: Headers configured, sunset 2026-12-31
 - ✅ v3 Messenger: Headers configured, sunset 2027-03-31
@@ -283,11 +311,13 @@ New Result: Warning shown, redirect to conversation for retry
 ## Files Modified
 
 ### 1. public/assets/js/components/message-supplier-panel.js
+
 - Added nested try-catch for Step 2
 - Added warning status class CSS
 - Graceful degradation on message failure
 
 ### 2. public/assets/js/supplier-conversation.js
+
 - Added nested try-catch for Step 2
 - Toast warning on message failure
 - Redirect to conversation for retry
@@ -296,13 +326,13 @@ New Result: Warning shown, redirect to conversation for retry
 
 ## Summary
 
-| Issue | Status | Action |
-|-------|--------|--------|
-| CSRF Token Handling | ✅ VERIFIED | Standard pattern, working correctly |
-| Edit Message Endpoint | ✅ VERIFIED | Matches backend, no changes needed |
+| Issue                  | Status      | Action                                  |
+| ---------------------- | ----------- | --------------------------------------- |
+| CSRF Token Handling    | ✅ VERIFIED | Standard pattern, working correctly     |
+| Edit Message Endpoint  | ✅ VERIFIED | Matches backend, no changes needed      |
 | Deprecation Middleware | ✅ VERIFIED | Properly integrated via routes/index.js |
-| Console Statements | ✅ REVIEWED | Client-side console acceptable |
-| 2-Step Error Handling | ✅ IMPROVED | Error boundaries added |
+| Console Statements     | ✅ REVIEWED | Client-side console acceptable          |
+| 2-Step Error Handling  | ✅ IMPROVED | Error boundaries added                  |
 
 **Overall Status:** ✅ ALL ISSUES RESOLVED OR VERIFIED
 

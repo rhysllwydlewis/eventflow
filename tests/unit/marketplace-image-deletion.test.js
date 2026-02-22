@@ -16,11 +16,11 @@ describe('Marketplace Image Deletion', () => {
 
   test('deleteMarketplaceImages should return 0 when MongoDB is not available', async () => {
     const photoUpload = require('../../photo-upload');
-    
+
     // This test will pass when MongoDB is not available
     // In a real environment with MongoDB, it would test actual deletion
     const deletedCount = await photoUpload.deleteMarketplaceImages('test-listing-123');
-    
+
     // When MongoDB is unavailable, it should return 0 and not throw
     expect(typeof deletedCount).toBe('number');
   });
@@ -36,9 +36,9 @@ describe('Marketplace Routes - Image Cleanup', () => {
     );
 
     // Verify the route exists
-    expect(marketplaceRoutes).toContain("router.delete");
-    expect(marketplaceRoutes).toContain("/listings/:id");
-    
+    expect(marketplaceRoutes).toContain('router.delete');
+    expect(marketplaceRoutes).toContain('/listings/:id');
+
     // Verify it calls deleteMarketplaceImages
     expect(marketplaceRoutes).toContain('deleteMarketplaceImages');
     expect(marketplaceRoutes).toContain('deletedImageCount');
@@ -49,22 +49,19 @@ describe('Admin Routes - Marketplace Image Cleanup', () => {
   test('DELETE /marketplace/listings/:id admin endpoint exists', () => {
     const fs = require('fs');
     const path = require('path');
-    const adminRoutes = fs.readFileSync(
-      path.join(__dirname, '../../routes/admin.js'),
-      'utf8'
-    );
+    const adminRoutes = fs.readFileSync(path.join(__dirname, '../../routes/admin.js'), 'utf8');
 
     // Verify the admin delete endpoint exists
-    expect(adminRoutes).toContain("router.delete");
-    expect(adminRoutes).toContain("/marketplace/listings/:id");
-    
+    expect(adminRoutes).toContain('router.delete');
+    expect(adminRoutes).toContain('/marketplace/listings/:id');
+
     // Verify it has proper authorization
     expect(adminRoutes).toContain('authRequired');
     expect(adminRoutes).toContain("roleRequired('admin')");
-    
+
     // Verify it calls deleteMarketplaceImages
     expect(adminRoutes).toContain('deleteMarketplaceImages');
-    
+
     // Verify it has audit logging
     expect(adminRoutes).toContain('auditLog');
     expect(adminRoutes).toContain('marketplace_listing_deleted');
@@ -75,17 +72,14 @@ describe('Photo Upload - deleteImage Function', () => {
   test('deleteImage should be enhanced to check marketplace_images collection', () => {
     const fs = require('fs');
     const path = require('path');
-    const photoUpload = fs.readFileSync(
-      path.join(__dirname, '../../photo-upload.js'),
-      'utf8'
-    );
+    const photoUpload = fs.readFileSync(path.join(__dirname, '../../photo-upload.js'), 'utf8');
 
     // Verify it checks marketplace_images collection
     expect(photoUpload).toContain("collection('marketplace_images')");
-    
+
     // Verify it falls back to photos collection
     expect(photoUpload).toContain("collection('photos')");
-    
+
     // Verify it has proper logging
     expect(photoUpload).toContain('logger.info');
     expect(photoUpload).toContain('Deleted marketplace image');

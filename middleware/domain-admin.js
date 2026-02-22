@@ -1,7 +1,7 @@
 /**
  * Domain-Based Admin Authentication Middleware
  * Automatically grants admin role to verified emails from trusted domains
- * 
+ *
  * Security considerations:
  * - Only activates AFTER email verification (prevents abuse)
  * - Uses environment variable ADMIN_DOMAINS for configuration
@@ -22,13 +22,13 @@ function getAdminDomains() {
   if (!domainsStr.trim()) {
     return [];
   }
-  
+
   // Split by comma, trim, and filter out empty strings
   const domains = domainsStr
     .split(',')
     .map(d => d.trim().toLowerCase())
     .filter(d => d.length > 0);
-  
+
   return domains;
 }
 
@@ -39,14 +39,14 @@ function getAdminDomains() {
  */
 function validateAdminDomainsFormat() {
   const domainsStr = process.env.ADMIN_DOMAINS;
-  
+
   // If not set, that's fine - no admin domains
   if (!domainsStr || !domainsStr.trim()) {
     return { valid: true };
   }
-  
+
   const domains = getAdminDomains();
-  
+
   for (const domain of domains) {
     // Check for wildcards (security risk)
     if (domain.includes('*')) {
@@ -55,7 +55,7 @@ function validateAdminDomainsFormat() {
         error: `Invalid ADMIN_DOMAINS: Wildcards not allowed (found: ${domain})`,
       };
     }
-    
+
     // Basic domain format validation
     // Must contain at least one dot and no spaces
     if (!domain.includes('.') || domain.includes(' ')) {
@@ -64,7 +64,7 @@ function validateAdminDomainsFormat() {
         error: `Invalid ADMIN_DOMAINS: Invalid domain format (found: ${domain})`,
       };
     }
-    
+
     // Check for common mistakes
     if (domain.startsWith('.') || domain.endsWith('.')) {
       return {
@@ -72,7 +72,7 @@ function validateAdminDomainsFormat() {
         error: `Invalid ADMIN_DOMAINS: Domain cannot start or end with dot (found: ${domain})`,
       };
     }
-    
+
     // Check for protocol in domain (common mistake)
     if (domain.includes('://')) {
       return {
@@ -81,7 +81,7 @@ function validateAdminDomainsFormat() {
       };
     }
   }
-  
+
   return { valid: true };
 }
 
@@ -94,17 +94,17 @@ function isAdminDomain(email) {
   if (!email || typeof email !== 'string') {
     return false;
   }
-  
+
   const emailLower = email.toLowerCase().trim();
   const atIndex = emailLower.lastIndexOf('@');
-  
+
   if (atIndex === -1 || atIndex === emailLower.length - 1) {
     return false; // Invalid email format
   }
-  
+
   const domain = emailLower.substring(atIndex + 1);
   const adminDomains = getAdminDomains();
-  
+
   return adminDomains.includes(domain);
 }
 
@@ -117,18 +117,18 @@ function isOwnerEmail(email) {
   if (!email || typeof email !== 'string') {
     return false;
   }
-  
+
   return email.toLowerCase().trim() === OWNER_EMAIL.toLowerCase();
 }
 
 /**
  * Determine the appropriate role for a user based on email and verification status
- * 
+ *
  * Business logic:
  * 1. If email is owner email → always admin, always verified
  * 2. If email domain is admin domain AND verified → admin
  * 3. Otherwise → use requested role
- * 
+ *
  * @param {string} email - User email address
  * @param {string} requestedRole - Role requested by user during registration
  * @param {boolean} isVerified - Whether email is verified
@@ -143,7 +143,7 @@ function determineRole(email, requestedRole, isVerified) {
       reason: 'owner_email',
     };
   }
-  
+
   // Admin domain emails get admin role ONLY after verification
   if (isAdminDomain(email)) {
     if (isVerified) {
@@ -162,7 +162,7 @@ function determineRole(email, requestedRole, isVerified) {
       };
     }
   }
-  
+
   // Regular user - use requested role
   return {
     role: requestedRole || 'customer',
@@ -174,7 +174,7 @@ function determineRole(email, requestedRole, isVerified) {
 /**
  * Check if a user should be auto-upgraded to admin after email verification
  * This is called during the verification flow
- * 
+ *
  * @param {string} email - User email address
  * @returns {boolean} True if user should be upgraded to admin
  */
@@ -183,7 +183,7 @@ function shouldUpgradeToAdminOnVerification(email) {
   if (isOwnerEmail(email)) {
     return false;
   }
-  
+
   // Admin domain emails should be upgraded
   return isAdminDomain(email);
 }
@@ -210,17 +210,15 @@ function getAdminDomainsList() {
 function logAdminAuthConfig() {
   const ownerEmail = getOwnerEmail();
   const adminDomains = getAdminDomainsList();
-  
+
   logger.info('Admin Authentication Configuration', {
     ownerEmail,
     adminDomainsCount: adminDomains.length,
     adminDomains: adminDomains.length > 0 ? adminDomains : 'none configured',
   });
-  
+
   if (adminDomains.length > 0) {
-    logger.info(
-      `Domain-based admin promotion enabled for: ${adminDomains.join(', ')}`
-    );
+    logger.info(`Domain-based admin promotion enabled for: ${adminDomains.join(', ')}`);
   } else {
     logger.info('Domain-based admin promotion: DISABLED (no ADMIN_DOMAINS configured)');
   }

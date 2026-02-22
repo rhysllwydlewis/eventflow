@@ -110,9 +110,7 @@ async function seed(options = {}) {
     // Always ensure owner account exists (protected from deletion)
     const ownerEmail = process.env.OWNER_EMAIL || 'admin@event-flow.co.uk';
     const ownerPassword = process.env.OWNER_PASSWORD || 'Admin123!'; // Default for dev only
-    const ownerExists = existingUsers.find(
-      u => u.email.toLowerCase() === ownerEmail.toLowerCase()
-    );
+    const ownerExists = existingUsers.find(u => u.email.toLowerCase() === ownerEmail.toLowerCase());
     if (!ownerExists) {
       const owner = {
         id: uid('usr'),

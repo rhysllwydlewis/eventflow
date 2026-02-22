@@ -408,7 +408,7 @@ function initBackToTop() {
     if (scrollTimeout) {
       return; // Skip if already scheduled
     }
-    
+
     scrollTimeout = setTimeout(() => {
       const btn = document.querySelector('.back-to-top');
       if (btn) {

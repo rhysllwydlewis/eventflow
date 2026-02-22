@@ -77,23 +77,28 @@ router.post('/metrics/track', applyCsrfProtection, async (req, res) => {
 });
 
 // Simple synthetic timeseries for admin charts
-router.get('/admin/metrics/timeseries', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
-  const today = new Date();
-  const days = 14;
-  const series = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
-    series.push({
-      date: iso,
-      visitors: 20 + ((i * 7) % 15),
-      signups: 3 + (i % 4),
-      plans: 1 + (i % 3),
-    });
+router.get(
+  '/admin/metrics/timeseries',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  async (_req, res) => {
+    const today = new Date();
+    const days = 14;
+    const series = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      series.push({
+        date: iso,
+        visitors: 20 + ((i * 7) % 15),
+        signups: 3 + (i % 4),
+        plans: 1 + (i % 3),
+      });
+    }
+    res.json({ series });
   }
-  res.json({ series });
-});
+);
 
 // ---------- Admin ----------
 router.get('/admin/metrics', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {

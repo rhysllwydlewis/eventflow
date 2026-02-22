@@ -3918,9 +3918,7 @@ router.get('/public/pexels-collage', async (req, res) => {
           }
 
           if (media.length === 0) {
-            logger.warn(
-              `⚠️  No media found in collection ${collectionId}, falling back to search`
-            );
+            logger.warn(`⚠️  No media found in collection ${collectionId}, falling back to search`);
             // Fall through to search-based approach
           } else {
             return res.json({

@@ -16,7 +16,6 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
 
 describe('Messaging Dashboard Fixes', () => {
   (messagingJsExists ? describe : describe.skip)('messaging.js client-side fixes', () => {
-
     it('transforms message field to content field in sendMessageViaAPI', () => {
       const sendMessageFn = messagingJs
         .split('async sendMessageViaAPI(conversationId, messageData)')[1]
@@ -108,7 +107,7 @@ describe('Messaging Dashboard Fixes', () => {
 
       // Should still validate that content or attachments are required
       // Updated to match new implementation that checks attachments.length
-      expect(sendMessageRoute).toContain("attachments.length === 0");
+      expect(sendMessageRoute).toContain('attachments.length === 0');
       expect(sendMessageRoute).toContain("error: 'content or attachments required'");
     });
 
@@ -120,7 +119,6 @@ describe('Messaging Dashboard Fixes', () => {
   });
 
   (customerMsgJsExists ? describe : describe.skip)('customer-messages.js usage', () => {
-
     it('imports MessagingManager from messaging.js', () => {
       // Should import MessagingManager to avoid "messagingManager is not defined" error
       expect(customerMessagesJs).toContain('import messagingSystem, { MessagingManager }');
@@ -324,7 +322,6 @@ describe('Messaging Dashboard Fixes', () => {
   });
 
   (supplierMsgJsExists ? describe : describe.skip)('supplier-messages.js usage', () => {
-
     it('validates conversationId in openConversation', () => {
       // Should validate conversationId before opening conversation modal
       expect(supplierMessagesJs).toContain('if (!conversationId)');

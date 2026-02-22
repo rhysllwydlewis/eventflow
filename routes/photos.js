@@ -99,7 +99,7 @@ function applyPhotoUploadFields(fields) {
       if (err) {
         // Determine endpoint for logging
         const endpoint = req.path.includes('/batch') ? '/upload/batch' : '/upload';
-        
+
         // **NEW: Enhanced multer error handling**
         logger.error('Multer upload error', {
           error: err.message,
@@ -116,7 +116,14 @@ function applyPhotoUploadFields(fields) {
             error: 'Unsupported file type',
             details: err.message,
             errorType: 'UnsupportedMediaType',
-            allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic'],
+            allowedTypes: [
+              'image/jpeg',
+              'image/png',
+              'image/webp',
+              'image/gif',
+              'image/avif',
+              'image/heic',
+            ],
           });
         }
 

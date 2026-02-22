@@ -5,7 +5,7 @@
 function logApiCall(method, path, status, response) {
   const timestamp = new Date().toISOString();
   const message = `[${timestamp}] ${method} ${path} → ${status}`;
-  
+
   if (status >= 200 && status < 300) {
     console.log(`✅ ${message}`, response);
   } else if (status >= 400 && status < 500) {
@@ -17,12 +17,13 @@ function logApiCall(method, path, status, response) {
 
 // Intercept fetch calls to log API activity
 const originalFetch = window.fetch;
-window.fetch = function(...args) {
+window.fetch = function (...args) {
   const [resource] = args;
-  
+
   // Only log API calls
   if (typeof resource === 'string' && resource.includes('/api/')) {
-    return originalFetch.apply(this, args)
+    return originalFetch
+      .apply(this, args)
       .then(response => {
         logApiCall(args[1]?.method || 'GET', resource, response.status, response);
         return response;
@@ -32,6 +33,6 @@ window.fetch = function(...args) {
         throw error;
       });
   }
-  
+
   return originalFetch.apply(this, args);
 };

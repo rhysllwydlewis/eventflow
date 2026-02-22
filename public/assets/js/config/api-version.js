@@ -1,7 +1,7 @@
 /**
  * API Version Configuration
  * Centralized API version management to prevent version drift
- * 
+ *
  * This file defines the current API version being used by the frontend.
  * All API calls should use these constants rather than hardcoded version strings.
  */
@@ -9,15 +9,15 @@
 const API_VERSION = {
   // Current API version (primary) - v4 is the gold standard
   CURRENT: 'v4',
-  
+
   // Base API path
   BASE: '/api',
-  
+
   // Full versioned path
   get PATH() {
     return `${this.BASE}/${this.CURRENT}`;
   },
-  
+
   // Messenger v4 endpoints (gold standard)
   MESSENGER: {
     get BASE() {
@@ -33,42 +33,50 @@ const API_VERSION = {
     REACTIONS: '/reactions',
     ATTACHMENTS: '/attachments',
   },
-  
+
   // Helper methods for v4 messenger API
   messenger: {
     // Conversations
     conversations: () => `${API_VERSION.MESSENGER.BASE}/conversations`,
-    conversation: (id) => `${API_VERSION.MESSENGER.BASE}/conversations/${id}`,
+    conversation: id => `${API_VERSION.MESSENGER.BASE}/conversations/${id}`,
     createConversation: () => `${API_VERSION.MESSENGER.BASE}/conversations`,
-    archiveConversation: (id) => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/archive`,
-    unarchiveConversation: (id) => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/unarchive`,
-    pinConversation: (id) => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/pin`,
-    unpinConversation: (id) => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/unpin`,
-    muteConversation: (id) => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/mute`,
-    unmuteConversation: (id) => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/unmute`,
-    
+    archiveConversation: id => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/archive`,
+    unarchiveConversation: id => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/unarchive`,
+    pinConversation: id => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/pin`,
+    unpinConversation: id => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/unpin`,
+    muteConversation: id => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/mute`,
+    unmuteConversation: id => `${API_VERSION.MESSENGER.BASE}/conversations/${id}/unmute`,
+
     // Messages
-    messages: (conversationId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages`,
-    sendMessage: (conversationId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages`,
-    editMessage: (conversationId, messageId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages/${messageId}`,
-    deleteMessage: (conversationId, messageId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages/${messageId}`,
-    
+    messages: conversationId =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages`,
+    sendMessage: conversationId =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages`,
+    editMessage: (conversationId, messageId) =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages/${messageId}`,
+    deleteMessage: (conversationId, messageId) =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages/${messageId}`,
+
     // Read receipts and reactions
-    markAsRead: (conversationId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/read`,
-    toggleReaction: (conversationId, messageId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages/${messageId}/react`,
-    
+    markAsRead: conversationId =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/read`,
+    toggleReaction: (conversationId, messageId) =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/messages/${messageId}/react`,
+
     // Typing indicator
-    setTyping: (conversationId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/typing`,
-    
+    setTyping: conversationId =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/typing`,
+
     // Search and contacts
     searchMessages: () => `${API_VERSION.MESSENGER.BASE}/search`,
     searchContacts: () => `${API_VERSION.MESSENGER.BASE}/contacts/search`,
-    
+
     // Unread count
     unreadCount: () => `${API_VERSION.MESSENGER.BASE}/unread`,
-    
+
     // Attachments
-    uploadAttachment: (conversationId) => `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/attachments`,
+    uploadAttachment: conversationId =>
+      `${API_VERSION.MESSENGER.BASE}/conversations/${conversationId}/attachments`,
   },
 };
 

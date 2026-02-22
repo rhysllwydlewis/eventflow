@@ -1,6 +1,7 @@
 # Frontend Script Loading Strategy
 
 ## Principles
+
 1. All scripts use `defer` attribute (not `async`)
 2. Scripts load in dependency order
 3. Page-specific scripts load last
@@ -9,33 +10,44 @@
 ## Loading Phases
 
 ### Phase 1: Utilities
+
 Core utilities with no dependencies:
+
 - `utils/logger.js` - Logging service
 - `utils/api-client.js` - API wrapper
 
 ### Phase 2: Error Handling
+
 Must load before components:
+
 - `utils/global-error-handler.js` - Global error boundary
 
 ### Phase 3: Components
+
 Reusable UI components:
+
 - `components/LoadingSpinner.js`
 - `components/ErrorBoundary.js`
 - `components.js` - Component library
 
 ### Phase 4: Features
+
 Feature modules (can load in parallel):
+
 - `animations.js`
 - `notifications.js`
 - `websocket-client.js`
 
 ### Phase 5: Page Initialization
+
 Page-specific initialization:
+
 - `pages/index-init.js`
 - `pages/dashboard-init.js`
 - etc.
 
 ## Migration Checklist
+
 - [ ] Remove `async` attributes
 - [ ] Add `defer` to all scripts
 - [ ] Order scripts by dependency
@@ -43,6 +55,7 @@ Page-specific initialization:
 - [ ] Test page load order
 
 ## Example
+
 ```html
 <!-- Good -->
 <script src="/assets/js/utils/api-client.js" defer></script>
@@ -58,12 +71,14 @@ Page-specific initialization:
 ## Why defer over async?
 
 ### `defer` (Recommended)
+
 - Scripts execute in order after DOM is parsed
 - Preserves dependency chain
 - Predictable execution order
 - Best for scripts with dependencies
 
 ### `async` (Not Recommended)
+
 - Scripts execute as soon as downloaded
 - Order is unpredictable
 - Can cause race conditions
@@ -98,6 +113,7 @@ Apply this pattern to all HTML pages:
 ## Common Patterns by Page Type
 
 ### Homepage/Public Pages
+
 ```html
 <script src="/assets/js/utils/api-client.js" defer></script>
 <script src="/assets/js/utils/global-error-handler.js" defer></script>
@@ -106,6 +122,7 @@ Apply this pattern to all HTML pages:
 ```
 
 ### Dashboard Pages
+
 ```html
 <script src="/assets/js/utils/api-client.js" defer></script>
 <script src="/assets/js/utils/global-error-handler.js" defer></script>
@@ -117,6 +134,7 @@ Apply this pattern to all HTML pages:
 ```
 
 ### Admin Pages
+
 ```html
 <script src="/assets/js/utils/api-client.js" defer></script>
 <script src="/assets/js/utils/global-error-handler.js" defer></script>
@@ -129,16 +147,19 @@ Apply this pattern to all HTML pages:
 ## Troubleshooting
 
 ### "X is not defined" errors
+
 - Check that the script defining X loads before the script using X
 - Verify all scripts have `defer` attribute
 - Check browser console for load order
 
 ### Scripts not executing
+
 - Verify file paths are correct
 - Check that scripts are properly closed with `</script>`
 - Look for syntax errors in browser console
 
 ### Race conditions
+
 - Replace `async` with `defer`
 - Ensure dependent scripts load in correct order
 - Use DOMContentLoaded event if needed

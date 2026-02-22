@@ -371,11 +371,11 @@ If critical issues are discovered post-deployment:
 
 ## Sign-Off
 
-- [ ] Development Team Lead: ********\_******** Date: **\_\_\_**
-- [ ] QA Lead: ********\_******** Date: **\_\_\_**
-- [ ] Security Lead: ********\_******** Date: **\_\_\_**
-- [ ] DevOps Lead: ********\_******** Date: **\_\_\_**
-- [ ] Product Owner: ********\_******** Date: **\_\_\_**
+- [ ] Development Team Lead: **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
+- [ ] QA Lead: **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
+- [ ] Security Lead: **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
+- [ ] DevOps Lead: **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
+- [ ] Product Owner: **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
 
 ---
 

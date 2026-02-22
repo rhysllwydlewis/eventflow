@@ -17,17 +17,22 @@ test.describe('Pricing CTA redirect for unauthenticated users', () => {
     await page.waitForLoadState('networkidle');
 
     // pricing.js rewrites CTA hrefs asynchronously after the auth check; wait for the rewrite
-    await page.waitForFunction(() => {
-      const cta = document.querySelector('a.pricing-cta');
-      return cta && (cta.href.includes('/auth') || cta.getAttribute('aria-disabled') === 'true');
-    }, { timeout: 10000 }).catch(() => {
-      // If condition never met, the test assertions below will still capture the issue
-    });
+    await page
+      .waitForFunction(
+        () => {
+          const cta = document.querySelector('a.pricing-cta');
+          return (
+            cta && (cta.href.includes('/auth') || cta.getAttribute('aria-disabled') === 'true')
+          );
+        },
+        { timeout: 10000 }
+      )
+      .catch(() => {
+        // If condition never met, the test assertions below will still capture the issue
+      });
 
     // The paid CTAs should now point to /auth?redirect=... (NOT /auth.html?redirect=...)
-    const paidCtas = await page
-      .locator('a.pricing-cta:not([aria-disabled="true"])')
-      .all();
+    const paidCtas = await page.locator('a.pricing-cta:not([aria-disabled="true"])').all();
 
     for (const cta of paidCtas) {
       const href = await cta.getAttribute('href');

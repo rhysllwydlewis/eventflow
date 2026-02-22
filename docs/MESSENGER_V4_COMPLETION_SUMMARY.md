@@ -23,12 +23,13 @@ Successfully implemented a **purpose-built, gold-standard messaging & inbox syst
 
 ### 1. Documentation (51KB)
 
-| File | Size | Purpose |
-|------|------|---------|
+| File                             | Size | Purpose                                                                       |
+| -------------------------------- | ---- | ----------------------------------------------------------------------------- |
 | `docs/MESSAGING_SYSTEM_AUDIT.md` | 19KB | Comprehensive audit of existing v1/v2/v3/v4 implementations, identifying gaps |
-| `docs/MESSAGING_REBUILD_PLAN.md` | 32KB | Architecture, UX design, phased rollout strategy with timeline |
+| `docs/MESSAGING_REBUILD_PLAN.md` | 32KB | Architecture, UX design, phased rollout strategy with timeline                |
 
 **Key Findings**:
+
 - v4 backend was 100% complete but frontend was 0% (just stubs)
 - v3 production system had gaps (no context linking, no spam detection, basic search)
 - v1/v2 deprecated systems still receiving partial traffic
@@ -37,14 +38,14 @@ Successfully implemented a **purpose-built, gold-standard messaging & inbox syst
 
 **Note**: Backend was already production-ready when we started. Our work validated and documented it.
 
-| Component | Status | Features |
-|-----------|--------|----------|
-| **Routes** | ✅ Complete | 15 endpoints at `/api/v4/messenger/` |
-| **Service Layer** | ✅ Complete | Spam detection, rate limiting, full-text search |
-| **WebSocket** | ✅ Complete | 9 v4 events (message, typing, read, reaction, etc.) |
-| **Database** | ✅ Complete | 13 indexes for conversations_v4 and chat_messages_v4 |
-| **Migration** | ✅ Complete | Script to migrate v1/v2/v3 → v4 with deduplication |
-| **Redirects** | ✅ Complete | `/messages` → `/messenger/`, `/conversation/:id` → `/messenger/?conversation=:id` |
+| Component         | Status      | Features                                                                          |
+| ----------------- | ----------- | --------------------------------------------------------------------------------- |
+| **Routes**        | ✅ Complete | 15 endpoints at `/api/v4/messenger/`                                              |
+| **Service Layer** | ✅ Complete | Spam detection, rate limiting, full-text search                                   |
+| **WebSocket**     | ✅ Complete | 9 v4 events (message, typing, read, reaction, etc.)                               |
+| **Database**      | ✅ Complete | 13 indexes for conversations_v4 and chat_messages_v4                              |
+| **Migration**     | ✅ Complete | Script to migrate v1/v2/v3 → v4 with deduplication                                |
+| **Redirects**     | ✅ Complete | `/messages` → `/messenger/`, `/conversation/:id` → `/messenger/?conversation=:id` |
 
 ### 3. Frontend Implementation (3,534 LOC NEW/UPDATED)
 
@@ -52,27 +53,29 @@ This was the **primary work** of this implementation.
 
 #### Core Infrastructure (1,045 LOC)
 
-| Component | LOC | Status | Features |
-|-----------|-----|--------|----------|
-| `MessengerAPI.js` | 268 | ✅ Complete | REST client for all v4 endpoints |
-| `MessengerSocket.js` | 194 | ✅ Updated | WebSocket client with v4 event names |
-| `MessengerState.js` | 239 | ✅ Complete | Centralized state with observer pattern |
-| `MessengerApp.js` | 344 | ✅ Updated | Main orchestrator with component init |
+| Component            | LOC | Status      | Features                                |
+| -------------------- | --- | ----------- | --------------------------------------- |
+| `MessengerAPI.js`    | 268 | ✅ Complete | REST client for all v4 endpoints        |
+| `MessengerSocket.js` | 194 | ✅ Updated  | WebSocket client with v4 event names    |
+| `MessengerState.js`  | 239 | ✅ Complete | Centralized state with observer pattern |
+| `MessengerApp.js`    | 344 | ✅ Updated  | Main orchestrator with component init   |
 
 **Key Updates**:
+
 - ✨ Updated Socket.IO event listeners from `messenger:*` to `messenger:v4:*` format
 - ✨ Added component initialization in MessengerApp (ConversationView, MessageComposer, etc.)
 - ✨ Wired up all event handlers and state synchronization
 
 #### UI Components (1,379 LOC)
 
-| Component | LOC | Status | Features |
-|-----------|-----|--------|----------|
-| `ConversationView.js` | 676 | ✨ **NEW** | **Complete message display system** |
-| `MessageComposer.js` | 548 | ✅ Existing | Input with emoji picker, file attachments |
-| `ConversationList.js` | 155 | ✅ Existing | Sidebar conversation list with filters |
+| Component             | LOC | Status      | Features                                  |
+| --------------------- | --- | ----------- | ----------------------------------------- |
+| `ConversationView.js` | 676 | ✨ **NEW**  | **Complete message display system**       |
+| `MessageComposer.js`  | 548 | ✅ Existing | Input with emoji picker, file attachments |
+| `ConversationList.js` | 155 | ✅ Existing | Sidebar conversation list with filters    |
 
 **ConversationView Features** (676 LOC - Most Complex Component):
+
 - Message bubbles with sent/received styling (liquid-glass theme)
 - Emoji reactions with grouped display
 - Read receipts with "✓✓" checkmarks
@@ -88,22 +91,24 @@ This was the **primary work** of this implementation.
 
 #### Supporting Components (236 LOC)
 
-| Component | LOC | Status | Purpose |
-|-----------|-----|--------|---------|
-| `NotificationBridge.js` | 236 | ✅ Existing | Unread badge synchronization |
-| `ContactPicker.js` | ? | ⚠️ Stub | User search for new conversations (needs verification) |
+| Component               | LOC | Status      | Purpose                                                |
+| ----------------------- | --- | ----------- | ------------------------------------------------------ |
+| `NotificationBridge.js` | 236 | ✅ Existing | Unread badge synchronization                           |
+| `ContactPicker.js`      | ?   | ⚠️ Stub     | User search for new conversations (needs verification) |
 
 ---
 
 ## Features Implemented
 
 ### ✅ Universal Messaging
+
 - Customer-to-supplier messaging
 - Supplier-to-customer messaging
 - Admin support conversations
 - Contextual conversations linked to packages, suppliers, marketplace listings
 
 ### ✅ Real-Time Chat
+
 - Instant message delivery via WebSocket v4
 - Typing indicators ("User is typing...")
 - Read receipts with timestamps (per-user read tracking)
@@ -111,6 +116,7 @@ This was the **primary work** of this implementation.
 - Message reactions (emoji with grouped counts)
 
 ### ✅ Rich Content
+
 - File attachments (images, PDFs, docs) with drag-drop upload
 - Message editing (15-minute window, tracked in edit history)
 - Message deletion (soft delete with "This message was deleted")
@@ -118,6 +124,7 @@ This was the **primary work** of this implementation.
 - Contact discovery and search
 
 ### ✅ Conversation Management
+
 - Pinning important conversations
 - Muting notifications
 - Archiving old conversations
@@ -125,6 +132,7 @@ This was the **primary work** of this implementation.
 - Unread count badges with real-time updates
 
 ### ✅ UI/UX Excellence
+
 - **Liquid glass theme**:
   - Frosted glass backgrounds (`backdrop-filter: blur(20px)`)
   - Teal gradient for sent messages (#0B8073 → #14B8A6)
@@ -150,6 +158,7 @@ This was the **primary work** of this implementation.
 ### ✅ Security & Performance
 
 **Security**:
+
 - CSRF protection on all write operations
 - XSS prevention via HTML escaping in ConversationView
 - Content sanitization with DOMPurify on backend
@@ -158,6 +167,7 @@ This was the **primary work** of this implementation.
 - Authentication required for all endpoints
 
 **Performance**:
+
 - Cursor pagination for infinite scroll (scales to millions)
 - 13 MongoDB indexes (7 conversations + 6 messages)
 - Lazy loading of message history (100 messages at a time)
@@ -205,23 +215,24 @@ MessengerApp (main orchestrator)
 
 ### WebSocket Events (v4)
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `messenger:v4:message` | Server → Client | New message sent |
-| `messenger:v4:typing` | Server → Client | User is typing |
-| `messenger:v4:read` | Server → Client | Messages marked as read |
-| `messenger:v4:reaction` | Server → Client | Reaction added/removed |
-| `messenger:v4:presence` | Server → Client | User online/offline |
-| `messenger:v4:conversation-created` | Server → Client | New conversation |
-| `messenger:v4:conversation-updated` | Server → Client | Settings changed |
-| `messenger:v4:message-edited` | Server → Client | Message edited |
-| `messenger:v4:message-deleted` | Server → Client | Message deleted |
+| Event                               | Direction       | Description             |
+| ----------------------------------- | --------------- | ----------------------- |
+| `messenger:v4:message`              | Server → Client | New message sent        |
+| `messenger:v4:typing`               | Server → Client | User is typing          |
+| `messenger:v4:read`                 | Server → Client | Messages marked as read |
+| `messenger:v4:reaction`             | Server → Client | Reaction added/removed  |
+| `messenger:v4:presence`             | Server → Client | User online/offline     |
+| `messenger:v4:conversation-created` | Server → Client | New conversation        |
+| `messenger:v4:conversation-updated` | Server → Client | Settings changed        |
+| `messenger:v4:message-edited`       | Server → Client | Message edited          |
+| `messenger:v4:message-deleted`      | Server → Client | Message deleted         |
 
 ---
 
 ## Code Review Findings
 
 ### ✅ Passed
+
 - All 5 files have valid syntax
 - XSS prevention implemented via HTML escaping
 - WebSocket events properly namespaced (v4)
@@ -252,35 +263,38 @@ MessengerApp (main orchestrator)
 
 ## Testing Status
 
-| Test Category | Status | Notes |
-|---------------|--------|-------|
-| **Syntax Validation** | ✅ Pass | All 5 files validated |
-| **API Endpoints** | ✅ Pass | Using correct v4 paths |
-| **WebSocket Events** | ✅ Pass | Updated to v4 naming |
-| **State Management** | ✅ Pass | Observer pattern working |
-| **Component Wiring** | ✅ Pass | All initialized in MessengerApp |
-| **End-to-End** | ⏳ Pending | Needs manual testing |
-| **Security (CodeQL)** | ⏳ Pending | Automated scan needed |
-| **Performance** | ⏳ Pending | Load testing with 10,000+ messages |
-| **Browser Compat** | ⏳ Pending | Chrome, Firefox, Safari, Edge |
-| **Mobile Responsive** | ⏳ Pending | Test on actual devices |
+| Test Category         | Status     | Notes                              |
+| --------------------- | ---------- | ---------------------------------- |
+| **Syntax Validation** | ✅ Pass    | All 5 files validated              |
+| **API Endpoints**     | ✅ Pass    | Using correct v4 paths             |
+| **WebSocket Events**  | ✅ Pass    | Updated to v4 naming               |
+| **State Management**  | ✅ Pass    | Observer pattern working           |
+| **Component Wiring**  | ✅ Pass    | All initialized in MessengerApp    |
+| **End-to-End**        | ⏳ Pending | Needs manual testing               |
+| **Security (CodeQL)** | ⏳ Pending | Automated scan needed              |
+| **Performance**       | ⏳ Pending | Load testing with 10,000+ messages |
+| **Browser Compat**    | ⏳ Pending | Chrome, Firefox, Safari, Edge      |
+| **Mobile Responsive** | ⏳ Pending | Test on actual devices             |
 
 ---
 
 ## Migration Path
 
 ### Phase 1: Backend Setup (Already Done)
+
 - ✅ V4 routes mounted at `/api/v4/messenger/`
 - ✅ WebSocket v4 events configured
 - ✅ Database indexes created
 
 ### Phase 2: Data Migration
+
 ```bash
 # Run migration script (idempotent, can run multiple times)
 node scripts/migrate-to-messenger-v4.js
 ```
 
 **What it does**:
+
 - Migrates v1/v2 threads to v4 conversations
 - Migrates v3 conversations to v4 format
 - Migrates all messages with proper field mapping
@@ -288,17 +302,20 @@ node scripts/migrate-to-messenger-v4.js
 - Verifies data integrity
 
 ### Phase 3: Frontend Deployment (This PR)
+
 - ✅ Frontend already pointing to v4 API
 - ✅ All components ready
 - ⏳ Test in staging environment
 
 ### Phase 4: Gradual Rollout
+
 1. **Week 1**: Deploy to staging, internal testing
 2. **Week 2**: 10% of users (feature flag)
 3. **Week 3**: 50% of users
 4. **Week 4**: 100% of users
 
 ### Phase 5: Deprecation
+
 1. Add deprecation headers to v1/v2/v3 APIs
 2. Show banner in old messenger: "Upgrade to v4 for new features"
 3. Monitor usage for 90 days
@@ -309,6 +326,7 @@ node scripts/migrate-to-messenger-v4.js
 ## Remaining Work
 
 ### High Priority (Before Production)
+
 1. **Fix Backend Dependency Injection** (2 hours)
    - Update routes/index.js to pass actual `db` instance
    - Test messenger routes initialize properly
@@ -331,6 +349,7 @@ node scripts/migrate-to-messenger-v4.js
    - Verify XSS prevention
 
 ### Medium Priority (Nice to Have)
+
 5. **Replace Native Dialogs** (3-4 hours)
    - Create custom modal for reactions
    - Create inline edit for messages
@@ -347,6 +366,7 @@ node scripts/migrate-to-messenger-v4.js
    - Test conversation creation from contexts
 
 ### Low Priority (Future Iteration)
+
 8. **Performance Testing** (4-8 hours)
    - Load test with 10,000+ messages
    - Optimize if needed
@@ -363,49 +383,49 @@ node scripts/migrate-to-messenger-v4.js
 
 ### Technical Metrics
 
-| Metric | Target | Current Status |
-|--------|--------|----------------|
-| API Response Time (p95) | < 300ms | ⏳ To measure |
-| WebSocket Latency (p95) | < 100ms | ⏳ To measure |
-| Error Rate | < 0.1% | ✅ 0% (syntax valid) |
-| Test Coverage | > 80% | ⏳ Not measured |
-| Page Load Time (p95) | < 2s | ⏳ To measure |
+| Metric                  | Target  | Current Status       |
+| ----------------------- | ------- | -------------------- |
+| API Response Time (p95) | < 300ms | ⏳ To measure        |
+| WebSocket Latency (p95) | < 100ms | ⏳ To measure        |
+| Error Rate              | < 0.1%  | ✅ 0% (syntax valid) |
+| Test Coverage           | > 80%   | ⏳ Not measured      |
+| Page Load Time (p95)    | < 2s    | ⏳ To measure        |
 
 ### User Engagement Metrics (Post-Launch)
 
-| Metric | Baseline (v3) | Target (v4) |
-|--------|---------------|-------------|
-| Messages Sent/Day | TBD | +50% |
-| Active Conversations | TBD | +30% |
-| User Satisfaction | TBD | > 4.5/5 |
-| Feature Adoption (reactions) | 0% | > 40% |
-| Attachment Upload Rate | TBD | > 20% |
+| Metric                       | Baseline (v3) | Target (v4) |
+| ---------------------------- | ------------- | ----------- |
+| Messages Sent/Day            | TBD           | +50%        |
+| Active Conversations         | TBD           | +30%        |
+| User Satisfaction            | TBD           | > 4.5/5     |
+| Feature Adoption (reactions) | 0%            | > 40%       |
+| Attachment Upload Rate       | TBD           | > 20%       |
 
 ---
 
 ## Files Changed
 
 ### New Files (2)
+
 - `docs/MESSAGING_SYSTEM_AUDIT.md` (19KB)
 - `docs/MESSAGING_REBUILD_PLAN.md` (32KB)
 
 ### Modified Files (4)
+
 - `public/messenger/js/MessengerSocket.js` (+32 -21 lines)
   - Updated all WebSocket event listeners to v4 naming (`messenger:v4:*`)
   - Added presence event handler
-  
 - `public/messenger/js/ConversationView.js` (+648 -4 lines)
   - **Complete rewrite** from 10-line stub to 676-line fully functional component
   - Implemented all v4 features (reactions, read receipts, typing, etc.)
-  
 - `public/messenger/js/MessengerApp.js` (+45 -2 lines)
   - Added `initializeComponents()` method
   - Wires up ConversationView, ConversationList, MessageComposer, ContactPicker
   - Sets current user on components
-  
 - (Backend files assumed complete, not modified in this PR)
 
 ### Total Lines of Code
+
 - **Added**: 3,534 LOC (documentation + frontend)
 - **Removed**: 27 LOC (stub code replaced)
 - **Net**: +3,507 LOC
@@ -415,6 +435,7 @@ node scripts/migrate-to-messenger-v4.js
 ## Deployment Instructions
 
 ### Prerequisites
+
 ```bash
 # 1. Install dependencies (if not already done)
 npm install
@@ -424,6 +445,7 @@ npm install
 ```
 
 ### Migration
+
 ```bash
 # Migrate existing v1/v2/v3 data to v4
 node scripts/migrate-to-messenger-v4.js
@@ -433,6 +455,7 @@ node scripts/verify-messenger-v4.js  # (create if needed)
 ```
 
 ### Deployment
+
 ```bash
 # 1. Deploy backend (v4 routes already in place)
 # 2. Deploy frontend (new JS files)
@@ -441,6 +464,7 @@ node scripts/verify-messenger-v4.js  # (create if needed)
 ```
 
 ### Rollback Plan
+
 ```bash
 # If issues arise:
 # 1. Change API_VERSION.CURRENT back to 'v3' in api-version.js
@@ -452,13 +476,13 @@ node scripts/verify-messenger-v4.js  # (create if needed)
 
 ## Known Issues & Mitigations
 
-| Issue | Impact | Mitigation | Priority |
-|-------|--------|------------|----------|
-| Native dialogs (prompt/confirm) | UX polish | Replace with custom modals | Low |
-| ContactPicker may be stub | Can't start new convos | Verify and implement if needed | Medium |
-| Backend dependency injection | Routes may not init | Fix routes/index.js | High |
-| No integration tests | Bugs may slip through | Manual testing before prod | High |
-| Performance not tested | May be slow with large datasets | Load test before prod | Medium |
+| Issue                           | Impact                          | Mitigation                     | Priority |
+| ------------------------------- | ------------------------------- | ------------------------------ | -------- |
+| Native dialogs (prompt/confirm) | UX polish                       | Replace with custom modals     | Low      |
+| ContactPicker may be stub       | Can't start new convos          | Verify and implement if needed | Medium   |
+| Backend dependency injection    | Routes may not init             | Fix routes/index.js            | High     |
+| No integration tests            | Bugs may slip through           | Manual testing before prod     | High     |
+| Performance not tested          | May be slow with large datasets | Load test before prod          | Medium   |
 
 ---
 
@@ -473,6 +497,7 @@ node scripts/verify-messenger-v4.js  # (create if needed)
 - Scalable backend with proper indexes and pagination
 
 **Next Steps**:
+
 1. Fix backend dependency injection (HIGH PRIORITY)
 2. End-to-end testing (HIGH PRIORITY)
 3. Security scan (HIGH PRIORITY)

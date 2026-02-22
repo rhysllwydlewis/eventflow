@@ -1,7 +1,7 @@
 /**
  * Database Migration Script
  * Adds new collections and indexes for messaging system features
- * 
+ *
  * Run with: node scripts/migrate-messaging-features.js
  */
 
@@ -65,9 +65,7 @@ async function migrate() {
 
     // 4. Create ReportedMessage collection and indexes
     console.log('\n📝 Creating ReportedMessage collection and indexes...');
-    const reportsExists = await db
-      .listCollections({ name: ReportedMessage.COLLECTION })
-      .hasNext();
+    const reportsExists = await db.listCollections({ name: ReportedMessage.COLLECTION }).hasNext();
     if (!reportsExists) {
       await db.createCollection(ReportedMessage.COLLECTION);
       console.log(`✅ Created ${ReportedMessage.COLLECTION} collection`);
@@ -147,7 +145,7 @@ async function migrate() {
 
 // Run migration
 if (require.main === module) {
-  migrate().catch((error) => {
+  migrate().catch(error => {
     console.error('Fatal error:', error);
     process.exit(1);
   });

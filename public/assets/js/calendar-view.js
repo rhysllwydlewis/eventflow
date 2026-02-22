@@ -64,16 +64,16 @@
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
-        right: 'dayGridMonth,timeGridWeek,listWeek'
+        right: 'dayGridMonth,timeGridWeek,listWeek',
       },
       events: events,
-      eventClick: function(info) {
+      eventClick: function (info) {
         info.jsEvent.preventDefault();
         if (info.event.url) {
           window.location.href = info.event.url;
         }
       },
-      eventDidMount: function(info) {
+      eventDidMount: function (info) {
         // Add tooltip with event details
         if (info.event.extendedProps.description || info.event.extendedProps.location) {
           const tooltip = document.createElement('div');
@@ -109,7 +109,7 @@
         }
       },
       height: options.height || 'auto',
-      ...options
+      ...options,
     });
 
     calendar.render();
@@ -131,7 +131,7 @@
       conference: '#8b5cf6',
       party: '#10b981',
       meeting: '#6366f1',
-      default: '#0B8073'
+      default: '#0B8073',
     };
     return colors[type] || colors.default;
   }

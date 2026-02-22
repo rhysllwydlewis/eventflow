@@ -26,6 +26,7 @@
 ### Vision
 
 Build a **gold-standard, purpose-built messaging & inbox system** that:
+
 - Enables seamless user-to-user communication (customers, suppliers, admins)
 - Provides contextual conversations from marketplace, supplier profiles, and packages
 - Delivers real-time updates with typing indicators, read receipts, and presence
@@ -44,6 +45,7 @@ Build a **gold-standard, purpose-built messaging & inbox system** that:
 **Focus**: Build missing frontend components to unlock the complete v4 backend
 
 **Timeline**: 4-week sprint
+
 - Week 1: Core components (API, state, conversation list, chat view)
 - Week 2: Advanced features (composer, reactions, typing indicators)
 - Week 3: Integration (dashboards, entry points, redirects)
@@ -141,6 +143,7 @@ Build a **gold-standard, purpose-built messaging & inbox system** that:
 ### Data Flow
 
 **1. User Sends Message**
+
 ```
 User types → Composer → API Client → POST /conversations/:id/messages
                                    ↓
@@ -160,6 +163,7 @@ User types → Composer → API Client → POST /conversations/:id/messages
 ```
 
 **2. Typing Indicator**
+
 ```
 User typing → Debounced (1s) → POST /conversations/:id/typing
                                            ↓
@@ -171,6 +175,7 @@ User typing → Debounced (1s) → POST /conversations/:id/typing
 ```
 
 **3. Read Receipt**
+
 ```
 User opens conversation → POST /conversations/:id/read
                                       ↓
@@ -227,6 +232,7 @@ MessengerApp (main orchestrator)
 ### Visual Design: Liquid Glass Theme
 
 **Core Aesthetic**:
+
 - **Frosted glass backgrounds** with `backdrop-filter: blur(20px)`
 - **Teal gradient accents** (#0B8073 → #14B8A6)
 - **Smooth animations** (300ms ease-in-out)
@@ -246,7 +252,7 @@ MessengerApp (main orchestrator)
 
 /* Message Bubble (sent) */
 .messenger-v4__message--sent {
-  background: linear-gradient(135deg, #0B8073 0%, #14B8A6 100%);
+  background: linear-gradient(135deg, #0b8073 0%, #14b8a6 100%);
   color: white;
   margin-left: auto;
   border-radius: 16px 16px 4px 16px;
@@ -262,7 +268,7 @@ MessengerApp (main orchestrator)
 
 /* Unread Badge */
 .messenger-v4__unread-badge {
-  background: #DC2626;
+  background: #dc2626;
   color: white;
   border-radius: 12px;
   animation: pulse 2s infinite;
@@ -272,6 +278,7 @@ MessengerApp (main orchestrator)
 ### Responsive Behavior
 
 **Desktop (>1024px)**: 3-column layout
+
 ```
 ┌──────────────┬──────────────────────┬──────────────┐
 │ Conversation │    Chat View         │   Context    │
@@ -285,6 +292,7 @@ MessengerApp (main orchestrator)
 ```
 
 **Tablet (768px-1024px)**: 2-column layout
+
 ```
 ┌──────────────┬──────────────────────┐
 │ Conversation │    Chat View         │
@@ -298,6 +306,7 @@ MessengerApp (main orchestrator)
 ```
 
 **Mobile (<768px)**: 1-column, swipe navigation
+
 ```
 ┌──────────────────────┐
 │  Conversation List   │
@@ -321,6 +330,7 @@ MessengerApp (main orchestrator)
 ### Animations & Interactions
 
 **Micro-interactions**:
+
 1. **Hover Effects**: Scale 1.02, shadow increase
 2. **Button Press**: Scale 0.98
 3. **Message Send**: Fade in + slide up (300ms)
@@ -331,11 +341,13 @@ MessengerApp (main orchestrator)
 8. **Presence Indicator**: Fade in/out (500ms)
 
 **Loading States**:
+
 - **Skeleton loaders** for conversations (gray pulse)
 - **Spinner** for messages (teal gradient)
 - **Progressive loading** for images (blur → sharp)
 
 **Error States**:
+
 - **Toast notifications** for errors (red, top-right, 5s auto-dismiss)
 - **Inline errors** for form validation (under input, red text)
 - **Retry buttons** for failed sends
@@ -343,6 +355,7 @@ MessengerApp (main orchestrator)
 ### Accessibility
 
 **Keyboard Navigation**:
+
 - `Tab` through conversations
 - `Enter` to open conversation
 - `Escape` to close modals
@@ -350,6 +363,7 @@ MessengerApp (main orchestrator)
 - Arrow keys in emoji picker
 
 **Screen Reader Support**:
+
 - `role="navigation"` on sidebar
 - `role="main"` on chat view
 - `role="complementary"` on context panel
@@ -358,6 +372,7 @@ MessengerApp (main orchestrator)
 - `aria-live="assertive"` on typing indicator
 
 **Visual Accessibility**:
+
 - Minimum contrast ratio: 4.5:1 (WCAG AA)
 - Focus indicators: 2px teal outline
 - `prefers-reduced-motion`: Disable animations
@@ -372,6 +387,7 @@ MessengerApp (main orchestrator)
 **Goal**: Build essential v4 components to enable basic messaging
 
 **Deliverables**:
+
 1. `api-v4.js` (150 LOC) - HTTP client for v4 endpoints
 2. `socket-v4.js` (200 LOC) - WebSocket client for v4 events
 3. `state-v4.js` (300 LOC) - State management (conversations, messages, unread)
@@ -383,6 +399,7 @@ MessengerApp (main orchestrator)
 **Total**: ~1,850 LOC
 
 **Acceptance Criteria**:
+
 - ✅ User can view conversation list
 - ✅ User can open a conversation
 - ✅ User can see message history
@@ -397,6 +414,7 @@ MessengerApp (main orchestrator)
 **Goal**: Add rich features (reactions, typing, attachments)
 
 **Deliverables**:
+
 1. Update `MessageComposerV4.js`:
    - Emoji picker integration
    - File attachment upload (drag-drop + click)
@@ -413,6 +431,7 @@ MessengerApp (main orchestrator)
 **Total**: ~630 LOC (+ updates to existing)
 
 **Acceptance Criteria**:
+
 - ✅ User can add emoji reactions
 - ✅ User can see typing indicators
 - ✅ User can upload images/documents
@@ -428,6 +447,7 @@ MessengerApp (main orchestrator)
 **Goal**: Wire up all components into cohesive app
 
 **Deliverables**:
+
 1. Rebuild `/messenger/index.html`:
    - Update to load v4 components
    - Add proper CSP-compliant script loading
@@ -444,6 +464,7 @@ MessengerApp (main orchestrator)
 **Total**: ~500 LOC + HTML updates
 
 **Acceptance Criteria**:
+
 - ✅ /messenger/ page loads successfully
 - ✅ All components render correctly
 - ✅ Real-time updates work end-to-end
@@ -459,6 +480,7 @@ MessengerApp (main orchestrator)
 **Goal**: Embed messenger in customer/supplier dashboards
 
 **Deliverables**:
+
 1. `dashboard-widget-v4.js` (400 LOC):
    - Compact inbox widget (5 recent conversations)
    - Unread count badge in navbar
@@ -476,6 +498,7 @@ MessengerApp (main orchestrator)
 **Total**: ~500 LOC + HTML updates
 
 **Acceptance Criteria**:
+
 - ✅ Dashboard shows recent conversations
 - ✅ Unread badge updates in real-time
 - ✅ Clicking conversation opens /messenger/
@@ -489,6 +512,7 @@ MessengerApp (main orchestrator)
 **Goal**: Enable "Message Supplier" from all contexts
 
 **Deliverables**:
+
 1. Update `/public/supplier.html`:
    - "Message Supplier" button calls v4 API
    - Opens /messenger/ with new conversation
@@ -505,6 +529,7 @@ MessengerApp (main orchestrator)
 **Total**: ~400 LOC (mostly updates to existing)
 
 **Acceptance Criteria**:
+
 - ✅ "Message Supplier" creates v4 conversation
 - ✅ Context is correctly linked (package ID, supplier ID, etc.)
 - ✅ Conversation appears in inbox immediately
@@ -518,6 +543,7 @@ MessengerApp (main orchestrator)
 **Goal**: Migrate existing users and deprecate v1/v2/v3
 
 **Deliverables**:
+
 1. Run migration script:
    - `node scripts/migrate-to-messenger-v4.js`
    - Migrate all v1/v2/v3 data to v4 collections
@@ -533,6 +559,7 @@ MessengerApp (main orchestrator)
    - "This version is deprecated. Upgrade to v4."
 
 **Acceptance Criteria**:
+
 - ✅ All conversations migrated successfully
 - ✅ All messages migrated successfully
 - ✅ No orphaned data
@@ -546,6 +573,7 @@ MessengerApp (main orchestrator)
 **Goal**: Comprehensive testing before production
 
 **Deliverables**:
+
 1. **Unit Tests** (15 test files):
    - `api-v4.test.js` - API client methods
    - `socket-v4.test.js` - WebSocket event handling
@@ -580,6 +608,7 @@ MessengerApp (main orchestrator)
 **Total**: ~50 test files, 500+ test cases
 
 **Acceptance Criteria**:
+
 - ✅ All tests pass (100% pass rate)
 - ✅ Code coverage > 80%
 - ✅ No security vulnerabilities (CodeQL scan)
@@ -593,6 +622,7 @@ MessengerApp (main orchestrator)
 **Goal**: Go live with v4 for all users
 
 **Deliverables**:
+
 1. **Deployment Checklist**:
    - [ ] All tests passing
    - [ ] Security scan clean
@@ -620,6 +650,7 @@ MessengerApp (main orchestrator)
    - User complaints > 10
 
 **Acceptance Criteria**:
+
 - ✅ v4 live for 100% of users
 - ✅ Zero critical bugs
 - ✅ Error rate < 0.1%
@@ -643,27 +674,57 @@ class MessengerAPIv4 {
   }
 
   // Conversations
-  async createConversation(data) { /* POST /conversations */ }
-  async getConversations(filters) { /* GET /conversations */ }
-  async getConversation(id) { /* GET /conversations/:id */ }
-  async updateConversation(id, data) { /* PATCH /conversations/:id */ }
-  async deleteConversation(id) { /* DELETE /conversations/:id */ }
+  async createConversation(data) {
+    /* POST /conversations */
+  }
+  async getConversations(filters) {
+    /* GET /conversations */
+  }
+  async getConversation(id) {
+    /* GET /conversations/:id */
+  }
+  async updateConversation(id, data) {
+    /* PATCH /conversations/:id */
+  }
+  async deleteConversation(id) {
+    /* DELETE /conversations/:id */
+  }
 
   // Messages
-  async sendMessage(conversationId, data) { /* POST /conversations/:id/messages */ }
-  async getMessages(conversationId, cursor) { /* GET /conversations/:id/messages */ }
-  async editMessage(messageId, content) { /* PATCH /messages/:id */ }
-  async deleteMessage(messageId) { /* DELETE /messages/:id */ }
+  async sendMessage(conversationId, data) {
+    /* POST /conversations/:id/messages */
+  }
+  async getMessages(conversationId, cursor) {
+    /* GET /conversations/:id/messages */
+  }
+  async editMessage(messageId, content) {
+    /* PATCH /messages/:id */
+  }
+  async deleteMessage(messageId) {
+    /* DELETE /messages/:id */
+  }
 
   // Reactions & Read Receipts
-  async toggleReaction(messageId, emoji) { /* POST /messages/:id/reactions */ }
-  async markAsRead(conversationId) { /* POST /conversations/:id/read */ }
+  async toggleReaction(messageId, emoji) {
+    /* POST /messages/:id/reactions */
+  }
+  async markAsRead(conversationId) {
+    /* POST /conversations/:id/read */
+  }
 
   // Utilities
-  async getUnreadCount() { /* GET /unread-count */ }
-  async searchContacts(query) { /* GET /contacts */ }
-  async searchMessages(query) { /* GET /search */ }
-  async sendTyping(conversationId) { /* POST /conversations/:id/typing */ }
+  async getUnreadCount() {
+    /* GET /unread-count */
+  }
+  async searchContacts(query) {
+    /* GET /contacts */
+  }
+  async searchMessages(query) {
+    /* GET /search */
+  }
+  async sendTyping(conversationId) {
+    /* POST /conversations/:id/typing */
+  }
 }
 ```
 
@@ -686,10 +747,18 @@ class MessengerSocketv4 {
     this.socket.on('messenger:v4:conversation-updated', this.callbacks.onConversationUpdated);
   }
 
-  connect() { this.socket.connect(); }
-  disconnect() { this.socket.disconnect(); }
-  joinConversation(id) { this.socket.emit('join-conversation-v4', id); }
-  leaveConversation(id) { this.socket.emit('leave-conversation-v4', id); }
+  connect() {
+    this.socket.connect();
+  }
+  disconnect() {
+    this.socket.disconnect();
+  }
+  joinConversation(id) {
+    this.socket.emit('join-conversation-v4', id);
+  }
+  leaveConversation(id) {
+    this.socket.emit('leave-conversation-v4', id);
+  }
 }
 ```
 
@@ -708,32 +777,64 @@ class MessengerStatev4 {
   }
 
   // Conversations
-  setConversations(conversations) { /* ... */ }
-  addConversation(conversation) { /* ... */ }
-  updateConversation(id, updates) { /* ... */ }
-  removeConversation(id) { /* ... */ }
+  setConversations(conversations) {
+    /* ... */
+  }
+  addConversation(conversation) {
+    /* ... */
+  }
+  updateConversation(id, updates) {
+    /* ... */
+  }
+  removeConversation(id) {
+    /* ... */
+  }
 
   // Messages
-  setMessages(conversationId, messages) { /* ... */ }
-  addMessage(message) { /* ... */ }
-  updateMessage(messageId, updates) { /* ... */ }
-  removeMessage(messageId) { /* ... */ }
+  setMessages(conversationId, messages) {
+    /* ... */
+  }
+  addMessage(message) {
+    /* ... */
+  }
+  updateMessage(messageId, updates) {
+    /* ... */
+  }
+  removeMessage(messageId) {
+    /* ... */
+  }
 
   // Typing
-  setTyping(conversationId, userId, isTyping) { /* ... */ }
+  setTyping(conversationId, userId, isTyping) {
+    /* ... */
+  }
 
   // Presence
-  setUserOnline(userId) { /* ... */ }
-  setUserOffline(userId) { /* ... */ }
+  setUserOnline(userId) {
+    /* ... */
+  }
+  setUserOffline(userId) {
+    /* ... */
+  }
 
   // Unread
-  setUnreadCount(count) { /* ... */ }
-  incrementUnread() { /* ... */ }
-  decrementUnread(amount) { /* ... */ }
+  setUnreadCount(count) {
+    /* ... */
+  }
+  incrementUnread() {
+    /* ... */
+  }
+  decrementUnread(amount) {
+    /* ... */
+  }
 
   // Observer pattern
-  subscribe(listener) { /* ... */ }
-  notify() { this.listeners.forEach(fn => fn(this)); }
+  subscribe(listener) {
+    /* ... */
+  }
+  notify() {
+    this.listeners.forEach(fn => fn(this));
+  }
 }
 ```
 
@@ -753,6 +854,7 @@ class MessengerStatev4 {
 ### Backend (Already Complete)
 
 **No backend changes needed** - v4 is production-ready:
+
 - ✅ 15 API endpoints
 - ✅ Service layer with all features
 - ✅ WebSocket event handlers
@@ -800,6 +902,7 @@ class MessengerStatev4 {
 ### Unit Tests
 
 **Backend** (already complete):
+
 - ✅ 23 test cases in `messenger-v4.test.js`
 - ✅ Service layer methods
 - ✅ Validation logic
@@ -807,6 +910,7 @@ class MessengerStatev4 {
 - ✅ Search and filtering
 
 **Frontend** (to create):
+
 - [ ] API client methods (mocked fetch)
 - [ ] WebSocket event handling (mocked socket)
 - [ ] State mutations
@@ -815,12 +919,14 @@ class MessengerStatev4 {
 ### Integration Tests
 
 **Backend** (to create):
+
 - [ ] API endpoint auth (401 without token)
 - [ ] CSRF protection (403 without token)
 - [ ] File upload (success + failures)
 - [ ] Rate limiting (429 after limit)
 
 **Frontend** (to create):
+
 - [ ] API + WebSocket flow (real network)
 - [ ] State sync across components
 - [ ] Error handling (network failure, etc.)
@@ -828,6 +934,7 @@ class MessengerStatev4 {
 ### E2E Tests
 
 **Scenarios** (to create):
+
 1. User logs in, sends message, receives reply
 2. User starts conversation from supplier profile
 3. User uploads image attachment
@@ -844,6 +951,7 @@ class MessengerStatev4 {
 ### Performance Tests
 
 **Scenarios**:
+
 - Load 1,000 conversations (target: < 2s)
 - Load 10,000 messages (target: < 3s)
 - Send 100 messages/sec (target: 0 dropped events)
@@ -859,6 +967,7 @@ class MessengerStatev4 {
 **Script**: `scripts/migrate-to-messenger-v4.js`
 
 **Process**:
+
 1. Read all `threads` (v1/v2) and `conversations` (v3)
 2. Transform to v4 schema
 3. Deduplicate (prevent duplicate direct conversations)
@@ -871,12 +980,14 @@ class MessengerStatev4 {
 ### API Migration (To Implement)
 
 **Deprecation Strategy**:
+
 1. **Week 1**: Add deprecation headers to v1/v2/v3
 2. **Week 2**: Show banner in old messenger UI
 3. **Week 3**: Migrate users to v4 automatically
 4. **Week 4**: v1/v2/v3 APIs return 410 Gone (except for read-only)
 
 **Backward Compatibility**:
+
 - Keep v3 API read-only for 90 days
 - Redirect `/messages.html` → `/messenger/`
 - Redirect `/conversation/:id` → `/messenger/?conversation=:id`
@@ -887,48 +998,48 @@ class MessengerStatev4 {
 
 ### Technical Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
+| Metric                  | Target  | Measurement            |
+| ----------------------- | ------- | ---------------------- |
 | API Response Time (p95) | < 300ms | Application monitoring |
-| WebSocket Latency (p95) | < 100ms | Socket.IO metrics |
-| Error Rate | < 0.1% | Error tracking |
-| Uptime | > 99.9% | Monitoring dashboards |
-| Test Coverage | > 80% | Jest coverage report |
-| Page Load Time (p95) | < 2s | Lighthouse |
+| WebSocket Latency (p95) | < 100ms | Socket.IO metrics      |
+| Error Rate              | < 0.1%  | Error tracking         |
+| Uptime                  | > 99.9% | Monitoring dashboards  |
+| Test Coverage           | > 80%   | Jest coverage report   |
+| Page Load Time (p95)    | < 2s    | Lighthouse             |
 
 ### User Engagement Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Messages Sent/Day | +50% vs v3 | Analytics |
-| Active Conversations | +30% | Database queries |
-| User Satisfaction | > 4.5/5 | In-app survey |
-| Feature Adoption (reactions) | > 40% | Usage tracking |
-| Attachment Upload Rate | > 20% | Usage tracking |
+| Metric                       | Target     | Measurement      |
+| ---------------------------- | ---------- | ---------------- |
+| Messages Sent/Day            | +50% vs v3 | Analytics        |
+| Active Conversations         | +30%       | Database queries |
+| User Satisfaction            | > 4.5/5    | In-app survey    |
+| Feature Adoption (reactions) | > 40%      | Usage tracking   |
+| Attachment Upload Rate       | > 20%      | Usage tracking   |
 
 ### Business Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Supplier Inquiry Rate | +25% | Conversion tracking |
-| Customer Response Time | -30% | Time to first reply |
-| Spam Reports | < 0.5% | Support tickets |
-| Churn Rate (messaging users) | < 2% | Retention analysis |
+| Metric                       | Target | Measurement         |
+| ---------------------------- | ------ | ------------------- |
+| Supplier Inquiry Rate        | +25%   | Conversion tracking |
+| Customer Response Time       | -30%   | Time to first reply |
+| Spam Reports                 | < 0.5% | Support tickets     |
+| Churn Rate (messaging users) | < 2%   | Retention analysis  |
 
 ---
 
 ## Timeline Summary
 
-| Phase | Duration | Effort | Priority |
-|-------|----------|--------|----------|
-| 1. Core Frontend | Week 1 | 30 hours | CRITICAL |
-| 2. Advanced Features | Week 2 | 20 hours | HIGH |
-| 3. Main Page | Week 2 | 10 hours | HIGH |
-| 4. Dashboards | Week 3 | 12 hours | MEDIUM |
-| 5. Entry Points | Week 3 | 10 hours | MEDIUM |
-| 6. Migration | Week 3 | 8 hours | HIGH |
-| 7. Testing | Week 4 | 25 hours | CRITICAL |
-| 8. Deployment | Week 4 | 10 hours | CRITICAL |
+| Phase                | Duration | Effort   | Priority |
+| -------------------- | -------- | -------- | -------- |
+| 1. Core Frontend     | Week 1   | 30 hours | CRITICAL |
+| 2. Advanced Features | Week 2   | 20 hours | HIGH     |
+| 3. Main Page         | Week 2   | 10 hours | HIGH     |
+| 4. Dashboards        | Week 3   | 12 hours | MEDIUM   |
+| 5. Entry Points      | Week 3   | 10 hours | MEDIUM   |
+| 6. Migration         | Week 3   | 8 hours  | HIGH     |
+| 7. Testing           | Week 4   | 25 hours | CRITICAL |
+| 8. Deployment        | Week 4   | 10 hours | CRITICAL |
 
 **Total Effort**: ~125 hours over 4 weeks
 
@@ -936,17 +1047,19 @@ class MessengerStatev4 {
 
 ## Conclusion
 
-This rebuild plan transforms EventFlow's messaging from a **fragmented multi-version system** into a **unified gold-standard platform**. 
+This rebuild plan transforms EventFlow's messaging from a **fragmented multi-version system** into a **unified gold-standard platform**.
 
 The **backend foundation is rock-solid** (100% complete), requiring only **frontend components** to unlock the full feature set.
 
 The **phased rollout** ensures:
+
 - ✅ Minimal risk (gradual deployment)
 - ✅ Continuous testing (each phase validated)
 - ✅ Backward compatibility (old URLs redirected)
 - ✅ User-centric design (liquid glass theme, real-time updates)
 
 **Expected Outcomes**:
+
 - 🎯 Universal messaging for all user types
 - 🎯 Contextual conversations from all entry points
 - 🎯 Real-time chat with rich features

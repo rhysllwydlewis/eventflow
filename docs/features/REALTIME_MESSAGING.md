@@ -16,6 +16,7 @@ EventFlow's real-time messaging and notifications system provides production-gra
 - **Complete API v2** with feature parity and backward compatibility
 
 ### API Version Information
+
 - **Current:** API v2 (`/api/v2/messages`) - 27 endpoints
 - **Deprecated:** API v1 (`/api/v1/messages`) - frontend migration complete
 - **Breaking Changes:** `mark-read` → `read` (all other paths unchanged)
@@ -1285,12 +1286,14 @@ This is part of the EventFlow platform. See main LICENSE file for details.
 ```
 
 **Backend API:**
+
 - `POST /api/v2/messages/queue` - Add message to queue
 - `GET /api/v2/messages/queue` - Get pending messages
 - `POST /api/v2/messages/queue/:id/retry` - Retry failed message
 - `DELETE /api/v2/messages/queue/:id` - Remove from queue
 
 **Retry Logic:**
+
 - Exponential backoff: 2s, 4s, 8s, 16s, 30s
 - Maximum 5 retry attempts
 - Visual feedback: "sending...", "failed", "retry"
@@ -1304,6 +1307,7 @@ GET /api/v2/messages/search?q=meeting&participant=user123&startDate=2026-01-01
 ```
 
 **Query Parameters:**
+
 - `q` - Search query (required)
 - `participant` - Filter by user ID
 - `startDate` / `endDate` - Date range
@@ -1312,6 +1316,7 @@ GET /api/v2/messages/search?q=meeting&participant=user123&startDate=2026-01-01
 - `page` / `limit` - Pagination
 
 **Response:**
+
 ```json
 {
   "results": [...],
@@ -1335,6 +1340,7 @@ Content-Type: application/json
 ```
 
 **Features:**
+
 - 15-minute edit window (configurable via `MESSAGE_EDIT_WINDOW_MINUTES`)
 - Only sender can edit
 - Complete edit history stored
@@ -1342,6 +1348,7 @@ Content-Type: application/json
 - "(edited)" badge on modified messages
 
 **Get Edit History:**
+
 ```http
 GET /api/v2/messages/:messageId/history
 ```
@@ -1360,11 +1367,13 @@ Content-Type: application/json
 ```
 
 **Endpoints:**
+
 - `POST /api/v2/users/:id/block` - Block user
 - `POST /api/v2/users/:id/unblock` - Unblock user
 - `GET /api/v2/users/blocked` - Get blocked users list
 
 **Effects:**
+
 - Messages from blocked users are hidden
 - Cannot receive new messages from blocked users
 - Existing threads remain accessible
@@ -1384,12 +1393,14 @@ Content-Type: application/json
 ```
 
 **Report Reasons:**
+
 - `spam` - Unwanted promotional content
 - `harassment` - Abusive or threatening behavior
 - `inappropriate` - Offensive or explicit content
 - `other` - Other violations
 
 **Admin Dashboard:**
+
 ```http
 GET /api/v2/admin/reports?status=pending&page=1
 PUT /api/v2/admin/reports/:reportId
@@ -1398,6 +1409,7 @@ PUT /api/v2/admin/reports/:reportId
 ### Thread Management
 
 **Pin Important Threads:**
+
 ```http
 POST /api/v2/threads/:threadId/pin
 POST /api/v2/threads/:threadId/unpin
@@ -1408,6 +1420,7 @@ POST /api/v2/threads/:threadId/unpin
 - Per-user pinning (doesn't affect other participants)
 
 **Mute Threads:**
+
 ```http
 POST /api/v2/threads/:threadId/mute
 Content-Type: application/json
@@ -1422,6 +1435,7 @@ POST /api/v2/threads/:threadId/unmute
 ```
 
 **Duration Options:**
+
 - `1h` - 1 hour
 - `8h` - 8 hours
 - `1d` - 1 day
@@ -1442,6 +1456,7 @@ Content-Type: application/json
 ```
 
 **Features:**
+
 - Forward to multiple recipients
 - Add optional note/context
 - Includes original attachments
@@ -1461,6 +1476,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "url": "https://example.com/article",
@@ -1472,6 +1488,7 @@ Content-Type: application/json
 ```
 
 **Features:**
+
 - 30-day cache (prevents repeated fetches)
 - Respects robots.txt and rate limits
 - Open Graph and Twitter Card metadata
@@ -1487,12 +1504,14 @@ Content-Type: application/json
 - **Keyword Blacklist:** Configurable spam word list
 
 **Content Sanitization:**
+
 - All message content sanitized with DOMPurify
 - XSS attack prevention
 - Safe HTML formatting preserved
 - Malicious scripts stripped
 
 **Configuration:**
+
 ```bash
 # .env
 MAX_MESSAGES_PER_MINUTE=30
@@ -1505,57 +1524,57 @@ SPAM_KEYWORDS=viagra,cialis,casino,lottery
 
 ### Queue Management
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v2/messages/queue` | Add message to offline queue |
-| GET | `/api/v2/messages/queue` | Get pending messages |
-| POST | `/api/v2/messages/queue/:id/retry` | Retry failed message |
-| DELETE | `/api/v2/messages/queue/:id` | Remove from queue |
+| Method | Endpoint                           | Description                  |
+| ------ | ---------------------------------- | ---------------------------- |
+| POST   | `/api/v2/messages/queue`           | Add message to offline queue |
+| GET    | `/api/v2/messages/queue`           | Get pending messages         |
+| POST   | `/api/v2/messages/queue/:id/retry` | Retry failed message         |
+| DELETE | `/api/v2/messages/queue/:id`       | Remove from queue            |
 
 ### Search & Discovery
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v2/messages/search` | Full-text message search |
+| Method | Endpoint                  | Description              |
+| ------ | ------------------------- | ------------------------ |
+| GET    | `/api/v2/messages/search` | Full-text message search |
 
 ### Message Editing
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| PUT | `/api/v2/messages/:id/edit` | Edit message content |
-| GET | `/api/v2/messages/:id/history` | Get edit history |
+| Method | Endpoint                       | Description          |
+| ------ | ------------------------------ | -------------------- |
+| PUT    | `/api/v2/messages/:id/edit`    | Edit message content |
+| GET    | `/api/v2/messages/:id/history` | Get edit history     |
 
 ### User Management
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v2/users/:id/block` | Block a user |
-| POST | `/api/v2/users/:id/unblock` | Unblock a user |
-| GET | `/api/v2/users/blocked` | Get blocked users list |
+| Method | Endpoint                    | Description            |
+| ------ | --------------------------- | ---------------------- |
+| POST   | `/api/v2/users/:id/block`   | Block a user           |
+| POST   | `/api/v2/users/:id/unblock` | Unblock a user         |
+| GET    | `/api/v2/users/blocked`     | Get blocked users list |
 
 ### Reporting & Moderation
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v2/messages/:id/report` | Report a message |
-| GET | `/api/v2/admin/reports` | Get all reports (admin) |
-| PUT | `/api/v2/admin/reports/:id` | Update report status (admin) |
+| Method | Endpoint                      | Description                  |
+| ------ | ----------------------------- | ---------------------------- |
+| POST   | `/api/v2/messages/:id/report` | Report a message             |
+| GET    | `/api/v2/admin/reports`       | Get all reports (admin)      |
+| PUT    | `/api/v2/admin/reports/:id`   | Update report status (admin) |
 
 ### Thread Management
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v2/threads/:id/pin` | Pin a thread |
-| POST | `/api/v2/threads/:id/unpin` | Unpin a thread |
-| POST | `/api/v2/threads/:id/mute` | Mute thread notifications |
-| POST | `/api/v2/threads/:id/unmute` | Unmute thread notifications |
+| Method | Endpoint                     | Description                 |
+| ------ | ---------------------------- | --------------------------- |
+| POST   | `/api/v2/threads/:id/pin`    | Pin a thread                |
+| POST   | `/api/v2/threads/:id/unpin`  | Unpin a thread              |
+| POST   | `/api/v2/threads/:id/mute`   | Mute thread notifications   |
+| POST   | `/api/v2/threads/:id/unmute` | Unmute thread notifications |
 
 ### Advanced Features
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v2/messages/:id/forward` | Forward message to new recipients |
-| POST | `/api/v2/messages/preview-link` | Generate link preview metadata |
+| Method | Endpoint                        | Description                       |
+| ------ | ------------------------------- | --------------------------------- |
+| POST   | `/api/v2/messages/:id/forward`  | Forward message to new recipients |
+| POST   | `/api/v2/messages/preview-link` | Generate link preview metadata    |
 
 ---
 
@@ -1564,6 +1583,7 @@ SPAM_KEYWORDS=viagra,cialis,casino,lottery
 ### Messages Collection
 
 **New Fields:**
+
 ```javascript
 {
   editedAt: Date,           // When message was last edited
@@ -1575,11 +1595,13 @@ SPAM_KEYWORDS=viagra,cialis,casino,lottery
 ```
 
 **Indexes:**
+
 - Text search index on `content` field (full-text search)
 
 ### Threads Collection
 
 **New Fields:**
+
 ```javascript
 {
   pinnedAt: {               // Per-user pinning
@@ -1594,6 +1616,7 @@ SPAM_KEYWORDS=viagra,cialis,casino,lottery
 ### New Collections
 
 **MessageQueue:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1609,6 +1632,7 @@ SPAM_KEYWORDS=viagra,cialis,casino,lottery
 ```
 
 **BlockedUsers:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1620,6 +1644,7 @@ SPAM_KEYWORDS=viagra,cialis,casino,lottery
 ```
 
 **ReportedMessages:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1636,6 +1661,7 @@ SPAM_KEYWORDS=viagra,cialis,casino,lottery
 ```
 
 **LinkPreviews:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1662,6 +1688,7 @@ node scripts/migrate-messaging-features.js
 ```
 
 **What it does:**
+
 - Creates 5 new collections with indexes
 - Adds text search index to messages
 - Updates existing threads with pinning/muting fields
@@ -1682,12 +1709,14 @@ const cleanMessage = sanitizeMessage(userMessage);
 ```
 
 **Protected Against:**
+
 - XSS attacks
 - Script injection
 - Malicious HTML/CSS
 - Event handler injection
 
 **Safe HTML Allowed:**
+
 - Basic formatting (bold, italic, underline)
 - Links (with rel="noopener")
 - Lists and blockquotes
@@ -1707,12 +1736,14 @@ if (result.isSpam) {
 ```
 
 **Detection Factors:**
+
 - Rate limiting (30 messages/minute)
 - Duplicate content (5-second window)
 - Excessive URLs (> 5 links)
 - Spam keywords (configurable list)
 
 **Spam Score Calculation:**
+
 - Rate limit violation: +100
 - Duplicate message: +50
 - Each extra URL: +30
@@ -1805,6 +1836,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 **Problem:** Search returns no results
 
 **Solution:**
+
 ```bash
 # Rebuild text index
 mongo eventflow --eval "db.messages.dropIndex('content_text')"
@@ -1816,6 +1848,7 @@ node scripts/migrate-messaging-features.js
 **Problem:** Users getting rate limited frequently
 
 **Solution:**
+
 ```bash
 # Increase limit in .env
 MAX_MESSAGES_PER_MINUTE=50
@@ -1826,6 +1859,7 @@ MAX_MESSAGES_PER_MINUTE=50
 **Problem:** Preview endpoint returns errors
 
 **Solution:**
+
 - Check firewall allows outbound HTTPS
 - Verify URL is publicly accessible
 - Check for robots.txt restrictions

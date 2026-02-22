@@ -649,23 +649,29 @@ router.get('/performance', authRequired, roleRequired('admin'), async (req, res)
  * POST /api/v2/search/cache/clear
  * Clear search cache
  */
-router.post('/cache/clear', authRequired, csrfProtection, roleRequired('admin'), async (req, res) => {
-  try {
-    await clearSearchCache();
+router.post(
+  '/cache/clear',
+  authRequired,
+  csrfProtection,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      await clearSearchCache();
 
-    res.json({
-      success: true,
-      message: 'Search cache cleared successfully',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Clear cache error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to clear cache',
-    });
+      res.json({
+        success: true,
+        message: 'Search cache cleared successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Clear cache error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to clear cache',
+      });
+    }
   }
-});
+);
 
 /**
  * GET /api/v2/search/cache/stats

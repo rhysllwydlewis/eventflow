@@ -17,7 +17,6 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
 
 (customerMsgJsExists ? describe : describe.skip)('Dashboard Widget Enhancements - Customer', () => {
   describe('customer-messages.js helper functions', () => {
-
     it('includes formatTimeAgo helper function', () => {
       expect(customerMessagesJs).toContain('function formatTimeAgo(timestamp)');
     });
@@ -39,7 +38,7 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
         .split('function ')[0];
 
       expect(formatFn).toContain("toLocaleDateString('en-GB'");
-      expect(formatFn).toContain('{ day: \'numeric\', month: \'short\' }');
+      expect(formatFn).toContain("{ day: 'numeric', month: 'short' }");
     });
 
     it('includes truncate helper function', () => {
@@ -51,12 +50,11 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
         .split('function truncate(text, maxLength)')[1]
         .split('function ')[0];
 
-      expect(truncateFn).toContain('return text.substring(0, maxLength) + \'...\'');
+      expect(truncateFn).toContain("return text.substring(0, maxLength) + '...'");
     });
   });
 
   describe('renderConversations with timestamps', () => {
-
     it('uses formatTimeAgo for timestamps', () => {
       const renderFn = customerMessagesJs
         .split('function renderConversations(conversations, currentUser)')[1]
@@ -80,7 +78,7 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
 
       expect(renderFn).toContain('attachmentCount > 0');
       expect(renderFn).toContain('<svg width="12" height="12"');
-      expect(renderFn).toContain('${attachmentCount} ${attachmentCount === 1 ? \'file\' : \'files\'}');
+      expect(renderFn).toContain("${attachmentCount} ${attachmentCount === 1 ? 'file' : 'files'}");
     });
 
     it('shows paperclip icon for attachments', () => {
@@ -94,7 +92,6 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
   });
 
   describe('search and filter functionality', () => {
-
     it('includes setupSearchAndFilter function', () => {
       expect(customerMessagesJs).toContain('function setupSearchAndFilter(getConversations, user)');
     });
@@ -162,7 +159,6 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
 
 (supplierMsgJsExists ? describe : describe.skip)('Dashboard Widget Enhancements - Supplier', () => {
   describe('supplier-messages.js helper functions', () => {
-
     it('includes formatTimeAgo helper function', () => {
       expect(supplierMessagesJs).toContain('function formatTimeAgo(timestamp)');
     });
@@ -195,13 +191,15 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
         .split('function ')[0];
 
       expect(renderFn).toContain('attachmentCount > 0');
-      expect(renderFn).toContain('${attachmentCount} ${attachmentCount === 1 ? \'file\' : \'files\'}');
+      expect(renderFn).toContain("${attachmentCount} ${attachmentCount === 1 ? 'file' : 'files'}");
     });
   });
 
   describe('search and filter functionality', () => {
     it('includes setupSearchAndFilterSupplier function', () => {
-      expect(supplierMessagesJs).toContain('function setupSearchAndFilterSupplier(getConversations, supplierProfile, user)');
+      expect(supplierMessagesJs).toContain(
+        'function setupSearchAndFilterSupplier(getConversations, supplierProfile, user)'
+      );
     });
 
     it('attaches input event to supplier search box', () => {
@@ -223,7 +221,9 @@ const supplierMessagesJs = supplierMsgJsExists ? fs.readFileSync(supplierMsgJsPa
     });
 
     it('includes applyFiltersSupplier function', () => {
-      expect(supplierMessagesJs).toContain('function applyFiltersSupplier(conversations, supplierProfile, user)');
+      expect(supplierMessagesJs).toContain(
+        'function applyFiltersSupplier(conversations, supplierProfile, user)'
+      );
     });
 
     it('filters by search query on customer name and message', () => {

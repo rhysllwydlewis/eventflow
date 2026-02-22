@@ -61,22 +61,26 @@ async function createConversationIndexes(db) {
   await Promise.all([
     // Query by participant
     collection.createIndex({ 'participants.userId': 1, status: 1, updatedAt: -1 }),
-    
+
     // Query by participant with filters
-    collection.createIndex({ 'participants.userId': 1, 'participants.isArchived': 1, 'participants.isPinned': 1 }),
-    
+    collection.createIndex({
+      'participants.userId': 1,
+      'participants.isArchived': 1,
+      'participants.isPinned': 1,
+    }),
+
     // Unread conversations
     collection.createIndex({ 'participants.userId': 1, 'participants.unreadCount': 1 }),
-    
+
     // Context lookups
     collection.createIndex({ 'context.type': 1, 'context.entityId': 1 }),
-    
+
     // Prevent duplicate conversations
     collection.createIndex({ type: 1, 'participants.userId': 1 }, { unique: false }),
-    
+
     // Sort by last activity
     collection.createIndex({ updatedAt: -1 }),
-    
+
     // Status filter
     collection.createIndex({ status: 1 }),
   ]);
@@ -92,19 +96,19 @@ async function createMessageIndexes(db) {
   await Promise.all([
     // Query messages by conversation
     collection.createIndex({ conversationId: 1, createdAt: -1 }),
-    
+
     // Query by sender
     collection.createIndex({ senderId: 1, createdAt: -1 }),
-    
+
     // Full-text search
     collection.createIndex({ content: 'text', 'attachments.filename': 'text' }),
-    
+
     // Status filters
     collection.createIndex({ conversationId: 1, status: 1, createdAt: -1 }),
-    
+
     // Deleted messages
     collection.createIndex({ deletedAt: 1 }),
-    
+
     // Reply threading
     collection.createIndex({ 'replyTo.messageId': 1 }),
   ]);

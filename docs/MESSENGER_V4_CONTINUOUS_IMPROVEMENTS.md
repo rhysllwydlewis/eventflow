@@ -20,33 +20,35 @@ This document details the continuous improvement session conducted after the ini
 **Location**: `public/assets/js/marketplace.js` lines 636-675
 
 **Problem**:
+
 ```javascript
 // BROKEN - Using v3 parameters with v4 endpoint
 body: JSON.stringify({
-  recipientId: sellerUserId,  // ❌ v4 expects participantIds array
-  initialMessage: message,    // ❌ Not supported in v4
-})
+  recipientId: sellerUserId, // ❌ v4 expects participantIds array
+  initialMessage: message, // ❌ Not supported in v4
+});
 ```
 
 **Root Cause**: When migrating to v4 API, parameters weren't updated to match backend expectations.
 
 **Fix**: Implemented proper 2-step v4 pattern
+
 ```javascript
 // Step 1: Create conversation
 body: JSON.stringify({
   type: 'marketplace',
-  participantIds: [sellerUserId],  // ✅ Correct array format
+  participantIds: [sellerUserId], // ✅ Correct array format
   context: {
     type: 'listing',
     referenceId: listing.id,
     referenceTitle: listingTitle,
   },
-})
+});
 
 // Step 2: Send initial message (separate request)
 await fetch(`/conversations/${conversationId}/messages`, {
-  body: JSON.stringify({ message: message.trim() })
-})
+  body: JSON.stringify({ message: message.trim() }),
+});
 ```
 
 **Impact**: Marketplace "Contact Seller" now works correctly
@@ -59,12 +61,14 @@ await fetch(`/conversations/${conversationId}/messages`, {
 **Location**: `public/messenger/js/MessengerAPI.js` lines 67-95
 
 **Problem**:
+
 ```javascript
 // BROKEN - v3 positional parameters
 async createConversation(recipientId, context, initialMessage, metadata)
 ```
 
 But ContactPicker was calling it like:
+
 ```javascript
 // v4 object format (correct)
 await this.api.createConversation({
@@ -78,6 +82,7 @@ await this.api.createConversation({
 **Mismatch**: Method signature didn't match usage pattern or v4 backend expectations.
 
 **Fix**: Updated to accept object parameter
+
 ```javascript
 async createConversation({ type, participantIds, context = null, metadata = {} }) {
   // Validation
@@ -94,6 +99,7 @@ async createConversation({ type, participantIds, context = null, metadata = {} }
 ```
 
 **Benefits**:
+
 - Matches v4 backend API exactly
 - Validates required parameters
 - Works with ContactPicker
@@ -107,6 +113,7 @@ async createConversation({ type, participantIds, context = null, metadata = {} }
 **Location**: `public/messenger/js/ConversationView.js` lines 405-442
 
 **Problem**:
+
 ```javascript
 getAvatar(userId) {
   // TODO: Get actual avatar from user data
@@ -126,12 +133,12 @@ getAvatar(userId) {
     const participant = conversation.participants.find(
       p => (p.userId || p._id) === userId
     );
-    
+
     if (participant) {
       // 2. Return avatar image if available (with fallback)
       if (participant.avatar) {
-        return `<img src="${this.escapeHtml(participant.avatar)}" 
-                     alt="Avatar" 
+        return `<img src="${this.escapeHtml(participant.avatar)}"
+                     alt="Avatar"
                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
                 <div class="fallback" style="display:none;">${this.getInitials(participant)}</div>`;
       }
@@ -139,7 +146,7 @@ getAvatar(userId) {
       return this.getInitials(participant);
     }
   }
-  
+
   // 4. Final fallback: first character of userId
   return userId?.charAt(0)?.toUpperCase() || '?';
 }
@@ -147,7 +154,7 @@ getAvatar(userId) {
 getInitials(participant) {
   const displayName = participant.displayName || participant.name || '';
   if (!displayName) return '?';
-  
+
   const parts = displayName.trim().split(/\s+/);
   if (parts.length >= 2) {
     // First + Last initials (e.g., "JS")
@@ -159,6 +166,7 @@ getInitials(participant) {
 ```
 
 **Result**: Users now see:
+
 1. Actual avatar images when available
 2. Two-letter initials (e.g., "JS" for "John Smith")
 3. Single letter from first name if only one name
@@ -179,7 +187,7 @@ getInitials(participant) {
 async request(endpoint, options = {}, retryCount = 0) {
   try {
     const response = await fetch(url, config);
-    
+
     // Retry on 5xx errors (server issues) for read operations
     if (response.status >= 500 && response.status < 600 && retryCount < 2) {
       const isReadOperation = !options.method || options.method.toUpperCase() === 'GET';
@@ -189,7 +197,7 @@ async request(endpoint, options = {}, retryCount = 0) {
         return this.request(endpoint, options, retryCount + 1);
       }
     }
-    
+
     // ... existing error handling
   } catch (error) {
     // Retry on network errors for read operations
@@ -206,6 +214,7 @@ async request(endpoint, options = {}, retryCount = 0) {
 ```
 
 **Features**:
+
 - Retries up to 2 times (max 3 total attempts)
 - Only retries READ operations (GET) - safe, idempotent
 - Never retries WRITE operations (POST/PATCH/DELETE) to avoid duplicates
@@ -213,6 +222,7 @@ async request(endpoint, options = {}, retryCount = 0) {
 - Handles both 5xx errors and network failures (TypeError)
 
 **Benefits**:
+
 - Better user experience (fewer error messages)
 - Resilient to transient network issues
 - Safe (only retries idempotent operations)
@@ -225,7 +235,8 @@ async request(endpoint, options = {}, retryCount = 0) {
 #### 5. MessengerApp & MessengerTrigger - Deprecated Auth Endpoints
 
 **Severity**: MEDIUM - Using deprecated APIs  
-**Locations**: 
+**Locations**:
+
 - `public/messenger/js/MessengerApp.js` line 111
 - `public/messenger/js/MessengerTrigger.js` line 16
 
@@ -234,6 +245,7 @@ async request(endpoint, options = {}, retryCount = 0) {
 **Fix**: Multi-tier fallback strategy
 
 **MessengerApp.js**:
+
 ```javascript
 async loadCurrentUser() {
   // 1. Try window.AuthState first (fastest, no network)
@@ -260,6 +272,7 @@ async loadCurrentUser() {
 ```
 
 **MessengerTrigger.js**:
+
 ```javascript
 async function checkAuth() {
   // Check AuthState first (most reliable)
@@ -274,6 +287,7 @@ async function checkAuth() {
 ```
 
 **Benefits**:
+
 - Uses cached AuthState when available (0 network requests)
 - Tries v4 API first (future-proof)
 - Falls back to v1 for compatibility
@@ -296,6 +310,7 @@ function init() {
 ```
 
 **Issues**:
+
 - Timer continues running after page navigation
 - Multiple timers accumulate on re-initialization
 - Memory leak in single-page applications
@@ -324,13 +339,14 @@ function destroy() {
 // Export destroy for manual control
 window.NotificationBridge = {
   init,
-  destroy,  // ✅ Now available
+  destroy, // ✅ Now available
   updateUnreadBadge,
-  fetchUnreadCount
+  fetchUnreadCount,
 };
 ```
 
 **Benefits**:
+
 - Prevents memory leaks
 - Safe re-initialization
 - Manual control via `window.NotificationBridge.destroy()`
@@ -342,21 +358,21 @@ window.NotificationBridge = {
 
 ### Code Changes
 
-| Metric | Value |
-|--------|-------|
-| **Files Modified** | 7 |
-| **Lines Added** | +161 |
-| **Lines Removed** | -42 |
-| **Net Change** | +119 |
-| **Commits** | 5 |
+| Metric             | Value |
+| ------------------ | ----- |
+| **Files Modified** | 7     |
+| **Lines Added**    | +161  |
+| **Lines Removed**  | -42   |
+| **Net Change**     | +119  |
+| **Commits**        | 5     |
 
 ### Issue Breakdown
 
-| Severity | Count | Examples |
-|----------|-------|----------|
-| 🔴 CRITICAL | 4 | API incompatibility, missing features |
-| 🟡 MEDIUM | 2 | Deprecated APIs, memory leak |
-| 🟢 LOW | 0 | - |
+| Severity    | Count | Examples                              |
+| ----------- | ----- | ------------------------------------- |
+| 🔴 CRITICAL | 4     | API incompatibility, missing features |
+| 🟡 MEDIUM   | 2     | Deprecated APIs, memory leak          |
+| 🟢 LOW      | 0     | -                                     |
 
 ### Files Changed
 
@@ -417,6 +433,7 @@ window.NotificationBridge = {
 **Status**: 85% ready, with critical bugs
 
 **Issues**:
+
 - Marketplace messaging would fail 100% (API mismatch)
 - Conversation creation from main messenger broken
 - No user avatars (poor UX)
@@ -429,6 +446,7 @@ window.NotificationBridge = {
 **Status**: 100% production-ready ✅
 
 **Improvements**:
+
 - ✅ All v4 API usage correct and validated
 - ✅ Marketplace messaging works correctly
 - ✅ User avatars display properly

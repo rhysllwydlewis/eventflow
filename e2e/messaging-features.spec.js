@@ -28,7 +28,7 @@ test.describe('Messenger v4 – Core Flows', () => {
   test.describe('Messenger page loads', () => {
     test('should load /messenger/ without 404 errors', async ({ page }) => {
       const failedRequests = [];
-      page.on('response', (response) => {
+      page.on('response', response => {
         if (response.status() === 404) {
           failedRequests.push(response.url());
         }
@@ -37,7 +37,7 @@ test.describe('Messenger v4 – Core Flows', () => {
       await page.goto(MESSENGER_URL);
       await page.waitForLoadState('networkidle');
 
-      expect(failedRequests.filter((u) => u.includes('/assets/'))).toHaveLength(0);
+      expect(failedRequests.filter(u => u.includes('/assets/'))).toHaveLength(0);
     });
 
     test('should render the messenger v4 container', async ({ page }) => {
@@ -91,7 +91,9 @@ test.describe('Messenger v4 – Core Flows', () => {
       await page.waitForLoadState('networkidle');
 
       // Either a conversation list or an empty state should be present
-      const hasConversations = await page.locator('.conversation-list, .conversations-list, [data-empty-state]').count();
+      const hasConversations = await page
+        .locator('.conversation-list, .conversations-list, [data-empty-state]')
+        .count();
       expect(hasConversations).toBeGreaterThanOrEqual(0);
     });
   });
@@ -102,8 +104,10 @@ test.describe('Messenger v4 – Core Flows', () => {
       await page.waitForLoadState('networkidle');
 
       const hasLegacyMessaging = await page.evaluate(() => {
-        return typeof window.API_VERSION !== 'undefined' &&
-               typeof window.API_VERSION.MESSAGING !== 'undefined';
+        return (
+          typeof window.API_VERSION !== 'undefined' &&
+          typeof window.API_VERSION.MESSAGING !== 'undefined'
+        );
       });
 
       expect(hasLegacyMessaging).toBe(false);
@@ -128,7 +132,7 @@ test.describe('Messenger v4 – Core Flows', () => {
 
   test.describe('Messenger v4 – Offline queue', () => {
     test('should show messenger UI even when API is unreachable', async ({ page }) => {
-      await page.route(`${V4_API}/**`, (route) => route.abort());
+      await page.route(`${V4_API}/**`, route => route.abort());
 
       await page.goto(MESSENGER_URL);
       await page.waitForLoadState('networkidle');

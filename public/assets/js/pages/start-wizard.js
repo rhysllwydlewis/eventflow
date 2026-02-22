@@ -1049,7 +1049,11 @@
 
       const planData = JSON.parse(pendingData);
 
-      if (window.AuthStateManager && window.AuthStateManager.getUser && window.AuthStateManager.getUser()) {
+      if (
+        window.AuthStateManager &&
+        window.AuthStateManager.getUser &&
+        window.AuthStateManager.getUser()
+      ) {
         savePlanToBackend(planData)
           .then(() => {
             localStorage.removeItem('eventflow_wizard_pending');
