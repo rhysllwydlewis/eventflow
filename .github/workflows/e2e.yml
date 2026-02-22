@@ -64,17 +64,27 @@ jobs:
           node-version: '20'
       
       - name: Restore node_modules cache
+        id: restore-npm-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       
+      - name: Install dependencies (cache miss fallback)
+        if: steps.restore-npm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
       - name: Restore Playwright browsers cache
+        id: restore-pw-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       
+      - name: Install Playwright browsers (cache miss fallback)
+        if: steps.restore-pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
       - name: Run E2E tests
         run: npm run test:e2e:static
         env:
