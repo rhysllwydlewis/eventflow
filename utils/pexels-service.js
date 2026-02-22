@@ -68,6 +68,10 @@ class PexelsService {
       },
       15 * 60 * 1000
     ); // Every 15 minutes
+    // Allow the process to exit even if this timer is still active
+    if (this.cleanupInterval.unref) {
+      this.cleanupInterval.unref();
+    }
   }
 
   /**
