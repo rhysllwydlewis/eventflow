@@ -5,18 +5,20 @@
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>Content Management — EventFlow Admin</title>
-<link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'>
-  <link rel="stylesheet" href="/assets/css/admin.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/admin-enhanced.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/admin-navbar.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/admin-cards.css?v=18.0.0">
-<link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'>
+<link rel="stylesheet" href="/assets/css/tokens.css?v=18.1.1">
+<link rel='stylesheet' href='/assets/css/styles.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.1.1'>
+  <link rel="stylesheet" href="/assets/css/admin.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/admin-enhanced.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/admin-navbar.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/admin-cards.css?v=18.1.1">
+<link rel='stylesheet' href='/assets/css/utilities.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/components.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/animations.css?v=18.1.1'>
 <link rel='icon' href='/favicon.svg'>
-<script src="/assets/js/admin-navbar.js" defer></script>
-  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+<script src="/assets/js/components.js?v=18.1.1" defer></script>
+<script src="/assets/js/admin-navbar.js?v=18.1.1" defer></script>
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.1.1"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.1.1">
   <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
 </head>
 <body class="has-admin-navbar admin">
@@ -231,7 +233,7 @@
   </div>
 </footer>
 
-<script src="/assets/js/admin-shared.js"></script>
+<script src="/assets/js/admin-shared.js?v=18.1.1"></script>
 <script>
 (function() {
   // Tab switching
@@ -569,7 +571,7 @@
   };
   
   window.deleteAnnouncement = async (id) => {
-    if (!AdminShared.confirm('Delete this announcement?')) return;
+    if (!await AdminShared.confirm('Delete this announcement?')) return;
     
     try {
       await AdminShared.api(`/api/admin/content/announcements/${id}`, 'DELETE');
@@ -590,7 +592,7 @@
   };
   
   window.deleteFAQ = async (id) => {
-    if (!AdminShared.confirm('Delete this FAQ?')) return;
+    if (!await AdminShared.confirm('Delete this FAQ?')) return;
     
     try {
       await AdminShared.api(`/api/admin/content/faqs/${id}`, 'DELETE');
@@ -602,7 +604,7 @@
   };
   
   window.unfeaturePackage = async (id) => {
-    if (!AdminShared.confirm('Remove this package from featured?')) return;
+    if (!await AdminShared.confirm('Remove this package from featured?')) return;
     
     try {
       await AdminShared.api(`/api/admin/packages/${id}`, 'PUT', { featured: false });

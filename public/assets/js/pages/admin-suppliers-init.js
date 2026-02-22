@@ -274,11 +274,29 @@
           <td>${healthScoreBadge}</td>
           <td><span style="font-size: 12px; color: #6b7280;">${supplier.tags?.join(', ') || 'None'}</span></td>
           <td>
-            <div style="display: flex; gap: 8px;">
-              <button onclick="window.viewSupplier('${supplier.id}')" class="btn-xs" title="View Profile">👁️</button>
-              <button onclick="window.editSupplier('${supplier.id}')" class="btn-xs" title="Edit">✏️</button>
-              ${!supplier.approved ? `<button onclick="window.approveSupplier('${supplier.id}')" class="btn-xs" style="background: #10b981; color: white;" title="Approve">✓</button>` : ''}
-              <button onclick="window.deleteSupplier('${supplier.id}')" class="btn-xs" style="background: #ef4444; color: white;" title="Delete">🗑️</button>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; gap: 8px;">
+                <button onclick="window.viewSupplier('${supplier.id}')" class="btn-xs" title="View Profile">👁️</button>
+                <button onclick="window.editSupplier('${supplier.id}')" class="btn-xs" title="Edit">✏️</button>
+                ${!supplier.approved ? `<button onclick="window.approveSupplier('${supplier.id}')" class="btn-xs" style="background: #10b981; color: white;" title="Approve">✓</button>` : ''}
+                <button onclick="window.deleteSupplier('${supplier.id}')" class="btn-xs" style="background: #ef4444; color: white;" title="Delete">🗑️</button>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                <select id="sub-tier-${supplier.id}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Subscription tier">
+                  <option value="pro">Pro</option>
+                  <option value="pro_plus">Pro+</option>
+                </select>
+                <select id="sub-days-${supplier.id}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Duration">
+                  <option value="7">7d</option>
+                  <option value="14">14d</option>
+                  <option value="30" selected>30d</option>
+                  <option value="90">90d</option>
+                  <option value="180">180d</option>
+                  <option value="365">1yr</option>
+                </select>
+                <button onclick="window.grantSubscription('${supplier.id}')" class="btn-xs" style="background: #667eea; color: white; font-size: 11px;" title="Grant subscription">Grant</button>
+                <button onclick="window.removeSubscription('${supplier.id}')" class="btn-xs" style="background: #6b7280; color: white; font-size: 11px;" title="Remove subscription">Remove</button>
+              </div>
             </div>
           </td>
         </tr>
@@ -385,7 +403,12 @@
     }
 
     const actionText = action === 'approve' ? 'approve' : action === 'reject' ? 'reject' : 'delete';
-    if (!confirm(`Are you sure you want to ${actionText} ${selectedSuppliers.size} supplier(s)?`)) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Confirm Bulk Action',
+      message: `Are you sure you want to ${actionText} ${selectedSuppliers.size} supplier(s)?`,
+      confirmText: actionText.charAt(0).toUpperCase() + actionText.slice(1),
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -416,11 +439,12 @@
       return;
     }
 
-    if (
-      !confirm(
-        `Apply smart tags to ${selectedSuppliers.size} supplier(s)? This will analyze their profiles and add relevant tags.`
-      )
-    ) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Apply Smart Tags',
+      message: `Apply smart tags to ${selectedSuppliers.size} supplier(s)? This will analyze their profiles and add relevant tags.`,
+      confirmText: 'Apply Tags',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -446,11 +470,13 @@
 
   // Import demo suppliers
   async function importDemoSuppliers() {
-    if (
-      !confirm(
-        'Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.'
-      )
-    ) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Import Demo Suppliers',
+      message:
+        'Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.',
+      confirmText: 'Import',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -515,7 +541,7 @@
     if (window.AdminShared && window.AdminShared.showToast) {
       window.AdminShared.showToast(message, type);
     } else {
-      alert(message);
+      console.warn('[AdminSuppliers] AdminShared not available, toast suppressed:', message);
     }
   }
 
@@ -529,7 +555,12 @@
   };
 
   window.approveSupplier = async function (id) {
-    if (confirm('Approve this supplier?')) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Approve Supplier',
+      message: 'Approve this supplier?',
+      confirmText: 'Approve',
+    });
+    if (confirmed) {
       try {
         await AdminShared.api(`/api/admin/suppliers/${id}/approve`, 'POST', { approved: true });
         showToast('Supplier approved', 'success');
@@ -543,11 +574,13 @@
   };
 
   window.deleteSupplier = async function (id) {
-    if (
-      confirm(
-        'Are you sure you want to delete this supplier? This will also delete all their packages.'
-      )
-    ) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Delete Supplier',
+      message:
+        'Are you sure you want to delete this supplier? This will also delete all their packages.',
+      confirmText: 'Delete',
+    });
+    if (confirmed) {
       try {
         await AdminShared.api(`/api/admin/suppliers/${id}`, 'DELETE');
         showToast('Supplier deleted', 'success');
@@ -557,6 +590,55 @@
         console.error('Error deleting supplier:', error);
         showToast(`Failed to delete supplier: ${error.message}`, 'error');
       }
+    }
+  };
+
+  window.grantSubscription = async function (id) {
+    const tierSel = document.getElementById(`sub-tier-${id}`);
+    const daysSel = document.getElementById(`sub-days-${id}`);
+    if (!tierSel || !daysSel) {
+      showToast('Could not find subscription controls', 'error');
+      return;
+    }
+    const tier = tierSel.value;
+    const days = parseInt(daysSel.value, 10);
+    const tierName = tier === 'pro_plus' ? 'Pro+' : 'Pro';
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Grant Subscription',
+      message: `Grant ${tierName} subscription for ${days} day(s) to this supplier?`,
+      confirmText: 'Grant',
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${id}/subscription`, 'POST', { tier, days });
+      showToast(`${tierName} subscription granted for ${days} day(s)`, 'success');
+      await loadSuppliers();
+      renderTable();
+    } catch (error) {
+      console.error('Error granting subscription:', error);
+      showToast(`Failed to grant subscription: ${error.message}`, 'error');
+    }
+  };
+
+  window.removeSubscription = async function (id) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Remove Subscription',
+      message: "Remove this supplier's subscription? They will lose Pro/Pro+ features immediately.",
+      confirmText: 'Remove',
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${id}/subscription`, 'DELETE');
+      showToast('Subscription removed', 'success');
+      await loadSuppliers();
+      renderTable();
+    } catch (error) {
+      console.error('Error removing subscription:', error);
+      showToast(`Failed to remove subscription: ${error.message}`, 'error');
     }
   };
 

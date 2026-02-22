@@ -11,18 +11,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Supplier Details - Admin Panel</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/utilities.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/components.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/animations.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/admin.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/admin-enhanced.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/admin-navbar.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/admin-supplier-detail.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=18.1.1">
+<link rel="stylesheet" href="/assets/css/styles.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/utilities.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/components.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/animations.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/admin.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/admin-enhanced.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/admin-navbar.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/admin-supplier-detail.css?v=18.1.1">
   <link rel="icon" href="/favicon.svg">
-<script src="/assets/js/admin-navbar.js" defer></script>
-  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+<script src="/assets/js/components.js?v=18.1.1" defer></script>
+<script src="/assets/js/admin-navbar.js?v=18.1.1" defer></script>
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.1.1"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.1.1">
   <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
 </head>
 <body class="has-admin-navbar admin">
@@ -248,7 +250,7 @@
   </div>
 </main>
 
-<script src="/assets/js/admin-shared.js" defer></script>
+<script src="/assets/js/admin-shared.js?v=18.1.1"></script>
 <script src="/assets/js/notification-system.js" defer></script>
 <!-- Note: global-error-handler.js already loaded in head -->
 <script src="/assets/js/admin-features.js" defer></script>
@@ -393,38 +395,51 @@
     `;
     document.getElementById('contactInfo').innerHTML = contactHtml;
 
-    // Pro plan info
-    let proPlanHtml = '<p>No active Pro plan</p>';
-    if (supplierData.proPlan && supplierData.proPlanExpiry) {
+    // Pro plan info — support both new subscription schema and legacy fields
+    const sub = supplierData.subscription;
+    const hasActiveSub =
+      (sub && sub.tier && sub.tier !== 'free' && sub.status === 'active') ||
+      (supplierData.proPlan && supplierData.proPlanExpiry);
+
+    let proPlanHtml = '<p>No active subscription</p>';
+    if (hasActiveSub) {
+      const tierLabel = (sub?.tier === 'pro_plus' || supplierData.proPlan === 'Pro+') ? 'Pro+' : 'Pro';
+      const expiryDate = sub?.endDate || supplierData.proPlanExpiry;
+      const expiryDisplay = expiryDate
+        ? new Date(expiryDate).toLocaleString()
+        : 'No expiry set';
       proPlanHtml = `
-        <p><strong>Plan:</strong> ${supplierData.proPlan}</p>
-        <p><strong>Expires:</strong> ${new Date(supplierData.proPlanExpiry).toLocaleString()}</p>
-        <button class="btn btn-secondary" id="cancelProBtn">Remove Subscription</button>
-      `;
-    } else {
-      proPlanHtml += `
-        <div style="margin-top: 1rem;">
-          <label for="subscriptionTier" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Subscription Tier:</label>
-          <select id="subscriptionTier" class="form-control" style="margin-bottom: 1rem;">
-            <option value="pro">Pro</option>
-            <option value="pro_plus">Pro Plus</option>
-          </select>
-          
-          <label for="subscriptionDuration" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Duration:</label>
-          <select id="subscriptionDuration" class="form-control" style="margin-bottom: 1rem;">
-            <option value="7">7 days (Trial)</option>
-            <option value="14" selected>14 days (Trial)</option>
-            <option value="30">30 days (1 Month)</option>
-            <option value="60">60 days (2 Months)</option>
-            <option value="90">90 days (3 Months)</option>
-            <option value="180">180 days (6 Months)</option>
-            <option value="365">365 days (1 Year)</option>
-          </select>
-          
-          <button class="btn btn-primary" id="grantProBtn">Grant Subscription</button>
-        </div>
+        <p><strong>Plan:</strong> ${tierLabel}</p>
+        <p><strong>Expires:</strong> ${expiryDisplay}</p>
+        <p><strong>Status:</strong> ${sub?.status || 'active'}</p>
       `;
     }
+
+    // Always show grant/remove controls
+    proPlanHtml += `
+      <div style="margin-top: 1rem; border-top: 1px solid #e5e7eb; padding-top: 1rem;">
+        <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 600;">Manage Subscription</h4>
+        <label for="subscriptionTier" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Tier:</label>
+        <select id="subscriptionTier" class="form-control" style="margin-bottom: 1rem;">
+          <option value="pro">Pro</option>
+          <option value="pro_plus">Pro Plus</option>
+        </select>
+        <label for="subscriptionDuration" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Duration:</label>
+        <select id="subscriptionDuration" class="form-control" style="margin-bottom: 1rem;">
+          <option value="7">7 days (Trial)</option>
+          <option value="14">14 days (Trial)</option>
+          <option value="30" selected>30 days (1 Month)</option>
+          <option value="60">60 days (2 Months)</option>
+          <option value="90">90 days (3 Months)</option>
+          <option value="180">180 days (6 Months)</option>
+          <option value="365">365 days (1 Year)</option>
+        </select>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-primary" id="grantProBtn">Grant / Extend</button>
+          ${hasActiveSub ? '<button class="btn btn-secondary" id="cancelProBtn">Remove Subscription</button>' : ''}
+        </div>
+      </div>
+    `;
     document.getElementById('proPlanInfo').innerHTML = proPlanHtml;
   }
 
@@ -537,7 +552,7 @@
 
   // Action handlers
   document.getElementById('approveBtn')?.addEventListener('click', async () => {
-    if (!confirm('Approve this supplier?')) return;
+    if (!await AdminShared.confirm('Approve this supplier?')) return;
     try {
       await AdminShared.api(`/api/admin/suppliers/${supplierId}/approve`, 'POST');
       AdminShared.showToast('Supplier approved', 'success');
@@ -548,7 +563,7 @@
   });
 
   document.getElementById('rejectBtn')?.addEventListener('click', async () => {
-    if (!confirm('Reject this supplier?')) return;
+    if (!await AdminShared.confirm('Reject this supplier?')) return;
     try {
       await AdminShared.api(`/api/admin/suppliers/${supplierId}/reject`, 'POST');
       AdminShared.showToast('Supplier rejected', 'success');
@@ -598,7 +613,11 @@
       const days = parseInt(durationSelect.value);
       const tierName = tier === 'pro_plus' ? 'Pro Plus' : 'Pro';
       
-      if (!confirm(`Grant ${tierName} subscription for ${days} days to this supplier?`)) {
+      if (!await AdminShared.showConfirmModal({
+        title: 'Grant Subscription',
+        message: `Grant ${tierName} subscription for ${days} days to this supplier?`,
+        confirmText: 'Grant',
+      })) {
         return;
       }
       
@@ -620,7 +639,11 @@
   // Cancel/Remove subscription handler (delegated event)
   document.addEventListener('click', async (e) => {
     if (e.target && e.target.id === 'cancelProBtn') {
-      if (!confirm('Remove this supplier\'s subscription? They will lose Pro/Pro+ features immediately.')) {
+      if (!await AdminShared.showConfirmModal({
+        title: 'Remove Subscription',
+        message: "Remove this supplier's subscription? They will lose Pro/Pro+ features immediately.",
+        confirmText: 'Remove',
+      })) {
         return;
       }
       

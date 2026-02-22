@@ -872,9 +872,9 @@ const AdminShared = (function () {
     });
   }
 
-  // Simple confirm dialog (fallback/legacy)
+  // Confirm dialog — uses showConfirmModal (no native dialog)
   function confirm(message) {
-    return window.confirm(message);
+    return showConfirmModal({ title: 'Confirm', message: message, confirmText: 'OK' });
   }
 
   // Load badge counts for sidebar

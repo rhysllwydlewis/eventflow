@@ -5,16 +5,17 @@
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>Marketplace Management — EventFlow Admin</title>
-<link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/admin.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/admin-enhanced.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/admin-navbar.css?v=18.0.0'>
-<link rel='stylesheet' href='/assets/css/admin-cards.css?v=18.0.0'>
-<link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0"><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.0.0'>
+<link rel="stylesheet" href="/assets/css/tokens.css?v=18.1.1">
+<link rel='stylesheet' href='/assets/css/styles.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/utilities.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/components.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/animations.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/admin.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/admin-enhanced.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/admin-navbar.css?v=18.1.1'>
+<link rel='stylesheet' href='/assets/css/admin-cards.css?v=18.1.1'>
+<link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.1.1"><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.1.1'>
 <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
 <link rel='icon' href='/favicon.svg'>
 <style>
@@ -188,9 +189,9 @@
     }
   }
 </style>
-<script src="/assets/js/admin-shared.js"></script>
-<script src="/assets/js/components.js" defer></script>
-<script src="/assets/js/admin-navbar.js" defer></script>
+<script src="/assets/js/admin-shared.js?v=18.1.1"></script>
+<script src="/assets/js/components.js?v=18.1.1" defer></script>
+<script src="/assets/js/admin-navbar.js?v=18.1.1" defer></script>
 </head>
 <body class="has-admin-navbar admin">
 <!-- Modern Top Navbar -->
@@ -561,7 +562,7 @@
 
   // Delete listing (admin endpoint with audit logging)
   window.deleteListing = async function(id) {
-    if (!confirm('Are you sure you want to delete this listing? All associated images will be removed.')) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Delete Listing', message: 'Are you sure you want to delete this listing? All associated images will be removed.', confirmText: 'Delete' })) return;
 
     try {
       const res = await fetch(`/api/admin/marketplace/listings/${id}`, {
@@ -806,7 +807,7 @@
   // Bulk approve
   window.bulkApprove = async function() {
     if (selectedListings.size === 0) return;
-    if (!confirm(`Approve ${selectedListings.size} listing(s)?`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Bulk Approve', message: `Approve ${selectedListings.size} listing(s)?`, confirmText: 'Approve' })) return;
 
     try {
       const promises = Array.from(selectedListings).map(id =>
@@ -829,7 +830,7 @@
   // Bulk mark sold
   window.bulkMarkSold = async function() {
     if (selectedListings.size === 0) return;
-    if (!confirm(`Mark ${selectedListings.size} listing(s) as sold?`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Mark as Sold', message: `Mark ${selectedListings.size} listing(s) as sold?`, confirmText: 'Mark Sold' })) return;
 
     try {
       const promises = Array.from(selectedListings).map(id =>
@@ -852,7 +853,7 @@
   // Bulk delete
   window.bulkDelete = async function() {
     if (selectedListings.size === 0) return;
-    if (!confirm(`Delete ${selectedListings.size} listing(s)? This cannot be undone.`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Bulk Delete', message: `Delete ${selectedListings.size} listing(s)? This cannot be undone.`, confirmText: 'Delete' })) return;
 
     try {
       const promises = Array.from(selectedListings).map(id =>
