@@ -102,8 +102,10 @@ describe('Pexels Collage Fallback Integration', () => {
     it('should return 404 when feature flag is disabled', async () => {
       // Disable Pexels collage feature
       const settings = await dbUnified.read('settings');
-      settings.features.pexelsCollage = false;
-      await dbUnified.write('settings', settings);
+      const safeSettings = settings && typeof settings === 'object' ? settings : {};
+      safeSettings.features = safeSettings.features || {};
+      safeSettings.features.pexelsCollage = false;
+      await dbUnified.write('settings', safeSettings);
 
       const response = await request(app).get('/api/public/pexels-collage?category=venues');
 
@@ -111,8 +113,8 @@ describe('Pexels Collage Fallback Integration', () => {
       expect(response.body.error).toBe('Pexels collage feature is not enabled');
 
       // Clean up: re-enable feature flag for other tests
-      settings.features.pexelsCollage = true;
-      await dbUnified.write('settings', settings);
+      safeSettings.features.pexelsCollage = true;
+      await dbUnified.write('settings', safeSettings);
     });
   });
 

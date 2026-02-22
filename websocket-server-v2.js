@@ -257,9 +257,13 @@ class WebSocketServerV2 {
     });
 
     // Periodic cleanup
-    setInterval(() => {
+    const wsCleanupInterval = setInterval(() => {
       this.cleanup();
     }, 300000); // Every 5 minutes
+    // Allow the process to exit even if this timer is still active
+    if (wsCleanupInterval.unref) {
+      wsCleanupInterval.unref();
+    }
 
     logger.info('WebSocket Server v2 initialized');
   }

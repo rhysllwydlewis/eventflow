@@ -52,52 +52,50 @@ export default defineConfig({
   },
 
   /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+  /* In CI only chromium is installed; use all browsers locally */
+  projects: process.env.CI
+    ? [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
 
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-        // Webkit/Safari needs more time for JS execution and rendering
-        actionTimeout: 30000, // Set explicit timeout (default is 0/no timeout)
-        navigationTimeout: 60000, // Increased from 30s default
-      },
-    },
+        {
+          name: 'webkit',
+          use: {
+            ...devices['Desktop Safari'],
+            // Webkit/Safari needs more time for JS execution and rendering
+            actionTimeout: 30000, // Set explicit timeout (default is 0/no timeout)
+            navigationTimeout: 60000, // Increased from 30s default
+          },
+        },
 
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: {
-        ...devices['iPhone 12'],
-        // Mobile Safari also needs generous timeouts
-        actionTimeout: 30000,
-        navigationTimeout: 60000,
-      },
-    },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
-  ],
+        /* Test against mobile viewports. */
+        {
+          name: 'Mobile Chrome',
+          use: { ...devices['Pixel 5'] },
+        },
+        {
+          name: 'Mobile Safari',
+          use: {
+            ...devices['iPhone 12'],
+            // Mobile Safari also needs generous timeouts
+            actionTimeout: 30000,
+            navigationTimeout: 60000,
+          },
+        },
+      ],
 
   /* Run your local dev server before starting the tests */
   webServer: (() => {
