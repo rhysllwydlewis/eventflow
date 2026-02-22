@@ -571,7 +571,7 @@
   };
   
   window.deleteAnnouncement = async (id) => {
-    if (!AdminShared.confirm('Delete this announcement?')) return;
+    if (!await AdminShared.confirm('Delete this announcement?')) return;
     
     try {
       await AdminShared.api(`/api/admin/content/announcements/${id}`, 'DELETE');
@@ -592,7 +592,7 @@
   };
   
   window.deleteFAQ = async (id) => {
-    if (!AdminShared.confirm('Delete this FAQ?')) return;
+    if (!await AdminShared.confirm('Delete this FAQ?')) return;
     
     try {
       await AdminShared.api(`/api/admin/content/faqs/${id}`, 'DELETE');
@@ -604,7 +604,7 @@
   };
   
   window.unfeaturePackage = async (id) => {
-    if (!AdminShared.confirm('Remove this package from featured?')) return;
+    if (!await AdminShared.confirm('Remove this package from featured?')) return;
     
     try {
       await AdminShared.api(`/api/admin/packages/${id}`, 'PUT', { featured: false });

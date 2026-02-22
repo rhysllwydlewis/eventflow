@@ -320,11 +320,11 @@
         window.URL.revokeObjectURL(url);
         a.remove();
       } else {
-        alert('Failed to export audit logs');
+        AdminShared.showToast('Failed to export audit logs', 'error');
       }
     } catch (error) {
       console.error('Export error:', error);
-      alert('Failed to export audit logs');
+      AdminShared.showToast('Failed to export audit logs', 'error');
     }
   });
   

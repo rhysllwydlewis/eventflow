@@ -467,7 +467,7 @@
   };
   
   window.rejectPhoto = async function(photoId) {
-    if (!confirm('Are you sure you want to reject this photo?')) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Reject Photo', message: 'Are you sure you want to reject this photo?', confirmText: 'Reject' })) return;
     
     try {
       await AdminShared.api(`/api/admin/photos/${photoId}/approve`, 'POST', { approved: false });
@@ -482,7 +482,7 @@
   batchApprove.addEventListener('click', async () => {
     if (selectedPhotos.size === 0) return;
     
-    if (!confirm(`Approve ${selectedPhotos.size} photo(s)?`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Approve Photos', message: `Approve ${selectedPhotos.size} photo(s)?`, confirmText: 'Approve' })) return;
     
     try {
       const promises = Array.from(selectedPhotos).map(id =>
@@ -502,7 +502,7 @@
   batchReject.addEventListener('click', async () => {
     if (selectedPhotos.size === 0) return;
     
-    if (!confirm(`Reject ${selectedPhotos.size} photo(s)?`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Reject Photos', message: `Reject ${selectedPhotos.size} photo(s)?`, confirmText: 'Reject' })) return;
     
     try {
       const promises = Array.from(selectedPhotos).map(id =>

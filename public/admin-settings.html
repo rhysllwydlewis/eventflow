@@ -591,7 +591,7 @@
 <script>
   // Backup & Restore functionality
   document.getElementById('createBackupBtn')?.addEventListener('click', async () => {
-    if (!confirm('Create a full database backup? This may take a moment.')) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Create Backup', message: 'Create a full database backup? This may take a moment.', confirmText: 'Create' })) return;
     
     try {
       const response = await fetch('/api/admin/backup/create', {
@@ -605,18 +605,18 @@
       
       if (response.ok) {
         const data = await response.json();
-        alert(`Backup created successfully: ${data.filename}`);
+        AdminShared.showToast(`Backup created successfully: ${data.filename}`, 'success');
         // Refresh backup list if visible
         if (document.getElementById('backupsListContainer').style.display !== 'none') {
           document.getElementById('listBackupsBtn').click();
         }
       } else {
         const error = await response.json();
-        alert('Failed to create backup: ' + (error.error || 'Unknown error'));
+        AdminShared.showToast('Failed to create backup: ' + (error.error || 'Unknown error'), 'error');
       }
     } catch (error) {
       console.error('Backup error:', error);
-      alert('Failed to create backup');
+      AdminShared.showToast('Failed to create backup', 'error');
     }
   });
 
@@ -658,7 +658,11 @@
           list.querySelectorAll('.restore-backup-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               const filename = e.target.getAttribute('data-filename');
-              if (!confirm(`Restore from backup "${filename}"? This will overwrite current data!`)) return;
+              if (!await AdminShared.showConfirmModal({
+                title: 'Restore Backup',
+                message: `Restore from backup "${filename}"? This will overwrite current data!`,
+                confirmText: 'Restore',
+              })) return;
               
               try {
                 const restoreResponse = await fetch('/api/admin/backup/restore', {
@@ -672,15 +676,15 @@
                 });
                 
                 if (restoreResponse.ok) {
-                  alert('Backup restored successfully');
+                  AdminShared.showToast('Backup restored successfully', 'success');
                   window.location.reload();
                 } else {
                   const error = await restoreResponse.json();
-                  alert('Failed to restore: ' + (error.error || 'Unknown error'));
+                  AdminShared.showToast('Failed to restore: ' + (error.error || 'Unknown error'), 'error');
                 }
               } catch (error) {
                 console.error('Restore error:', error);
-                alert('Failed to restore backup');
+                AdminShared.showToast('Failed to restore backup', 'error');
               }
             });
           });
@@ -688,11 +692,11 @@
         
         container.style.display = 'block';
       } else {
-        alert('Failed to load backups');
+        AdminShared.showToast('Failed to load backups', 'error');
       }
     } catch (error) {
       console.error('List backups error:', error);
-      alert('Failed to load backups');
+      AdminShared.showToast('Failed to load backups', 'error');
     }
   });
 </script>

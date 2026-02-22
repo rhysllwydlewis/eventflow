@@ -562,7 +562,7 @@
 
   // Delete listing (admin endpoint with audit logging)
   window.deleteListing = async function(id) {
-    if (!confirm('Are you sure you want to delete this listing? All associated images will be removed.')) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Delete Listing', message: 'Are you sure you want to delete this listing? All associated images will be removed.', confirmText: 'Delete' })) return;
 
     try {
       const res = await fetch(`/api/admin/marketplace/listings/${id}`, {
@@ -807,7 +807,7 @@
   // Bulk approve
   window.bulkApprove = async function() {
     if (selectedListings.size === 0) return;
-    if (!confirm(`Approve ${selectedListings.size} listing(s)?`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Bulk Approve', message: `Approve ${selectedListings.size} listing(s)?`, confirmText: 'Approve' })) return;
 
     try {
       const promises = Array.from(selectedListings).map(id =>
@@ -830,7 +830,7 @@
   // Bulk mark sold
   window.bulkMarkSold = async function() {
     if (selectedListings.size === 0) return;
-    if (!confirm(`Mark ${selectedListings.size} listing(s) as sold?`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Mark as Sold', message: `Mark ${selectedListings.size} listing(s) as sold?`, confirmText: 'Mark Sold' })) return;
 
     try {
       const promises = Array.from(selectedListings).map(id =>
@@ -853,7 +853,7 @@
   // Bulk delete
   window.bulkDelete = async function() {
     if (selectedListings.size === 0) return;
-    if (!confirm(`Delete ${selectedListings.size} listing(s)? This cannot be undone.`)) return;
+    if (!await AdminShared.showConfirmModal({ title: 'Bulk Delete', message: `Delete ${selectedListings.size} listing(s)? This cannot be undone.`, confirmText: 'Delete' })) return;
 
     try {
       const promises = Array.from(selectedListings).map(id =>
