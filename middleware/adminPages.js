@@ -13,9 +13,11 @@ const { getUserFromCookie } = require('./auth');
 const ADMIN_PAGES = [
   '/admin.html',
   '/admin-audit.html',
+  '/admin-content-dates.html',
   '/admin-content.html',
   '/admin-homepage.html',
   '/admin-marketplace.html',
+  '/admin-messenger.html',
   '/admin-packages.html',
   '/admin-payments.html',
   '/admin-pexels.html',

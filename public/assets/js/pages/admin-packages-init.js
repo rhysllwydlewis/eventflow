@@ -411,7 +411,7 @@
     }
   };
 
-  window.deletePackage = function (id) {
+  window.deletePackage = async function (id) {
     if (typeof Modal !== 'undefined') {
       const modal = new Modal({
         title: 'Delete Package',
@@ -435,16 +435,27 @@
       });
       modal.show();
     } else {
-      if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
+      const confirmed = await (window.AdminShared && window.AdminShared.showConfirmModal
+        ? window.AdminShared.showConfirmModal({
+            title: 'Delete Package',
+            message: 'Are you sure you want to delete this package? This action cannot be undone.',
+            confirmText: 'Delete',
+          })
+        : Promise.resolve(true));
+      if (!confirmed) {
         return;
       }
       api(`/api/admin/packages/${id}`, 'DELETE')
         .then(() => {
-          alert('Package deleted successfully');
+          if (window.AdminShared && window.AdminShared.showToast) {
+            window.AdminShared.showToast('Package deleted successfully', 'success');
+          }
           return loadPackages();
         })
         .catch(err => {
-          alert(`Failed to delete package: ${err.message}`);
+          if (window.AdminShared && window.AdminShared.showToast) {
+            window.AdminShared.showToast(`Failed to delete package: ${err.message}`, 'error');
+          }
         });
     }
   };
@@ -643,7 +654,9 @@
       if (typeof Toast !== 'undefined') {
         Toast.error(`Failed to save package: ${err.message}`);
       } else {
-        alert(`Failed to save package: ${err.message}`);
+        if (window.AdminShared && window.AdminShared.showToast) {
+          window.AdminShared.showToast(`Failed to save package: ${err.message}`, 'error');
+        }
       }
     } finally {
       const saveBtn = document.getElementById('savePackageBtn');

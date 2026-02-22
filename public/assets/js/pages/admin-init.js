@@ -33,6 +33,19 @@
       .replace(/'/g, '&#039;');
   }
 
+  function _adminToast(msg, type) {
+    if (window.AdminShared && window.AdminShared.showToast) {
+      window.AdminShared.showToast(msg, type || 'info');
+    }
+  }
+
+  async function _adminConfirm(msg) {
+    if (window.AdminShared && window.AdminShared.showConfirmModal) {
+      return window.AdminShared.showConfirmModal({ title: 'Confirm', message: msg, confirmText: 'OK' });
+    }
+    return true;
+  }
+
   function api(url, method, body) {
     const opts = {
       method: method || 'GET',
@@ -607,7 +620,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.success('Supplier approved.');
                 } else {
-                  alert('Supplier approved.');
+                  _adminToast('Supplier approved.', 'success');
                 }
                 loadAll();
               })
@@ -616,7 +629,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.error(`Failed to approve supplier: ${err.message}`);
                 } else {
-                  alert(`Failed to approve supplier: ${err.message}`);
+                  _adminToast(`Failed to approve supplier: ${err.message}`, 'error');
                 }
               });
           },
@@ -626,12 +639,12 @@
         // Fallback to confirm dialog
         api(`/api/admin/suppliers/${id}/approve`, 'POST', { approved: true })
           .then(() => {
-            alert('Supplier approved.');
+            _adminToast('Supplier approved.', 'success');
             loadAll();
           })
           .catch(err => {
             console.error('approveSup failed', err);
-            alert(`Failed to approve supplier: ${err.message}`);
+            _adminToast(`Failed to approve supplier: ${err.message}`, 'error');
           });
       }
     });
@@ -651,7 +664,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.success('Supplier rejected.');
                 } else {
-                  alert('Supplier rejected.');
+                  _adminToast('Supplier rejected.', 'success');
                 }
                 loadAll();
               })
@@ -660,7 +673,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.error(`Failed to reject supplier: ${err.message}`);
                 } else {
-                  alert(`Failed to reject supplier: ${err.message}`);
+                  _adminToast(`Failed to reject supplier: ${err.message}`, 'error');
                 }
               });
           },
@@ -670,18 +683,18 @@
         // Fallback to confirm dialog
         api(`/api/admin/suppliers/${id}/approve`, 'POST', { approved: false })
           .then(() => {
-            alert('Supplier rejected.');
+            _adminToast('Supplier rejected.', 'success');
             loadAll();
           })
           .catch(err => {
             console.error('rejectSup failed', err);
-            alert(`Failed to reject supplier: ${err.message}`);
+            _adminToast(`Failed to reject supplier: ${err.message}`, 'error');
           });
       }
     });
   };
 
-  window.setProPlan = function (id, mode) {
+  window.setProPlan = async function (id, mode) {
     if (mode === 'grant') {
       const tierSel = document.getElementById(`pro-tier-${id}`);
       const durationSel = document.getElementById(`pro-duration-${id}`);
@@ -689,7 +702,7 @@
         if (typeof Toast !== 'undefined') {
           Toast.warning('Choose a tier and duration first.');
         } else {
-          alert('Choose a tier and duration first.');
+          _adminToast('Choose a tier and duration first.', 'error');
         }
         return;
       }
@@ -705,7 +718,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.success(`${tierName} subscription granted for ${days} days.`);
           } else {
-            alert(`${tierName} subscription granted for ${days} days.`);
+            _adminToast(`${tierName} subscription granted for ${days} days.`, 'success');
           }
           loadAll();
         })
@@ -714,7 +727,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.error(`Failed to grant subscription: ${err.message}`);
           } else {
-            alert(`Failed to grant subscription: ${err.message}`);
+            _adminToast(`Failed to grant subscription: ${err.message}`, 'error');
           }
         });
     } else if (mode === 'cancel') {
@@ -731,7 +744,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.success('Subscription removed.');
                 } else {
-                  alert('Subscription removed.');
+                  _adminToast('Subscription removed.', 'success');
                 }
                 loadAll();
               })
@@ -740,7 +753,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.error(`Failed to remove subscription: ${err.message}`);
                 } else {
-                  alert(`Failed to remove subscription: ${err.message}`);
+                  _adminToast(`Failed to remove subscription: ${err.message}`, 'error');
                 }
               });
           },
@@ -748,20 +761,19 @@
         modal.show();
       } else {
         if (
-          !confirm(
+          !await _adminConfirm(
             'Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.'
-          )
-        ) {
+        )) {
           return;
         }
         api(`/api/admin/suppliers/${id}/subscription`, 'DELETE')
           .then(() => {
-            alert('Subscription removed.');
+            _adminToast('Subscription removed.', 'success');
             loadAll();
           })
           .catch(err => {
             console.error('setProPlan (cancel) failed', err);
-            alert(`Failed to remove subscription: ${err.message}`);
+            _adminToast(`Failed to remove subscription: ${err.message}`, 'error');
           });
       }
     }
@@ -775,7 +787,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.success(`Package ${action}d successfully.`);
           } else {
-            alert(`Package ${action}d successfully.`);
+            _adminToast(`Package ${action}d successfully.`, 'success');
           }
           loadAll();
         })
@@ -784,7 +796,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.error(`Failed to ${action} package: ${err.message}`);
           } else {
-            alert(`Failed to ${action} package: ${err.message}`);
+            _adminToast(`Failed to ${action} package: ${err.message}`, 'error');
           }
         });
     });
@@ -798,7 +810,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.success(`Package ${action}d successfully.`);
           } else {
-            alert(`Package ${action}d successfully.`);
+            _adminToast(`Package ${action}d successfully.`, 'success');
           }
           loadAll();
         })
@@ -807,7 +819,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.error(`Failed to ${action} package: ${err.message}`);
           } else {
-            alert(`Failed to ${action} package: ${err.message}`);
+            _adminToast(`Failed to ${action} package: ${err.message}`, 'error');
           }
         });
     });
@@ -822,7 +834,7 @@
   };
 
   // New user management functions
-  window.deleteUser = function (id) {
+  window.deleteUser = async function (id) {
     if (typeof Modal !== 'undefined') {
       const modal = new Modal({
         title: 'Delete User',
@@ -835,7 +847,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.success('User deleted successfully.');
               } else {
-                alert('User deleted successfully.');
+                _adminToast('User deleted successfully.', 'success');
               }
               loadAll();
             })
@@ -844,24 +856,24 @@
               if (typeof Toast !== 'undefined') {
                 Toast.error(`Failed to delete user: ${err.message}`);
               } else {
-                alert(`Failed to delete user: ${err.message}`);
+                _adminToast(`Failed to delete user: ${err.message}`, 'error');
               }
             });
         },
       });
       modal.show();
     } else {
-      if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      if (!await _adminConfirm('Are you sure you want to delete this user? This action cannot be undone.')) {
         return;
       }
       api(`/api/admin/users/${id}`, 'DELETE')
         .then(() => {
-          alert('User deleted successfully.');
+          _adminToast('User deleted successfully.', 'success');
           loadAll();
         })
         .catch(err => {
           console.error('deleteUser failed', err);
-          alert(`Failed to delete user: ${err.message}`);
+          _adminToast(`Failed to delete user: ${err.message}`, 'error');
         });
     }
   };
@@ -874,7 +886,7 @@
       if (typeof Toast !== 'undefined') {
         Toast.error('User not found');
       } else {
-        alert('User not found');
+        _adminToast('User not found', 'error');
       }
       return;
     }
@@ -908,7 +920,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.success('User updated successfully.');
               } else {
-                alert('User updated successfully.');
+                _adminToast('User updated successfully.', 'success');
               }
               loadAll();
             })
@@ -917,7 +929,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.error(`Failed to update user: ${err.message}`);
               } else {
-                alert(`Failed to update user: ${err.message}`);
+                _adminToast(`Failed to update user: ${err.message}`, 'error');
               }
             });
         },
@@ -957,7 +969,7 @@
                 if (window.AdminShared && window.AdminShared.showToast) {
                   window.AdminShared.showToast('User updated successfully.', 'success');
                 } else {
-                  alert('User updated successfully.');
+                  _adminToast('User updated successfully.', 'success');
                 }
                 loadAll();
               })
@@ -966,18 +978,18 @@
                 if (window.AdminShared && window.AdminShared.showToast) {
                   window.AdminShared.showToast(`Failed to update user: ${err.message}`, 'error');
                 } else {
-                  alert(`Failed to update user: ${err.message}`);
+                  _adminToast(`Failed to update user: ${err.message}`, 'error');
                 }
               });
           });
         });
       } else {
-        alert('User editing requires the Modal component. Please reload the page.');
+        _adminToast('User editing requires the Modal component. Please reload the page.', 'error');
       }
     }
   };
 
-  window.grantAdmin = function (id) {
+  window.grantAdmin = async function (id) {
     if (typeof Modal !== 'undefined') {
       const modal = new Modal({
         title: 'Grant Admin Privileges',
@@ -990,7 +1002,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.success('Admin privileges granted successfully.');
               } else {
-                alert('Admin privileges granted successfully.');
+                _adminToast('Admin privileges granted successfully.', 'success');
               }
               loadAll();
             })
@@ -999,29 +1011,29 @@
               if (typeof Toast !== 'undefined') {
                 Toast.error(`Failed to grant admin privileges: ${err.message}`);
               } else {
-                alert(`Failed to grant admin privileges: ${err.message}`);
+                _adminToast(`Failed to grant admin privileges: ${err.message}`, 'error');
               }
             });
         },
       });
       modal.show();
     } else {
-      if (!confirm('Grant admin privileges to this user?')) {
+      if (!await _adminConfirm('Grant admin privileges to this user?')) {
         return;
       }
       api(`/api/admin/users/${id}/grant-admin`, 'POST')
         .then(() => {
-          alert('Admin privileges granted successfully.');
+          _adminToast('Admin privileges granted successfully.', 'success');
           loadAll();
         })
         .catch(err => {
           console.error('grantAdmin failed', err);
-          alert(`Failed to grant admin privileges: ${err.message}`);
+          _adminToast(`Failed to grant admin privileges: ${err.message}`, 'error');
         });
     }
   };
 
-  window.revokeAdmin = function (id) {
+  window.revokeAdmin = async function (id) {
     // Create modal content with role selection
     const content = document.createElement('div');
     content.innerHTML =
@@ -1046,7 +1058,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.success('Admin privileges revoked successfully.');
               } else {
-                alert('Admin privileges revoked successfully.');
+                _adminToast('Admin privileges revoked successfully.', 'success');
               }
               loadAll();
             })
@@ -1055,7 +1067,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.error(`Failed to revoke admin privileges: ${err.message}`);
               } else {
-                alert(`Failed to revoke admin privileges: ${err.message}`);
+                _adminToast(`Failed to revoke admin privileges: ${err.message}`, 'error');
               }
             });
         },
@@ -1097,7 +1109,7 @@
                 if (window.AdminShared && window.AdminShared.showToast) {
                   window.AdminShared.showToast('Admin privileges revoked successfully.', 'success');
                 } else {
-                  alert('Admin privileges revoked successfully.');
+                  _adminToast('Admin privileges revoked successfully.', 'success');
                 }
                 loadAll();
               })
@@ -1109,18 +1121,18 @@
                     'error'
                   );
                 } else {
-                  alert(`Failed to revoke admin privileges: ${err.message}`);
+                  _adminToast(`Failed to revoke admin privileges: ${err.message}`, 'error');
                 }
               });
           });
         });
       } else {
-        alert('Admin management requires AdminShared utilities. Please reload the page.');
+        _adminToast('Admin management requires AdminShared utilities. Please reload the page.', 'error');
       }
     }
   };
 
-  window.verifyUser = function (id) {
+  window.verifyUser = async function (id) {
     if (typeof Modal !== 'undefined') {
       const modal = new Modal({
         title: 'Verify User Email',
@@ -1133,7 +1145,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.success('User verified successfully.');
               } else {
-                alert('User verified successfully.');
+                _adminToast('User verified successfully.', 'success');
               }
               loadAll();
             })
@@ -1142,14 +1154,14 @@
               if (typeof Toast !== 'undefined') {
                 Toast.error(`Failed to verify user: ${err.message}`);
               } else {
-                alert(`Failed to verify user: ${err.message}`);
+                _adminToast(`Failed to verify user: ${err.message}`, 'error');
               }
             });
         },
       });
       modal.show();
     } else {
-      if (!confirm("Manually verify this user's email address?")) {
+      if (!await _adminConfirm("Manually verify this user's email address?")) {
         return;
       }
       api(`/api/admin/users/${id}/verify`, 'POST')
@@ -1157,7 +1169,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.success('User verified successfully.');
           } else {
-            alert('User verified successfully.');
+            _adminToast('User verified successfully.', 'success');
           }
           loadAll();
         })
@@ -1166,14 +1178,14 @@
           if (typeof Toast !== 'undefined') {
             Toast.error(`Failed to verify user: ${err.message}`);
           } else {
-            alert(`Failed to verify user: ${err.message}`);
+            _adminToast(`Failed to verify user: ${err.message}`, 'error');
           }
         });
     }
   };
 
   // Supplier management functions
-  window.deleteSupplier = function (id) {
+  window.deleteSupplier = async function (id) {
     return safeExecute(() => {
       if (typeof Modal !== 'undefined') {
         const modal = new Modal({
@@ -1188,7 +1200,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.success('Supplier deleted successfully.');
                 } else {
-                  alert('Supplier deleted successfully.');
+                  _adminToast('Supplier deleted successfully.', 'success');
                 }
                 loadAll();
               })
@@ -1197,7 +1209,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.error(`Failed to delete supplier: ${err.message}`);
                 } else {
-                  alert(`Failed to delete supplier: ${err.message}`);
+                  _adminToast(`Failed to delete supplier: ${err.message}`, 'error');
                 }
               });
           },
@@ -1205,20 +1217,19 @@
         modal.show();
       } else {
         if (
-          !confirm(
+          !await _adminConfirm(
             'Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.'
-          )
-        ) {
+        )) {
           return;
         }
         api(`/api/admin/suppliers/${id}`, 'DELETE')
           .then(() => {
-            alert('Supplier deleted successfully.');
+            _adminToast('Supplier deleted successfully.', 'success');
             loadAll();
           })
           .catch(err => {
             console.error('deleteSupplier failed', err);
-            alert(`Failed to delete supplier: ${err.message}`);
+            _adminToast(`Failed to delete supplier: ${err.message}`, 'error');
           });
       }
     });
@@ -1237,7 +1248,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.error('Supplier not found');
           } else {
-            alert('Supplier not found');
+            _adminToast('Supplier not found', 'error');
           }
           return;
         }
@@ -1312,7 +1323,7 @@
                   if (typeof Toast !== 'undefined') {
                     Toast.success('Supplier updated successfully.');
                   } else {
-                    alert('Supplier updated successfully.');
+                    _adminToast('Supplier updated successfully.', 'success');
                   }
                   loadAll();
                 })
@@ -1321,7 +1332,7 @@
                   if (typeof Toast !== 'undefined') {
                     Toast.error(`Failed to update supplier: ${err.message}`);
                   } else {
-                    alert(`Failed to update supplier: ${err.message}`);
+                    _adminToast(`Failed to update supplier: ${err.message}`, 'error');
                   }
                 });
             },
@@ -1329,7 +1340,7 @@
           modal.show();
         } else {
           // Fallback if Modal is not available
-          alert('Supplier editing requires the Modal component. Please reload the page.');
+          _adminToast('Supplier editing requires the Modal component. Please reload the page.', 'error');
         }
       })
       .catch(err => {
@@ -1337,13 +1348,13 @@
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to load supplier data');
         } else {
-          alert('Failed to load supplier data');
+          _adminToast('Failed to load supplier data', 'error');
         }
       });
   };
 
   // Package management functions
-  window.deletePackage = function (id) {
+  window.deletePackage = async function (id) {
     return safeExecute(() => {
       if (typeof Modal !== 'undefined') {
         const modal = new Modal({
@@ -1358,7 +1369,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.success('Package deleted successfully.');
                 } else {
-                  alert('Package deleted successfully.');
+                  _adminToast('Package deleted successfully.', 'success');
                 }
                 loadAll();
               })
@@ -1367,7 +1378,7 @@
                 if (typeof Toast !== 'undefined') {
                   Toast.error(`Failed to delete package: ${err.message}`);
                 } else {
-                  alert(`Failed to delete package: ${err.message}`);
+                  _adminToast(`Failed to delete package: ${err.message}`, 'error');
                 }
               });
           },
@@ -1375,18 +1386,18 @@
         modal.show();
       } else {
         if (
-          !confirm('Are you sure you want to delete this package? This action cannot be undone.')
+          !await _adminConfirm('Are you sure you want to delete this package? This action cannot be undone.')
         ) {
           return;
         }
         api(`/api/admin/packages/${id}`, 'DELETE')
           .then(() => {
-            alert('Package deleted successfully.');
+            _adminToast('Package deleted successfully.', 'success');
             loadAll();
           })
           .catch(err => {
             console.error('deletePackage failed', err);
-            alert(`Failed to delete package: ${err.message}`);
+            _adminToast(`Failed to delete package: ${err.message}`, 'error');
           });
       }
     });
@@ -1405,7 +1416,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.error('Package not found');
           } else {
-            alert('Package not found');
+            _adminToast('Package not found', 'error');
           }
           return;
         }
@@ -1472,7 +1483,7 @@
                   if (typeof Toast !== 'undefined') {
                     Toast.success('Package updated successfully.');
                   } else {
-                    alert('Package updated successfully.');
+                    _adminToast('Package updated successfully.', 'success');
                   }
                   loadAll();
                 })
@@ -1481,7 +1492,7 @@
                   if (typeof Toast !== 'undefined') {
                     Toast.error(`Failed to update package: ${err.message}`);
                   } else {
-                    alert(`Failed to update package: ${err.message}`);
+                    _adminToast(`Failed to update package: ${err.message}`, 'error');
                   }
                 });
             },
@@ -1489,7 +1500,7 @@
           modal.show();
         } else {
           // Fallback if Modal is not available
-          alert('Package editing requires the Modal component. Please reload the page.');
+          _adminToast('Package editing requires the Modal component. Please reload the page.', 'error');
         }
       })
       .catch(err => {
@@ -1497,7 +1508,7 @@
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to load package data');
         } else {
-          alert('Failed to load package data');
+          _adminToast('Failed to load package data', 'error');
         }
       });
   };
@@ -1556,7 +1567,7 @@
             })
             .catch(err => {
               console.error('Smart tagging failed', err);
-              alert('Smart tagging failed – check server logs.');
+              _adminToast('Smart tagging failed – check server logs.', 'error');
             })
             .finally(() => {
               smartTagBtn.disabled = false;
@@ -1725,7 +1736,7 @@
             if (typeof Toast !== 'undefined') {
               Toast.error('All fields are required');
             } else {
-              alert('All fields are required');
+              _adminToast('All fields are required', 'error');
             }
             return;
           }
@@ -1740,7 +1751,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.success('User created successfully.');
               } else {
-                alert('User created successfully.');
+                _adminToast('User created successfully.', 'success');
               }
               // Close modal first, then reload data
               modal.hide();
@@ -1754,7 +1765,7 @@
               if (typeof Toast !== 'undefined') {
                 Toast.error(`Failed to create user: ${err.message}`);
               } else {
-                alert(`Failed to create user: ${err.message}`);
+                _adminToast(`Failed to create user: ${err.message}`, 'error');
               }
             });
         },
@@ -1805,7 +1816,7 @@
                   if (window.AdminShared && window.AdminShared.showToast) {
                     window.AdminShared.showToast('User created successfully.', 'success');
                   } else {
-                    alert('User created successfully.');
+                    _adminToast('User created successfully.', 'success');
                   }
                   loadAll();
                 })
@@ -1814,14 +1825,14 @@
                   if (window.AdminShared && window.AdminShared.showToast) {
                     window.AdminShared.showToast(`Failed to create user: ${err.message}`, 'error');
                   } else {
-                    alert(`Failed to create user: ${err.message}`);
+                    _adminToast(`Failed to create user: ${err.message}`, 'error');
                   }
                 });
             });
           });
         });
       } else {
-        alert('User creation requires AdminShared utilities. Please reload the page.');
+        _adminToast('User creation requires AdminShared utilities. Please reload the page.', 'error');
       }
     }
   };
@@ -1834,7 +1845,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.info('No pending reviews to moderate.');
           } else {
-            alert('No pending reviews to moderate.');
+            _adminToast('No pending reviews to moderate.', 'warning');
           }
           return;
         }
@@ -1889,7 +1900,7 @@
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to load reviews');
         } else {
-          alert('Failed to load reviews');
+          _adminToast('Failed to load reviews', 'error');
         }
       });
   };
@@ -1900,7 +1911,7 @@
         if (typeof Toast !== 'undefined') {
           Toast.success(`Review ${approved ? 'approved' : 'rejected'}`);
         } else {
-          alert(`Review ${approved ? 'approved' : 'rejected'}`);
+          _adminToast(`Review ${approved ? 'approved' : 'rejected'}`, 'success');
         }
         loadAll();
         closeReviewModal();
@@ -1910,7 +1921,7 @@
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to moderate review');
         } else {
-          alert('Failed to moderate review');
+          _adminToast('Failed to moderate review', 'error');
         }
       });
   };
@@ -2086,7 +2097,7 @@
         return;
       }
 
-      if (!confirm(`Approve ${selected.length} supplier(s)?`)) {
+      if (!await _adminConfirm(`Approve ${selected.length} supplier(s)?`)) {
         return;
       }
 
@@ -2095,14 +2106,14 @@
         if (typeof Toast !== 'undefined') {
           Toast.success(`Approved ${selected.length} supplier(s)`);
         } else {
-          alert(`Approved ${selected.length} supplier(s)`);
+          _adminToast(`Approved ${selected.length} supplier(s)`, 'success');
         }
         loadAll();
       } catch (err) {
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to approve suppliers');
         } else {
-          alert('Failed to approve suppliers');
+          _adminToast('Failed to approve suppliers', 'error');
         }
       }
     });
@@ -2116,7 +2127,7 @@
         return;
       }
 
-      if (!confirm(`Reject ${selected.length} supplier(s)?`)) {
+      if (!await _adminConfirm(`Reject ${selected.length} supplier(s)?`)) {
         return;
       }
 
@@ -2125,14 +2136,14 @@
         if (typeof Toast !== 'undefined') {
           Toast.success(`Rejected ${selected.length} supplier(s)`);
         } else {
-          alert(`Rejected ${selected.length} supplier(s)`);
+          _adminToast(`Rejected ${selected.length} supplier(s)`, 'success');
         }
         loadAll();
       } catch (err) {
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to reject suppliers');
         } else {
-          alert('Failed to reject suppliers');
+          _adminToast('Failed to reject suppliers', 'error');
         }
       }
     });
@@ -2146,7 +2157,7 @@
         return;
       }
 
-      if (!confirm(`DELETE ${selected.length} supplier(s)? This cannot be undone.`)) {
+      if (!await _adminConfirm(`DELETE ${selected.length} supplier(s)? This cannot be undone.`)) {
         return;
       }
 
@@ -2155,14 +2166,14 @@
         if (typeof Toast !== 'undefined') {
           Toast.success(`Deleted ${selected.length} supplier(s)`);
         } else {
-          alert(`Deleted ${selected.length} supplier(s)`);
+          _adminToast(`Deleted ${selected.length} supplier(s)`, 'success');
         }
         loadAll();
       } catch (err) {
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to delete suppliers');
         } else {
-          alert('Failed to delete suppliers');
+          _adminToast('Failed to delete suppliers', 'error');
         }
       }
     });
@@ -2176,7 +2187,7 @@
         return;
       }
 
-      if (!confirm(`Approve ${selected.length} package(s)?`)) {
+      if (!await _adminConfirm(`Approve ${selected.length} package(s)?`)) {
         return;
       }
 
@@ -2187,14 +2198,14 @@
         if (typeof Toast !== 'undefined') {
           Toast.success(`Approved ${selected.length} package(s)`);
         } else {
-          alert(`Approved ${selected.length} package(s)`);
+          _adminToast(`Approved ${selected.length} package(s)`, 'success');
         }
         loadAll();
       } catch (err) {
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to approve packages');
         } else {
-          alert('Failed to approve packages');
+          _adminToast('Failed to approve packages', 'error');
         }
       }
     });
@@ -2208,7 +2219,7 @@
         return;
       }
 
-      if (!confirm(`Feature ${selected.length} package(s)?`)) {
+      if (!await _adminConfirm(`Feature ${selected.length} package(s)?`)) {
         return;
       }
 
@@ -2219,14 +2230,14 @@
         if (typeof Toast !== 'undefined') {
           Toast.success(`Featured ${selected.length} package(s)`);
         } else {
-          alert(`Featured ${selected.length} package(s)`);
+          _adminToast(`Featured ${selected.length} package(s)`, 'success');
         }
         loadAll();
       } catch (err) {
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to feature packages');
         } else {
-          alert('Failed to feature packages');
+          _adminToast('Failed to feature packages', 'error');
         }
       }
     });
@@ -2240,7 +2251,7 @@
         return;
       }
 
-      if (!confirm(`DELETE ${selected.length} package(s)? This cannot be undone.`)) {
+      if (!await _adminConfirm(`DELETE ${selected.length} package(s)? This cannot be undone.`)) {
         return;
       }
 
@@ -2249,14 +2260,14 @@
         if (typeof Toast !== 'undefined') {
           Toast.success(`Deleted ${selected.length} package(s)`);
         } else {
-          alert(`Deleted ${selected.length} package(s)`);
+          _adminToast(`Deleted ${selected.length} package(s)`, 'success');
         }
         loadAll();
       } catch (err) {
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to delete packages');
         } else {
-          alert('Failed to delete packages');
+          _adminToast('Failed to delete packages', 'error');
         }
       }
     });

@@ -1,0 +1,137 @@
+/**
+ * Admin Allowlist Drift Tests
+ *
+ * Ensures that:
+ * 1. Every admin HTML file in public/ has a matching entry in the ADMIN_PAGES allowlist.
+ * 2. Every entry in the ADMIN_PAGES allowlist has a corresponding HTML file on disk.
+ * 3. Admin page JS files contain no native browser dialogs (alert/confirm/prompt).
+ */
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const PUBLIC_DIR = path.resolve(__dirname, '../../public');
+const ADMIN_JS_PAGES_DIR = path.resolve(PUBLIC_DIR, 'assets/js/pages');
+const ADMIN_PAGES_FILE = path.resolve(__dirname, '../../middleware/adminPages.js');
+
+/**
+ * Parse ADMIN_PAGES directly from the middleware source to avoid loading
+ * server dependencies (winston, mongoose, etc.) in a unit test context.
+ */
+function parseAdminPages() {
+  const source = fs.readFileSync(ADMIN_PAGES_FILE, 'utf8');
+  const match = source.match(/const ADMIN_PAGES\s*=\s*\[([\s\S]*?)\];/);
+  if (!match) {
+    throw new Error('Could not locate ADMIN_PAGES array in middleware/adminPages.js');
+  }
+  return match[1]
+    .split('\n')
+    .map(line => line.trim().replace(/^['"]|['"],?$/g, '').trim())
+    .filter(line => line.startsWith('/'));
+}
+
+// ─── Allowlist Drift Tests ─────────────────────────────────────────────────
+
+describe('Admin Pages Allowlist Sync', () => {
+  const ADMIN_PAGES = parseAdminPages();
+  // Discover all admin HTML files in public/
+  const adminHtmlFiles = fs
+    .readdirSync(PUBLIC_DIR)
+    .filter(f => f.startsWith('admin') && f.endsWith('.html'))
+    .map(f => `/${f}`);
+
+  it('every admin HTML file on disk should have an entry in ADMIN_PAGES', () => {
+    const missing = adminHtmlFiles.filter(f => !ADMIN_PAGES.includes(f));
+    expect(missing).toEqual([]);
+    if (missing.length > 0) {
+      throw new Error(
+        `Admin HTML files exist on disk but are NOT in ADMIN_PAGES allowlist:\n  ${missing.join('\n  ')}`
+      );
+    }
+  });
+
+  it('every ADMIN_PAGES entry should exist on disk', () => {
+    const extra = ADMIN_PAGES.filter(p => {
+      const filePath = path.join(PUBLIC_DIR, p.slice(1)); // strip leading /
+      return !fs.existsSync(filePath);
+    });
+    expect(extra).toEqual([]);
+    if (extra.length > 0) {
+      throw new Error(
+        `ADMIN_PAGES allowlist contains entries with no corresponding file:\n  ${extra.join('\n  ')}`
+      );
+    }
+  });
+
+  it('ADMIN_PAGES should be a non-empty array', () => {
+    expect(Array.isArray(ADMIN_PAGES)).toBe(true);
+    expect(ADMIN_PAGES.length).toBeGreaterThan(0);
+  });
+
+  it('all ADMIN_PAGES entries should start with a forward slash', () => {
+    const invalid = ADMIN_PAGES.filter(p => !p.startsWith('/'));
+    expect(invalid).toEqual([]);
+  });
+});
+
+// ─── Native Dialog Ban Tests ───────────────────────────────────────────────
+
+describe('Admin Page JS - No Native Dialogs', () => {
+  // Regex to find native dialog calls that are not inside string literals
+  // or comments. We use a simple heuristic: match word boundary \bconfirm(,
+  // \balert(, \bprompt( not preceded by . (to exclude e.g. result.confirmed)
+  const NATIVE_DIALOG_PATTERN = /(?<!\w\.|\/\/[^\n]*)\b(window\.)?(alert|confirm|prompt)\s*\(/;
+  const ALLOWED_PATTERNS = [
+    // These are helper function definitions or references, not calls
+    /function\s+_adminConfirm/,
+    /async function _adminConfirm/,
+    /_adminConfirm\(/,
+    // Comments
+    /\/\//,
+  ];
+
+  let adminJsFiles = [];
+  try {
+    adminJsFiles = fs
+      .readdirSync(ADMIN_JS_PAGES_DIR)
+      .filter(f => f.startsWith('admin') && f.endsWith('.js'))
+      .map(f => path.join(ADMIN_JS_PAGES_DIR, f));
+  } catch {
+    // If directory doesn't exist, skip
+  }
+
+  adminJsFiles.forEach(filePath => {
+    it(`${path.basename(filePath)} should not contain native dialog calls`, () => {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const lines = content.split('\n');
+
+      const violations = [];
+      lines.forEach((line, idx) => {
+        // Skip comment lines
+        const trimmed = line.trimStart();
+        if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+          return;
+        }
+        // Check for native dialog patterns
+        if (NATIVE_DIALOG_PATTERN.test(line)) {
+          // Skip if it's a helper definition or reference
+          if (!/_adminConfirm|AdminShared\.show/.test(line)) {
+            violations.push(`  Line ${idx + 1}: ${line.trim()}`);
+          }
+        }
+      });
+
+      if (violations.length > 0) {
+        throw new Error(
+          `Native dialog calls found in ${path.basename(filePath)}:\n${violations.join('\n')}`
+        );
+      }
+    });
+  });
+
+  it('admin JS pages directory should contain init files', () => {
+    expect(adminJsFiles.length).toBeGreaterThan(0);
+  });
+});

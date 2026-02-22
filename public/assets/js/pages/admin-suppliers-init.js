@@ -385,7 +385,12 @@
     }
 
     const actionText = action === 'approve' ? 'approve' : action === 'reject' ? 'reject' : 'delete';
-    if (!confirm(`Are you sure you want to ${actionText} ${selectedSuppliers.size} supplier(s)?`)) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Confirm Bulk Action',
+      message: `Are you sure you want to ${actionText} ${selectedSuppliers.size} supplier(s)?`,
+      confirmText: actionText.charAt(0).toUpperCase() + actionText.slice(1),
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -416,11 +421,12 @@
       return;
     }
 
-    if (
-      !confirm(
-        `Apply smart tags to ${selectedSuppliers.size} supplier(s)? This will analyze their profiles and add relevant tags.`
-      )
-    ) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Apply Smart Tags',
+      message: `Apply smart tags to ${selectedSuppliers.size} supplier(s)? This will analyze their profiles and add relevant tags.`,
+      confirmText: 'Apply Tags',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -446,11 +452,12 @@
 
   // Import demo suppliers
   async function importDemoSuppliers() {
-    if (
-      !confirm(
-        'Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.'
-      )
-    ) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Import Demo Suppliers',
+      message: 'Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.',
+      confirmText: 'Import',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -515,7 +522,7 @@
     if (window.AdminShared && window.AdminShared.showToast) {
       window.AdminShared.showToast(message, type);
     } else {
-      alert(message);
+      console.warn('[AdminSuppliers] AdminShared not available, toast suppressed:', message);
     }
   }
 
@@ -529,7 +536,12 @@
   };
 
   window.approveSupplier = async function (id) {
-    if (confirm('Approve this supplier?')) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Approve Supplier',
+      message: 'Approve this supplier?',
+      confirmText: 'Approve',
+    });
+    if (confirmed) {
       try {
         await AdminShared.api(`/api/admin/suppliers/${id}/approve`, 'POST', { approved: true });
         showToast('Supplier approved', 'success');
@@ -543,11 +555,12 @@
   };
 
   window.deleteSupplier = async function (id) {
-    if (
-      confirm(
-        'Are you sure you want to delete this supplier? This will also delete all their packages.'
-      )
-    ) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Delete Supplier',
+      message: 'Are you sure you want to delete this supplier? This will also delete all their packages.',
+      confirmText: 'Delete',
+    });
+    if (confirmed) {
       try {
         await AdminShared.api(`/api/admin/suppliers/${id}`, 'DELETE');
         showToast('Supplier deleted', 'success');

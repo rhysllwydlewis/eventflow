@@ -420,7 +420,12 @@
     container.querySelectorAll('.gallery-item-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
         const filename = btn.dataset.filename;
-        if (confirm('Delete this media file?')) {
+        const confirmed = await AdminShared.showConfirmModal({
+          title: 'Delete Media File',
+          message: 'Delete this media file?',
+          confirmText: 'Delete',
+        });
+        if (confirmed) {
           await deleteCollageMedia(filename);
         }
       });
@@ -741,7 +746,12 @@
   }
 
   async function removeImage(categoryId) {
-    if (!confirm('Are you sure you want to remove this image?')) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Remove Image',
+      message: 'Are you sure you want to remove this image?',
+      confirmText: 'Remove',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -963,7 +973,7 @@
     const visible = document.getElementById('categoryVisible').checked;
 
     if (!name || !slug) {
-      alert('Name and slug are required');
+      AdminShared.showToast('Name and slug are required', 'error');
       return;
     }
 
@@ -1012,14 +1022,14 @@
       if (response.ok) {
         closeCategoryModalFunc();
         await loadAllCategories();
-        alert('Category saved successfully!');
+        AdminShared.showToast('Category saved successfully!', 'success');
       } else {
         const errorData = await response.json();
-        alert(`Failed to save category: ${errorData.error || 'Unknown error'}`);
+        AdminShared.showToast(`Failed to save category: ${errorData.error || 'Unknown error'}`, 'error');
       }
     } catch (error) {
       console.error('Error saving category:', error);
-      alert('Failed to save category');
+      AdminShared.showToast('Failed to save category', 'error');
     }
   }
 
@@ -1029,7 +1039,12 @@
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete "${category.name}"?`)) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Delete Category',
+      message: `Are you sure you want to delete "${category.name}"?`,
+      confirmText: 'Delete',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -1050,14 +1065,14 @@
 
       if (response.ok) {
         await loadAllCategories();
-        alert('Category deleted successfully!');
+        AdminShared.showToast('Category deleted successfully!', 'success');
       } else {
         const errorData = await response.json();
-        alert(`Failed to delete category: ${errorData.error || 'Unknown error'}`);
+        AdminShared.showToast(`Failed to delete category: ${errorData.error || 'Unknown error'}`, 'error');
       }
     } catch (error) {
       console.error('Error deleting category:', error);
-      alert('Failed to delete category');
+      AdminShared.showToast('Failed to delete category', 'error');
     }
   }
 
@@ -1087,7 +1102,7 @@
         }
       } else {
         const errorData = await response.json();
-        alert(`Failed to toggle visibility: ${errorData.error || 'Unknown error'}`);
+        AdminShared.showToast(`Failed to toggle visibility: ${errorData.error || 'Unknown error'}`, 'error');
         // Revert toggle
         const toggle = document.querySelector(`.visibility-toggle[data-id="${categoryId}"]`);
         if (toggle) {
@@ -1096,14 +1111,14 @@
       }
     } catch (error) {
       console.error('Error toggling visibility:', error);
-      alert('Failed to toggle visibility');
+      AdminShared.showToast('Failed to toggle visibility', 'error');
     }
   }
 
   async function searchPexels() {
     const query = document.getElementById('pexelsSearchQuery').value.trim();
     if (!query) {
-      alert('Please enter a search query');
+      AdminShared.showToast('Please enter a search query', 'error');
       return;
     }
 
@@ -1126,7 +1141,7 @@
       displayPexelsResults(data.photos || []);
     } catch (error) {
       console.error('Error searching Pexels:', error);
-      alert('Failed to search Pexels. Please check your API key configuration.');
+      AdminShared.showToast('Failed to search Pexels. Please check your API key configuration.', 'error');
     } finally {
       searchPexelsBtn.disabled = false;
       searchPexelsBtn.textContent = 'Search';
@@ -1270,7 +1285,12 @@
 
   // Reset button
   document.getElementById('resetCollageWidget').addEventListener('click', async () => {
-    if (confirm('Reset collage widget to default settings?')) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Reset Collage Widget',
+      message: 'Reset collage widget to default settings?',
+      confirmText: 'Reset',
+    });
+    if (confirmed) {
       await loadCollageWidget();
       showCollageWidgetSuccess('Configuration reset to defaults');
     }
