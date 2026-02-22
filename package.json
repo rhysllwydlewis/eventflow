@@ -113,6 +113,6 @@
     ]
   },
   "overrides": {
-    "filelist": "1.0.5"
+    "filelist": ">=1.0.5"
   }
 }
