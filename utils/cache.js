@@ -139,10 +139,10 @@ function cleanupExpiredCache() {
 }
 
 // Run cleanup every 5 minutes
-const _cacheCleanupInterval = setInterval(cleanupExpiredCache, 5 * 60 * 1000);
+const cacheCleanupInterval = setInterval(cleanupExpiredCache, 5 * 60 * 1000);
 // Prevent this housekeeping timer from keeping Node.js/Jest processes alive.
-if (typeof _cacheCleanupInterval.unref === 'function') {
-  _cacheCleanupInterval.unref();
+if (typeof cacheCleanupInterval.unref === 'function') {
+  cacheCleanupInterval.unref();
 }
 
 module.exports = {

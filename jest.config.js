@@ -51,6 +51,7 @@ module.exports = {
   testTimeout: 10000,
 
   // Force Jest to exit after all tests complete; prevents hanging on open handles
+  // TODO: remove once all remaining open handles (test-isolation leaks) are resolved
   forceExit: true,
 
   // Verbose output
