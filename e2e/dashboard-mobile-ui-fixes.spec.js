@@ -151,7 +151,7 @@ test.describe('Notification Bell Touch Support', () => {
     await page.goto('/dashboard-supplier.html');
 
     // Wait for page to be interactive
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const bellSelectors = ['#ef-notification-btn', '#notification-bell'];
 
@@ -193,7 +193,7 @@ test.describe('Notification Bell Touch Support', () => {
     await page.goto('/dashboard-supplier.html');
 
     // Wait for page to be interactive
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const bellSelectors = ['#ef-notification-btn', '#notification-bell'];
 

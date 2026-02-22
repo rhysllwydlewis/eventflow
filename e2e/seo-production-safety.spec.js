@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('SEO Canonical Consistency', () => {
   test('marketplace canonical should be /marketplace', async ({ page }) => {
     await page.goto('/marketplace.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check canonical link
     const canonicalLink = await page.locator('link[rel="canonical"]').getAttribute('href');
@@ -43,12 +43,12 @@ test.describe('SEO Canonical Consistency', () => {
   test('both marketplace URLs should serve the same canonical', async ({ page }) => {
     // Test /marketplace
     await page.goto('/marketplace');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const canonical1 = await page.locator('link[rel="canonical"]').getAttribute('href');
 
     // Test /marketplace.html
     await page.goto('/marketplace.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const canonical2 = await page.locator('link[rel="canonical"]').getAttribute('href');
 
     // Both should have the same canonical

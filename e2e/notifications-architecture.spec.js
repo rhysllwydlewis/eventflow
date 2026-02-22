@@ -31,7 +31,7 @@ test.describe('Notification System Architecture', () => {
 
   test('notification bell has initialization guard', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check that initialization guard flag exists
     const hasGuard = await page.evaluate(() => {
@@ -43,7 +43,7 @@ test.describe('Notification System Architecture', () => {
 
   test('notification bell does not get cloned', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Get initial bell reference
     const bellId = 'ef-notification-btn';
@@ -88,7 +88,7 @@ test.describe('Notification System Architecture', () => {
 
   test('dropdown visibility is controlled by CSS class only', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const dropdown = page.locator('#notification-dropdown');
 
@@ -143,7 +143,7 @@ test.describe('Notification System Architecture', () => {
 
   test('dropdown positioning respects viewport boundaries', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if positioning function exists
     const hasPositioning = await page.evaluate(() => {
@@ -230,7 +230,7 @@ test.describe('Notification System Architecture', () => {
 
     // Reload to apply auth state
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Bell should be visible for logged-in users
     // Note: This depends on navbar.js updating the visibility
@@ -252,7 +252,7 @@ test.describe('Notification System Architecture', () => {
     });
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to call initialization multiple times
     await page.evaluate(() => {
@@ -287,7 +287,7 @@ test.describe('Notification Dropdown Functionality', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const bell = page.locator('#ef-notification-btn');
     const dropdown = page.locator('#notification-dropdown');
@@ -326,7 +326,7 @@ test.describe('Notification Dropdown Functionality', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const dropdown = page.locator('#notification-dropdown');
 

@@ -12,7 +12,7 @@ test.describe('Navigation CSS Regression Tests', () => {
     await page.setViewportSize({ width: 395, height: 653 });
 
     await page.goto('/index.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Open the mobile menu
     const burgerBtn = page.locator('#ef-mobile-toggle');
@@ -39,7 +39,7 @@ test.describe('Navigation CSS Regression Tests', () => {
     await page.setViewportSize({ width: 395, height: 653 });
 
     await page.goto('/index.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Open the mobile menu
     const burgerBtn = page.locator('#ef-mobile-toggle');
@@ -66,7 +66,7 @@ test.describe('Navigation CSS Regression Tests', () => {
     await page.setViewportSize({ width: 395, height: 653 });
 
     await page.goto('/index.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Open the mobile menu
     const burgerBtn = page.locator('#ef-mobile-toggle');
@@ -97,7 +97,7 @@ test.describe('Navigation CSS Regression Tests', () => {
     await page.setViewportSize({ width: 395, height: 653 });
 
     await page.goto('/index.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Open the mobile menu
     const burgerBtn = page.locator('#ef-mobile-toggle');

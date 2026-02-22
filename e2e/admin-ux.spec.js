@@ -124,7 +124,7 @@ test.describe('Admin UX - No Native Dialogs', () => {
 
   test('should not show native dialogs on admin.html', async ({ page, browserName }) => {
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -243,7 +243,7 @@ test.describe('Admin UX - Input Modal Functionality', () => {
     });
 
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -289,7 +289,7 @@ test.describe('Admin UX - Input Modal Functionality', () => {
 
   test('input modal should validate required fields', async ({ page, browserName }) => {
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -361,7 +361,7 @@ test.describe('Admin UX - Input Modal Functionality', () => {
 
   test('input modal cancel should not trigger action', async ({ page, browserName }) => {
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -399,7 +399,7 @@ test.describe('Admin UX - Input Modal Functionality', () => {
 
   test('input modal ESC key should cancel', async ({ page, browserName }) => {
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -472,7 +472,7 @@ test.describe('Admin UX - Button Disabling (safeAction)', () => {
 
   test('safeAction should disable button during async operation', async ({ page, browserName }) => {
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -527,7 +527,7 @@ test.describe('Admin UX - Button Disabling (safeAction)', () => {
 
   test('safeAction should prevent double-clicks', async ({ page, browserName }) => {
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);

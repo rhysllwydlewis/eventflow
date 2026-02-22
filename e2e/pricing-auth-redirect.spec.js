@@ -14,7 +14,7 @@ test.describe('Pricing CTA redirect for unauthenticated users', () => {
     page,
   }) => {
     await page.goto('/pricing');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // pricing.js rewrites CTA hrefs asynchronously after the auth check; wait for the rewrite
     await page

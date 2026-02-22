@@ -35,14 +35,14 @@ test.describe('Messenger v4 – Core Flows', () => {
       });
 
       await page.goto(MESSENGER_URL);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       expect(failedRequests.filter(u => u.includes('/assets/'))).toHaveLength(0);
     });
 
     test('should render the messenger v4 container', async ({ page }) => {
       await page.goto(MESSENGER_URL);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('.messenger-v4')).toBeVisible();
     });
@@ -88,7 +88,7 @@ test.describe('Messenger v4 – Core Flows', () => {
   test.describe('Messenger v4 – Send message flow', () => {
     test('should open messenger and show conversation list or empty state', async ({ page }) => {
       await page.goto(MESSENGER_URL);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Either a conversation list or an empty state should be present
       const hasConversations = await page
@@ -101,7 +101,7 @@ test.describe('Messenger v4 – Core Flows', () => {
   test.describe('Messenger v4 – API version config', () => {
     test('should not expose legacy v2 MESSAGING constants', async ({ page }) => {
       await page.goto(MESSENGER_URL);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const hasLegacyMessaging = await page.evaluate(() => {
         return (
@@ -115,7 +115,7 @@ test.describe('Messenger v4 – Core Flows', () => {
 
     test('should expose MESSENGER v4 constants', async ({ page }) => {
       await page.goto(MESSENGER_URL);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const result = await page.evaluate(() => {
         if (typeof window.API_VERSION === 'undefined') return null; // not loaded = OK
@@ -135,7 +135,7 @@ test.describe('Messenger v4 – Core Flows', () => {
       await page.route(`${V4_API}/**`, route => route.abort());
 
       await page.goto(MESSENGER_URL);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // The UI shell should still render
       await expect(page.locator('.messenger-v4')).toBeVisible();
