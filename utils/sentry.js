@@ -5,6 +5,8 @@
 
 'use strict';
 
+const logger = require('./logger');
+
 let Sentry = null;
 let sentryEnabled = false;
 
@@ -18,7 +20,7 @@ function initSentry(app) {
   const environment = process.env.NODE_ENV || 'development';
 
   if (!sentryDsn) {
-    console.log('ℹ️  Sentry DSN not configured, error tracking disabled');
+    logger.info('ℹ️  Sentry DSN not configured, error tracking disabled');
     return false;
   }
 
@@ -68,10 +70,10 @@ function initSentry(app) {
     });
 
     sentryEnabled = true;
-    console.log('✅ Sentry error tracking initialized');
+    logger.info('✅ Sentry error tracking initialized');
     return true;
   } catch (error) {
-    console.error('Failed to initialize Sentry:', error.message);
+    logger.error('Failed to initialize Sentry:', error.message);
     return false;
   }
 }
@@ -135,7 +137,7 @@ function captureException(error, context = {}) {
       level: context.level || 'error',
     });
   } else {
-    console.error('Error:', error, 'Context:', context);
+    logger.error('Error:', error, 'Context:', context);
   }
 }
 
@@ -154,7 +156,7 @@ function captureMessage(message, level = 'info', context = {}) {
       user: context.user || {},
     });
   } else {
-    console.log(`[${level.toUpperCase()}]`, message, context);
+    logger.log(level, message, context);
   }
 }
 
@@ -229,7 +231,7 @@ async function flush(timeout = 2000) {
       await Sentry.flush(timeout);
       return true;
     } catch (error) {
-      console.error('Sentry flush error:', error);
+      logger.error('Sentry flush error:', error);
       return false;
     }
   }
@@ -246,7 +248,7 @@ async function close() {
       await Sentry.close(2000);
       return true;
     } catch (error) {
-      console.error('Sentry close error:', error);
+      logger.error('Sentry close error:', error);
       return false;
     }
   }

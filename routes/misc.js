@@ -183,7 +183,18 @@ router.post('/verify-captcha', applyWriteLimiter, async (req, res) => {
 // ---------- Contact Form ----------
 
 router.post('/contact', applyWriteLimiter, async (req, res) => {
-  const { name, email, message, captchaToken } = req.body || {};
+  const { captchaToken } = req.body || {};
+
+  // Sanitize and trim string fields
+  const name = String(req.body.name || '')
+    .trim()
+    .slice(0, 100);
+  const email = String(req.body.email || '')
+    .trim()
+    .slice(0, 200);
+  const message = String(req.body.message || '')
+    .trim()
+    .slice(0, 2000);
 
   // Validate required fields
   if (!name || !email || !message) {
@@ -191,7 +202,7 @@ router.post('/contact', applyWriteLimiter, async (req, res) => {
   }
 
   // Basic email format check
-  if (!validator.isEmail(String(email))) {
+  if (!validator.isEmail(email)) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
 
@@ -202,10 +213,7 @@ router.post('/contact', applyWriteLimiter, async (req, res) => {
   }
 
   // Log the contact enquiry (email sending handled separately if postmark is configured)
-  logger.info('Contact form submission', {
-    name: String(name).slice(0, 100),
-    email: String(email).slice(0, 200),
-  });
+  logger.info('Contact form submission', { name, email });
 
   return res.json({
     success: true,
