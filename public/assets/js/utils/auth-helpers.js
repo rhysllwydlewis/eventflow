@@ -357,6 +357,4 @@
     enhancedResendVerification,
     autoFocusForm,
   };
-
-  console.log('✅ Auth helpers loaded');
 })();

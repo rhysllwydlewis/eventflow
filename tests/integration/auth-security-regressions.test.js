@@ -3,7 +3,7 @@
  *
  * Guards against:
  *  1. Credentials (passwords) being logged to the browser console via formData
- *  2. Unbounded setTimeout retry loops in hCaptcha init
+ *  2. Unbounded setTimeout retry loops in hCaptcha init, waitForApiClient, and form init
  *  3. Debug-only console.log statements leaking into production
  */
 
@@ -56,6 +56,26 @@ describe('auth.html – security regressions', () => {
       expect(retryCheckPos).toBeLessThan(setTimeoutPos);
     });
   });
+
+  describe('waitForApiClient retry loop is bounded', () => {
+    it('defines API_CLIENT_MAX_WAIT to cap the retry loop', () => {
+      expect(content).toContain('API_CLIENT_MAX_WAIT');
+    });
+
+    it('rejects when attempt exceeds max wait', () => {
+      expect(content).toContain('reject(new Error');
+    });
+  });
+
+  describe('Form validation init retry loop is bounded', () => {
+    it('defines FORM_INIT_MAX_RETRIES to cap the retry loop', () => {
+      expect(content).toContain('FORM_INIT_MAX_RETRIES');
+    });
+
+    it('guards setTimeout with formInitRetries < FORM_INIT_MAX_RETRIES', () => {
+      expect(content).toContain('formInitRetries < FORM_INIT_MAX_RETRIES');
+    });
+  });
 });
 
 describe('contact.html – hCaptcha init retry loop is bounded', () => {
@@ -71,6 +91,11 @@ describe('contact.html – hCaptcha init retry loop is bounded', () => {
 
   it('guards setTimeout with retry counter check', () => {
     expect(content).toContain('captchaRetries < CAPTCHA_MAX_RETRIES');
+  });
+
+  it('does not contain unused dead variable csrfMeta', () => {
+    // csrfMeta was declared but never used (dead code referencing a non-existent meta tag)
+    expect(content).not.toContain('var csrfMeta = document.querySelector');
   });
 });
 
@@ -94,5 +119,37 @@ describe('sentry-browser-init.js – SDK load retry loop is bounded', () => {
 
   it('guards setTimeout with attempt < maxAttempts', () => {
     expect(content).toContain('(attempt || 0) < maxAttempts');
+  });
+});
+
+describe('password-toggle.js – no debug noise', () => {
+  let content;
+
+  beforeAll(() => {
+    content = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/password-toggle.js'),
+      'utf8'
+    );
+  });
+
+  it('does not log the number of password toggle inputs (debug noise)', () => {
+    expect(content).not.toContain('console.log(`✓ Password toggles initialized');
+    expect(content).not.toContain("console.log('✓ Password toggles initialized");
+  });
+});
+
+describe('auth-helpers.js – no debug noise', () => {
+  let content;
+
+  beforeAll(() => {
+    content = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/utils/auth-helpers.js'),
+      'utf8'
+    );
+  });
+
+  it('does not log the auth helpers loaded message (debug noise)', () => {
+    expect(content).not.toContain("console.log('✅ Auth helpers loaded");
+    expect(content).not.toContain('console.log("✅ Auth helpers loaded');
   });
 });

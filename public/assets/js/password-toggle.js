@@ -24,8 +24,6 @@
 
       addPasswordToggle(input);
     });
-
-    console.log(`✓ Password toggles initialized for ${passwordInputs.length} inputs`);
   }
 
   /**
