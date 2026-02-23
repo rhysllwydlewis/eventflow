@@ -4,6 +4,10 @@
  * Replaces Google Pay/Firebase with Stripe implementation
  */
 
+// Debug logging is only enabled in local development environments
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 // Error display timeout constant (10 seconds)
 const ERROR_DISPLAY_TIMEOUT = 10000;
 
@@ -97,14 +101,18 @@ let stripeConfig = null; // Store Stripe configuration
  */
 async function initSubscriptionPage() {
   try {
-    console.log('[Subscription] Initializing subscription page...');
+    if (isDevelopment) {
+      console.log('[Subscription] Initializing subscription page...');
+    }
 
     // Check authentication with retry logic
     let user = await checkAuth();
 
     // Retry once if auth check fails (handles race conditions)
     if (!user) {
-      console.log('[Subscription] First auth check failed, retrying...');
+      if (isDevelopment) {
+        console.log('[Subscription] First auth check failed, retrying...');
+      }
       await new Promise(resolve => setTimeout(resolve, 500));
       user = await checkAuth();
     }
@@ -117,7 +125,9 @@ async function initSubscriptionPage() {
       return;
     }
 
-    console.log('[Subscription] User authenticated:', user.email, 'Role:', user.role);
+    if (isDevelopment) {
+      console.log('[Subscription] User authenticated:', user.email, 'Role:', user.role);
+    }
     currentUser = user;
 
     // Verify user is a supplier
@@ -130,22 +140,32 @@ async function initSubscriptionPage() {
     }
 
     // Load current subscription status
-    console.log('[Subscription] Loading subscription status...');
+    if (isDevelopment) {
+      console.log('[Subscription] Loading subscription status...');
+    }
     await loadSubscriptionStatus();
 
     // Load Stripe configuration
-    console.log('[Subscription] Loading Stripe configuration...');
+    if (isDevelopment) {
+      console.log('[Subscription] Loading Stripe configuration...');
+    }
     await loadStripeConfig();
 
     // Render subscription plans
-    console.log('[Subscription] Rendering subscription plans...');
+    if (isDevelopment) {
+      console.log('[Subscription] Rendering subscription plans...');
+    }
     renderSubscriptionPlans();
 
     // Set up manage billing button
-    console.log('[Subscription] Setting up billing portal...');
+    if (isDevelopment) {
+      console.log('[Subscription] Setting up billing portal...');
+    }
     setupBillingPortal();
 
-    console.log('[Subscription] Initialization complete');
+    if (isDevelopment) {
+      console.log('[Subscription] Initialization complete');
+    }
   } catch (error) {
     console.error('[Subscription] Error initializing subscription page:', error);
     console.error('[Subscription] Error stack:', error.stack);
@@ -160,12 +180,16 @@ async function initSubscriptionPage() {
  */
 async function checkAuth() {
   try {
-    console.log('[Subscription] Checking authentication...');
+    if (isDevelopment) {
+      console.log('[Subscription] Checking authentication...');
+    }
     const response = await fetch('/api/v1/auth/me', {
       credentials: 'include',
     });
 
-    console.log('[Subscription] Auth check response status:', response.status);
+    if (isDevelopment) {
+      console.log('[Subscription] Auth check response status:', response.status);
+    }
 
     if (!response.ok) {
       console.error('[Subscription] Auth check failed with status:', response.status);
@@ -173,7 +197,9 @@ async function checkAuth() {
     }
 
     const data = await response.json();
-    console.log('[Subscription] Auth check successful, user:', data.user?.email);
+    if (isDevelopment) {
+      console.log('[Subscription] Auth check successful, user:', data.user?.email);
+    }
 
     // Verify user has supplier role
     if (!data.user) {
@@ -194,12 +220,16 @@ async function checkAuth() {
  */
 async function loadSubscriptionStatus() {
   try {
-    console.log('[Subscription] Fetching subscription status from API...');
+    if (isDevelopment) {
+      console.log('[Subscription] Fetching subscription status from API...');
+    }
     const response = await fetch('/api/payments', {
       credentials: 'include',
     });
 
-    console.log('[Subscription] Subscription status response:', response.status);
+    if (isDevelopment) {
+      console.log('[Subscription] Subscription status response:', response.status);
+    }
 
     if (!response.ok) {
       console.error('[Subscription] Failed to load subscription status:', response.status);
@@ -207,7 +237,9 @@ async function loadSubscriptionStatus() {
     }
 
     const data = await response.json();
-    console.log('[Subscription] Payments data received:', data.payments?.length, 'payments');
+    if (isDevelopment) {
+      console.log('[Subscription] Payments data received:', data.payments?.length, 'payments');
+    }
 
     // Find active subscription
     const activeSubscription = data.payments.find(
@@ -219,12 +251,16 @@ async function loadSubscriptionStatus() {
     );
 
     if (activeSubscription) {
-      console.log(
-        '[Subscription] Active subscription found:',
-        activeSubscription.subscriptionDetails?.planId
-      );
+      if (isDevelopment) {
+        console.log(
+          '[Subscription] Active subscription found:',
+          activeSubscription.subscriptionDetails?.planId
+        );
+      }
     } else {
-      console.log('[Subscription] No active subscription found');
+      if (isDevelopment) {
+        console.log('[Subscription] No active subscription found');
+      }
     }
 
     currentSubscription = activeSubscription;
@@ -241,12 +277,16 @@ async function loadSubscriptionStatus() {
  */
 async function loadStripeConfig() {
   try {
-    console.log('[Subscription] Fetching Stripe configuration from API...');
+    if (isDevelopment) {
+      console.log('[Subscription] Fetching Stripe configuration from API...');
+    }
     const response = await fetch('/api/payments/config', {
       credentials: 'include',
     });
 
-    console.log('[Subscription] Stripe config response:', response.status);
+    if (isDevelopment) {
+      console.log('[Subscription] Stripe config response:', response.status);
+    }
 
     if (!response.ok) {
       console.error('[Subscription] Failed to load Stripe config:', response.status);
@@ -254,10 +294,12 @@ async function loadStripeConfig() {
     }
 
     const data = await response.json();
-    console.log(
-      '[Subscription] Stripe config loaded, intro pricing enabled:',
-      data.introPricingEnabled
-    );
+    if (isDevelopment) {
+      console.log(
+        '[Subscription] Stripe config loaded, intro pricing enabled:',
+        data.introPricingEnabled
+      );
+    }
 
     stripeConfig = data;
   } catch (error) {
@@ -385,7 +427,9 @@ function renderSubscriptionPlans() {
  * Handle subscription button click
  */
 async function handleSubscribe(planId) {
-  console.log('[Subscription] Handle subscribe clicked for plan:', planId);
+  if (isDevelopment) {
+    console.log('[Subscription] Handle subscribe clicked for plan:', planId);
+  }
 
   const plan = PLANS[planId];
   if (!plan) {
@@ -401,7 +445,9 @@ async function handleSubscribe(planId) {
     return;
   }
 
-  console.log('[Subscription] Selected plan:', plan.name, 'Price:', plan.price);
+  if (isDevelopment) {
+    console.log('[Subscription] Selected plan:', plan.name, 'Price:', plan.price);
+  }
 
   const button = document.querySelector(`button[data-plan-id="${planId}"]`);
   if (button) {
@@ -432,7 +478,9 @@ async function handleSubscribe(planId) {
       !plan.name.toLowerCase().includes('plus');
     if (stripeConfig?.proPriceId && isProfessionalPlan) {
       // Use subscription mode — prefer server-configured priceId
-      console.log('[Subscription] Using subscription mode with server priceId');
+      if (isDevelopment) {
+        console.log('[Subscription] Using subscription mode with server priceId');
+      }
       requestBody = {
         type: 'subscription',
         priceId: stripeConfig.proPriceId,
@@ -440,7 +488,9 @@ async function handleSubscribe(planId) {
       };
     } else if (plan.tier && plan.tier !== 'free') {
       // Generic subscription fallback: let the server derive the priceId from planId/planName
-      console.log('[Subscription] Using subscription mode (generic fallback)');
+      if (isDevelopment) {
+        console.log('[Subscription] Using subscription mode (generic fallback)');
+      }
       requestBody = {
         type: 'subscription',
         planName: plan.name,
@@ -451,7 +501,9 @@ async function handleSubscribe(planId) {
       return;
     }
 
-    console.log('[Subscription] Creating checkout session with:', requestBody);
+    if (isDevelopment) {
+      console.log('[Subscription] Creating checkout session with:', requestBody);
+    }
 
     const headers = {
       'Content-Type': 'application/json',
@@ -467,10 +519,14 @@ async function handleSubscribe(planId) {
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[Subscription] Checkout session response status:', response.status);
+    if (isDevelopment) {
+      console.log('[Subscription] Checkout session response status:', response.status);
+    }
 
     const data = await response.json();
-    console.log('[Subscription] Checkout session response data:', data);
+    if (isDevelopment) {
+      console.log('[Subscription] Checkout session response data:', data);
+    }
 
     if (!response.ok) {
       console.error('[Subscription] API error:', data.error || 'Unknown error');
@@ -480,7 +536,9 @@ async function handleSubscribe(planId) {
 
     // Redirect to Stripe checkout
     if (data.url) {
-      console.log('[Subscription] Redirecting to Stripe checkout:', data.url);
+      if (isDevelopment) {
+        console.log('[Subscription] Redirecting to Stripe checkout:', data.url);
+      }
       window.location.href = data.url;
     } else if (data.sessionId) {
       console.error('[Subscription] No URL, falling back to sessionId redirect');
@@ -516,7 +574,9 @@ function setupBillingPortal() {
  */
 async function openBillingPortal(event) {
   try {
-    console.log('[Subscription] Opening billing portal...');
+    if (isDevelopment) {
+      console.log('[Subscription] Opening billing portal...');
+    }
 
     const button = event.target;
     button.disabled = true;
@@ -533,10 +593,14 @@ async function openBillingPortal(event) {
       }),
     });
 
-    console.log('[Subscription] Portal session response status:', response.status);
+    if (isDevelopment) {
+      console.log('[Subscription] Portal session response status:', response.status);
+    }
 
     const data = await response.json();
-    console.log('[Subscription] Portal session response data:', data);
+    if (isDevelopment) {
+      console.log('[Subscription] Portal session response data:', data);
+    }
 
     if (!response.ok) {
       console.error('[Subscription] API error:', data.error || 'Unknown error');
@@ -546,7 +610,9 @@ async function openBillingPortal(event) {
 
     // Redirect to Stripe billing portal
     if (data.url) {
-      console.log('[Subscription] Redirecting to billing portal:', data.url);
+      if (isDevelopment) {
+        console.log('[Subscription] Redirecting to billing portal:', data.url);
+      }
       window.location.href = data.url;
     } else {
       console.error('[Subscription] No portal URL in response');
@@ -569,7 +635,9 @@ async function openBillingPortal(event) {
  * Show error message
  */
 function showError(message) {
-  console.log('[Subscription] Showing error:', message);
+  if (isDevelopment) {
+    console.log('[Subscription] Showing error:', message);
+  }
 
   const errorContainer = document.getElementById('error-message');
   if (errorContainer) {
@@ -597,7 +665,9 @@ function showError(message) {
  */
 // eslint-disable-next-line no-unused-vars
 function showSuccess(message) {
-  console.log('[Subscription] Showing success:', message);
+  if (isDevelopment) {
+    console.log('[Subscription] Showing success:', message);
+  }
 
   const successContainer = document.getElementById('success-message');
   if (successContainer) {
