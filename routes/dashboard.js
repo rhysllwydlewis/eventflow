@@ -9,6 +9,7 @@ const express = require('express');
 const path = require('path');
 const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
+const { apiLimiter } = require('../middleware/rateLimits');
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ const router = express.Router();
  * GET /dashboard/customer
  * Serve customer dashboard HTML page
  */
-router.get('/dashboard/customer', authRequired, async (req, res) => {
+router.get('/dashboard/customer', apiLimiter, authRequired, async (req, res) => {
   try {
     if (req.user.role !== 'customer') {
       return res.redirect('/auth.html');
@@ -32,7 +33,7 @@ router.get('/dashboard/customer', authRequired, async (req, res) => {
  * GET /dashboard/supplier
  * Serve supplier dashboard HTML page
  */
-router.get('/dashboard/supplier', authRequired, async (req, res) => {
+router.get('/dashboard/supplier', apiLimiter, authRequired, async (req, res) => {
   try {
     if (req.user.role !== 'supplier') {
       return res.redirect('/auth.html');
@@ -48,7 +49,7 @@ router.get('/dashboard/supplier', authRequired, async (req, res) => {
  * GET /admin
  * Serve admin dashboard HTML page
  */
-router.get('/admin', authRequired, async (req, res) => {
+router.get('/admin', apiLimiter, authRequired, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.redirect('/auth.html');
