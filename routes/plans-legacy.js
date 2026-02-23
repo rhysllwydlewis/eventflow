@@ -83,80 +83,105 @@ function planOwnerOnly(req, res, next) {
 // ---------- Plan Routes ----------
 
 router.get('/plan', applyAuthRequired, async (req, res) => {
-  if (req.user.role !== 'customer') {
-    return res.status(403).json({ error: 'Customers only' });
+  try {
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ error: 'Customers only' });
+    }
+    const plans = (await dbUnified.read('plans')).filter(p => p.userId === req.user.id);
+    const suppliers = (await dbUnified.read('suppliers')).filter(s => s.approved);
+    const items = plans.map(p => suppliers.find(s => s.id === p.supplierId)).filter(Boolean);
+    res.json({ items });
+  } catch (error) {
+    logger.error('Error reading plan:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  const plans = (await dbUnified.read('plans')).filter(p => p.userId === req.user.id);
-  const suppliers = (await dbUnified.read('suppliers')).filter(s => s.approved);
-  const items = plans.map(p => suppliers.find(s => s.id === p.supplierId)).filter(Boolean);
-  res.json({ items });
 });
 
 router.post('/plan', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  if (req.user.role !== 'customer') {
-    return res.status(403).json({ error: 'Customers only' });
+  try {
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ error: 'Customers only' });
+    }
+    const { supplierId } = req.body || {};
+    if (!supplierId) {
+      return res.status(400).json({ error: 'Missing supplierId' });
+    }
+    const s = (await dbUnified.read('suppliers')).find(x => x.id === supplierId && x.approved);
+    if (!s) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+    const all = await dbUnified.read('plans');
+    if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) {
+      all.push({
+        id: uid('pln'),
+        userId: req.user.id,
+        supplierId,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    await dbUnified.write('plans', all);
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error saving plan:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  const { supplierId } = req.body || {};
-  if (!supplierId) {
-    return res.status(400).json({ error: 'Missing supplierId' });
-  }
-  const s = (await dbUnified.read('suppliers')).find(x => x.id === supplierId && x.approved);
-  if (!s) {
-    return res.status(404).json({ error: 'Supplier not found' });
-  }
-  const all = await dbUnified.read('plans');
-  if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) {
-    all.push({
-      id: uid('pln'),
-      userId: req.user.id,
-      supplierId,
-      createdAt: new Date().toISOString(),
-    });
-  }
-  await dbUnified.write('plans', all);
-  res.json({ ok: true });
 });
 
 router.delete('/plan/:supplierId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  if (req.user.role !== 'customer') {
-    return res.status(403).json({ error: 'Customers only' });
+  try {
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ error: 'Customers only' });
+    }
+    const all = (await dbUnified.read('plans')).filter(
+      p => !(p.userId === req.user.id && p.supplierId === req.params.supplierId)
+    );
+    await dbUnified.write('plans', all);
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error deleting plan:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  const all = (await dbUnified.read('plans')).filter(
-    p => !(p.userId === req.user.id && p.supplierId === req.params.supplierId)
-  );
-  await dbUnified.write('plans', all);
-  res.json({ ok: true });
 });
 
 // ---------- Notes Routes ----------
 
 router.get('/notes', applyAuthRequired, async (req, res) => {
-  if (req.user.role !== 'customer') {
-    return res.status(403).json({ error: 'Customers only' });
+  try {
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ error: 'Customers only' });
+    }
+    const n = (await dbUnified.read('notes')).find(x => x.userId === req.user.id);
+    res.json({ text: (n && n.text) || '' });
+  } catch (error) {
+    logger.error('Error reading notes:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  const n = (await dbUnified.read('notes')).find(x => x.userId === req.user.id);
-  res.json({ text: (n && n.text) || '' });
 });
 
 router.post('/notes', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  if (req.user.role !== 'customer') {
-    return res.status(403).json({ error: 'Customers only' });
+  try {
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ error: 'Customers only' });
+    }
+    const all = await dbUnified.read('notes');
+    const i = all.findIndex(x => x.userId === req.user.id);
+    if (i >= 0) {
+      all[i].text = String((req.body && req.body.text) || '');
+      all[i].updatedAt = new Date().toISOString();
+    } else {
+      all.push({
+        id: uid('nte'),
+        userId: req.user.id,
+        text: String((req.body && req.body.text) || ''),
+        createdAt: new Date().toISOString(),
+      });
+    }
+    await dbUnified.write('notes', all);
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error saving notes:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  const all = await dbUnified.read('notes');
-  const i = all.findIndex(x => x.userId === req.user.id);
-  if (i >= 0) {
-    all[i].text = String((req.body && req.body.text) || '');
-    all[i].updatedAt = new Date().toISOString();
-  } else {
-    all.push({
-      id: uid('nte'),
-      userId: req.user.id,
-      text: String((req.body && req.body.text) || ''),
-      createdAt: new Date().toISOString(),
-    });
-  }
-  await dbUnified.write('notes', all);
-  res.json({ ok: true });
 });
 
 // ---------- Plan Save & Get Routes ----------
@@ -185,12 +210,17 @@ router.post(
 );
 
 router.get('/me/plan', applyAuthRequired, planOwnerOnly, async (req, res) => {
-  const plans = await dbUnified.read('plans');
-  const p = plans.find(x => x.userId === req.userId);
-  if (!p) {
-    return res.json({ ok: true, plan: null });
+  try {
+    const plans = await dbUnified.read('plans');
+    const p = plans.find(x => x.userId === req.userId);
+    if (!p) {
+      return res.json({ ok: true, plan: null });
+    }
+    res.json({ ok: true, plan: p.plan });
+  } catch (error) {
+    logger.error('Error reading saved plan:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  res.json({ ok: true, plan: p.plan });
 });
 
 // ---------- Guest Plan Creation ----------
@@ -302,50 +332,58 @@ router.post(
 // ---------- PDF Export ----------
 
 router.get('/plan/export/pdf', applyAuthRequired, planOwnerOnly, async (req, res) => {
-  const plans = await dbUnified.read('plans');
-  const p = plans.find(x => x.userId === req.userId);
-  if (!p) {
-    return res.status(400).json({ error: 'No plan saved' });
+  try {
+    const plans = await dbUnified.read('plans');
+    const p = plans.find(x => x.userId === req.userId);
+    if (!p) {
+      return res.status(400).json({ error: 'No plan saved' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    // eslint-disable-next-line no-unused-vars
+    const _packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=event_plan.pdf');
+
+    const doc = new PDFDocument({ margin: 50 });
+    doc.pipe(res);
+
+    doc.fontSize(22).text('EventFlow — Event Plan', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(14).text(`Generated: ${new Date().toLocaleString()}`);
+    doc.moveDown();
+
+    doc.fontSize(16).text('Event Summary', { underline: true });
+    doc.fontSize(12).text(JSON.stringify(p.plan.summary || {}, null, 2));
+    doc.moveDown();
+
+    doc.fontSize(16).text('Timeline', { underline: true });
+    doc.fontSize(12).text(JSON.stringify(p.plan.timeline || [], null, 2));
+    doc.moveDown();
+
+    doc.fontSize(16).text('Suppliers', { underline: true });
+    const supIds = (p.plan.suppliers || []).map(s => s.id);
+    suppliers
+      .filter(s => supIds.includes(s.id))
+      .forEach(s => {
+        doc.fontSize(14).text(s.name);
+        doc.fontSize(12).text(s.category);
+        doc.moveDown();
+      });
+
+    doc.fontSize(16).text('Notes', { underline: true });
+    doc.fontSize(12).text(p.plan.notes || 'None');
+    doc.moveDown();
+
+    doc.end();
+  } catch (error) {
+    logger.error('Error generating PDF export:', error);
+    // Only send error response if headers not already sent (PDF streaming may have started)
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   }
-
-  const suppliers = await dbUnified.read('suppliers');
-  // eslint-disable-next-line no-unused-vars
-  const _packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
-
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', 'attachment; filename=event_plan.pdf');
-
-  const doc = new PDFDocument({ margin: 50 });
-  doc.pipe(res);
-
-  doc.fontSize(22).text('EventFlow — Event Plan', { align: 'center' });
-  doc.moveDown();
-  doc.fontSize(14).text(`Generated: ${new Date().toLocaleString()}`);
-  doc.moveDown();
-
-  doc.fontSize(16).text('Event Summary', { underline: true });
-  doc.fontSize(12).text(JSON.stringify(p.plan.summary || {}, null, 2));
-  doc.moveDown();
-
-  doc.fontSize(16).text('Timeline', { underline: true });
-  doc.fontSize(12).text(JSON.stringify(p.plan.timeline || [], null, 2));
-  doc.moveDown();
-
-  doc.fontSize(16).text('Suppliers', { underline: true });
-  const supIds = (p.plan.suppliers || []).map(s => s.id);
-  suppliers
-    .filter(s => supIds.includes(s.id))
-    .forEach(s => {
-      doc.fontSize(14).text(s.name);
-      doc.fontSize(12).text(s.category);
-      doc.moveDown();
-    });
-
-  doc.fontSize(16).text('Notes', { underline: true });
-  doc.fontSize(12).text(p.plan.notes || 'None');
-  doc.moveDown();
-
-  doc.end();
 });
 
 module.exports = router;
