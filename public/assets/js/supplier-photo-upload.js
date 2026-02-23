@@ -6,6 +6,8 @@
  * The backend uses base64 encoding for image transfer and stores files on the filesystem.
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 class SupplierPhotoUpload {
   constructor() {
     this.uploadedPhotos = [];
@@ -81,7 +83,9 @@ class SupplierPhotoUpload {
       };
 
       this.uploadedPhotos.push(photoMetadata);
-      console.log('Photo uploaded successfully:', photoMetadata);
+      if (isDevelopment) {
+        console.log('Photo uploaded successfully:', photoMetadata);
+      }
       return photoMetadata;
     } catch (error) {
       console.error('Error uploading photo:', error);
@@ -111,7 +115,9 @@ class SupplierPhotoUpload {
       }
 
       this.uploadedPhotos = this.uploadedPhotos.filter(p => p.id !== photoId);
-      console.log('Photo deleted successfully:', photoId);
+      if (isDevelopment) {
+        console.log('Photo deleted successfully:', photoId);
+      }
     } catch (error) {
       console.error('Error deleting photo:', error);
       throw error;

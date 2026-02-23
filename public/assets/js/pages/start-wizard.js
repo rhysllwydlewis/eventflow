@@ -3,6 +3,8 @@
  * Multi-step planning wizard implementation
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -142,7 +144,9 @@
       const response = await fetch('/api/v1/categories');
       const data = await response.json();
       // Categories loaded successfully
-      console.log('Categories loaded:', data.items.length);
+      if (isDevelopment) {
+        console.log('Categories loaded:', data.items.length);
+      }
     } catch (err) {
       console.error('Error loading categories:', err);
     }

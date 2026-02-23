@@ -3,6 +3,8 @@
  * Toggle between monthly and annual pricing
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -25,7 +27,9 @@
     // Store original monthly prices
     storePrices();
 
-    console.log('✓ Annual billing toggle initialized');
+    if (isDevelopment) {
+      console.log('✓ Annual billing toggle initialized');
+    }
   }
 
   /**

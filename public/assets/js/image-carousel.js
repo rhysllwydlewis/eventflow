@@ -3,6 +3,8 @@
  * Simple, accessible image carousel for galleries
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -34,7 +36,9 @@
     });
 
     createCarouselModal();
-    console.log(`✓ Image carousel initialized with ${images.length} images`);
+    if (isDevelopment) {
+      console.log(`✓ Image carousel initialized with ${images.length} images`);
+    }
   }
 
   /**

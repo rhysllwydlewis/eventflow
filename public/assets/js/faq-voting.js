@@ -3,6 +3,8 @@
  * Allow users to vote on FAQ helpfulness
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -21,7 +23,9 @@
       addVotingButtons(item, faqId);
     });
 
-    console.log(`✓ FAQ voting initialized for ${faqItems.length} items`);
+    if (isDevelopment) {
+      console.log(`✓ FAQ voting initialized for ${faqItems.length} items`);
+    }
   }
 
   /**
@@ -105,7 +109,9 @@
         votedBtn.classList.add('voted');
       }
 
-      console.log(`✓ FAQ vote submitted: ${faqId} - ${helpful ? 'helpful' : 'not helpful'}`);
+      if (isDevelopment) {
+        console.log(`✓ FAQ vote submitted: ${faqId} - ${helpful ? 'helpful' : 'not helpful'}`);
+      }
     } catch (error) {
       console.error('Error submitting FAQ vote:', error);
       alert('Failed to submit your feedback. Please try again.');

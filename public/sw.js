@@ -3,6 +3,8 @@
  * Provides offline functionality and caching strategies
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const CACHE_VERSION = 'eventflow-v18.4.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
@@ -41,17 +43,23 @@ async function limitCacheSize(cacheName, maxSize) {
  * Install event - cache static assets
  */
 self.addEventListener('install', event => {
-  console.log('[Service Worker] Installing...');
+  if (isDevelopment) {
+    console.log('[Service Worker] Installing...');
+  }
 
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
       .then(cache => {
-        console.log('[Service Worker] Caching static assets');
+        if (isDevelopment) {
+          console.log('[Service Worker] Caching static assets');
+        }
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        console.log('[Service Worker] Skip waiting');
+        if (isDevelopment) {
+          console.log('[Service Worker] Skip waiting');
+        }
         return self.skipWaiting();
       })
       .catch(error => {
@@ -64,7 +72,9 @@ self.addEventListener('install', event => {
  * Activate event - clean up old caches
  */
 self.addEventListener('activate', event => {
-  console.log('[Service Worker] Activating...');
+  if (isDevelopment) {
+    console.log('[Service Worker] Activating...');
+  }
 
   event.waitUntil(
     caches
@@ -74,13 +84,17 @@ self.addEventListener('activate', event => {
           keys
             .filter(key => key !== STATIC_CACHE && key !== DYNAMIC_CACHE && key !== IMAGE_CACHE)
             .map(key => {
-              console.log('[Service Worker] Deleting old cache:', key);
+              if (isDevelopment) {
+                console.log('[Service Worker] Deleting old cache:', key);
+              }
               return caches.delete(key);
             })
         );
       })
       .then(() => {
-        console.log('[Service Worker] Claiming clients');
+        if (isDevelopment) {
+          console.log('[Service Worker] Claiming clients');
+        }
         return self.clients.claim();
       })
   );
@@ -287,7 +301,9 @@ self.addEventListener('fetch', event => {
  * Background sync event - handle form submissions while offline
  */
 self.addEventListener('sync', event => {
-  console.log('[Service Worker] Background sync:', event.tag);
+  if (isDevelopment) {
+    console.log('[Service Worker] Background sync:', event.tag);
+  }
 
   if (event.tag === 'sync-form-data') {
     event.waitUntil(
@@ -302,7 +318,9 @@ self.addEventListener('sync', event => {
  * Push notification event
  */
 self.addEventListener('push', event => {
-  console.log('[Service Worker] Push received');
+  if (isDevelopment) {
+    console.log('[Service Worker] Push received');
+  }
 
   const data = event.data ? event.data.json() : {};
   const title = data.title || 'EventFlow Notification';
@@ -322,7 +340,9 @@ self.addEventListener('push', event => {
  * Notification click event
  */
 self.addEventListener('notificationclick', event => {
-  console.log('[Service Worker] Notification click');
+  if (isDevelopment) {
+    console.log('[Service Worker] Notification click');
+  }
 
   event.notification.close();
 
@@ -335,7 +355,9 @@ self.addEventListener('notificationclick', event => {
  * Message event - handle messages from clients
  */
 self.addEventListener('message', event => {
-  console.log('[Service Worker] Message received:', event.data);
+  if (isDevelopment) {
+    console.log('[Service Worker] Message received:', event.data);
+  }
 
   if (event.data.action === 'skipWaiting') {
     self.skipWaiting();
@@ -361,6 +383,8 @@ async function syncFormData() {
   // 2. Get pending form submissions
   // 3. Send them to the server
   // 4. Remove them from IndexedDB on success
-  console.log('[Service Worker] Syncing form data...');
+  if (isDevelopment) {
+    console.log('[Service Worker] Syncing form data...');
+  }
   return Promise.resolve();
 }

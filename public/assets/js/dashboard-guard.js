@@ -4,6 +4,8 @@
  * Prevents users from accessing dashboards they don't have permission for
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (async function () {
   'use strict';
 
@@ -170,13 +172,15 @@
 
     // Log user data in development mode for debugging
     if (window.location.hostname === 'localhost') {
-      console.log('Dashboard guard check:', {
-        currentPath,
-        requiredRole,
-        userId: user?.id,
-        userRole: user?.role,
-        roleMatch: user?.role === requiredRole,
-      });
+      if (isDevelopment) {
+        console.log('Dashboard guard check:', {
+          currentPath,
+          requiredRole,
+          userId: user?.id,
+          userRole: user?.role,
+          roleMatch: user?.role === requiredRole,
+        });
+      }
     }
 
     if (!user || !user.id) {

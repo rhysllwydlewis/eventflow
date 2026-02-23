@@ -3,6 +3,8 @@
  * Global keyboard shortcuts for improved navigation and UX
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -42,7 +44,9 @@
   function init() {
     document.addEventListener('keydown', handleKeyDown);
     createHelpModal();
-    console.log('✓ Keyboard shortcuts initialized');
+    if (isDevelopment) {
+      console.log('✓ Keyboard shortcuts initialized');
+    }
   }
 
   /**

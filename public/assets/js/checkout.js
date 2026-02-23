@@ -3,6 +3,8 @@
  * Handles plan selection and Stripe checkout session creation
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -114,7 +116,9 @@
 
       // Initialize Stripe
       stripe = Stripe(config.publishableKey);
-      console.log('✅ Stripe.js initialized');
+      if (isDevelopment) {
+        console.log('✅ Stripe.js initialized');
+      }
       return true;
     } catch (error) {
       console.error('Failed to initialize Stripe:', error);
@@ -342,7 +346,9 @@
           planName: plan.name,
         };
       }
-      console.log(`[Checkout] Mode: ${requestBody.type} for plan: ${planKey}`);
+      if (isDevelopment) {
+        console.log(`[Checkout] Mode: ${requestBody.type} for plan: ${planKey}`);
+      }
 
       const response = await fetch('/api/v1/payments/create-checkout-session', {
         method: 'POST',

@@ -3,6 +3,8 @@
  * Handles message queuing, retry logic, and localStorage persistence
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 class OfflineQueueManager {
   constructor() {
     this.storageKey = 'eventflow_message_queue';
@@ -35,7 +37,9 @@ class OfflineQueueManager {
       }
     }, 30000);
 
-    console.log('✅ Offline queue manager initialized');
+    if (isDevelopment) {
+      console.log('✅ Offline queue manager initialized');
+    }
   }
 
   /**
@@ -270,7 +274,9 @@ class OfflineQueueManager {
    * Handle online event
    */
   onOnline() {
-    console.log('🌐 Connection restored');
+    if (isDevelopment) {
+      console.log('🌐 Connection restored');
+    }
     this.updateConnectionStatus(true);
     this.processQueue();
   }
@@ -279,7 +285,9 @@ class OfflineQueueManager {
    * Handle offline event
    */
   onOffline() {
-    console.log('📴 Connection lost');
+    if (isDevelopment) {
+      console.log('📴 Connection lost');
+    }
     this.updateConnectionStatus(false);
   }
 
