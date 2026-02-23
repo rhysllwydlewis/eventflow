@@ -35,6 +35,7 @@ const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
 // This will be set by the main server.js when mounting these routes (legacy compatibility)
 // eslint-disable-next-line no-unused-vars
 let _sendMailFn = null;
+let _verifyHCaptcha = null;
 
 /**
  * Set the sendMail function (injected from server.js) - legacy compatibility
@@ -42,6 +43,16 @@ let _sendMailFn = null;
  */
 function setSendMailFunction(fn) {
   _sendMailFn = fn;
+}
+
+/**
+ * Inject shared dependencies
+ * @param {Object} deps - Dependencies object
+ */
+function initializeDependencies(deps) {
+  if (deps.verifyHCaptcha) {
+    _verifyHCaptcha = deps.verifyHCaptcha;
+  }
 }
 
 /**
@@ -164,7 +175,18 @@ router.post(
       jobTitle,
       website,
       socials,
+      captchaToken,
     } = req.body || {};
+
+    // Verify hCaptcha token when the verifier is available
+    if (_verifyHCaptcha) {
+      const captchaResult = await _verifyHCaptcha(captchaToken);
+      if (!captchaResult.success) {
+        return res
+          .status(400)
+          .json({ error: captchaResult.error || 'CAPTCHA verification failed' });
+      }
+    }
 
     // Support both new (firstName/lastName) and legacy (name) formats
     const userFirstName = firstName || '';
@@ -1390,3 +1412,4 @@ router.put('/profile', authRequired, csrfProtection, async (req, res) => {
 
 module.exports = router;
 module.exports.setSendMailFunction = setSendMailFunction;
+module.exports.initializeDependencies = initializeDependencies;

@@ -74,6 +74,12 @@ function exportToCSV(data, options = {}) {
 function exportToExcel(data, options = {}) {
   const { filename = 'export.xlsx', sheetName = 'Sheet1', headers = null } = options;
 
+  // Feature flag: disable XLSX export in hardened environments
+  if (process.env.DISABLE_XLSX_EXPORT === 'true') {
+    logger.info('XLSX export disabled by DISABLE_XLSX_EXPORT flag, falling back to CSV');
+    return exportToCSV(data, { filename: filename.replace('.xlsx', '.csv'), headers });
+  }
+
   try {
     // eslint-disable-next-line global-require, node/no-missing-require, node/no-unpublished-require
     const XLSX = require('xlsx');
@@ -252,6 +258,12 @@ function exportMiddleware(dataFetcher, defaultOptions = {}) {
           break;
         case 'excel':
         case 'xlsx':
+          if (process.env.DISABLE_XLSX_EXPORT === 'true') {
+            return res.status(400).json({
+              error: 'XLSX export is disabled in this environment',
+              supportedFormats: ['csv', 'pdf'],
+            });
+          }
           result = exportToExcel(data, options);
           break;
         case 'pdf':

@@ -29,6 +29,9 @@ function initSentry(app) {
     Sentry.init({
       dsn: sentryDsn,
       environment,
+      release: process.env.npm_package_version
+        ? `eventflow@${process.env.npm_package_version}`
+        : undefined,
       // Performance monitoring
       tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
       // Set sampling rate for profiling

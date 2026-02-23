@@ -4809,6 +4809,11 @@ document.addEventListener('DOMContentLoaded', () => {
             socials,
           };
 
+          // Include hCaptcha token if the widget was rendered
+          if (window.hcaptcha && typeof window.__regHCaptchaWidgetId !== 'undefined') {
+            payload.captchaToken = window.hcaptcha.getResponse(window.__regHCaptchaWidgetId);
+          }
+
           const r = await fetch('/api/v1/auth/register', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),

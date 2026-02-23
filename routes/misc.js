@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const validator = require('validator');
 const logger = require('../utils/logger');
 const router = express.Router();
 
@@ -177,6 +178,39 @@ router.post('/verify-captcha', applyWriteLimiter, async (req, res) => {
     const statusCode = result.error === 'CAPTCHA verification not configured' ? 500 : 400;
     return res.status(statusCode).json(result);
   }
+});
+
+// ---------- Contact Form ----------
+
+router.post('/contact', applyWriteLimiter, async (req, res) => {
+  const { name, email, message, captchaToken } = req.body || {};
+
+  // Validate required fields
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: 'Name, email, and message are required' });
+  }
+
+  // Basic email format check
+  if (!validator.isEmail(String(email))) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  // Verify hCaptcha
+  const captchaResult = await verifyHCaptcha(captchaToken);
+  if (!captchaResult.success) {
+    return res.status(400).json({ error: captchaResult.error || 'CAPTCHA verification failed' });
+  }
+
+  // Log the contact enquiry (email sending handled separately if postmark is configured)
+  logger.info('Contact form submission', {
+    name: String(name).slice(0, 100),
+    email: String(email).slice(0, 200),
+  });
+
+  return res.json({
+    success: true,
+    message: 'Thank you for your message. We will be in touch soon.',
+  });
 });
 
 // ---------- Settings ----------

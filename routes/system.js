@@ -171,6 +171,8 @@ router.get('/config', applyAuthLimiter, async (req, res) => {
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
+    sentryDsn: process.env.SENTRY_DSN_FRONTEND || '',
+    hcaptchaSitekey: process.env.HCAPTCHA_SITE_KEY || '',
   });
 });
 
