@@ -134,78 +134,83 @@ router.get('/users', authRequired, roleRequired('admin'), async (req, res) => {
  * Create a new user (admin only)
  */
 router.post('/users', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  const { name, email, password, role = 'customer' } = req.body || {};
+  try {
+    const { name, email, password, role = 'customer' } = req.body || {};
 
-  // Validate required fields
-  if (!name || !email || !password) {
-    return res
-      .status(400)
-      .json({ error: 'Missing required fields: name, email, and password are required' });
-  }
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ error: 'Missing required fields: name, email, and password are required' });
+    }
 
-  // Validate email format
-  if (!validator.isEmail(String(email))) {
-    return res.status(400).json({ error: 'Invalid email format' });
-  }
+    // Validate email format
+    if (!validator.isEmail(String(email))) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
 
-  // Validate password strength
-  if (!passwordOk(password)) {
-    return res.status(400).json({
-      error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
+    // Validate password strength
+    if (!passwordOk(password)) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
+      });
+    }
+
+    // Validate role
+    const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
+
+    // Check if user already exists
+    const users = await dbUnified.read('users');
+    if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+      return res.status(409).json({ error: 'A user with this email already exists' });
+    }
+
+    // Create new user
+    const user = {
+      id: uid('usr'),
+      name: String(name).trim().slice(0, MAX_NAME_LENGTH),
+      email: String(email).toLowerCase(),
+      role: roleFinal,
+      passwordHash: bcrypt.hashSync(password, 10),
+      notify: true,
+      marketingOptIn: false,
+      verified: true, // Admin-created users are pre-verified
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.id, // Track who created the user
+    };
+
+    users.push(user);
+    await dbUnified.write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_CREATED,
+      targetType: 'user',
+      targetId: user.id,
+      details: {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     });
+
+    res.json({
+      success: true,
+      message: 'User created successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        verified: user.verified,
+      },
+    });
+  } catch (error) {
+    logger.error('Error creating user:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  // Validate role
-  const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
-
-  // Check if user already exists
-  const users = await dbUnified.read('users');
-  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
-    return res.status(409).json({ error: 'A user with this email already exists' });
-  }
-
-  // Create new user
-  const user = {
-    id: uid('usr'),
-    name: String(name).trim().slice(0, MAX_NAME_LENGTH),
-    email: String(email).toLowerCase(),
-    role: roleFinal,
-    passwordHash: bcrypt.hashSync(password, 10),
-    notify: true,
-    marketingOptIn: false,
-    verified: true, // Admin-created users are pre-verified
-    createdAt: new Date().toISOString(),
-    createdBy: req.user.id, // Track who created the user
-  };
-
-  users.push(user);
-  await dbUnified.write('users', users);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_CREATED,
-    targetType: 'user',
-    targetId: user.id,
-    details: {
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    },
-  });
-
-  res.json({
-    success: true,
-    message: 'User created successfully',
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      verified: user.verified,
-    },
-  });
 });
 
 /**
@@ -390,20 +395,25 @@ router.get('/users/search', authRequired, roleRequired('admin'), async (req, res
  * Export marketing opt-in users as CSV
  */
 router.get('/marketing-export', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = (await dbUnified.read('users')).filter(u => u.marketingOptIn);
-  const header = 'name,email,role\n';
-  const rows = users
-    .map(u => {
-      const name = (u.name || '').replace(/"/g, '""');
-      const email = (u.email || '').replace(/"/g, '""');
-      const role = (u.role || '').replace(/"/g, '""');
-      return `"${name}","${email}","${role}"`;
-    })
-    .join('\n');
-  const csv = header + rows + (rows ? '\n' : '');
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', 'attachment; filename="eventflow-marketing.csv"');
-  res.send(csv);
+  try {
+    const users = (await dbUnified.read('users')).filter(u => u.marketingOptIn);
+    const header = 'name,email,role\n';
+    const rows = users
+      .map(u => {
+        const name = (u.name || '').replace(/"/g, '""');
+        const email = (u.email || '').replace(/"/g, '""');
+        const role = (u.role || '').replace(/"/g, '""');
+        return `"${name}","${email}","${role}"`;
+      })
+      .join('\n');
+    const csv = header + rows + (rows ? '\n' : '');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="eventflow-marketing.csv"');
+    res.send(csv);
+  } catch (error) {
+    logger.error('Error exporting marketing users:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 /**
@@ -411,20 +421,25 @@ router.get('/marketing-export', authRequired, roleRequired('admin'), async (req,
  * Export all users as CSV
  */
 router.get('/users-export', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = await dbUnified.read('users');
-  const header = 'id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt\n';
-  const rows = users
-    .map(u => {
-      const esc = v => String(v ?? '').replace(/"/g, '""');
-      const verified = u.verified ? 'yes' : 'no';
-      const marketing = u.marketingOptIn ? 'yes' : 'no';
-      return `"${esc(u.id)}","${esc(u.name)}","${esc(u.email)}","${esc(u.role)}","${verified}","${marketing}","${esc(u.createdAt)}","${esc(u.lastLoginAt || '')}"`;
-    })
-    .join('\n');
-  const csv = header + rows + (rows ? '\n' : '');
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', 'attachment; filename="eventflow-users.csv"');
-  res.send(csv);
+  try {
+    const users = await dbUnified.read('users');
+    const header = 'id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt\n';
+    const rows = users
+      .map(u => {
+        const esc = v => String(v ?? '').replace(/"/g, '""');
+        const verified = u.verified ? 'yes' : 'no';
+        const marketing = u.marketingOptIn ? 'yes' : 'no';
+        return `"${esc(u.id)}","${esc(u.name)}","${esc(u.email)}","${esc(u.role)}","${verified}","${marketing}","${esc(u.createdAt)}","${esc(u.lastLoginAt || '')}"`;
+      })
+      .join('\n');
+    const csv = header + rows + (rows ? '\n' : '');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="eventflow-users.csv"');
+    res.send(csv);
+  } catch (error) {
+    logger.error('Error exporting users:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ---------- User Management ----------

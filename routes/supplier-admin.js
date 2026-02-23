@@ -83,15 +83,20 @@ function applyCsrfProtection(req, res, next) {
  * List all suppliers with Pro status
  */
 router.get('/suppliers', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
-  const raw = await dbUnified.read('suppliers');
-  const items = await Promise.all(
-    raw.map(async s => ({
-      ...s,
-      isPro: await supplierIsProActive(s),
-      proExpiresAt: s.proExpiresAt || null,
-    }))
-  );
-  res.json({ items });
+  try {
+    const raw = await dbUnified.read('suppliers');
+    const items = await Promise.all(
+      raw.map(async s => ({
+        ...s,
+        isPro: await supplierIsProActive(s),
+        proExpiresAt: s.proExpiresAt || null,
+      }))
+    );
+    res.json({ items });
+  } catch (error) {
+    logger.error('Error reading suppliers for admin:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 /**
