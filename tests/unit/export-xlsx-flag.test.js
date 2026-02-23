@@ -5,7 +5,7 @@
 
 'use strict';
 
-const { exportToCSV, exportToExcel, exportMiddleware } = require('../../utils/export');
+const { exportToExcel, exportMiddleware } = require('../../utils/export');
 
 const SAMPLE_DATA = [
   { name: 'Alice', email: 'alice@example.com', score: 90 },
@@ -104,10 +104,7 @@ describe('Export utility – DISABLE_XLSX_EXPORT feature flag', () => {
       const { req, res, next } = makeReqRes('xlsx');
 
       // Intercept send to avoid actually writing buffer
-      let sent = false;
-      res.send = () => {
-        sent = true;
-      };
+      res.send = () => {};
 
       const middleware = exportMiddleware(async () => SAMPLE_DATA);
       await middleware(req, res, next);
