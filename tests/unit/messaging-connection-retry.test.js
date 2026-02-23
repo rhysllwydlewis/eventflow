@@ -14,10 +14,7 @@ const messagesHtmlHasRetryLogic = messagesHtml.includes('async function setupRea
 
 (messagesHtmlHasRetryLogic ? describe : describe.skip)('Messaging Connection Retry Logic', () => {
   describe('messages.html setupRealtimeUpdates function', () => {
-    const messagesHtml = fs.readFileSync(
-      path.join(process.cwd(), 'public/messages.html'),
-      'utf8'
-    );
+    const messagesHtml = fs.readFileSync(path.join(process.cwd(), 'public/messages.html'), 'utf8');
 
     it('increases max retries from 10 to 30', () => {
       const setupFn = messagesHtml
@@ -81,7 +78,9 @@ const messagesHtmlHasRetryLogic = messagesHtml.includes('async function setupRea
         .split('function startPollingFallback()')[1]
         .split('function ')[0];
 
-      expect(pollingFn).toContain('if (window.messagingSystem && window.messagingSystem.isConnected)');
+      expect(pollingFn).toContain(
+        'if (window.messagingSystem && window.messagingSystem.isConnected)'
+      );
       expect(pollingFn).toContain('clearInterval(window.messagingPollTimer)');
       expect(pollingFn).toContain("showConnectionStatus('connected')");
     });
@@ -98,7 +97,7 @@ const messagesHtmlHasRetryLogic = messagesHtml.includes('async function setupRea
   describe('showConnectionStatus function', () => {
     it('displays status messages for all states', () => {
       const statusFn = messagesHtml
-        .split('function showConnectionStatus(status, message = \'\')')[1]
+        .split("function showConnectionStatus(status, message = '')")[1]
         .split('function ')[0];
 
       expect(statusFn).toContain('Connected - Real-time updates active');
@@ -109,7 +108,7 @@ const messagesHtmlHasRetryLogic = messagesHtml.includes('async function setupRea
 
     it('shows reconnect button for polling and error states', () => {
       const statusFn = messagesHtml
-        .split('function showConnectionStatus(status, message = \'\')')[1]
+        .split("function showConnectionStatus(status, message = '')")[1]
         .split('function ')[0];
 
       expect(statusFn).toContain("(status === 'polling' || status === 'error')");
@@ -118,7 +117,7 @@ const messagesHtmlHasRetryLogic = messagesHtml.includes('async function setupRea
 
     it('auto-hides after 5 seconds when connected', () => {
       const statusFn = messagesHtml
-        .split('function showConnectionStatus(status, message = \'\')')[1]
+        .split("function showConnectionStatus(status, message = '')")[1]
         .split('function ')[0];
 
       expect(statusFn).toContain("if (status === 'connected')");
@@ -141,7 +140,9 @@ const messagesHtmlHasRetryLogic = messagesHtml.includes('async function setupRea
         .split('function setupRealtimeListeners()')[1]
         .split('function ')[0];
 
-      expect(listenersFn).toContain("EFToast.warning('Connection lost. Falling back to 10-second updates.'");
+      expect(listenersFn).toContain(
+        "EFToast.warning('Connection lost. Falling back to 10-second updates.'"
+      );
     });
 
     it('starts polling fallback on disconnect', () => {
@@ -174,7 +175,9 @@ const messagesHtmlHasRetryLogic = messagesHtml.includes('async function setupRea
 
   describe('Manual reconnect handler', () => {
     it('attaches click handler to reconnect button', () => {
-      expect(messagesHtml).toContain("getElementById('manual-reconnect-btn')?.addEventListener('click'");
+      expect(messagesHtml).toContain(
+        "getElementById('manual-reconnect-btn')?.addEventListener('click'"
+      );
     });
 
     it('stops polling before retrying connection', () => {
@@ -203,7 +206,6 @@ const messagingCssExists = fs.existsSync(messagingCssPath);
 const messagingCss = messagingCssExists ? fs.readFileSync(messagingCssPath, 'utf8') : '';
 
 (messagingCssExists ? describe : describe.skip)('Connection Status CSS', () => {
-
   it('includes connection status styles', () => {
     expect(messagingCss).toContain('.connection-status');
     expect(messagingCss).toContain('.connection-indicator');

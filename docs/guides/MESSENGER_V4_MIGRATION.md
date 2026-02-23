@@ -12,11 +12,11 @@ into the Messenger v4 data model (`conversations_v4` / `chat_messages_v4` collec
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `MONGODB_URI` | MongoDB connection string (required) |
-| `DRY_RUN` | Set to `true` to preview changes without writing (optional) |
-| `BATCH_SIZE` | Number of threads to process per batch (default: 100) |
+| Variable      | Description                                                 |
+| ------------- | ----------------------------------------------------------- |
+| `MONGODB_URI` | MongoDB connection string (required)                        |
+| `DRY_RUN`     | Set to `true` to preview changes without writing (optional) |
+| `BATCH_SIZE`  | Number of threads to process per batch (default: 100)       |
 
 ## Running the Migration
 

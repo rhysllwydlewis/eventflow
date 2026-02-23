@@ -13,7 +13,7 @@ describe('Marketplace v2 dual-write functionality', () => {
 
     it('has writeThreadToMongoDB helper function', () => {
       expect(threadsJs).toContain('async function writeThreadToMongoDB(thread, db)');
-      expect(threadsJs).toContain('const threadsCollection = db.collection(\'threads\')');
+      expect(threadsJs).toContain("const threadsCollection = db.collection('threads')");
     });
 
     it('writeThreadToMongoDB builds participants array', () => {
@@ -35,7 +35,7 @@ describe('Marketplace v2 dual-write functionality', () => {
 
     it('has writeMessageToMongoDB helper function', () => {
       expect(threadsJs).toContain('async function writeMessageToMongoDB(message, db)');
-      expect(threadsJs).toContain('const messagesCollection = db.collection(\'messages\')');
+      expect(threadsJs).toContain("const messagesCollection = db.collection('messages')");
     });
 
     it('writeMessageToMongoDB maps v1 to v2 fields', () => {
@@ -48,16 +48,12 @@ describe('Marketplace v2 dual-write functionality', () => {
     });
 
     it('POST /start calls writeThreadToMongoDB', () => {
-      const postStartRoute = threadsJs
-        .split("router.post(\n  '/start'")[1]
-        .split('router.')[0];
+      const postStartRoute = threadsJs.split("router.post(\n  '/start'")[1].split('router.')[0];
       expect(postStartRoute).toContain('await writeThreadToMongoDB(thread, db)');
     });
 
     it('POST /start calls writeMessageToMongoDB for initial message', () => {
-      const postStartRoute = threadsJs
-        .split("router.post(\n  '/start'")[1]
-        .split('router.')[0];
+      const postStartRoute = threadsJs.split("router.post(\n  '/start'")[1].split('router.')[0];
       expect(postStartRoute).toContain('await writeMessageToMongoDB(entry, db)');
     });
 
@@ -80,7 +76,9 @@ describe('Marketplace v2 dual-write functionality', () => {
         .split('async function loadThread()')[1]
         .split('async function')[0];
       expect(loadThreadFn).toContain('Normalize participants array for v1 threads');
-      expect(loadThreadFn).toContain('if (!thread.participants || !Array.isArray(thread.participants))');
+      expect(loadThreadFn).toContain(
+        'if (!thread.participants || !Array.isArray(thread.participants))'
+      );
       expect(loadThreadFn).toContain('thread.participants = participants.filter(Boolean)');
     });
 

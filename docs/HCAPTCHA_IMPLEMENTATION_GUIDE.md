@@ -1,11 +1,13 @@
 # hCaptcha Implementation Guide
 
 ## Overview
+
 This guide provides step-by-step instructions for implementing hCaptcha across EventFlow forms to prevent spam and bot submissions.
 
 ## Backend Setup (✅ Complete)
 
 ### 1. Environment Configuration
+
 The following environment variables have been added to `.env.example`:
 
 ```bash
@@ -16,12 +18,14 @@ HCAPTCHA_SECRET_KEY=0x0000000000000000000000000000000000000000
 ```
 
 **Production Setup:**
+
 1. Sign up at [https://www.hcaptcha.com/](https://www.hcaptcha.com/)
 2. Create a new site and get your Site Key and Secret Key
 3. Add these to your Railway environment variables or `.env` file
 4. **Never commit actual keys to Git**
 
 ### 2. Backend Verification Function (✅ Already Implemented)
+
 Location: `server.js` lines ~215-245
 
 ```javascript
@@ -34,7 +38,9 @@ async function verifyHCaptcha(token) {
     if (process.env.NODE_ENV === 'production') {
       return { success: false, error: 'CAPTCHA verification not configured' };
     }
-    console.warn('hCaptcha verification skipped - HCAPTCHA_SECRET not configured (development only)');
+    console.warn(
+      'hCaptcha verification skipped - HCAPTCHA_SECRET not configured (development only)'
+    );
     return { success: true, warning: 'Captcha verification disabled in development' };
   }
 
@@ -67,9 +73,11 @@ async function verifyHCaptcha(token) {
 ```
 
 ### 3. CSP Headers (✅ Already Configured)
+
 Location: `middleware/security.js`
 
 The Content Security Policy already includes hCaptcha domains:
+
 - `script-src`: `https://hcaptcha.com`, `https://*.hcaptcha.com`
 - `frame-src`: `https://hcaptcha.com`, `https://*.hcaptcha.com`
 - `style-src`: `https://hcaptcha.com`, `https://*.hcaptcha.com`
@@ -86,6 +94,7 @@ Add this to the `<head>` section of pages with forms:
 ```
 
 **Pages to update:**
+
 - `public/contact.html` - Contact form
 - `public/auth.html` or registration page - Registration form
 - Any page with enquiry forms
@@ -98,28 +107,30 @@ Add this to the `<head>` section of pages with forms:
 <form id="contactForm" method="POST">
   <div class="form-group">
     <label for="name">Name</label>
-    <input type="text" id="name" name="name" required>
+    <input type="text" id="name" name="name" required />
   </div>
-  
+
   <div class="form-group">
     <label for="email">Email</label>
-    <input type="email" id="email" name="email" required>
+    <input type="email" id="email" name="email" required />
   </div>
-  
+
   <div class="form-group">
     <label for="message">Message</label>
     <textarea id="message" name="message" rows="5" required></textarea>
   </div>
-  
+
   <!-- hCaptcha Widget -->
-  <div class="h-captcha" 
-       data-sitekey="YOUR_HCAPTCHA_SITE_KEY"
-       data-theme="light"
-       data-size="normal"
-       data-callback="onCaptchaSuccess"
-       data-expired-callback="onCaptchaExpired"
-       data-error-callback="onCaptchaError"></div>
-  
+  <div
+    class="h-captcha"
+    data-sitekey="YOUR_HCAPTCHA_SITE_KEY"
+    data-theme="light"
+    data-size="normal"
+    data-callback="onCaptchaSuccess"
+    data-expired-callback="onCaptchaExpired"
+    data-error-callback="onCaptchaError"
+  ></div>
+
   <button type="submit" id="submitBtn">Send Message</button>
 </form>
 ```
@@ -129,12 +140,14 @@ Add this to the `<head>` section of pages with forms:
 ```html
 <form id="registrationForm" method="POST">
   <!-- form fields -->
-  
-  <div class="h-captcha" 
-       data-sitekey="YOUR_HCAPTCHA_SITE_KEY"
-       data-callback="onCaptchaSuccess"
-       data-expired-callback="onCaptchaExpired"></div>
-  
+
+  <div
+    class="h-captcha"
+    data-sitekey="YOUR_HCAPTCHA_SITE_KEY"
+    data-callback="onCaptchaSuccess"
+    data-expired-callback="onCaptchaExpired"
+  ></div>
+
   <button type="submit" id="submitBtn" disabled>Create Account</button>
 </form>
 ```
@@ -160,25 +173,25 @@ function onCaptchaError(error) {
 }
 
 // Form submission
-document.getElementById('contactForm').addEventListener('submit', async (e) => {
+document.getElementById('contactForm').addEventListener('submit', async e => {
   e.preventDefault();
-  
+
   const captchaResponse = document.querySelector('[name="h-captcha-response"]')?.value;
-  
+
   if (!captchaResponse) {
     showNotification('Please complete the captcha', 'error');
     return;
   }
-  
+
   const formData = new FormData(e.target);
   formData.append('h-captcha-response', captchaResponse);
-  
+
   try {
     const response = await fetch('/api/contact', {
       method: 'POST',
       body: formData,
     });
-    
+
     if (response.ok) {
       showNotification('Message sent successfully!', 'success');
       e.target.reset();
@@ -204,21 +217,21 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
 app.post('/api/contact', async (req, res) => {
   try {
     const captchaToken = req.body['h-captcha-response'];
-    
+
     // Verify captcha
     const captchaResult = await verifyHCaptcha(captchaToken);
     if (!captchaResult.success) {
-      return res.status(400).json({ 
-        error: 'Invalid captcha', 
-        details: captchaResult.error 
+      return res.status(400).json({
+        error: 'Invalid captcha',
+        details: captchaResult.error,
       });
     }
-    
+
     // Process form...
     const { name, email, message } = req.body;
-    
+
     // Send email, save to database, etc.
-    
+
     res.json({ success: true, message: 'Contact form submitted successfully' });
   } catch (error) {
     console.error('Contact form error:', error);
@@ -252,7 +265,7 @@ app.post('/api/contact', async (req, res) => {
 }
 
 /* Submit button disabled state */
-button[type="submit"]:disabled {
+button[type='submit']:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -261,6 +274,7 @@ button[type="submit"]:disabled {
 ## Testing Checklist
 
 ### Development Testing
+
 - [ ] hCaptcha widget loads correctly
 - [ ] Widget displays in light mode
 - [ ] Submit button is disabled until captcha is completed
@@ -271,6 +285,7 @@ button[type="submit"]:disabled {
 - [ ] Mobile responsive (widget scales correctly)
 
 ### Production Testing
+
 - [ ] Real hCaptcha keys are configured
 - [ ] Captcha prevents form spam
 - [ ] Failed captcha verification returns proper error
@@ -286,14 +301,14 @@ When implementing hCaptcha on enquiry forms, update the lead quality scoring:
 ```javascript
 function calculateLeadQuality(enquiry) {
   let score = 0;
-  
+
   // Existing scoring logic...
-  
+
   // Bonus for captcha verification (reduces spam likelihood)
   if (enquiry.captchaVerified) {
     score += 10;
   }
-  
+
   return score >= 80 ? 'Hot' : score >= 60 ? 'High' : score >= 40 ? 'Good' : 'Low';
 }
 ```
@@ -301,15 +316,19 @@ function calculateLeadQuality(enquiry) {
 ## Common Issues & Solutions
 
 ### Issue: "Captcha not loading"
+
 **Solution:** Check CSP headers include hCaptcha domains
 
 ### Issue: "Always returns invalid captcha in development"
+
 **Solution:** Make sure HCAPTCHA_SECRET is set, or backend will skip verification in dev mode
 
 ### Issue: "Captcha expires too quickly"
+
 **Solution:** Increase timeout in data attributes: `data-timeout="300"` (5 minutes)
 
 ### Issue: "Mobile widget too large"
+
 **Solution:** Add CSS transform scale: `transform: scale(0.85);`
 
 ## Security Best Practices

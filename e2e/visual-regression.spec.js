@@ -17,7 +17,7 @@ test.describe('Visual Regression - Mobile Menu @visual', () => {
     await page.goto('/index.html');
 
     // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Disable animations for stable screenshots
@@ -47,7 +47,7 @@ test.describe('Visual Regression - Mobile Menu @visual', () => {
     await page.goto('/index.html');
 
     // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Disable animations for stable screenshots
@@ -82,7 +82,7 @@ test.describe('Visual Regression - Mobile Menu @visual', () => {
     await page.goto('/index.html');
 
     // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Disable animations for stable screenshots
@@ -120,7 +120,7 @@ test.describe('Visual Regression - Cross-browser Stability @visual', () => {
     await page.setViewportSize(MOBILE_VIEWPORT);
     await page.goto('/index.html');
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
     // Disable animations

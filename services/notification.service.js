@@ -283,10 +283,10 @@ class NotificationService {
    * Create notification for new message
    */
   async notifyNewMessage(recipientUserId, senderName, threadId, messagePreview = null) {
-    const messageText = messagePreview 
+    const messageText = messagePreview
       ? `${senderName}: ${messagePreview}`
       : `${senderName} sent you a message`;
-    
+
     return await this.create({
       userId: recipientUserId,
       type: 'message',

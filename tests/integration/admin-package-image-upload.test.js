@@ -79,7 +79,10 @@ describe('Admin Package Image Upload Error Handling', () => {
       // Find the category hero image upload endpoint
       const categoryImageStart = adminConfigContent.indexOf("'/categories/:id/hero-image'");
       const nextEndpointStart = adminConfigContent.indexOf('router.', categoryImageStart + 100);
-      const categoryImageEndpoint = adminConfigContent.substring(categoryImageStart, nextEndpointStart);
+      const categoryImageEndpoint = adminConfigContent.substring(
+        categoryImageStart,
+        nextEndpointStart
+      );
 
       // Verify error handling exists
       expect(categoryImageEndpoint).toContain("error.name === 'ValidationError'");
@@ -266,7 +269,10 @@ describe('Admin Package Image Upload Error Handling', () => {
       // Find the category hero image upload endpoint
       const categoryImageStart = adminConfigContent.indexOf("'/categories/:id/hero-image'");
       const nextEndpointStart = adminConfigContent.indexOf('router.', categoryImageStart + 100);
-      const categoryImageEndpoint = adminConfigContent.substring(categoryImageStart, nextEndpointStart);
+      const categoryImageEndpoint = adminConfigContent.substring(
+        categoryImageStart,
+        nextEndpointStart
+      );
 
       // Verify enhanced error handling uses helper function
       expect(categoryImageEndpoint).toContain('uploadValidation.formatValidationErrorResponse');

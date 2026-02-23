@@ -1,7 +1,7 @@
 /**
  * Messenger v3 Migration Script
  * Migrates existing messaging data from v1/v2 to v3 schema
- * 
+ *
  * Run: node scripts/migrate-to-messenger-v3.js
  */
 
@@ -110,7 +110,7 @@ function mapContext(thread) {
  */
 async function migrateThreads(db) {
   console.log('\n📦 Migrating threads to conversations...');
-  
+
   const threadsCollection = db.collection('threads');
   const conversationsCollection = db.collection('conversations');
   const usersCollection = db.collection('users');
@@ -131,7 +131,7 @@ async function migrateThreads(db) {
     try {
       // Map participants
       const participants = mapParticipants(thread, users);
-      
+
       if (participants.length === 0) {
         console.log(`   ⚠️  Skipping thread ${thread.id} - no valid participants`);
         skipped++;
@@ -144,13 +144,15 @@ async function migrateThreads(db) {
         type: thread.type || 'direct',
         participants: participants,
         context: mapContext(thread),
-        lastMessage: thread.lastMessagePreview ? {
-          content: thread.lastMessagePreview.substring(0, 100),
-          senderId: thread.lastMessageSenderId || participants[0].userId,
-          senderName: thread.lastMessageSenderName || participants[0].displayName,
-          sentAt: thread.lastMessageAt || thread.updatedAt || new Date(),
-          type: 'text',
-        } : null,
+        lastMessage: thread.lastMessagePreview
+          ? {
+              content: thread.lastMessagePreview.substring(0, 100),
+              senderId: thread.lastMessageSenderId || participants[0].userId,
+              senderName: thread.lastMessageSenderName || participants[0].displayName,
+              sentAt: thread.lastMessageAt || thread.updatedAt || new Date(),
+              type: 'text',
+            }
+          : null,
         metadata: {
           subject: thread.subject || null,
           eventType: thread.eventType || null,
@@ -170,7 +172,7 @@ async function migrateThreads(db) {
       // Insert conversation
       await conversationsCollection.insertOne(conversation);
       migrated++;
-      
+
       if (migrated % 100 === 0) {
         console.log(`   Migrated ${migrated} conversations...`);
       }
@@ -184,7 +186,7 @@ async function migrateThreads(db) {
   console.log(`   Migrated: ${migrated}`);
   console.log(`   Skipped: ${skipped}`);
   console.log(`   Errors: ${errors.length}`);
-  
+
   if (errors.length > 0) {
     console.log('\n❌ Migration errors:');
     errors.forEach(e => console.log(`   Thread ${e.threadId}: ${e.error}`));
@@ -198,7 +200,7 @@ async function migrateThreads(db) {
  */
 async function migrateMessages(db) {
   console.log('\n📨 Migrating messages to chat_messages...');
-  
+
   const messagesCollection = db.collection('messages');
   const chatMessagesCollection = db.collection('chat_messages');
   const conversationsCollection = db.collection('conversations');
@@ -258,7 +260,7 @@ async function migrateMessages(db) {
       // Insert chat message
       await chatMessagesCollection.insertOne(chatMessage);
       migrated++;
-      
+
       if (migrated % 500 === 0) {
         console.log(`   Migrated ${migrated} messages...`);
       }
@@ -272,7 +274,7 @@ async function migrateMessages(db) {
   console.log(`   Migrated: ${migrated}`);
   console.log(`   Skipped: ${skipped}`);
   console.log(`   Errors: ${errors.length}`);
-  
+
   if (errors.length > 0) {
     console.log('\n❌ Migration errors:');
     errors.forEach(e => console.log(`   Message ${e.messageId}: ${e.error}`));
@@ -314,13 +316,14 @@ async function migrate() {
     console.log(`Messages migrated: ${messageResult.migrated}`);
     console.log(`Total errors: ${threadResult.errors.length + messageResult.errors.length}`);
     console.log('\n⚠️  Old collections (threads, messages) have been preserved as backup');
-    console.log('   Review new collections (conversations, chat_messages) before removing old data');
+    console.log(
+      '   Review new collections (conversations, chat_messages) before removing old data'
+    );
     console.log('\nNext steps:');
     console.log('1. Test the new messenger system');
     console.log('2. Verify data integrity');
     console.log('3. Update frontend to use /api/v3/messenger endpoints');
     console.log('4. Once verified, old collections can be archived/removed\n');
-
   } catch (error) {
     console.error('\n❌ Migration failed:', error);
     console.error(error.stack);

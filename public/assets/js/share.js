@@ -3,9 +3,9 @@
  * Provides share functionality for listings (suppliers, packages, etc.)
  */
 
-(function() {
+(function () {
   'use strict';
-  
+
   /**
    * Share a URL using Web Share API or fallback to clipboard
    * @param {Object} options - Share options
@@ -14,12 +14,8 @@
    * @param {string} options.url - URL to share (defaults to current page)
    */
   async function shareUrl(options = {}) {
-    const {
-      title = document.title,
-      text = '',
-      url = window.location.href,
-    } = options;
-    
+    const { title = document.title, text = '', url = window.location.href } = options;
+
     // Check if Web Share API is available
     if (navigator.share) {
       try {
@@ -38,7 +34,7 @@
         // Fall through to clipboard fallback
       }
     }
-    
+
     // Fallback: Copy to clipboard
     try {
       await navigator.clipboard.writeText(url);
@@ -48,7 +44,7 @@
       return { success: false, error: 'Failed to copy link' };
     }
   }
-  
+
   /**
    * Create a share button for a listing
    * @param {Object} options - Button options
@@ -71,7 +67,7 @@
       onSuccess = null,
       onError = null,
     } = options;
-    
+
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `ef-share-button ${buttonClass}`.trim();
@@ -86,14 +82,14 @@
       <span>${buttonText}</span>
     `;
     button.setAttribute('aria-label', `Share ${title}`);
-    
+
     let resetTimeout = null;
-    
+
     button.addEventListener('click', async () => {
       button.disabled = true;
-      
+
       const result = await shareUrl({ title, text, url });
-      
+
       if (result.success) {
         // Show success feedback
         const originalHTML = button.innerHTML;
@@ -103,16 +99,16 @@
           </svg>
           <span>${result.method === 'clipboard' ? 'Link copied!' : 'Shared!'}</span>
         `;
-        
+
         if (onSuccess) {
           onSuccess(result);
         }
-        
+
         // Clear any existing timeout
         if (resetTimeout) {
           clearTimeout(resetTimeout);
         }
-        
+
         // Reset button after 2 seconds
         resetTimeout = setTimeout(() => {
           button.innerHTML = originalHTML;
@@ -132,23 +128,23 @@
         button.disabled = false;
       }
     });
-    
+
     return button;
   }
-  
+
   /**
    * Initialize share buttons on the page
    * Looks for elements with data-share attribute
    */
   function initShareButtons() {
     const shareElements = document.querySelectorAll('[data-share]');
-    
+
     shareElements.forEach(element => {
       const title = element.dataset.shareTitle || document.title;
       const text = element.dataset.shareText || '';
       const url = element.dataset.shareUrl || window.location.href;
       const buttonText = element.dataset.shareButtonText || 'Share';
-      
+
       // Replace element with share button
       const button = createShareButton({
         title,
@@ -157,18 +153,18 @@
         buttonText,
         buttonClass: element.className,
       });
-      
+
       element.parentNode.replaceChild(button, element);
     });
   }
-  
+
   // Auto-initialize on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initShareButtons);
   } else {
     initShareButtons();
   }
-  
+
   // Export functions
   window.EFShare = {
     shareUrl,

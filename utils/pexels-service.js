@@ -68,6 +68,10 @@ class PexelsService {
       },
       15 * 60 * 1000
     ); // Every 15 minutes
+    // Allow the process to exit even if this timer is still active
+    if (this.cleanupInterval.unref) {
+      this.cleanupInterval.unref();
+    }
   }
 
   /**
@@ -457,9 +461,7 @@ class PexelsService {
               userFriendlyMessage = 'API rate limit exceeded. Please try again later.';
               shouldRetry = true; // Retry on rate limit
               logger.error(`❌ Pexels API: Rate limit exceeded (resets: ${rateLimit.reset})`);
-              logger.error(
-                '💡 Hint: Consider implementing caching or reducing API call frequency'
-              );
+              logger.error('💡 Hint: Consider implementing caching or reducing API call frequency');
             } else if (res.statusCode >= 500) {
               errorType = 'server_error';
               errorMessage = 'Server Error: Pexels API is experiencing issues';

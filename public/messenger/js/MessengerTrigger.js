@@ -6,7 +6,7 @@
 
 'use strict';
 
-(function() {
+(function () {
   /**
    * Check if user is authenticated
    * @returns {Promise<boolean>}
@@ -22,8 +22,8 @@
       const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
         headers: {
-          'Accept': 'application/json'
-        }
+          Accept: 'application/json',
+        },
       });
       return response.ok;
     } catch (error) {
@@ -39,7 +39,7 @@
   async function handleNewConversation(button) {
     // Check authentication
     const isAuthenticated = await checkAuth();
-    
+
     if (!isAuthenticated) {
       // Redirect to login with return URL
       const currentUrl = encodeURIComponent(window.location.href);
@@ -87,7 +87,7 @@
   async function handleOpenConversation(button) {
     // Check authentication
     const isAuthenticated = await checkAuth();
-    
+
     if (!isAuthenticated) {
       // Redirect to login with return URL
       const currentUrl = encodeURIComponent(window.location.href);
@@ -118,9 +118,9 @@
 
     const action = button.getAttribute('data-messenger-action');
 
-    button.addEventListener('click', async (e) => {
+    button.addEventListener('click', async e => {
       e.preventDefault();
-      
+
       try {
         if (action === 'new-conversation') {
           await handleNewConversation(button);
@@ -148,10 +148,10 @@
    * Set up MutationObserver to watch for dynamically added buttons
    */
   function setupMutationObserver() {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
         // Check added nodes
-        mutation.addedNodes.forEach((node) => {
+        mutation.addedNodes.forEach(node => {
           if (node.nodeType === Node.ELEMENT_NODE) {
             // Check if the node itself is a messenger action button
             if (node.hasAttribute && node.hasAttribute('data-messenger-action')) {
@@ -170,7 +170,7 @@
     // Observe the entire document body for changes
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     return observer;
@@ -210,6 +210,6 @@
     init,
     initializeButtons,
     attachHandler,
-    destroy
+    destroy,
   };
 })();

@@ -670,7 +670,7 @@ router.delete(
 
       // Delete associated marketplace images from database
       const deletedImageCount = await photoUpload.deleteMarketplaceImages(req.params.id);
-      
+
       logger.info('Marketplace listing deleted with images', {
         listingId: req.params.id,
         userId: req.user.id,

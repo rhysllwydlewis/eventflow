@@ -159,7 +159,7 @@ dates: {
   legalLastUpdated: 'January 2026',
   legalEffectiveDate: 'January 2026',
   sitemapLastMod: new Date().toISOString().split('T')[0],
-  
+
   // Automation settings
   autoUpdateEnabled: true,        // Enable/disable monthly checks
   lastAutoCheck: null,            // Last automated check timestamp

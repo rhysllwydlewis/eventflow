@@ -10,10 +10,20 @@ const adminRouter = require('../../routes/admin');
 
 describe('Pexels Collage Fallback Integration', () => {
   let app;
+  let originalSettings;
 
   beforeAll(async () => {
     // Initialize database
     await dbUnified.initializeDatabase();
+    // Snapshot settings so we can restore after the suite (avoids cross-test pollution)
+    originalSettings = await dbUnified.read('settings');
+  });
+
+  afterAll(async () => {
+    // Restore original settings to prevent pollution of other tests
+    if (originalSettings !== undefined) {
+      await dbUnified.write('settings', originalSettings);
+    }
   });
 
   beforeEach(async () => {
@@ -102,6 +112,10 @@ describe('Pexels Collage Fallback Integration', () => {
     it('should return 404 when feature flag is disabled', async () => {
       // Disable Pexels collage feature
       const settings = await dbUnified.read('settings');
+      // beforeEach guarantees settings exist; if not, fail clearly rather than corrupting DB
+      if (!settings || typeof settings !== 'object' || !settings.features) {
+        throw new Error('Test setup failed: settings not initialized by beforeEach');
+      }
       settings.features.pexelsCollage = false;
       await dbUnified.write('settings', settings);
 

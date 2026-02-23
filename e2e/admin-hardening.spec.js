@@ -47,7 +47,7 @@ test.describe('Admin Client-Side Access Control - Logged Out User', () => {
 
       // Wait for client-side redirect (dashboard-guard.js)
       const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(waitTime);
 
       // Client-side guard should redirect to auth page
@@ -82,7 +82,7 @@ test.describe('Admin Client-Side Access Control - Non-Admin User', () => {
 
       // Wait for client-side redirect (dashboard-guard.js)
       const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(waitTime);
 
       // Client-side guard should redirect away from admin
@@ -145,7 +145,7 @@ test.describe('Admin Page Loading - Admin User', () => {
     });
 
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -195,7 +195,7 @@ test.describe('Admin Page Loading - Admin User', () => {
     });
 
     await page.goto('/admin-users.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -240,7 +240,7 @@ test.describe('Admin Page Loading - Admin User', () => {
     });
 
     await page.goto('/admin-suppliers.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -269,7 +269,7 @@ test.describe('Admin Page Loading - Admin User', () => {
     });
 
     await page.goto('/admin-payments.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -298,7 +298,7 @@ test.describe('Admin Page Loading - Admin User', () => {
     });
 
     await page.goto('/admin-tickets.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -343,7 +343,7 @@ test.describe('Admin Pages - Mobile/Tablet Responsiveness', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
 
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -363,7 +363,7 @@ test.describe('Admin Pages - Mobile/Tablet Responsiveness', () => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -392,7 +392,7 @@ test.describe('Admin Pages - Mobile/Tablet Responsiveness', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
 
     await page.goto('/admin-users.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -422,7 +422,7 @@ test.describe('Admin Pages - Mobile/Tablet Responsiveness', () => {
     });
 
     await page.goto('/admin-users.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);
@@ -465,7 +465,7 @@ test.describe('Admin Shared JavaScript Module', () => {
     });
 
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check AdminShared is defined
     const hasAdminShared = await page.evaluate(() => {
@@ -513,7 +513,7 @@ test.describe('Admin CSS Scoping and Theming', () => {
   ADMIN_PAGES.forEach(adminPage => {
     test(`${adminPage} should have body.admin scoping class`, async ({ page, browserName }) => {
       await page.goto(adminPage);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
       await page.waitForTimeout(waitTime);
@@ -528,7 +528,7 @@ test.describe('Admin CSS Scoping and Theming', () => {
     browserName,
   }) => {
     await page.goto('/admin.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
     await page.waitForTimeout(waitTime);

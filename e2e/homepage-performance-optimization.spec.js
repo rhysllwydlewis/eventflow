@@ -277,7 +277,7 @@ test.describe('Homepage Layout - Responsive Testing', () => {
     }) => {
       await page.setViewportSize(viewport);
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
       const viewportWidth = viewport.width;
@@ -348,7 +348,7 @@ test.describe('Homepage Screenshot Testing', () => {
   test('should capture homepage at 320px for visual verification', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.mobile320);
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     await page.screenshot({
@@ -362,7 +362,7 @@ test.describe('Homepage Screenshot Testing', () => {
   test('should capture homepage at 768px for visual verification', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.tablet768);
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     await page.screenshot({
@@ -376,7 +376,7 @@ test.describe('Homepage Screenshot Testing', () => {
   test('should capture homepage at 1440px for visual verification', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.desktop1440);
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     await page.screenshot({

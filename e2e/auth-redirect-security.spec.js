@@ -11,7 +11,7 @@ test.describe('Auth Redirect Security', () => {
     await page.goto('/package.html?id=test-package');
 
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // If there's a message supplier button, click it (when logged out)
     const authCreateBtn = await page.locator('#auth-create-account').count();
@@ -49,7 +49,7 @@ test.describe('Auth Redirect Security', () => {
   test('auth URLs should contain relative paths not full URLs', async ({ page }) => {
     // Test on a simple page
     await page.goto('/index.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check all auth links on the page (both legacy /auth.html and canonical /auth)
     const authLinks = await page.locator('a[href*="/auth"]').all();

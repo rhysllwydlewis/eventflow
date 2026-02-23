@@ -46,7 +46,7 @@ class ChatSocket {
       this.connected = true;
       this.reconnectAttempts = 0;
       this.chatState.emit('socket:connected', null);
-      
+
       // Re-authenticate on reconnect
       const user = this.chatState.getCurrentUser();
       if (user) {
@@ -71,7 +71,7 @@ class ChatSocket {
     // Authentication
     this.socket.on('auth:success', data => {
       console.log('Authenticated:', data);
-      
+
       // Rejoin current conversation if any
       if (this.currentConversationId) {
         this.joinConversation(this.currentConversationId);
@@ -203,10 +203,10 @@ class ChatSocket {
    */
   handleNewMessage(message) {
     const conversationId = message.conversationId;
-    
+
     // Add message to state
     this.chatState.addMessage(conversationId, message);
-    
+
     // Update conversation's last message
     const conversation = this.chatState.getConversations().find(c => c._id === conversationId);
     if (conversation) {
@@ -253,13 +253,13 @@ class ChatSocket {
    */
   handleReadReceipt(data) {
     const { conversationId, userId, readAt } = data;
-    
+
     // Update conversation unread count
     const conversation = this.chatState.getConversations().find(c => c._id === conversationId);
     if (conversation) {
       const currentUser = this.chatState.getCurrentUser();
       const currentUserId = currentUser?.userId || currentUser?.id;
-      
+
       if (userId === currentUserId) {
         this.chatState.updateConversation(conversationId, {
           'participants.$[elem].unreadCount': 0,
@@ -276,7 +276,7 @@ class ChatSocket {
     const { conversationId, userId, userName } = data;
     const currentUser = this.chatState.getCurrentUser();
     const currentUserId = currentUser?.userId || currentUser?.id;
-    
+
     // Don't show typing indicator for current user
     if (userId !== currentUserId) {
       this.chatState.addTypingUser(conversationId, userId, userName);

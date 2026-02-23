@@ -141,7 +141,7 @@
     }
 
     const templates = getAllTemplates();
-    
+
     let html = `
       <div class="template-selector">
         <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem;">Choose a template to get started</h3>

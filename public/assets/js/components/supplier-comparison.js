@@ -466,7 +466,7 @@ class SupplierComparison {
       recipientId: supplier.ownerUserId || '',
       contextType: 'supplier',
       contextId: supplier.id,
-      contextTitle: supplier.name || 'Supplier'
+      contextTitle: supplier.name || 'Supplier',
     });
     window.location.href = `/messenger/?${params.toString()}`;
   }

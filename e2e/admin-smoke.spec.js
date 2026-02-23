@@ -194,7 +194,7 @@ test.describe('Admin Pages - Smoke Test', () => {
       });
 
       await page.goto(adminPage);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const waitTime = browserName === 'webkit' ? WEBKIT_WAIT : DEFAULT_WAIT;
       await page.waitForTimeout(waitTime);

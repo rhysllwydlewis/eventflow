@@ -31,14 +31,16 @@ The EventFlow subscription system provides a complete payment and subscription m
 ### Available Plans
 
 #### Free
+
 - **Price**: £0/month
 - **Features**:
   - Up to 3 packages
   - Up to 10 event bookings per month
   - Messaging enabled
   - No analytics
-  
+
 #### Pro Monthly
+
 - **Price**: £39/month for first 3 months, then £59/month
 - **Trial**: 14 days free
 - **Features**:
@@ -51,6 +53,7 @@ The EventFlow subscription system provides a complete payment and subscription m
   - Priority email support
 
 #### Pro+ Monthly
+
 - **Price**: £199/month
 - **Trial**: 14 days free
 - **Features**:
@@ -64,11 +67,13 @@ The EventFlow subscription system provides a complete payment and subscription m
   - Featured in homepage carousel
 
 #### Pro Yearly
+
 - **Price**: £468/year (save £240 vs monthly)
 - **Trial**: 28 days free
 - Same features as Pro Monthly
 
 #### Pro+ Yearly
+
 - **Price**: £2,388/year
 - **Trial**: 28 days free
 - Same features as Pro+ Monthly

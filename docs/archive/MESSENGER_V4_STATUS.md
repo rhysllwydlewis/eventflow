@@ -116,33 +116,33 @@ All endpoints require authentication. Write operations require CSRF protection.
 
 ### Conversations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v4/messenger/conversations` | Create new conversation |
-| GET | `/api/v4/messenger/conversations` | List conversations (with filters) |
-| GET | `/api/v4/messenger/conversations/:id` | Get single conversation |
-| PATCH | `/api/v4/messenger/conversations/:id` | Update settings (pin, mute, archive) |
-| DELETE | `/api/v4/messenger/conversations/:id` | Soft delete (archive) |
+| Method | Endpoint                              | Description                          |
+| ------ | ------------------------------------- | ------------------------------------ |
+| POST   | `/api/v4/messenger/conversations`     | Create new conversation              |
+| GET    | `/api/v4/messenger/conversations`     | List conversations (with filters)    |
+| GET    | `/api/v4/messenger/conversations/:id` | Get single conversation              |
+| PATCH  | `/api/v4/messenger/conversations/:id` | Update settings (pin, mute, archive) |
+| DELETE | `/api/v4/messenger/conversations/:id` | Soft delete (archive)                |
 
 ### Messages
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v4/messenger/conversations/:id/messages` | Send message (supports attachments) |
-| GET | `/api/v4/messenger/conversations/:id/messages` | Get messages (cursor pagination) |
-| PATCH | `/api/v4/messenger/messages/:id` | Edit message (15-min window) |
-| DELETE | `/api/v4/messenger/messages/:id` | Delete message |
-| POST | `/api/v4/messenger/messages/:id/reactions` | Toggle emoji reaction |
+| Method | Endpoint                                       | Description                         |
+| ------ | ---------------------------------------------- | ----------------------------------- |
+| POST   | `/api/v4/messenger/conversations/:id/messages` | Send message (supports attachments) |
+| GET    | `/api/v4/messenger/conversations/:id/messages` | Get messages (cursor pagination)    |
+| PATCH  | `/api/v4/messenger/messages/:id`               | Edit message (15-min window)        |
+| DELETE | `/api/v4/messenger/messages/:id`               | Delete message                      |
+| POST   | `/api/v4/messenger/messages/:id/reactions`     | Toggle emoji reaction               |
 
 ### Utilities
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v4/messenger/unread-count` | Get total unread count |
-| GET | `/api/v4/messenger/contacts` | Search contactable users |
-| GET | `/api/v4/messenger/search` | Full-text message search |
-| POST | `/api/v4/messenger/conversations/:id/typing` | Send typing indicator |
-| POST | `/api/v4/messenger/conversations/:id/read` | Mark as read |
+| Method | Endpoint                                     | Description              |
+| ------ | -------------------------------------------- | ------------------------ |
+| GET    | `/api/v4/messenger/unread-count`             | Get total unread count   |
+| GET    | `/api/v4/messenger/contacts`                 | Search contactable users |
+| GET    | `/api/v4/messenger/search`                   | Full-text message search |
+| POST   | `/api/v4/messenger/conversations/:id/typing` | Send typing indicator    |
+| POST   | `/api/v4/messenger/conversations/:id/read`   | Mark as read             |
 
 ---
 
@@ -150,17 +150,17 @@ All endpoints require authentication. Write operations require CSRF protection.
 
 All events are emitted to appropriate user rooms.
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `messenger:v4:message` | Server → Client | New message sent |
-| `messenger:v4:typing` | Server → Client | User is typing |
-| `messenger:v4:read` | Server → Client | Messages marked as read |
-| `messenger:v4:reaction` | Server → Client | Reaction added/removed |
-| `messenger:v4:conversation-created` | Server → Client | New conversation created |
+| Event                               | Direction       | Description                   |
+| ----------------------------------- | --------------- | ----------------------------- |
+| `messenger:v4:message`              | Server → Client | New message sent              |
+| `messenger:v4:typing`               | Server → Client | User is typing                |
+| `messenger:v4:read`                 | Server → Client | Messages marked as read       |
+| `messenger:v4:reaction`             | Server → Client | Reaction added/removed        |
+| `messenger:v4:conversation-created` | Server → Client | New conversation created      |
 | `messenger:v4:conversation-updated` | Server → Client | Conversation settings changed |
-| `messenger:v4:conversation-deleted` | Server → Client | Conversation archived |
-| `messenger:v4:message-edited` | Server → Client | Message edited |
-| `messenger:v4:message-deleted` | Server → Client | Message deleted |
+| `messenger:v4:conversation-deleted` | Server → Client | Conversation archived         |
+| `messenger:v4:message-edited`       | Server → Client | Message edited                |
+| `messenger:v4:message-deleted`      | Server → Client | Message deleted               |
 
 ---
 
@@ -223,7 +223,7 @@ All Phase 3 UI components are **production-ready** with BEM naming, liquid glass
    - Syncs unread count to bell badges; updates tab title "(3) EventFlow"
    - Web Notifications API with permission request UX
 
-9. **public/messenger/js/MessengerAppV4.js** *(Phase 4 orchestrator)*
+9. **public/messenger/js/MessengerAppV4.js** _(Phase 4 orchestrator)_
    - Initializes all v4 components; wires via window CustomEvent bus
    - Socket.IO integration with graceful degradation
    - Deep link support: `?conversation=X`, `?new=1`, `?contact=userId`
@@ -259,12 +259,13 @@ All Phase 3 UI components are **production-ready** with BEM naming, liquid glass
 
 ### Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `↑` / `↓` | Navigate conversations |
-| `Escape` | Close modal or return to sidebar (mobile) |
-| `Enter` | Send message |
-| `Shift+Enter` | New line in composer |
+| Key           | Action                                    |
+| ------------- | ----------------------------------------- |
+| `↑` / `↓`     | Navigate conversations                    |
+| `Escape`      | Close modal or return to sidebar (mobile) |
+| `Enter`       | Send message                              |
+| `Shift+Enter` | New line in composer                      |
+
 - [ ] Update `dashboard-supplier.html`
 - [ ] Integrate unread badges
 
@@ -273,6 +274,7 @@ All Phase 3 UI components are **production-ready** with BEM naming, liquid glass
 **Priority: MEDIUM** - Can use existing v3 temporarily
 
 Tasks:
+
 - [ ] Create `QuickComposeV4.js` panel component
 - [ ] Update `supplier.html` message buttons
 - [ ] Update `package.html` message panel
@@ -283,6 +285,7 @@ Tasks:
 **Priority: HIGH** - Critical before production
 
 Tasks:
+
 - [ ] Run backend unit tests (already written)
 - [ ] Create frontend integration tests
 - [ ] Test migration script with real data
@@ -295,6 +298,7 @@ Tasks:
 **Priority: LOW** - Final polish
 
 Tasks:
+
 - [ ] Add deprecation warnings to v1/v2/v3 files
 - [ ] Update API documentation
 - [ ] Add inline code documentation
@@ -364,6 +368,7 @@ The migration script (`scripts/migrate-to-messenger-v4.js`) handles:
 ### Unit Tests (Complete)
 
 23 test cases covering:
+
 - Conversation creation and deduplication
 - Message CRUD operations
 - Filters (unread, pinned, archived)
@@ -374,6 +379,7 @@ The migration script (`scripts/migrate-to-messenger-v4.js`) handles:
 ### Integration Tests (Pending)
 
 Need to test:
+
 - API endpoints with real HTTP requests
 - WebSocket event flow
 - Authentication and authorization
@@ -384,6 +390,7 @@ Need to test:
 ### E2E Tests (Pending)
 
 Need to test:
+
 - Complete user workflows
 - Real-time message delivery
 - Typing indicators
@@ -450,7 +457,8 @@ The Messenger v4 backend is **production-ready** with comprehensive features, pr
 
 The remaining work focuses on JavaScript components to connect the UI to the backend API. This is a substantial but straightforward task of creating ~9 JavaScript modules following existing patterns.
 
-**Estimated Remaining Effort**: 
+**Estimated Remaining Effort**:
+
 - Phase 2-3: 15-20 hours
 - Phase 4-7: 10-15 hours
 - **Total**: 25-35 hours of development time

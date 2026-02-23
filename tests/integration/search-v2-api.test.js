@@ -246,7 +246,7 @@ describe('Search V2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.post('/cache/clear'");
+      expect(routeContent).toContain("'/cache/clear'");
       expect(routeContent).toContain('authRequired');
       expect(routeContent).toContain("roleRequired('admin')");
     });

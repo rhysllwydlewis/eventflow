@@ -133,16 +133,16 @@ router.delete('/by-item', authRequired, csrfProtection, async (req, res) => {
 
     // Validate required parameters
     if (!itemType || !itemId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'itemType and itemId query parameters are required',
-        example: 'DELETE /api/me/saved/by-item?itemType=supplier&itemId=sup_123'
+        example: 'DELETE /api/me/saved/by-item?itemType=supplier&itemId=sup_123',
       });
     }
 
     // Validate itemType
     if (!['supplier', 'package'].includes(itemType)) {
-      return res.status(400).json({ 
-        error: 'itemType must be "supplier" or "package"' 
+      return res.status(400).json({
+        error: 'itemType must be "supplier" or "package"',
       });
     }
 

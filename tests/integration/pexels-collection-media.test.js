@@ -10,10 +10,20 @@ const adminRouter = require('../../routes/admin');
 
 describe('Pexels Collection Media Integration', () => {
   let app;
+  let originalSettings;
 
   beforeAll(async () => {
     // Initialize database
     await dbUnified.initializeDatabase();
+    // Snapshot settings so we can restore after the suite (avoids cross-test pollution)
+    originalSettings = await dbUnified.read('settings');
+  });
+
+  afterAll(async () => {
+    // Restore original settings to prevent pollution of other tests
+    if (originalSettings !== undefined) {
+      await dbUnified.write('settings', originalSettings);
+    }
   });
 
   beforeEach(async () => {

@@ -133,86 +133,80 @@ router.get('/users', authRequired, roleRequired('admin'), async (req, res) => {
  * POST /api/admin/users
  * Create a new user (admin only)
  */
-router.post(
-  '/users',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { name, email, password, role = 'customer' } = req.body || {};
+router.post('/users', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+  const { name, email, password, role = 'customer' } = req.body || {};
 
-    // Validate required fields
-    if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({ error: 'Missing required fields: name, email, and password are required' });
-    }
+  // Validate required fields
+  if (!name || !email || !password) {
+    return res
+      .status(400)
+      .json({ error: 'Missing required fields: name, email, and password are required' });
+  }
 
-    // Validate email format
-    if (!validator.isEmail(String(email))) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
+  // Validate email format
+  if (!validator.isEmail(String(email))) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
 
-    // Validate password strength
-    if (!passwordOk(password)) {
-      return res.status(400).json({
-        error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
-      });
-    }
-
-    // Validate role
-    const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
-
-    // Check if user already exists
-    const users = await dbUnified.read('users');
-    if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
-      return res.status(409).json({ error: 'A user with this email already exists' });
-    }
-
-    // Create new user
-    const user = {
-      id: uid('usr'),
-      name: String(name).trim().slice(0, MAX_NAME_LENGTH),
-      email: String(email).toLowerCase(),
-      role: roleFinal,
-      passwordHash: bcrypt.hashSync(password, 10),
-      notify: true,
-      marketingOptIn: false,
-      verified: true, // Admin-created users are pre-verified
-      createdAt: new Date().toISOString(),
-      createdBy: req.user.id, // Track who created the user
-    };
-
-    users.push(user);
-    await dbUnified.write('users', users);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_CREATED,
-      targetType: 'user',
-      targetId: user.id,
-      details: {
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'User created successfully',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        verified: user.verified,
-      },
+  // Validate password strength
+  if (!passwordOk(password)) {
+    return res.status(400).json({
+      error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
     });
   }
-);
+
+  // Validate role
+  const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
+
+  // Check if user already exists
+  const users = await dbUnified.read('users');
+  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+    return res.status(409).json({ error: 'A user with this email already exists' });
+  }
+
+  // Create new user
+  const user = {
+    id: uid('usr'),
+    name: String(name).trim().slice(0, MAX_NAME_LENGTH),
+    email: String(email).toLowerCase(),
+    role: roleFinal,
+    passwordHash: bcrypt.hashSync(password, 10),
+    notify: true,
+    marketingOptIn: false,
+    verified: true, // Admin-created users are pre-verified
+    createdAt: new Date().toISOString(),
+    createdBy: req.user.id, // Track who created the user
+  };
+
+  users.push(user);
+  await dbUnified.write('users', users);
+
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_CREATED,
+    targetType: 'user',
+    targetId: user.id,
+    details: {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    },
+  });
+
+  res.json({
+    success: true,
+    message: 'User created successfully',
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      verified: user.verified,
+    },
+  });
+});
 
 /**
  * GET /api/admin/users/search
@@ -461,14 +455,14 @@ router.post(
     if (user.id === req.user.id) {
       return res.status(400).json({ error: 'You cannot suspend your own account' });
     }
-    
+
     // ⚠️ SECURITY: Prevent suspension of the owner account
     const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
     if (isOwner) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Cannot suspend owner account',
         message: 'The owner account is protected and cannot be suspended.',
-        code: 'OWNER_ACCOUNT_PROTECTED'
+        code: 'OWNER_ACCOUNT_PROTECTED',
       });
     }
 
@@ -536,14 +530,14 @@ router.post('/users/:id/ban', authRequired, roleRequired('admin'), csrfProtectio
   if (user.id === req.user.id) {
     return res.status(400).json({ error: 'You cannot ban your own account' });
   }
-  
+
   // ⚠️ SECURITY: Prevent banning of the owner account
   const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
   if (isOwner) {
-    return res.status(403).json({ 
+    return res.status(403).json({
       error: 'Cannot ban owner account',
       message: 'The owner account is protected and cannot be banned.',
-      code: 'OWNER_ACCOUNT_PROTECTED'
+      code: 'OWNER_ACCOUNT_PROTECTED',
     });
   }
 
@@ -1556,16 +1550,17 @@ router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (r
   }
 
   const user = users[userIndex];
-  
+
   // ⚠️ SECURITY: Protect owner account from modifications
   const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
   if (isOwner) {
     // Owner account cannot be modified through this endpoint
     // Only specific fields can be updated by owner themselves in profile settings
-    return res.status(403).json({ 
+    return res.status(403).json({
       error: 'Cannot modify owner account',
-      message: 'The owner account is protected from administrative changes. Owner can update their own profile through account settings.',
-      code: 'OWNER_ACCOUNT_PROTECTED'
+      message:
+        'The owner account is protected from administrative changes. Owner can update their own profile through account settings.',
+      code: 'OWNER_ACCOUNT_PROTECTED',
     });
   }
 
@@ -1650,10 +1645,10 @@ router.delete('/users/:id', authRequired, roleRequired('admin'), csrfProtection,
   // ⚠️ SECURITY: Prevent deletion of the owner account
   const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
   if (isOwner) {
-    return res.status(403).json({ 
+    return res.status(403).json({
       error: 'Cannot delete owner account',
       message: 'The owner account is protected and cannot be deleted.',
-      code: 'OWNER_ACCOUNT_PROTECTED'
+      code: 'OWNER_ACCOUNT_PROTECTED',
     });
   }
 

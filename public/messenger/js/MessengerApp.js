@@ -11,7 +11,7 @@ class MessengerApp {
     this.state = new MessengerState();
     this.socket = new MessengerSocket(this.state);
     this.currentUser = null;
-    
+
     // Components (will be initialized after DOM ready)
     this.conversationList = null;
     this.conversationView = null;
@@ -25,7 +25,7 @@ class MessengerApp {
     try {
       // Load current user
       await this.loadCurrentUser();
-      
+
       if (!this.currentUser) {
         window.location.href = '/auth';
         return;
@@ -41,7 +41,7 @@ class MessengerApp {
 
       // Initialize components
       this.initializeComponents();
-      
+
       // Handle deep links (e.g., /messenger/?conversation=xxx)
       this.handleDeepLink();
 
@@ -81,7 +81,12 @@ class MessengerApp {
     // Initialize MessageComposer
     const composerContainer = document.querySelector('.messenger-composer');
     if (composerContainer && window.MessageComposer) {
-      this.messageComposer = new MessageComposer(composerContainer, this.state, this.api, this.socket);
+      this.messageComposer = new MessageComposer(
+        composerContainer,
+        this.state,
+        this.api,
+        this.socket
+      );
     }
 
     // Initialize ContactPicker
@@ -170,14 +175,14 @@ class MessengerApp {
    */
   setupEventListeners() {
     // WebSocket events
-    window.addEventListener('messenger:new-message', (e) => {
+    window.addEventListener('messenger:new-message', e => {
       const { conversationId } = e.detail;
-      
+
       // Reload messages if this is the active conversation
       if (this.state.activeConversationId === conversationId) {
         this.loadMessages(conversationId);
       }
-      
+
       // Reload conversation list to update preview
       this.loadConversations();
       this.loadUnreadCount();
@@ -188,16 +193,16 @@ class MessengerApp {
     });
 
     // State change events
-    this.state.on('activeConversationChanged', (conversationId) => {
+    this.state.on('activeConversationChanged', conversationId => {
       if (conversationId) {
         this.loadMessages(conversationId);
         this.socket.joinConversation(conversationId);
-        
+
         // Mark as read
-        this.api.markAsRead(conversationId).catch((error) => {
+        this.api.markAsRead(conversationId).catch(error => {
           console.error('Failed to mark conversation as read:', error);
         });
-        
+
         // Update URL
         const url = new URL(window.location);
         url.searchParams.set('conversation', conversationId);
@@ -238,16 +243,16 @@ class MessengerApp {
   async sendMessage(conversationId, content, attachments = [], replyToId = null) {
     try {
       const response = await this.api.sendMessage(conversationId, content, attachments, replyToId);
-      
+
       // Add message to state
       this.state.addMessage(conversationId, response.message);
-      
+
       // Notify via WebSocket
       this.socket.notifyNewMessage(conversationId);
-      
+
       // Update conversation list
       this.loadConversations();
-      
+
       return response.message;
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -294,9 +299,9 @@ class MessengerApp {
       z-index: 10000;
       animation: slideUp 0.3s ease-out;
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
       toast.style.animation = 'slideDown 0.3s ease-in';
       setTimeout(() => toast.remove(), 300);
@@ -322,9 +327,9 @@ class MessengerApp {
       z-index: 10000;
       animation: slideUp 0.3s ease-out;
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
       toast.style.animation = 'slideDown 0.3s ease-in';
       setTimeout(() => toast.remove(), 300);
@@ -340,7 +345,7 @@ class MessengerApp {
         method: 'POST',
         credentials: 'include',
       });
-      
+
       this.socket.disconnect();
       this.state.clear();
       window.location.href = '/auth';

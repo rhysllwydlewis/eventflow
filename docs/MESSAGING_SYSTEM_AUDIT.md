@@ -9,6 +9,7 @@
 ## Executive Summary
 
 EventFlow currently has **four messaging API versions** in various states of completion:
+
 - **v1/v2** (Legacy): Deprecated, using `threads` collection, limited features
 - **v3** (Production): Fully functional, using `conversations` + `chat_messages` collections
 - **v4** (In Development): Backend complete, frontend incomplete, using `conversations_v4` + `chat_messages_v4` collections
@@ -21,37 +22,39 @@ EventFlow currently has **four messaging API versions** in various states of com
 
 ### Backend API Versions
 
-| Version | Endpoint Base | Database Collections | Status | Lines of Code |
-|---------|--------------|----------------------|--------|---------------|
-| v1 | `/api/v1/threads/` | `threads`, `messages` | 🔴 Deprecated | ~500 LOC |
-| v2 | `/api/v2/messages/` | `threads`, `messages` | 🟡 Deprecated | ~800 LOC |
-| v3 | `/api/v3/messenger/` | `conversations`, `chat_messages` | 🟢 Production | ~1,200 LOC |
-| v4 | `/api/v4/messenger/` | `conversations_v4`, `chat_messages_v4` | 🟡 Backend Only | ~2,200 LOC |
+| Version | Endpoint Base        | Database Collections                   | Status          | Lines of Code |
+| ------- | -------------------- | -------------------------------------- | --------------- | ------------- |
+| v1      | `/api/v1/threads/`   | `threads`, `messages`                  | 🔴 Deprecated   | ~500 LOC      |
+| v2      | `/api/v2/messages/`  | `threads`, `messages`                  | 🟡 Deprecated   | ~800 LOC      |
+| v3      | `/api/v3/messenger/` | `conversations`, `chat_messages`       | 🟢 Production   | ~1,200 LOC    |
+| v4      | `/api/v4/messenger/` | `conversations_v4`, `chat_messages_v4` | 🟡 Backend Only | ~2,200 LOC    |
 
 ### Service Layer
 
-| Service | File | Version | Status | Features |
-|---------|------|---------|--------|----------|
-| Legacy Messaging | `services/messagingService.js` | v1/v2 | 🔴 Deprecated | Basic threads, no reactions |
-| Messenger v3 | `services/messenger.service.js` | v3 | 🟢 Production | Conversations, reactions, read receipts |
-| Messenger v4 | `services/messenger-v4.service.js` | v4 | 🟢 Complete | All v3 features + spam detection, rate limiting by tier, enhanced search |
+| Service          | File                               | Version | Status        | Features                                                                 |
+| ---------------- | ---------------------------------- | ------- | ------------- | ------------------------------------------------------------------------ |
+| Legacy Messaging | `services/messagingService.js`     | v1/v2   | 🔴 Deprecated | Basic threads, no reactions                                              |
+| Messenger v3     | `services/messenger.service.js`    | v3      | 🟢 Production | Conversations, reactions, read receipts                                  |
+| Messenger v4     | `services/messenger-v4.service.js` | v4      | 🟢 Complete   | All v3 features + spam detection, rate limiting by tier, enhanced search |
 
 ### Data Models
 
 #### v1/v2 Schema (Deprecated)
+
 ```javascript
 // threads collection
 {
-  customerId, recipientId, subject, lastMessage, createdAt, updatedAt
+  (customerId, recipientId, subject, lastMessage, createdAt, updatedAt);
 }
 
-// messages collection  
+// messages collection
 {
-  threadId, senderId, content, read, createdAt
+  (threadId, senderId, content, read, createdAt);
 }
 ```
 
 **Limitations**:
+
 - Only 2 participants (customer + recipient)
 - No conversation types or context
 - No participant-level settings
@@ -59,6 +62,7 @@ EventFlow currently has **four messaging API versions** in various states of com
 - Limited search capabilities
 
 #### v3 Schema (Production)
+
 ```javascript
 // conversations collection
 {
@@ -70,7 +74,7 @@ EventFlow currently has **four messaging API versions** in various states of com
 
 // chat_messages collection
 {
-  conversationId, senderId, content, 
+  conversationId, senderId, content,
   attachments: [{url, type, size}],
   reactions: [{userId, emoji}],
   isEdited, isDeleted, createdAt, updatedAt
@@ -78,6 +82,7 @@ EventFlow currently has **four messaging API versions** in various states of com
 ```
 
 **Improvements over v1/v2**:
+
 - ✅ Multiple participants support
 - ✅ Conversation types (direct, group, support)
 - ✅ Per-user settings (pinned, muted, unread counts)
@@ -86,12 +91,14 @@ EventFlow currently has **four messaging API versions** in various states of com
 - ✅ Message editing/deletion
 
 **Remaining Gaps**:
+
 - ❌ No context linking (package, supplier, marketplace)
 - ❌ No spam detection
 - ❌ No subscription-based rate limiting
 - ❌ Basic search (no full-text indexes)
 
 #### v4 Schema (Backend Complete)
+
 ```javascript
 // conversations_v4 collection
 {
@@ -124,6 +131,7 @@ EventFlow currently has **four messaging API versions** in various states of com
 ```
 
 **New Features in v4**:
+
 - ✅ **Context linking**: Conversations linked to packages, suppliers, marketplace listings
 - ✅ **Spam detection**: Automatic spam scoring and filtering
 - ✅ **Rate limiting**: Per-tier limits (free: 50/day, premium: 200/day, pro: unlimited)
@@ -135,12 +143,13 @@ EventFlow currently has **four messaging API versions** in various states of com
 
 ### WebSocket Implementation
 
-| File | Version Support | Events | Status |
-|------|----------------|--------|--------|
-| `websocket-server.js` | v1/v2 | Basic message events | 🔴 Legacy |
-| `websocket-server-v2.js` | v3, v4 | All messenger events | 🟢 Production |
+| File                     | Version Support | Events               | Status        |
+| ------------------------ | --------------- | -------------------- | ------------- |
+| `websocket-server.js`    | v1/v2           | Basic message events | 🔴 Legacy     |
+| `websocket-server-v2.js` | v3, v4          | All messenger events | 🟢 Production |
 
 **v4 WebSocket Events** (all implemented):
+
 - `messenger:v4:message` - New message broadcast
 - `messenger:v4:typing` - Typing indicator
 - `messenger:v4:read` - Read receipt update
@@ -159,23 +168,25 @@ EventFlow currently has **four messaging API versions** in various states of com
 
 ### Current Implementation (v3)
 
-| Component | File | Lines | Status | Purpose |
-|-----------|------|-------|--------|---------|
-| API Client | `MessengerAPI.js` | 268 | 🟢 v3 | HTTP requests to `/api/v3/messenger/` |
-| WebSocket | `MessengerSocket.js` | 193 | 🟢 v3 | Socket.IO client for v3 events |
-| State Manager | `MessengerState.js` | 238 | 🟢 v3 | In-memory state management |
-| Main App | `MessengerApp.js` | 303 | 🟢 v3 | Orchestrates all components |
-| Conversation List | `ConversationList.js` | 155 | 🟢 v3 | Sidebar with conversations |
-| Message Composer | `MessageComposer.js` | 548 | 🟢 v3 | Message input with attachments/emoji |
-| Chat View | `ConversationView.js` | 9 | 🔴 Stub only | Message display (incomplete) |
-| Contact Picker | `ContactPicker.js` | 9 | 🔴 Stub only | User search (incomplete) |
+| Component         | File                  | Lines | Status       | Purpose                               |
+| ----------------- | --------------------- | ----- | ------------ | ------------------------------------- |
+| API Client        | `MessengerAPI.js`     | 268   | 🟢 v3        | HTTP requests to `/api/v3/messenger/` |
+| WebSocket         | `MessengerSocket.js`  | 193   | 🟢 v3        | Socket.IO client for v3 events        |
+| State Manager     | `MessengerState.js`   | 238   | 🟢 v3        | In-memory state management            |
+| Main App          | `MessengerApp.js`     | 303   | 🟢 v3        | Orchestrates all components           |
+| Conversation List | `ConversationList.js` | 155   | 🟢 v3        | Sidebar with conversations            |
+| Message Composer  | `MessageComposer.js`  | 548   | 🟢 v3        | Message input with attachments/emoji  |
+| Chat View         | `ConversationView.js` | 9     | 🔴 Stub only | Message display (incomplete)          |
+| Contact Picker    | `ContactPicker.js`    | 9     | 🔴 Stub only | User search (incomplete)              |
 
 **Dashboard Widgets**:
+
 - `customer-messages.js` (273 LOC) - Dashboard inbox widget for customers
 - `supplier-messages.js` (305 LOC) - Dashboard inbox widget for suppliers
 - Both use v3 API currently
 
 **Entry Point Triggers**:
+
 - `MessengerTrigger.js` (209 LOC) - Auto-initializes "Message Supplier" buttons
 - `MessengerWidget.js` (538 LOC) - Embeddable inbox widget
 - `NotificationBridge.js` (236 LOC) - Syncs unread counts with navbar
@@ -211,13 +222,14 @@ The following components need to be created for v4:
 
 ### Current State
 
-| File | Lines | Status | Coverage |
-|------|-------|--------|----------|
-| `messenger-v4.css` | 924 | 🟢 Complete | All components |
-| `messenger-animations.css` | ~200 | 🟢 Complete | Transitions, loading states |
-| `liquid-glass.css` | ~500 | 🟢 Complete | Global design system |
+| File                       | Lines | Status      | Coverage                    |
+| -------------------------- | ----- | ----------- | --------------------------- |
+| `messenger-v4.css`         | 924   | 🟢 Complete | All components              |
+| `messenger-animations.css` | ~200  | 🟢 Complete | Transitions, loading states |
+| `liquid-glass.css`         | ~500  | 🟢 Complete | Global design system        |
 
 **Design System Features**:
+
 - ✅ Liquid glass effect (frosted glass backgrounds)
 - ✅ Teal gradient for sent messages (#0B8073 → #14B8A6)
 - ✅ Responsive layouts: 3-col (desktop) → 2-col (tablet) → 1-col (mobile)
@@ -235,6 +247,7 @@ The following components need to be created for v4:
 ### v3 Endpoints (Production)
 
 **Conversations**:
+
 - POST `/api/v3/messenger/conversations` - Create
 - GET `/api/v3/messenger/conversations` - List with filters
 - GET `/api/v3/messenger/conversations/:id` - Get single
@@ -242,6 +255,7 @@ The following components need to be created for v4:
 - DELETE `/api/v3/messenger/conversations/:id` - Archive
 
 **Messages**:
+
 - POST `/api/v3/messenger/conversations/:id/messages` - Send
 - GET `/api/v3/messenger/conversations/:id/messages` - List (cursor pagination)
 - PATCH `/api/v3/messenger/messages/:id` - Edit (15-min window)
@@ -249,6 +263,7 @@ The following components need to be created for v4:
 - POST `/api/v3/messenger/messages/:id/reactions` - Toggle reaction
 
 **Utilities**:
+
 - GET `/api/v3/messenger/unread` - Unread count (embedded in conversations)
 - GET `/api/v3/messenger/contacts` - Search users
 - GET `/api/v3/messenger/search` - Search messages
@@ -258,6 +273,7 @@ The following components need to be created for v4:
 ### v4 Endpoints (Backend Complete)
 
 **Identical to v3** with these enhancements:
+
 - ✅ Explicit `/unread-count` endpoint (not embedded)
 - ✅ File upload support via multer (10MB max, 10 files)
 - ✅ Enhanced filtering (isPinned, isArchived, type, status)
@@ -272,13 +288,14 @@ The following components need to be created for v4:
 
 ### Migration Scripts
 
-| Script | From → To | Status | Features |
-|--------|-----------|--------|----------|
-| `migrate-to-mongodb.js` | SQL → MongoDB v2 | 🟢 Complete | Initial migration |
-| `migrate-to-messenger-v3.js` | v1/v2 → v3 | 🟢 Complete | Thread → Conversation |
-| `migrate-to-messenger-v4.js` | v1/v2/v3 → v4 | 🟢 Complete | Full migration + indexes |
+| Script                       | From → To        | Status      | Features                 |
+| ---------------------------- | ---------------- | ----------- | ------------------------ |
+| `migrate-to-mongodb.js`      | SQL → MongoDB v2 | 🟢 Complete | Initial migration        |
+| `migrate-to-messenger-v3.js` | v1/v2 → v3       | 🟢 Complete | Thread → Conversation    |
+| `migrate-to-messenger-v4.js` | v1/v2/v3 → v4    | 🟢 Complete | Full migration + indexes |
 
 **v4 Migration Features**:
+
 - ✅ Reads from both `threads` (v1/v2) and `conversations` (v3)
 - ✅ Deduplicates conversations (prevents duplicates)
 - ✅ Creates all 13 MongoDB indexes (7 for conversations, 6 for messages)
@@ -290,13 +307,14 @@ The following components need to be created for v4:
 
 **Required for backward compatibility**:
 
-| Old URL | New URL | Status |
-|---------|---------|--------|
-| `/messages.html` | `/messenger/` | ❌ Not implemented |
+| Old URL             | New URL                        | Status             |
+| ------------------- | ------------------------------ | ------------------ |
+| `/messages.html`    | `/messenger/`                  | ❌ Not implemented |
 | `/conversation/:id` | `/messenger/?conversation=:id` | ❌ Not implemented |
-| `/message/:userId` | `/messenger/?contact=:userId` | ❌ Not implemented |
+| `/message/:userId`  | `/messenger/?contact=:userId`  | ❌ Not implemented |
 
 **API Deprecation**:
+
 - v1/v2 endpoints should return deprecation headers
 - v3 should include "upgrade to v4" messaging
 
@@ -344,17 +362,17 @@ The following components need to be created for v4:
 
 ### Current Security Measures (v4)
 
-| Measure | Implementation | Status |
-|---------|----------------|--------|
-| Authentication | JWT cookie-based | ✅ Complete |
-| Authorization | User can only access own conversations | ✅ Complete |
-| CSRF Protection | All write operations | ✅ Complete |
-| XSS Prevention | DOMPurify content sanitization | ✅ Complete |
-| SQL Injection | N/A (MongoDB with ObjectId) | ✅ N/A |
-| Spam Detection | Rate limiting + content analysis | ✅ Complete |
-| File Upload Validation | Type + size checks (10MB, allowed types) | ✅ Complete |
-| Rate Limiting | Per-tier limits (50/200/unlimited) | ✅ Complete |
-| Content Security Policy | Compatible with inline scripts avoided | 🟡 Needs verification |
+| Measure                 | Implementation                           | Status                |
+| ----------------------- | ---------------------------------------- | --------------------- |
+| Authentication          | JWT cookie-based                         | ✅ Complete           |
+| Authorization           | User can only access own conversations   | ✅ Complete           |
+| CSRF Protection         | All write operations                     | ✅ Complete           |
+| XSS Prevention          | DOMPurify content sanitization           | ✅ Complete           |
+| SQL Injection           | N/A (MongoDB with ObjectId)              | ✅ N/A                |
+| Spam Detection          | Rate limiting + content analysis         | ✅ Complete           |
+| File Upload Validation  | Type + size checks (10MB, allowed types) | ✅ Complete           |
+| Rate Limiting           | Per-tier limits (50/200/unlimited)       | ✅ Complete           |
+| Content Security Policy | Compatible with inline scripts avoided   | 🟡 Needs verification |
 
 ### Security Gaps
 
@@ -371,6 +389,7 @@ The following components need to be created for v4:
 ### Database Indexes (v4)
 
 **conversations_v4** (7 indexes):
+
 1. `{ type: 1, status: 1, updatedAt: -1 }` - List queries
 2. `{ 'participants.userId': 1, status: 1 }` - User's conversations
 3. `{ 'participants.userId': 1, 'participants.isPinned': 1 }` - Pinned conversations
@@ -380,6 +399,7 @@ The following components need to be created for v4:
 7. `{ updatedAt: -1 }` - Recent activity
 
 **chat_messages_v4** (6 indexes):
+
 1. `{ conversationId: 1, createdAt: -1 }` - Message history
 2. `{ conversationId: 1, senderId: 1 }` - Sender filtering
 3. `{ senderId: 1, createdAt: -1 }` - User's messages
@@ -388,6 +408,7 @@ The following components need to be created for v4:
 6. `{ 'readBy.userId': 1 }` - Read receipt queries
 
 **Performance Characteristics**:
+
 - ✅ Cursor pagination (scales to millions of messages)
 - ✅ Compound indexes for common queries
 - ✅ Text indexes for search
@@ -396,13 +417,13 @@ The following components need to be created for v4:
 
 ### Estimated Performance
 
-| Operation | v3 | v4 | Notes |
-|-----------|----|----|-------|
-| List conversations (100 items) | ~50ms | ~30ms | Better indexes |
-| Load messages (50 items) | ~40ms | ~25ms | Cursor pagination |
-| Send message | ~100ms | ~120ms | +20ms for spam detection |
-| Search messages | ~500ms | ~150ms | Text indexes |
-| Unread count | ~60ms | ~40ms | Dedicated endpoint |
+| Operation                      | v3     | v4     | Notes                    |
+| ------------------------------ | ------ | ------ | ------------------------ |
+| List conversations (100 items) | ~50ms  | ~30ms  | Better indexes           |
+| Load messages (50 items)       | ~40ms  | ~25ms  | Cursor pagination        |
+| Send message                   | ~100ms | ~120ms | +20ms for spam detection |
+| Search messages                | ~500ms | ~150ms | Text indexes             |
+| Unread count                   | ~60ms  | ~40ms  | Dedicated endpoint       |
 
 ---
 
@@ -410,30 +431,30 @@ The following components need to be created for v4:
 
 ### Unit Tests
 
-| Test Suite | File | Tests | Status |
-|------------|------|-------|--------|
-| Messenger v4 Service | `tests/unit/messenger-v4.test.js` | 23 | 🟢 Complete |
-| Messenger v3 Service | `tests/unit/verification-messaging.test.js` | 15 | 🟢 Complete |
-| Messaging v2 | Various | 10 | 🟡 Partial |
+| Test Suite           | File                                        | Tests | Status      |
+| -------------------- | ------------------------------------------- | ----- | ----------- |
+| Messenger v4 Service | `tests/unit/messenger-v4.test.js`           | 23    | 🟢 Complete |
+| Messenger v3 Service | `tests/unit/verification-messaging.test.js` | 15    | 🟢 Complete |
+| Messaging v2         | Various                                     | 10    | 🟡 Partial  |
 
 ### Integration Tests
 
-| Area | Status | Coverage |
-|------|--------|----------|
-| v4 API Endpoints | ❌ Not created | 0% |
-| WebSocket v4 Events | ❌ Not created | 0% |
-| Authentication | 🟡 Partial | Legacy only |
-| File Uploads | ❌ Not created | 0% |
+| Area                | Status         | Coverage    |
+| ------------------- | -------------- | ----------- |
+| v4 API Endpoints    | ❌ Not created | 0%          |
+| WebSocket v4 Events | ❌ Not created | 0%          |
+| Authentication      | 🟡 Partial     | Legacy only |
+| File Uploads        | ❌ Not created | 0%          |
 
 ### E2E Tests
 
-| Workflow | Status | Coverage |
-|----------|--------|----------|
-| Send/receive message | ❌ Not created | 0% |
-| Create conversation from supplier profile | ❌ Not created | 0% |
-| Real-time typing indicators | ❌ Not created | 0% |
-| Attachment upload | ❌ Not created | 0% |
-| Unread badge updates | ❌ Not created | 0% |
+| Workflow                                  | Status         | Coverage |
+| ----------------------------------------- | -------------- | -------- |
+| Send/receive message                      | ❌ Not created | 0%       |
+| Create conversation from supplier profile | ❌ Not created | 0%       |
+| Real-time typing indicators               | ❌ Not created | 0%       |
+| Attachment upload                         | ❌ Not created | 0%       |
+| Unread badge updates                      | ❌ Not created | 0%       |
 
 ---
 
@@ -502,6 +523,7 @@ The following components need to be created for v4:
 ## Conclusion
 
 EventFlow has a **world-class messaging backend** (v4) with:
+
 - ✅ Comprehensive feature set (context linking, spam detection, rate limiting)
 - ✅ Production-ready security (CSRF, XSS prevention, authentication)
 - ✅ Scalable architecture (cursor pagination, indexes, WebSocket)
@@ -510,6 +532,7 @@ EventFlow has a **world-class messaging backend** (v4) with:
 **The critical blocker** is the **missing frontend**. Zero v4 JavaScript components exist, preventing users from accessing any v4 features.
 
 **Estimated Total Effort to Complete**:
+
 - Frontend components: 25 hours
 - Dashboard integration: 6 hours
 - Entry points: 5 hours
@@ -518,12 +541,14 @@ EventFlow has a **world-class messaging backend** (v4) with:
 - **Total**: ~56 hours of focused development
 
 **Risk Assessment**: LOW
+
 - Backend is battle-tested and production-ready
 - Design system is complete and consistent
 - Migration path is clear and automated
 - Only frontend implementation remains
 
 **Recommended Approach**: Incremental rollout
+
 1. Build v4 frontend components (week 1)
 2. Deploy to staging, test thoroughly (week 2)
 3. Migrate power users to v4 (week 3)

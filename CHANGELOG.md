@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Messaging API v2 Complete Feature Parity**: Added 8 missing endpoints to `/api/v2/messages` for full backward compatibility
   - `GET /unread` - Get total unread message count
   - `GET /drafts` - Get all draft messages
-  - `GET /sent` - Get all sent messages  
+  - `GET /sent` - Get all sent messages
   - `GET /conversations` - Alias for `/threads` (backward compatibility)
   - `PUT /:messageId` - Edit messages (currently drafts only, expandable for full edit history)
   - `DELETE /:messageId` - Soft delete messages

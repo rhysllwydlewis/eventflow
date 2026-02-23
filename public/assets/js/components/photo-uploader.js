@@ -46,7 +46,17 @@ class PhotoUploader {
     this.container = document.createElement('div');
     this.container.className = 'photo-uploader';
     // Build accept attribute with both MIME types and extensions
-    const acceptAttr = [...this.acceptedTypes, '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.heic', '.heif'].join(',');
+    const acceptAttr = [
+      ...this.acceptedTypes,
+      '.jpg',
+      '.jpeg',
+      '.png',
+      '.webp',
+      '.gif',
+      '.avif',
+      '.heic',
+      '.heif',
+    ].join(',');
     this.container.innerHTML = `
       <div class="photo-uploader__dropzone" id="photoDropzone">
         <div class="photo-uploader__icon">📸</div>

@@ -806,13 +806,13 @@ class MessagingService {
     if (messageIds.length > 100) {
       throw new Error('Cannot delete more than 100 messages at once');
     }
-    
+
     // Validate all message IDs are valid ObjectIds
     const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
     if (invalidIds.length > 0) {
       throw new Error('Invalid message IDs provided');
     }
-    
+
     if (!ObjectId.isValid(threadId)) {
       throw new Error('Invalid threadId');
     }
@@ -834,10 +834,10 @@ class MessagingService {
       // Fetch messages to save their current state
       const messages = await this.messagesCollection
         .find(
-          { 
+          {
             _id: { $in: messageIds.map(id => new ObjectId(id)) },
             threadId: threadId, // Ensure messages belong to the specified thread
-            deletedAt: null // Don't delete already deleted messages
+            deletedAt: null, // Don't delete already deleted messages
           },
           { session }
         )
@@ -845,7 +845,9 @@ class MessagingService {
 
       // Security check: ensure all requested messages were found and belong to thread
       if (messages.length !== messageIds.length) {
-        throw new Error(`Some messages not found or don't belong to thread. Expected ${messageIds.length}, found ${messages.length}`);
+        throw new Error(
+          `Some messages not found or don't belong to thread. Expected ${messageIds.length}, found ${messages.length}`
+        );
       }
 
       // Store previous state for undo
@@ -861,10 +863,10 @@ class MessagingService {
 
       // Soft delete the messages
       const result = await this.messagesCollection.updateMany(
-        { 
+        {
           _id: { $in: messageIds.map(id => new ObjectId(id)) },
           threadId: threadId, // Ensure messages belong to thread
-          deletedAt: null // Don't delete already deleted messages
+          deletedAt: null, // Don't delete already deleted messages
         },
         {
           $set: {
@@ -919,7 +921,7 @@ class MessagingService {
     } catch (error) {
       // Rollback transaction on error
       await session.abortTransaction();
-      
+
       logger.error('Error bulk deleting messages', {
         userId,
         messageIds,
@@ -947,7 +949,7 @@ class MessagingService {
     if (messageIds.length > 100) {
       throw new Error('Cannot mark more than 100 messages at once');
     }
-    
+
     // Validate all message IDs are valid ObjectIds
     const invalidIds = messageIds.filter(id => !ObjectId.isValid(id));
     if (invalidIds.length > 0) {
@@ -955,7 +957,7 @@ class MessagingService {
     }
 
     const now = new Date();
-    
+
     // Start a MongoDB session for transaction support
     const session = this.db.client.startSession();
 
@@ -965,10 +967,10 @@ class MessagingService {
 
       // Security: Only update messages where user is a recipient
       const result = await this.messagesCollection.updateMany(
-        { 
+        {
           _id: { $in: messageIds.map(id => new ObjectId(id)) },
           recipientIds: userId, // User must be a recipient
-          deletedAt: null // Don't modify deleted messages
+          deletedAt: null, // Don't modify deleted messages
         },
         isRead
           ? {
@@ -1012,7 +1014,7 @@ class MessagingService {
     } catch (error) {
       // Rollback transaction on error
       await session.abortTransaction();
-      
+
       logger.error('Error bulk marking messages', {
         userId,
         messageIds,
@@ -1037,13 +1039,13 @@ class MessagingService {
 
     try {
       const result = await this.messagesCollection.findOneAndUpdate(
-        { 
+        {
           _id: new ObjectId(messageId),
           $or: [
             { senderId: userId }, // User is sender
-            { recipientIds: userId } // User is recipient
+            { recipientIds: userId }, // User is recipient
           ],
-          deletedAt: null // Can't flag deleted messages
+          deletedAt: null, // Can't flag deleted messages
         },
         {
           $set: {
@@ -1093,13 +1095,13 @@ class MessagingService {
 
     try {
       const result = await this.messagesCollection.findOneAndUpdate(
-        { 
+        {
           _id: new ObjectId(messageId),
           $or: [
             { senderId: userId }, // User is sender
-            { recipientIds: userId } // User is recipient
+            { recipientIds: userId }, // User is recipient
           ],
-          deletedAt: null // Can't archive deleted messages
+          deletedAt: null, // Can't archive deleted messages
         },
         {
           $set: {
@@ -1146,7 +1148,7 @@ class MessagingService {
    */
   async undoOperation(operationId, undoToken, userId) {
     const now = new Date();
-    
+
     // Hash the provided token to compare with stored hash
     const undoTokenHash = crypto.createHash('sha256').update(undoToken).digest('hex');
 

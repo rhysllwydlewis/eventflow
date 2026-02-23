@@ -73,8 +73,8 @@ describe('Messaging-Notification Integration', () => {
     it('notifyNewMessage accepts message preview parameter', () => {
       const notifyNewMessageFn = notificationServiceJs.substring(
         notificationServiceJs.indexOf('async notifyNewMessage('),
-        notificationServiceJs.indexOf('async notifyBookingUpdate') || 
-        notificationServiceJs.indexOf('async notifyPayment')
+        notificationServiceJs.indexOf('async notifyBookingUpdate') ||
+          notificationServiceJs.indexOf('async notifyPayment')
       );
 
       expect(notifyNewMessageFn).toContain('messagePreview');
@@ -84,8 +84,8 @@ describe('Messaging-Notification Integration', () => {
     it('notifyNewMessage uses correct actionUrl format', () => {
       const notifyNewMessageFn = notificationServiceJs.substring(
         notificationServiceJs.indexOf('async notifyNewMessage('),
-        notificationServiceJs.indexOf('async notifyBookingUpdate') || 
-        notificationServiceJs.indexOf('async notifyPayment')
+        notificationServiceJs.indexOf('async notifyBookingUpdate') ||
+          notificationServiceJs.indexOf('async notifyPayment')
       );
 
       // Should use /messages.html?conversation= format
@@ -94,7 +94,6 @@ describe('Messaging-Notification Integration', () => {
   });
 
   (messagingJsExists ? describe : describe.skip)('Frontend messaging.js integration', () => {
-
     it('has triggerMessageNotification method', () => {
       expect(messagingJsContent).toContain('triggerMessageNotification(data)');
     });
@@ -104,8 +103,9 @@ describe('Messaging-Notification Integration', () => {
       expect(messagingJsContent).toContain('triggerMessageNotification');
       expect(messagingJsContent).toContain('handleNewMessage(data)');
       // The handleNewMessage method should call triggerMessageNotification
-      const hasIntegration = messagingJsContent.includes('handleNewMessage') && 
-                            messagingJsContent.includes('triggerMessageNotification');
+      const hasIntegration =
+        messagingJsContent.includes('handleNewMessage') &&
+        messagingJsContent.includes('triggerMessageNotification');
       expect(hasIntegration).toBe(true);
     });
 
@@ -155,8 +155,8 @@ describe('Messaging-Notification Integration', () => {
     it('handles both threadId and conversationId in mark-as-read', () => {
       const markedReadListener = notificationsJs.substring(
         notificationsJs.indexOf("addEventListener('messaging:marked-read'"),
-        notificationsJs.indexOf('function showWebSocketError') || 
-        notificationsJs.indexOf('async function fetchNotifications')
+        notificationsJs.indexOf('function showWebSocketError') ||
+          notificationsJs.indexOf('async function fetchNotifications')
       );
 
       // Should check both metadata.conversationId and metadata.threadId for compatibility

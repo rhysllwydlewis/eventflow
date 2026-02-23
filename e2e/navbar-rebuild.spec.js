@@ -28,7 +28,7 @@ test.describe('Navbar Complete Rebuild - PR #241', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('1. Burger menu appears with proper fixed positioning', async ({ page, viewport }) => {
@@ -93,7 +93,7 @@ test.describe('Navbar Complete Rebuild - PR #241', () => {
     });
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     // Check top nav shows logged-in state
@@ -128,7 +128,7 @@ test.describe('Navbar Complete Rebuild - PR #241', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000);
 
     // Filter out expected errors that are not related to our changes

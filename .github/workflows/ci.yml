@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Cancel in-progress runs when a new commit is pushed to the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     name: Setup Dependencies
@@ -50,10 +55,15 @@ jobs:
           node-version: '20'
 
       - name: Restore node_modules cache
+        id: restore-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (cache miss fallback)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run ESLint
         run: npm run lint
@@ -77,10 +87,15 @@ jobs:
           node-version: '20'
 
       - name: Restore node_modules cache
+        id: restore-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (cache miss fallback)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run smoke suites
         run: npm run test:smoke
@@ -105,10 +120,15 @@ jobs:
           node-version: '20'
 
       - name: Restore node_modules cache
+        id: restore-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (cache miss fallback)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run full test suite
         run: npm run test:full
@@ -139,10 +159,15 @@ jobs:
           node-version: '20'
 
       - name: Restore node_modules cache
+        id: restore-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (cache miss fallback)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run npm audit
         run: npm audit --production
@@ -164,17 +189,35 @@ jobs:
           node-version: '20'
 
       - name: Restore node_modules cache
+        id: restore-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Verify server starts
+      - name: Install dependencies (cache miss fallback)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Verify server starts and health check passes
         run: |
-          timeout 10 node server.js &
+          node server.js &
           SERVER_PID=$!
-          sleep 5
+          # Wait up to 10 seconds for the server to become ready
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "✅ Server health check passed after ${i}s"
+              break
+            fi
+            if [ $i -eq 10 ]; then
+              echo "❌ Server did not become ready in 10 seconds"
+              kill $SERVER_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
           kill $SERVER_PID || true
+          wait $SERVER_PID 2>/dev/null || true
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret-key-for-ci-testing-only-min-32-chars

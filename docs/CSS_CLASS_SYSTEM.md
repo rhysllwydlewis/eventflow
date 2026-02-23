@@ -7,6 +7,7 @@ This document describes the CSS class naming conventions and architecture for th
 ## Purpose
 
 The CSS class system replaces inline styles with reusable, maintainable CSS classes, improving:
+
 - **Maintainability**: Changes in one centralized location
 - **Performance**: Better browser caching, smaller HTML payload
 - **Consistency**: Uniform styling across components
@@ -44,6 +45,7 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 ```
 
 **Examples:**
+
 - `.supplier-cta-banner` (component)
 - `.supplier-cta-banner-title` (element)
 - `.lead-quality-fill--hot` (modifier)
@@ -53,6 +55,7 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 ## CSS Sections (in supplier-dashboard-improvements.css)
 
 ### Section 1-20: Pre-existing Components
+
 (Welcome cards, quick actions, checkboxes, etc.)
 
 ### Section 21: Profile Customization CTA Banner
@@ -60,6 +63,7 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 **Purpose**: Gradient banner promoting profile customization
 
 **Classes:**
+
 ```css
 .supplier-cta-section         /* Section wrapper with top border */
 .supplier-cta-banner          /* Main banner container */
@@ -71,26 +75,24 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 ```
 
 **Usage:**
+
 ```html
 <div class="form-row supplier-cta-section">
   <div class="supplier-cta-banner">
     <div class="supplier-cta-banner-content">
       <h3 class="supplier-cta-banner-title">
-        ✨ Profile Customization 
+        ✨ Profile Customization
         <span class="supplier-cta-banner-badge">New</span>
       </h3>
-      <p class="supplier-cta-banner-text">
-        Make your profile stand out
-      </p>
+      <p class="supplier-cta-banner-text">Make your profile stand out</p>
     </div>
-    <a href="/customize" class="supplier-cta-banner-button">
-      Customize →
-    </a>
+    <a href="/customize" class="supplier-cta-banner-button"> Customize → </a>
   </div>
 </div>
 ```
 
 **Responsive:**
+
 - Mobile (< 640px): Stacks vertically, full-width button
 
 ---
@@ -100,6 +102,7 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 **Purpose**: Data visualization for lead quality metrics
 
 **Classes:**
+
 ```css
 .lead-quality-item            /* Individual quality tier container */
 .lead-quality-header          /* Header with label and value */
@@ -117,6 +120,7 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 ```
 
 **Usage:**
+
 ```html
 <div class="lead-quality-item">
   <div class="lead-quality-header">
@@ -138,21 +142,24 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 **Purpose**: Responsive form layouts
 
 **Classes:**
+
 ```css
 .supplier-form-grid       /* Auto-fit grid (min 200px) */
 .supplier-form-grid-2col  /* 2-column grid */
 ```
 
 **Usage:**
+
 ```html
 <div class="form-row supplier-form-grid">
-  <div><label>Field 1</label><input></div>
-  <div><label>Field 2</label><input></div>
-  <div><label>Field 3</label><input></div>
+  <div><label>Field 1</label><input /></div>
+  <div><label>Field 2</label><input /></div>
+  <div><label>Field 3</label><input /></div>
 </div>
 ```
 
 **Responsive:**
+
 - Mobile (< 640px): Single column layout
 
 ---
@@ -162,6 +169,7 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 **Purpose**: Consistent form feedback styling
 
 **Classes:**
+
 ```css
 .form-required          /* Red asterisk for required fields */
 .form-help-text         /* Gray help text */
@@ -170,14 +178,16 @@ We use a **BEM-inspired** naming convention with component-specific prefixes:
 ```
 
 **Usage:**
+
 ```html
 <label>Postcode <span class="form-required">*</span></label>
-<input id="postcode">
+<input id="postcode" />
 <p class="form-help-text">Enter UK postcode</p>
 <p class="form-error-text" id="postcode-error">Invalid postcode</p>
 ```
 
 **JavaScript:**
+
 ```javascript
 // Show error
 errorElement.classList.add('visible');
@@ -193,11 +203,13 @@ errorElement.classList.remove('visible');
 **Purpose**: Consistent section headings
 
 **Classes:**
+
 ```css
 .supplier-section-header  /* Consistent section heading style */
 ```
 
 **Usage:**
+
 ```html
 <h3 class="supplier-section-header">Create / Edit profile</h3>
 ```
@@ -209,6 +221,7 @@ errorElement.classList.remove('visible');
 **Purpose**: Card action buttons and badges
 
 **Classes:**
+
 ```css
 .supplier-card-action-btn       /* Compact card button */
 .supplier-unread-badge          /* Badge (hidden by default) */
@@ -216,12 +229,14 @@ errorElement.classList.remove('visible');
 ```
 
 **Usage:**
+
 ```html
 <button class="cta supplier-card-action-btn">Create Ticket</button>
 <span class="badge badge-info supplier-unread-badge">0 unread</span>
 ```
 
 **JavaScript:**
+
 ```javascript
 badge.classList.add('visible'); // Show badge
 ```
@@ -233,11 +248,13 @@ badge.classList.add('visible'); // Show badge
 **Purpose**: Utility classes for form rows
 
 **Classes:**
+
 ```css
 .form-row-hidden  /* Hidden form row state */
 ```
 
 **Usage:**
+
 ```html
 <div class="form-row form-row-hidden" id="optional-field">
   <!-- Hidden by default -->
@@ -245,6 +262,7 @@ badge.classList.add('visible'); // Show badge
 ```
 
 **JavaScript:**
+
 ```javascript
 // Show
 row.classList.remove('form-row-hidden');
@@ -260,12 +278,14 @@ row.classList.add('form-row-hidden');
 **Purpose**: Subscription status and actions
 
 **Classes:**
+
 ```css
 .subscription-status-active  /* Green status text */
 .subscription-action-btn     /* Subscription action buttons */
 ```
 
 **Usage:**
+
 ```html
 <p>Status: <span class="subscription-status-active">✓ Active</span></p>
 <a href="/upgrade" class="btn subscription-action-btn">Manage</a>
@@ -278,23 +298,27 @@ row.classList.add('form-row-hidden');
 ### 1. Use Classes, Not Inline Styles
 
 **❌ Don't:**
+
 ```html
-<div style="margin-top: 1rem; padding: 0.5rem;">
+<div style="margin-top: 1rem; padding: 0.5rem;"></div>
 ```
 
 **✅ Do:**
+
 ```html
-<div class="supplier-section">
+<div class="supplier-section"></div>
 ```
 
 ### 2. Use classList API for JavaScript
 
 **❌ Don't:**
+
 ```javascript
 element.style.display = 'none';
 ```
 
 **✅ Do:**
+
 ```javascript
 element.classList.add('form-row-hidden');
 ```
@@ -302,13 +326,17 @@ element.classList.add('form-row-hidden');
 ### 3. Keep Specificity Low
 
 **❌ Don't:**
+
 ```css
-.card .header .title .text { }
+.card .header .title .text {
+}
 ```
 
 **✅ Do:**
+
 ```css
-.supplier-cta-banner-title { }
+.supplier-cta-banner-title {
+}
 ```
 
 ### 4. Mobile-First Responsive Design
@@ -330,15 +358,25 @@ element.classList.add('form-row-hidden');
 ### 5. Use Semantic Class Names
 
 **❌ Don't:**
+
 ```css
-.mb-1 { margin-bottom: 1rem; }
-.text-red { color: red; }
+.mb-1 {
+  margin-bottom: 1rem;
+}
+.text-red {
+  color: red;
+}
 ```
 
 **✅ Do:**
+
 ```css
-.form-error-text { color: #ef4444; }
-.supplier-section-header { margin-bottom: 0.75rem; }
+.form-error-text {
+  color: #ef4444;
+}
+.supplier-section-header {
+  margin-bottom: 0.75rem;
+}
 ```
 
 ---
@@ -348,6 +386,7 @@ element.classList.add('form-row-hidden');
 Only use inline styles for:
 
 1. **Dynamic Data Visualization**
+
    ```html
    <div style="width: ${percentage}%;"></div>
    ```
@@ -362,16 +401,19 @@ Only use inline styles for:
 ## Color Palette
 
 ### Brand Colors
+
 - **Primary Teal**: `#0B8073`
 - **Dark Teal**: `#0a6b5f`
 
 ### Status Colors
+
 - **Success/Green**: `#10b981`
 - **Warning/Amber**: `#f59e0b`
 - **Error/Red**: `#ef4444`
 - **Info/Gray**: `#6b7280`
 
 ### Neutral Colors
+
 - **Dark Text**: `#111827`, `#374151`
 - **Mid Gray**: `#667085`
 - **Light Gray**: `#e5e7eb`, `#f9fafb`
@@ -383,13 +425,16 @@ Only use inline styles for:
 ```css
 /* Mobile: Default (< 640px) */
 /* Tablet: 640px - 768px */
-@media (max-width: 768px) { }
+@media (max-width: 768px) {
+}
 
 /* Desktop: > 768px */
-@media (min-width: 769px) { }
+@media (min-width: 769px) {
+}
 
 /* Mobile specific */
-@media (max-width: 640px) { }
+@media (max-width: 640px) {
+}
 ```
 
 ---
@@ -407,6 +452,7 @@ Only use inline styles for:
 **Example:**
 
 Before:
+
 ```html
 <div style="display: flex; gap: 1rem; padding: 1rem;">
   <span style="font-weight: 600;">Label</span>
@@ -414,6 +460,7 @@ Before:
 ```
 
 After:
+
 ```css
 .supplier-card-header {
   display: flex;
@@ -458,11 +505,13 @@ After:
 ### CSS Linting (Optional)
 
 Install stylelint for CSS linting:
+
 ```bash
 npm install --save-dev stylelint stylelint-config-standard
 ```
 
 Add to `package.json`:
+
 ```json
 "scripts": {
   "lint:css": "stylelint 'public/assets/css/**/*.css'"
@@ -472,6 +521,7 @@ Add to `package.json`:
 ### Pre-commit Hooks
 
 CSS files can be added to lint-staged in `package.json`:
+
 ```json
 "lint-staged": {
   "*.css": [
@@ -486,6 +536,7 @@ CSS files can be added to lint-staged in `package.json`:
 ## Performance Considerations
 
 ### CSS File Size
+
 - Current: 870 lines (~30KB unminified)
 - Minified: ~20KB (estimated)
 - Gzipped: ~5KB (estimated)
@@ -493,6 +544,7 @@ CSS files can be added to lint-staged in `package.json`:
 ### Optimization Recommendations
 
 1. **CSS Minification**: Add to build process
+
    ```bash
    npm install --save-dev cssnano postcss-cli
    ```
@@ -508,17 +560,20 @@ CSS files can be added to lint-staged in `package.json`:
 ### Common Issues
 
 **1. Styles not applying**
+
 - Check class name spelling
 - Verify CSS file is loaded
 - Check browser cache (hard refresh)
 - Inspect element for conflicting styles
 
 **2. JavaScript classList not working**
+
 - Verify element exists in DOM
 - Check timing (DOM ready?)
 - Ensure class name is correct
 
 **3. Responsive issues**
+
 - Test at actual breakpoints
 - Check media query syntax
 - Verify viewport meta tag
@@ -537,6 +592,7 @@ CSS files can be added to lint-staged in `package.json`:
 ## Changelog
 
 ### Version 1.0.0 (2026-02-03)
+
 - Initial CSS class system documentation
 - 8 sections documented (21-28)
 - 243 lines of new CSS classes
@@ -548,6 +604,7 @@ CSS files can be added to lint-staged in `package.json`:
 ## Contact
 
 For questions or suggestions about the CSS class system, please:
+
 1. Review this documentation
 2. Check existing issues in GitHub
 3. Create new issue with label `css-architecture`

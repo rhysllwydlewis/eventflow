@@ -182,7 +182,7 @@ class OfflineQueueManager {
    */
   async retryMessage(queueId) {
     const queue = this.loadQueue();
-    const entry = queue.find((e) => e.id === queueId);
+    const entry = queue.find(e => e.id === queueId);
 
     if (!entry) {
       console.error('Queue entry not found:', queueId);
@@ -204,7 +204,7 @@ class OfflineQueueManager {
    */
   removeMessage(queueId) {
     const queue = this.loadQueue();
-    const index = queue.findIndex((e) => e.id === queueId);
+    const index = queue.findIndex(e => e.id === queueId);
 
     if (index !== -1) {
       queue.splice(index, 1);
@@ -218,7 +218,7 @@ class OfflineQueueManager {
    */
   getQueuedCount() {
     const queue = this.loadQueue();
-    return queue.filter((e) => e.status !== 'sent').length;
+    return queue.filter(e => e.status !== 'sent').length;
   }
 
   /**

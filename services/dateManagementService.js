@@ -19,7 +19,7 @@ class DateManagementService {
     this.dbUnified = dbUnified;
     this.logger = logger;
     this.scheduledJob = null;
-    
+
     // Paths to track for legal document changes
     this.legalPaths = [
       'public/terms.html',
@@ -28,12 +28,9 @@ class DateManagementService {
       'public/cookies.html',
       'public/acceptable-use.html',
     ];
-    
+
     // Paths to track for guides/articles
-    this.guidePaths = [
-      'public/guides',
-      'docs',
-    ];
+    this.guidePaths = ['public/guides', 'docs'];
   }
 
   /**
@@ -45,34 +42,36 @@ class DateManagementService {
     try {
       const repoRoot = path.resolve(__dirname, '..');
       const fullPath = path.resolve(repoRoot, filePath);
-      
+
       // Check if path exists
       if (!fs.existsSync(fullPath)) {
         this.logger.warn(`Path does not exist: ${filePath}`);
         return null;
       }
-      
+
       // Sanitize filePath to prevent command injection
       // Only allow alphanumeric, dash, underscore, slash, dot
       // This prevents shell metacharacters like ; | & $ ` \ etc.
       if (!/^[a-zA-Z0-9/_.-]+$/.test(filePath)) {
-        this.logger.error(`Invalid file path format (contains potentially unsafe characters): ${filePath}`);
+        this.logger.error(
+          `Invalid file path format (contains potentially unsafe characters): ${filePath}`
+        );
         return null;
       }
-      
+
       // Get last commit date for this path
       // Using -- before path ensures it's treated as a file path, not a git option
       const command = `git log -1 --format=%cI -- "${filePath}"`;
-      const result = execSync(command, { 
+      const result = execSync(command, {
         cwd: repoRoot,
-        encoding: 'utf8'
+        encoding: 'utf8',
       }).trim();
-      
+
       if (!result) {
         this.logger.warn(`No git history found for: ${filePath}`);
         return null;
       }
-      
+
       return new Date(result);
     } catch (error) {
       this.logger.error(`Error getting git commit date for ${filePath}:`, error);
@@ -86,14 +85,12 @@ class DateManagementService {
    * @returns {Date|null} Most recent commit date
    */
   getMostRecentCommitDate(paths) {
-    const dates = paths
-      .map(p => this.getLastCommitDate(p))
-      .filter(d => d !== null);
-    
+    const dates = paths.map(p => this.getLastCommitDate(p)).filter(d => d !== null);
+
     if (dates.length === 0) {
       return null;
     }
-    
+
     return new Date(Math.max(...dates.map(d => d.getTime())));
   }
 
@@ -104,8 +101,18 @@ class DateManagementService {
    */
   formatLegalDate(date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return `${months[date.getMonth()]} ${date.getFullYear()}`;
   }
@@ -120,49 +127,49 @@ class DateManagementService {
       delete require.cache[require.resolve('../config/content-config.js')];
       const { getConfig } = require('../config/content-config.js');
       const config = getConfig();
-      
+
       // Get most recent commit date for legal files
       const gitDate = this.getMostRecentCommitDate(this.legalPaths);
-      
+
       if (!gitDate) {
         this.logger.warn('Could not determine git date for legal files');
         return {
           changed: false,
-          reason: 'No git history available'
+          reason: 'No git history available',
         };
       }
-      
+
       // Parse current config date
       const configDateStr = config.dates.legalLastUpdated;
       const configDate = this.parseConfigDate(configDateStr);
-      
+
       if (!configDate) {
         this.logger.warn('Could not parse config date:', configDateStr);
         return {
           changed: true,
           reason: 'Config date invalid',
           gitDate: this.formatLegalDate(gitDate),
-          configDate: configDateStr
+          configDate: configDateStr,
         };
       }
-      
+
       // Check if git date is more recent than config date
       const changed = gitDate > configDate;
-      
+
       return {
         changed,
         reason: changed ? 'Content modified since last update' : 'Content up to date',
         gitDate: this.formatLegalDate(gitDate),
         configDate: configDateStr,
         gitDateRaw: gitDate,
-        configDateRaw: configDate
+        configDateRaw: configDate,
       };
     } catch (error) {
       this.logger.error('Error checking legal content changes:', error);
       return {
         changed: false,
         reason: 'Error checking changes',
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -175,22 +182,32 @@ class DateManagementService {
   parseConfigDate(dateStr) {
     try {
       const months = {
-        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
-        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+        january: 0,
+        february: 1,
+        march: 2,
+        april: 3,
+        may: 4,
+        june: 5,
+        july: 6,
+        august: 7,
+        september: 8,
+        october: 9,
+        november: 10,
+        december: 11,
       };
-      
+
       const parts = dateStr.toLowerCase().split(' ');
       if (parts.length !== 2) {
         return null;
       }
-      
+
       const month = months[parts[0]];
       const year = parseInt(parts[1], 10);
-      
+
       if (month === undefined || isNaN(year)) {
         return null;
       }
-      
+
       // Use the 1st of the month
       return new Date(year, month, 1);
     } catch (error) {
@@ -205,13 +222,8 @@ class DateManagementService {
    */
   async updateLegalDates(options = {}) {
     try {
-      const {
-        lastUpdated,
-        effectiveDate,
-        manual = false,
-        userId = 'system'
-      } = options;
-      
+      const { lastUpdated, effectiveDate, manual = false, userId = 'system' } = options;
+
       // Validate dates if provided (defense in depth)
       if (lastUpdated && typeof lastUpdated !== 'string') {
         throw new Error('lastUpdated must be a string (e.g., "February 2026")');
@@ -219,21 +231,22 @@ class DateManagementService {
       if (effectiveDate && typeof effectiveDate !== 'string') {
         throw new Error('effectiveDate must be a string (e.g., "February 2026")');
       }
-      
+
       // Additional validation: ensure format is safe (defense in depth)
       // Even though routes validate, we validate again to prevent injection
-      const datePattern = /^(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/;
+      const datePattern =
+        /^(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/;
       if (lastUpdated && !datePattern.test(lastUpdated)) {
         throw new Error('Invalid date format for lastUpdated (must be "Month YYYY")');
       }
       if (effectiveDate && !datePattern.test(effectiveDate)) {
         throw new Error('Invalid date format for effectiveDate (must be "Month YYYY")');
       }
-      
+
       // Read current config file
       const configPath = path.resolve(__dirname, '../config/content-config.js');
       let configContent = fs.readFileSync(configPath, 'utf8');
-      
+
       // Update dates
       if (lastUpdated) {
         configContent = configContent.replace(
@@ -241,48 +254,42 @@ class DateManagementService {
           `legalLastUpdated: '${lastUpdated}'`
         );
       }
-      
+
       if (effectiveDate) {
         configContent = configContent.replace(
           /legalEffectiveDate:\s*['"][^'"]*['"]/,
           `legalEffectiveDate: '${effectiveDate}'`
         );
       }
-      
+
       // Update last check timestamp
       const now = new Date().toISOString();
       const lastCheckPattern = /lastAutoCheck:\s*[^,]*/;
       if (configContent.match(lastCheckPattern)) {
-        configContent = configContent.replace(
-          lastCheckPattern,
-          `lastAutoCheck: '${now}'`
-        );
+        configContent = configContent.replace(lastCheckPattern, `lastAutoCheck: '${now}'`);
       }
-      
+
       // Update manual update timestamp if manual
       if (manual) {
         const lastManualPattern = /lastManualUpdate:\s*[^,]*/;
         if (configContent.match(lastManualPattern)) {
-          configContent = configContent.replace(
-            lastManualPattern,
-            `lastManualUpdate: '${now}'`
-          );
+          configContent = configContent.replace(lastManualPattern, `lastManualUpdate: '${now}'`);
         }
       }
-      
+
       // Write updated config
       fs.writeFileSync(configPath, configContent, 'utf8');
-      
+
       // Clear require cache
       delete require.cache[require.resolve('../config/content-config.js')];
-      
+
       this.logger.info('Legal dates updated', {
         lastUpdated,
         effectiveDate,
         manual,
-        userId
+        userId,
       });
-      
+
       // Create audit log entry
       if (this.dbUnified) {
         try {
@@ -293,29 +300,29 @@ class DateManagementService {
             action: manual ? 'MANUAL_DATE_UPDATE' : 'AUTO_DATE_UPDATE',
             details: {
               lastUpdated,
-              effectiveDate
+              effectiveDate,
             },
             timestamp: now,
-            ipAddress: 'system'
+            ipAddress: 'system',
           });
           await this.dbUnified.write('audit_logs', auditLogs);
         } catch (auditError) {
           this.logger.error('Failed to create audit log:', auditError);
         }
       }
-      
+
       return {
         success: true,
         lastUpdated,
         effectiveDate,
         manual,
-        timestamp: now
+        timestamp: now,
       };
     } catch (error) {
       this.logger.error('Error updating legal dates:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -327,32 +334,32 @@ class DateManagementService {
   async getArticleDates() {
     try {
       const articles = [];
-      
+
       // Get all HTML files in guides directory
       const guidesDir = path.resolve(__dirname, '../public/guides');
       if (fs.existsSync(guidesDir)) {
         const files = fs.readdirSync(guidesDir);
-        
+
         for (const file of files) {
           if (file.endsWith('.html')) {
             const filePath = path.join('public/guides', file);
             const date = this.getLastCommitDate(filePath);
-            
+
             if (date) {
               articles.push({
                 path: filePath,
                 name: file.replace('.html', '').replace(/-/g, ' '),
                 lastModified: date.toISOString(),
-                lastModifiedFormatted: this.formatLegalDate(date)
+                lastModifiedFormatted: this.formatLegalDate(date),
               });
             }
           }
         }
       }
-      
+
       // Sort by most recent first
       articles.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-      
+
       return articles;
     } catch (error) {
       this.logger.error('Error getting article dates:', error);
@@ -367,62 +374,62 @@ class DateManagementService {
   async performMonthlyCheck() {
     try {
       this.logger.info('Starting monthly date check');
-      
+
       // Check if auto-update is enabled
       delete require.cache[require.resolve('../config/content-config.js')];
       const { getConfig } = require('../config/content-config.js');
       const config = getConfig();
-      
+
       if (config.dates.autoUpdateEnabled === false) {
         this.logger.info('Auto-update is disabled, skipping');
         return {
           performed: false,
-          reason: 'Auto-update disabled'
+          reason: 'Auto-update disabled',
         };
       }
-      
+
       // Check if content has changed
       const changeCheck = await this.hasLegalContentChanged();
-      
+
       if (!changeCheck.changed) {
         this.logger.info('No legal content changes detected');
         return {
           performed: false,
           reason: 'No changes detected',
-          ...changeCheck
+          ...changeCheck,
         };
       }
-      
+
       // Update dates
       const updateResult = await this.updateLegalDates({
         lastUpdated: changeCheck.gitDate,
         effectiveDate: changeCheck.gitDate,
         manual: false,
-        userId: 'system'
+        userId: 'system',
       });
-      
+
       if (updateResult.success) {
         // Notify admins
         await this.notifyAdmins({
           type: 'AUTO_UPDATE',
           previousDate: changeCheck.configDate,
           newDate: changeCheck.gitDate,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         this.logger.info('Monthly date update completed successfully');
       }
-      
+
       return {
         performed: updateResult.success,
         ...changeCheck,
-        ...updateResult
+        ...updateResult,
       };
     } catch (error) {
       this.logger.error('Error performing monthly check:', error);
       return {
         performed: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -437,26 +444,26 @@ class DateManagementService {
       if (this.scheduledJob) {
         this.scheduledJob.cancel();
       }
-      
+
       // Schedule for 1st of month at 2:00 AM
       // Rule: '0 2 1 * *' = minute 0, hour 2, day 1, every month, any day of week
       this.scheduledJob = schedule.scheduleJob('0 2 1 * *', async () => {
         this.logger.info('Scheduled date check triggered');
         await this.performMonthlyCheck();
       });
-      
+
       this.logger.info('Monthly date update scheduled for 1st of each month at 2:00 AM');
-      
+
       return {
         scheduled: true,
         rule: '0 2 1 * *',
-        nextRun: this.scheduledJob.nextInvocation()
+        nextRun: this.scheduledJob.nextInvocation(),
       };
     } catch (error) {
       this.logger.error('Error scheduling monthly update:', error);
       return {
         scheduled: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -483,18 +490,19 @@ class DateManagementService {
       // Create notification for all admins
       const users = await this.dbUnified.read('users');
       const admins = users.filter(u => u.role === 'admin');
-      
+
       if (admins.length === 0) {
         this.logger.warn('No admin users found for notification');
         return;
       }
-      
+
       const notifications = await this.dbUnified.read('notifications');
-      
-      const message = updateInfo.type === 'AUTO_UPDATE'
-        ? `Legal document dates automatically updated from ${updateInfo.previousDate} to ${updateInfo.newDate}`
-        : `Legal document dates manually updated`;
-      
+
+      const message =
+        updateInfo.type === 'AUTO_UPDATE'
+          ? `Legal document dates automatically updated from ${updateInfo.previousDate} to ${updateInfo.newDate}`
+          : `Legal document dates manually updated`;
+
       for (const admin of admins) {
         notifications.push({
           id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
@@ -504,15 +512,15 @@ class DateManagementService {
           message,
           data: updateInfo,
           read: false,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         });
       }
-      
+
       await this.dbUnified.write('notifications', notifications);
-      
+
       this.logger.info('Admin notifications sent', {
         count: admins.length,
-        type: updateInfo.type
+        type: updateInfo.type,
       });
     } catch (error) {
       this.logger.error('Error notifying admins:', error);
@@ -528,7 +536,7 @@ class DateManagementService {
       scheduled: !!this.scheduledJob,
       nextRun: this.scheduledJob ? this.scheduledJob.nextInvocation() : null,
       legalPaths: this.legalPaths,
-      guidePaths: this.guidePaths
+      guidePaths: this.guidePaths,
     };
   }
 }

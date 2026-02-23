@@ -38,7 +38,9 @@ describe('Dashboard WebSocket Real-time Updates Integration', () => {
 
   describe('Chart Instance Storage', () => {
     it('should store the chart instance when creating performance chart', () => {
-      expect(dashboardContent).toMatch(/analyticsChartInstance\s*=\s*await\s+createPerformanceChart/);
+      expect(dashboardContent).toMatch(
+        /analyticsChartInstance\s*=\s*await\s+createPerformanceChart/
+      );
     });
   });
 
@@ -53,7 +55,9 @@ describe('Dashboard WebSocket Real-time Updates Integration', () => {
     });
 
     it('should configure onNotification handler', () => {
-      expect(dashboardContent).toMatch(/onNotification:\s*\(data\)\s*=>\s*handleRealtimeNotification/);
+      expect(dashboardContent).toMatch(
+        /onNotification:\s*\(data\)\s*=>\s*handleRealtimeNotification/
+      );
     });
 
     it('should check if WebSocketClient is defined before initializing', () => {
@@ -75,7 +79,9 @@ describe('Dashboard WebSocket Real-time Updates Integration', () => {
     });
 
     it('should show notification toast for enquiry_received', () => {
-      const handlerMatch = dashboardContent.match(/data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,500}EventFlowNotifications\.info/);
+      const handlerMatch = dashboardContent.match(
+        /data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,500}EventFlowNotifications\.info/
+      );
       expect(handlerMatch).toBeTruthy();
     });
 
@@ -84,25 +90,33 @@ describe('Dashboard WebSocket Real-time Updates Integration', () => {
     });
 
     it('should update chart data when chart instance exists', () => {
-      expect(dashboardContent).toMatch(/analyticsChartInstance\s*&&\s*analyticsChartInstance\.data/);
+      expect(dashboardContent).toMatch(
+        /analyticsChartInstance\s*&&\s*analyticsChartInstance\.data/
+      );
       expect(dashboardContent).toMatch(/analyticsChartInstance\.update\(\)/);
     });
 
     it('should have error handling in notification handler', () => {
-      const handlerMatch = dashboardContent.match(/function\s+handleRealtimeNotification[\s\S]*?catch\s*\(/);
+      const handlerMatch = dashboardContent.match(
+        /function\s+handleRealtimeNotification[\s\S]*?catch\s*\(/
+      );
       expect(handlerMatch).toBeTruthy();
     });
   });
 
   describe('Enquiry Counter Updates', () => {
     it('should increment enquiry counter value', () => {
-      const enquiryHandlerSection = dashboardContent.match(/data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,800}/);
+      const enquiryHandlerSection = dashboardContent.match(
+        /data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,800}/
+      );
       expect(enquiryHandlerSection).toBeTruthy();
       expect(enquiryHandlerSection[0]).toMatch(/currentValue\s*\+\s*1/);
     });
 
     it('should update data-target attribute', () => {
-      const enquiryHandlerSection = dashboardContent.match(/data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,800}/);
+      const enquiryHandlerSection = dashboardContent.match(
+        /data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,800}/
+      );
       expect(enquiryHandlerSection).toBeTruthy();
       expect(enquiryHandlerSection[0]).toMatch(/setAttribute\s*\(\s*['"]data-target['"]/);
     });
@@ -110,13 +124,17 @@ describe('Dashboard WebSocket Real-time Updates Integration', () => {
 
   describe('Chart Updates', () => {
     it('should update enquiries dataset (index 1)', () => {
-      const enquiryHandlerSection = dashboardContent.match(/data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,1000}/);
+      const enquiryHandlerSection = dashboardContent.match(
+        /data\.type\s*===\s*['"]enquiry_received['"][\s\S]{0,1000}/
+      );
       expect(enquiryHandlerSection).toBeTruthy();
       expect(enquiryHandlerSection[0]).toMatch(/datasets\[1\]/);
     });
 
     it('should update views dataset (index 0) for profile_view', () => {
-      const viewHandlerSection = dashboardContent.match(/data\.type\s*===\s*['"]profile_view['"][\s\S]{0,1000}/);
+      const viewHandlerSection = dashboardContent.match(
+        /data\.type\s*===\s*['"]profile_view['"][\s\S]{0,1000}/
+      );
       expect(viewHandlerSection).toBeTruthy();
       expect(viewHandlerSection[0]).toMatch(/datasets\[0\]/);
     });

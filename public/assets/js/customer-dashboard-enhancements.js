@@ -55,7 +55,10 @@
         try {
           triggerSuccessConfetti();
         } catch (err) {
-          console.warn('setupProfileCompletionConfetti: confetti call failed (canvas-confetti may not have loaded):', err);
+          console.warn(
+            'setupProfileCompletionConfetti: confetti call failed (canvas-confetti may not have loaded):',
+            err
+          );
         }
         // Remove param from URL
         window.history.replaceState({}, '', window.location.pathname);

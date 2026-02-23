@@ -36,7 +36,7 @@ test.describe('Navbar Fixes', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('footer nav visible on page load on mobile', async ({ page }) => {
@@ -83,7 +83,7 @@ test.describe('Navbar Fixes', () => {
     });
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     const dashboardLink = page.locator('#ef-bottom-dashboard');
@@ -230,7 +230,7 @@ test.describe('Navbar Fixes', () => {
     });
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     // Check mobile menu shows logged-in state

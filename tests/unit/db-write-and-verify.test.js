@@ -23,9 +23,20 @@ afterAll(() => {
 });
 
 describe('Database Unified - writeAndVerify', () => {
+  let originalSettings;
+
   beforeEach(async () => {
     // Initialize database before each test
     await dbUnified.initializeDatabase();
+    // Snapshot settings so we can restore after each test (avoids cross-test pollution)
+    originalSettings = await dbUnified.read('settings');
+  });
+
+  afterEach(async () => {
+    // Restore original settings to prevent pollution of other tests
+    if (originalSettings !== undefined) {
+      await dbUnified.write('settings', originalSettings);
+    }
   });
 
   describe('writeAndVerify with settings collection', () => {

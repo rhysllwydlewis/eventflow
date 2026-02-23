@@ -49,7 +49,9 @@ describe('Dashboard customer security-oriented script loading', () => {
   });
 
   it('exposes initCustomerDashboardWidgets to global scope from module script', () => {
-    expect(dashboardContent).toContain('window.initCustomerDashboardWidgets = initCustomerDashboardWidgets');
+    expect(dashboardContent).toContain(
+      'window.initCustomerDashboardWidgets = initCustomerDashboardWidgets'
+    );
   });
 
   it('hero section stats use event listeners, not synchronous badge reads', () => {

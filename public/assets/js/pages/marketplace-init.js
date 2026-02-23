@@ -146,8 +146,8 @@ async function searchListings(filters, page = 1) {
       pagination: {
         total: result.listings ? result.listings.length : 0,
         page: 1,
-        totalPages: 1
-      }
+        totalPages: 1,
+      },
     };
   } catch (error) {
     console.error('Search error:', error);
