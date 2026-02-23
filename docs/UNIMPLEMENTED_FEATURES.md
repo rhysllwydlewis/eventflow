@@ -69,22 +69,15 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 ### 4. hCaptcha Integration for Lead Quality 🤖
 
-**Status**: Not implemented  
-**Current**: Lead scoring exists but no bot protection
+**Status**: ✅ Implemented (PR: implement-hcaptcha-integration)
+**What was done**:
 
-**Needs**:
-
-- Add hCaptcha widget to enquiry forms
-- Server-side verification (utility exists in server.js)
-- Update lead scoring to use CAPTCHA result
-- Display CAPTCHA on: contact forms, enquiry forms, registration
-
-**Files to Modify**:
-
-- Forms in `public/*.html`
-- Update `utils/leadScoring.js` to factor in CAPTCHA
-
-**Impact**: High - Protects lead quality, prevents spam
+- ✅ hCaptcha widget added to `public/auth.html` registration form
+- ✅ hCaptcha widget added to `public/contact.html` contact form
+- ✅ Server-side verification via `verifyHCaptcha()` in `routes/auth.js` (register) and `routes/misc.js` (contact)
+- ✅ Lead scoring already penalises `captchaPassed: false` (`-50` pts) in `utils/leadScoring.js`
+- ✅ Sitekey read from `HCAPTCHA_SITE_KEY` env var via `<meta name="hcaptcha-sitekey">` or `/api/v1/config`
+- ✅ Enquiry threads (`routes/threads.js`) already integrate captcha + lead scoring
 
 ---
 

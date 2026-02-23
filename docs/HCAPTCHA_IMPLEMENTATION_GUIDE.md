@@ -82,7 +82,15 @@ The Content Security Policy already includes hCaptcha domains:
 - `frame-src`: `https://hcaptcha.com`, `https://*.hcaptcha.com`
 - `style-src`: `https://hcaptcha.com`, `https://*.hcaptcha.com`
 
-## Frontend Implementation (⏳ To Do)
+## Frontend Implementation (✅ Complete)
+
+### What Was Implemented
+
+- **`public/auth.html`**: hCaptcha API script loaded, widget container (`#reg-hcaptcha-container`) added to registration form, `captchaToken` included in submission payload.
+- **`public/contact.html`**: Contact form added with hCaptcha widget and client-side submission handler.
+- **`public/assets/js/utils/hcaptcha.js`**: Reusable hCaptcha utility module for other forms.
+- **`public/assets/js/app.js`**: Registration flow sends `captchaToken` to server.
+- **Sitekey source**: `<meta name="hcaptcha-sitekey">` (populated from `HCAPTCHA_SITE_KEY` env var) or falls back to `EVENTFLOW_CONFIG.hcaptchaSitekey` (from `/api/v1/config`).
 
 ### Step 1: Add hCaptcha Script to HTML Pages
 

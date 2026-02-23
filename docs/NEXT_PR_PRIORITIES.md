@@ -20,16 +20,15 @@ This is a practical, execution-focused backlog to drive upcoming PRs.
   - Reduced Redis adapter startup noise when Redis clustering is not configured.
 - **Validation:** `npm run test:smoke`
 
-### P1 — Address known `xlsx` security debt with migration plan
+### P1 — Address known `xlsx` security debt with migration plan ✅
 
-- **Why now:** package metadata records known high-severity advisories for `xlsx` with no upstream fix.
-- **Suggested PR scope:**
-  - Evaluate alternatives (e.g., CSV-only export by default, or safer xlsx writer).
-  - Add feature flag to disable XLSX export in hardened environments.
-  - Add migration note and deprecation timeline.
-- **Acceptance criteria:**
-  - Documented replacement path + rollout switch.
-  - Export tests updated for chosen path.
+- **Status:** Done in this PR batch.
+- **Outcome:**
+  - Added `DISABLE_XLSX_EXPORT=true` feature flag to `utils/export.js`.
+  - When enabled, `exportToExcel()` falls back to CSV and `exportMiddleware` returns HTTP 400 for xlsx/excel.
+  - Flag documented in `.env.example`.
+  - Export tests updated (`tests/unit/export-xlsx-flag.test.js`).
+- **Validation:** `npm run test -- --testPathPatterns=export-xlsx-flag`
 
 ## 2) Improve next (quality & maintainability)
 
@@ -42,16 +41,16 @@ This is a practical, execution-focused backlog to drive upcoming PRs.
   - Versioning contract tests in CI.
   - Docs include migration examples and deprecation behavior.
 
-### P1 — Finish Sentry integration end-to-end
+### P1 — Finish Sentry integration end-to-end ✅
 
-- **Why now:** Sentry utility exists, but roadmap tracks incomplete server integration and frontend/source-map configuration.
-- **Suggested PR scope:**
-  - Ensure backend init path is consistent across environments.
-  - Add frontend init with release/version tagging.
-  - Publish source maps in CI release flow.
-- **Acceptance criteria:**
-  - Test error includes release + environment tags.
-  - Alerting runbook documented.
+- **Status:** Done in this PR batch.
+- **Outcome:**
+  - Backend `utils/sentry.js`: added `release` field (`eventflow@{version}`), replaced `console.*` with `logger`.
+  - Frontend `public/assets/js/utils/sentry-browser-init.js` created: reads DSN from meta tag or `/api/v1/config`.
+  - `/api/v1/config` now exposes `sentryDsn` (from `SENTRY_DSN_FRONTEND`) and `hcaptchaSitekey`.
+  - `sentry-browser-init.js` loaded on all 17 pages that carry `global-error-handler.js`.
+  - Coverage tested by `tests/integration/sentry-frontend-coverage.test.js`.
+- **Validation:** `npm run lint && npm test`
 
 ### P2 — Strengthen smoke/full regression governance
 

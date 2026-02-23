@@ -346,8 +346,12 @@
             setTimeout(initRegisterCaptcha, 200);
             return;
           }
+          // Sitekey priority: meta tag → EVENTFLOW_CONFIG (from /api/v1/config) → dev test key
           var meta = document.querySelector('meta[name="hcaptcha-sitekey"]');
-          var sitekey = (meta && meta.getAttribute('content')) || '10000000-ffff-ffff-ffff-000000000001';
+          var sitekey =
+            (meta && meta.getAttribute('content')) ||
+            (window.EVENTFLOW_CONFIG && window.EVENTFLOW_CONFIG.hcaptchaSitekey) ||
+            '10000000-ffff-ffff-ffff-000000000001';
           var widgetId = window.hcaptcha.render(container, { sitekey: sitekey, theme: 'light' });
           window.__regHCaptchaWidgetId = widgetId;
         }

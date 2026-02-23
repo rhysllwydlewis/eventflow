@@ -10,6 +10,11 @@ const validator = require('validator');
 const logger = require('../utils/logger');
 const router = express.Router();
 
+// Input length limits for contact form fields
+const CONTACT_MAX_NAME_LENGTH = 100;
+const CONTACT_MAX_EMAIL_LENGTH = 200;
+const CONTACT_MAX_MESSAGE_LENGTH = 2000;
+
 // These will be injected by server.js during route mounting
 let dbUnified;
 let authRequired;
@@ -188,13 +193,13 @@ router.post('/contact', applyWriteLimiter, async (req, res) => {
   // Sanitize and trim string fields
   const name = String(req.body.name || '')
     .trim()
-    .slice(0, 100);
+    .slice(0, CONTACT_MAX_NAME_LENGTH);
   const email = String(req.body.email || '')
     .trim()
-    .slice(0, 200);
+    .slice(0, CONTACT_MAX_EMAIL_LENGTH);
   const message = String(req.body.message || '')
     .trim()
-    .slice(0, 2000);
+    .slice(0, CONTACT_MAX_MESSAGE_LENGTH);
 
   // Validate required fields
   if (!name || !email || !message) {

@@ -155,7 +155,7 @@
     var container = document.getElementById('contact-hcaptcha-container');
     if (!container || !window.hcaptcha) { setTimeout(initContactCaptcha, 200); return; }
     var meta = document.querySelector('meta[name="hcaptcha-sitekey"]');
-    var sitekey = (meta && meta.getAttribute('content')) || '10000000-ffff-ffff-ffff-000000000001';
+    var sitekey = (meta && meta.getAttribute('content')) || (window.EVENTFLOW_CONFIG && window.EVENTFLOW_CONFIG.hcaptchaSitekey) || '10000000-ffff-ffff-ffff-000000000001';
     var widgetId = window.hcaptcha.render(container, { sitekey: sitekey, theme: 'light' });
     window.__contactHCaptchaWidgetId = widgetId;
   }
