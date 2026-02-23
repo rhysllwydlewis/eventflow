@@ -340,10 +340,15 @@
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <script>
       (function () {
+        var CAPTCHA_MAX_RETRIES = 25; // 25 × 200 ms = 5 s max wait
+        var captchaRetries = 0;
         function initRegisterCaptcha() {
           var container = document.getElementById('reg-hcaptcha-container');
           if (!container || !window.hcaptcha) {
-            setTimeout(initRegisterCaptcha, 200);
+            captchaRetries++;
+            if (captchaRetries < CAPTCHA_MAX_RETRIES) {
+              setTimeout(initRegisterCaptcha, 200);
+            }
             return;
           }
           // Sitekey priority: meta tag → EVENTFLOW_CONFIG (from /api/v1/config) → dev test key
@@ -384,7 +389,6 @@
             const data = await response.json();
             window.csrfToken = data.csrfToken;
             window.__CSRF_TOKEN__ = data.csrfToken; // Backward compatibility
-            console.log('✅ CSRF token fetched via api-client');
           } else {
             console.error('Failed to fetch CSRF token:', response.statusText);
           }
@@ -452,8 +456,6 @@
           
           // Listen for valid submissions
           loginForm.addEventListener('validsubmit', function(e) {
-            const formData = e.detail;
-            console.log('Login form validated:', formData);
             // The existing auth-init.js will handle the actual submission
           });
         }
@@ -475,8 +477,6 @@
           
           // Listen for valid submissions
           registerForm.addEventListener('validsubmit', function(e) {
-            const formData = e.detail;
-            console.log('Register form validated:', formData);
             // The existing auth-init.js will handle the actual submission
           });
         }

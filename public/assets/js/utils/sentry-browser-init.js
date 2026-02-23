@@ -37,16 +37,20 @@
   /**
    * Initialize Sentry with the provided config
    * @param {{ dsn: string, release: string|null, environment: string }} config
+   * @param {number} [attempt=0] Retry counter to cap infinite retries if SDK never loads
    */
-  function doInit(config) {
+  function doInit(config, attempt) {
     if (!config.dsn) {
       return;
     }
 
+    const maxAttempts = 25; // 25 × 200 ms = 5 s max wait
     if (typeof window.Sentry === 'undefined') {
-      setTimeout(() => {
-        doInit(config);
-      }, 200);
+      if ((attempt || 0) < maxAttempts) {
+        setTimeout(() => {
+          doInit(config, (attempt || 0) + 1);
+        }, 200);
+      }
       return;
     }
 

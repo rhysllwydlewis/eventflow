@@ -151,9 +151,15 @@
 <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 <script>
 (function () {
+  var CAPTCHA_MAX_RETRIES = 25; // 25 × 200 ms = 5 s max wait
+  var captchaRetries = 0;
   function initContactCaptcha() {
     var container = document.getElementById('contact-hcaptcha-container');
-    if (!container || !window.hcaptcha) { setTimeout(initContactCaptcha, 200); return; }
+    if (!container || !window.hcaptcha) {
+      captchaRetries++;
+      if (captchaRetries < CAPTCHA_MAX_RETRIES) { setTimeout(initContactCaptcha, 200); }
+      return;
+    }
     var meta = document.querySelector('meta[name="hcaptcha-sitekey"]');
     var sitekey = (meta && meta.getAttribute('content')) || (window.EVENTFLOW_CONFIG && window.EVENTFLOW_CONFIG.hcaptchaSitekey) || '10000000-ffff-ffff-ffff-000000000001';
     var widgetId = window.hcaptcha.render(container, { sitekey: sitekey, theme: 'light' });
