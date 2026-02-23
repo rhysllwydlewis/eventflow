@@ -153,3 +153,113 @@ describe('auth-helpers.js – no debug noise', () => {
     expect(content).not.toContain('console.log("✅ Auth helpers loaded');
   });
 });
+
+describe('home-init.js – no unconditional debug noise', () => {
+  let content;
+
+  beforeAll(() => {
+    content = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/pages/home-init.js'),
+      'utf8'
+    );
+  });
+
+  it('does not have an unconditional collage script loaded log', () => {
+    // The comment "Unconditional startup log" and its log line must be gone
+    expect(content).not.toContain('Unconditional startup log');
+  });
+
+  it('gates the collage-script-loaded log with isDebugEnabled()', () => {
+    // The log must only appear inside an isDebugEnabled() guard
+    const DEBUG_GATE_PROXIMITY_CHARS = 100;
+    const logLine = "console.log('[Collage Debug] collage script loaded')";
+    const debugGate = 'if (isDebugEnabled())';
+    const logPos = content.indexOf(logLine);
+    expect(logPos).toBeGreaterThan(-1);
+    // The nearest preceding isDebugEnabled() must be within the proximity window before the log
+    const preceding = content.slice(Math.max(0, logPos - DEBUG_GATE_PROXIMITY_CHARS), logPos);
+    expect(preceding).toContain(debugGate);
+  });
+});
+
+describe('verify-init.js – no ungated debug logs leaking token/role data', () => {
+  let content;
+
+  beforeAll(() => {
+    content = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/pages/verify-init.js'),
+      'utf8'
+    );
+  });
+
+  it('defines isDevelopment guard at the top of the IIFE', () => {
+    expect(content).toContain('const isDevelopment =');
+  });
+
+  it('does not unconditionally log the token preview (security: token exposure)', () => {
+    expect(content).not.toContain("console.log('📧 Token preview:");
+    expect(content).not.toContain('console.log(`📧 Token preview:');
+  });
+
+  it('does not unconditionally log the full verification response data', () => {
+    expect(content).not.toContain("console.log('📧 Verification response data:");
+    expect(content).not.toContain('console.log("📧 Verification response data:');
+  });
+
+  it('does not unconditionally log the user role', () => {
+    expect(content).not.toContain('console.log(`📧 Current user role:');
+  });
+
+  it('does not unconditionally log the redirect destination', () => {
+    expect(content).not.toContain('console.log(`📧 Redirecting to:');
+  });
+
+  it('does not unconditionally log token attempt details', () => {
+    expect(content).not.toContain('console.log(`📧 Attempting verification with token:');
+  });
+});
+
+describe('misc.js routes – all async handlers have try/catch', () => {
+  let content;
+
+  beforeAll(() => {
+    content = fs.readFileSync(path.join(__dirname, '../../routes/misc.js'), 'utf8');
+  });
+
+  /**
+   * Extracts the body of the first Express route handler starting at routeStart.
+   * Finds the closing `\n});` of the handler.
+   */
+  function extractRouteBody(fileContent, routeStart) {
+    const routeEnd = fileContent.indexOf('\n});', routeStart) + 4;
+    return fileContent.slice(routeStart, routeEnd);
+  }
+
+  it('verify-captcha route has a try/catch block', () => {
+    const routeStart = content.indexOf("router.post('/verify-captcha'");
+    const routeBody = extractRouteBody(content, routeStart);
+    expect(routeBody).toContain('try {');
+    expect(routeBody).toContain('} catch (error) {');
+  });
+
+  it('contact route has a try/catch block', () => {
+    const routeStart = content.indexOf("router.post('/contact'");
+    const routeBody = extractRouteBody(content, routeStart);
+    expect(routeBody).toContain('try {');
+    expect(routeBody).toContain('} catch (error) {');
+  });
+
+  it('GET /me/settings route has a try/catch block', () => {
+    const routeStart = content.indexOf("router.get('/me/settings'");
+    const routeBody = extractRouteBody(content, routeStart);
+    expect(routeBody).toContain('try {');
+    expect(routeBody).toContain('} catch (error) {');
+  });
+
+  it('POST /me/settings route has a try/catch block', () => {
+    const routeStart = content.indexOf("router.post('/me/settings'");
+    const routeBody = extractRouteBody(content, routeStart);
+    expect(routeBody).toContain('try {');
+    expect(routeBody).toContain('} catch (error) {');
+  });
+});

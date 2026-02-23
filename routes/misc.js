@@ -174,78 +174,98 @@ router.get('/venues/near', async (req, res) => {
 // ---------- CAPTCHA Verification ----------
 
 router.post('/verify-captcha', applyWriteLimiter, async (req, res) => {
-  const { token } = req.body || {};
-  const result = await verifyHCaptcha(token);
+  try {
+    const { token } = req.body || {};
+    const result = await verifyHCaptcha(token);
 
-  if (result.success) {
-    return res.json(result);
-  } else {
-    const statusCode = result.error === 'CAPTCHA verification not configured' ? 500 : 400;
-    return res.status(statusCode).json(result);
+    if (result.success) {
+      return res.json(result);
+    } else {
+      const statusCode = result.error === 'CAPTCHA verification not configured' ? 500 : 400;
+      return res.status(statusCode).json(result);
+    }
+  } catch (error) {
+    logger.error('Error verifying captcha:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // ---------- Contact Form ----------
 
 router.post('/contact', applyWriteLimiter, async (req, res) => {
-  const { captchaToken } = req.body || {};
+  try {
+    const { captchaToken } = req.body || {};
 
-  // Sanitize and trim string fields
-  const name = String(req.body.name || '')
-    .trim()
-    .slice(0, CONTACT_MAX_NAME_LENGTH);
-  const email = String(req.body.email || '')
-    .trim()
-    .slice(0, CONTACT_MAX_EMAIL_LENGTH);
-  const message = String(req.body.message || '')
-    .trim()
-    .slice(0, CONTACT_MAX_MESSAGE_LENGTH);
+    // Sanitize and trim string fields
+    const name = String(req.body.name || '')
+      .trim()
+      .slice(0, CONTACT_MAX_NAME_LENGTH);
+    const email = String(req.body.email || '')
+      .trim()
+      .slice(0, CONTACT_MAX_EMAIL_LENGTH);
+    const message = String(req.body.message || '')
+      .trim()
+      .slice(0, CONTACT_MAX_MESSAGE_LENGTH);
 
-  // Validate required fields
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'Name, email, and message are required' });
+    // Validate required fields
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: 'Name, email, and message are required' });
+    }
+
+    // Basic email format check
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email address' });
+    }
+
+    // Verify hCaptcha
+    const captchaResult = await verifyHCaptcha(captchaToken);
+    if (!captchaResult.success) {
+      return res.status(400).json({ error: captchaResult.error || 'CAPTCHA verification failed' });
+    }
+
+    // Log the contact enquiry (email sending handled separately if postmark is configured)
+    logger.info('Contact form submission', { name, email });
+
+    return res.json({
+      success: true,
+      message: 'Thank you for your message. We will be in touch soon.',
+    });
+  } catch (error) {
+    logger.error('Error processing contact form:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  // Basic email format check
-  if (!validator.isEmail(email)) {
-    return res.status(400).json({ error: 'Invalid email address' });
-  }
-
-  // Verify hCaptcha
-  const captchaResult = await verifyHCaptcha(captchaToken);
-  if (!captchaResult.success) {
-    return res.status(400).json({ error: captchaResult.error || 'CAPTCHA verification failed' });
-  }
-
-  // Log the contact enquiry (email sending handled separately if postmark is configured)
-  logger.info('Contact form submission', { name, email });
-
-  return res.json({
-    success: true,
-    message: 'Thank you for your message. We will be in touch soon.',
-  });
 });
 
 // ---------- Settings ----------
 
 router.get('/me/settings', applyAuthRequired, async (req, res) => {
-  const users = await dbUnified.read('users');
-  const i = users.findIndex(u => u.id === req.user.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
+  try {
+    const users = await dbUnified.read('users');
+    const i = users.findIndex(u => u.id === req.user.id);
+    if (i < 0) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    res.json({ notify: users[i].notify !== false });
+  } catch (error) {
+    logger.error('Error reading user settings:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  res.json({ notify: users[i].notify !== false });
 });
 
 router.post('/me/settings', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  const users = await dbUnified.read('users');
-  const i = users.findIndex(u => u.id === req.user.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
+  try {
+    const users = await dbUnified.read('users');
+    const i = users.findIndex(u => u.id === req.user.id);
+    if (i < 0) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    users[i].notify = !!(req.body && req.body.notify);
+    await dbUnified.write('users', users);
+    res.json({ ok: true, notify: users[i].notify });
+  } catch (error) {
+    logger.error('Error updating user settings:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  users[i].notify = !!(req.body && req.body.notify);
-  await dbUnified.write('users', users);
-  res.json({ ok: true, notify: users[i].notify });
 });
 
 // ---------- Maintenance ----------

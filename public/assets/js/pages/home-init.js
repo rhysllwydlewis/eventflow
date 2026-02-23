@@ -103,8 +103,10 @@ function isDebugEnabled() {
   return isDevelopmentEnvironment();
 }
 
-// Unconditional startup log to confirm collage script execution
-console.log('[Collage Debug] collage script loaded');
+// Log collage script load in debug mode only
+if (isDebugEnabled()) {
+  console.log('[Collage Debug] collage script loaded');
+}
 
 // Log connection speed in debug mode
 if (isDebugEnabled()) {

@@ -7,6 +7,10 @@
 (function () {
   'use strict';
 
+  // Debug logging is only enabled in local development environments
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   // Helper function to get headers with CSRF token
   function getHeadersWithCsrf(additionalHeaders = {}) {
     const headers = { ...additionalHeaders };
@@ -184,7 +188,9 @@
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        console.log(`📧 Verification attempt ${attempt + 1}/${retries + 1}`);
+        if (isDevelopment) {
+          console.log(`📧 Verification attempt ${attempt + 1}/${retries + 1}`);
+        }
 
         const response = await fetch(`/api/v1/auth/verify?token=${encodeURIComponent(token)}`, {
           credentials: 'include',
@@ -193,9 +199,10 @@
           },
         });
 
-        console.log(`📧 Verification response status: ${response.status}`);
+        if (isDevelopment) {
+          console.log(`📧 Verification response status: ${response.status}`);
+        }
         const data = await response.json().catch(() => ({}));
-        console.log('📧 Verification response data:', data);
 
         return { response, data };
       } catch (err) {
@@ -206,7 +213,6 @@
         if (attempt < retries) {
           // Wait before retrying (exponential backoff)
           const waitTime = Math.min(1000 * Math.pow(2, attempt), 5000);
-          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
@@ -225,12 +231,6 @@
 
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
-
-    console.log('🔍 Verification page loaded');
-    console.log('📧 Token present:', token ? 'Yes' : 'No');
-    if (token) {
-      console.log('📧 Token preview:', `${token.substring(0, 30)}...`);
-    }
 
     // Handle missing token
     if (!token) {
@@ -256,7 +256,6 @@
     }
 
     // Perform verification with retry logic
-    console.log(`📧 Attempting verification with token: ${token.substring(0, 10)}...`);
     try {
       const { response, data } = await verifyEmailWithRetry(token);
 
@@ -331,8 +330,6 @@
         }
       } else {
         // Handle verification success
-        console.log('✅ Verification successful!');
-
         if (headingEl) {
           headingEl.textContent = 'Email Verified!';
         }
@@ -356,7 +353,6 @@
         let redirectUrl = '/auth'; // Default fallback
 
         if (user) {
-          console.log(`📧 Current user role: ${user.role}`);
           if (user.role === 'admin') {
             redirectUrl = '/admin.html';
           } else if (user.role === 'supplier') {
@@ -364,11 +360,7 @@
           } else {
             redirectUrl = '/dashboard-customer.html';
           }
-        } else {
-          console.log('📧 No user session found, redirecting to auth');
         }
-
-        console.log(`📧 Redirecting to: ${redirectUrl}`);
 
         // Show manual navigation buttons
         if (actionsEl) {
