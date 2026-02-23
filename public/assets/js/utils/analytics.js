@@ -9,6 +9,9 @@
  * @param {Object} filters - Applied filters
  * @param {number} resultCount - Number of results returned
  */
+
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 export function trackSearch(query, filters, resultCount) {
   if (typeof window.gtag === 'function') {
     window.gtag('event', 'search', {
@@ -17,7 +20,9 @@ export function trackSearch(query, filters, resultCount) {
       result_count: resultCount,
     });
   }
-  console.log('Search tracked:', { query, filters, resultCount });
+  if (isDevelopment) {
+    console.log('Search tracked:', { query, filters, resultCount });
+  }
 }
 
 /**
@@ -32,7 +37,9 @@ export function trackFilterChange(filterType, value) {
       filter_value: value,
     });
   }
-  console.log('Filter change tracked:', { filterType, value });
+  if (isDevelopment) {
+    console.log('Filter change tracked:', { filterType, value });
+  }
 }
 
 /**
@@ -49,7 +56,9 @@ export function trackResultClick(type, id, position) {
       position: position,
     });
   }
-  console.log('Result click tracked:', { type, id, position });
+  if (isDevelopment) {
+    console.log('Result click tracked:', { type, id, position });
+  }
 }
 
 /**
@@ -64,7 +73,9 @@ export function trackShortlistAdd(type, id) {
       content_id: id,
     });
   }
-  console.log('Shortlist add tracked:', { type, id });
+  if (isDevelopment) {
+    console.log('Shortlist add tracked:', { type, id });
+  }
 }
 
 /**
@@ -78,7 +89,9 @@ export function trackQuoteRequestStarted(supplierCount) {
       currency: 'GBP', // Fixed currency - EventFlow operates in UK market
     });
   }
-  console.log('Quote request started:', { supplierCount });
+  if (isDevelopment) {
+    console.log('Quote request started:', { supplierCount });
+  }
 }
 
 /**
@@ -94,5 +107,7 @@ export function trackQuoteRequestSubmitted(supplierCount, eventType) {
       items: [{ item_name: eventType }],
     });
   }
-  console.log('Quote request submitted:', { supplierCount, eventType });
+  if (isDevelopment) {
+    console.log('Quote request submitted:', { supplierCount, eventType });
+  }
 }

@@ -6,6 +6,8 @@
  * All operations now use the EventFlow REST API backed by MongoDB.
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 class CustomerManager {
   constructor() {
     this.pollingIntervals = [];
@@ -31,7 +33,9 @@ class CustomerManager {
         throw new Error('Failed to save customer');
       }
 
-      console.log('Customer saved:', userId);
+      if (isDevelopment) {
+        console.log('Customer saved:', userId);
+      }
       return userId;
     } catch (error) {
       console.error('Error saving customer:', error);
@@ -110,7 +114,9 @@ class CustomerManager {
         throw new Error('Failed to delete customer');
       }
 
-      console.log('Customer deleted:', userId);
+      if (isDevelopment) {
+        console.log('Customer deleted:', userId);
+      }
     } catch (error) {
       console.error('Error deleting customer:', error);
       throw error;
@@ -236,7 +242,9 @@ class CustomerManager {
         throw new Error('Failed to save supplier');
       }
 
-      console.log('Supplier saved to favorites:', supplierId);
+      if (isDevelopment) {
+        console.log('Supplier saved to favorites:', supplierId);
+      }
     } catch (error) {
       console.error('Error saving supplier:', error);
       throw error;
@@ -262,7 +270,9 @@ class CustomerManager {
         throw new Error('Failed to unsave supplier');
       }
 
-      console.log('Supplier removed from favorites:', supplierId);
+      if (isDevelopment) {
+        console.log('Supplier removed from favorites:', supplierId);
+      }
     } catch (error) {
       console.error('Error unsaving supplier:', error);
       throw error;
