@@ -153,11 +153,16 @@ function saveImageBase64(base64, ownerType, ownerId) {
  * List supplier's packages
  */
 router.get('/me/packages', applyAuthRequired, applyRoleRequired('supplier'), async (req, res) => {
-  const mine = (await dbUnified.read('suppliers'))
-    .filter(s => s.ownerUserId === req.user.id)
-    .map(s => s.id);
-  const items = (await dbUnified.read('packages')).filter(p => mine.includes(p.supplierId));
-  res.json({ items });
+  try {
+    const mine = (await dbUnified.read('suppliers'))
+      .filter(s => s.ownerUserId === req.user.id)
+      .map(s => s.id);
+    const items = (await dbUnified.read('packages')).filter(p => mine.includes(p.supplierId));
+    res.json({ items });
+  } catch (error) {
+    logger.error('Error reading supplier packages:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 /**
@@ -284,7 +289,12 @@ router.post(
  * List all packages (admin only)
  */
 router.get('/admin/packages', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
-  res.json({ items: await dbUnified.read('packages') });
+  try {
+    res.json({ items: await dbUnified.read('packages') });
+  } catch (error) {
+    logger.error('Error reading packages for admin:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 /**
