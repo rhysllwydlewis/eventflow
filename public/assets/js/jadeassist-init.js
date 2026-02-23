@@ -6,6 +6,8 @@
  * - debug mode, offsetBottom/Left positioning, mobile positioning overrides
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -239,7 +241,9 @@
       if (teaserElement && teaserElement.parentNode) {
         dismissTeaser();
         if (debug) {
-          console.log('[JadeAssist] Teaser auto-dismissed after 15s');
+          if (isDevelopment) {
+            console.log('[JadeAssist] Teaser auto-dismissed after 15s');
+          }
         }
       }
     }, 15000);
@@ -402,7 +406,9 @@
   function verifyAvatarLoad(avatarUrl) {
     const img = new Image();
     img.onload = () => {
-      console.log('[JadeAssist] Avatar loaded successfully:', avatarUrl);
+      if (isDevelopment) {
+        console.log('[JadeAssist] Avatar loaded successfully:', avatarUrl);
+      }
     };
     img.onerror = () => {
       console.warn('[JadeAssist] Avatar failed to load, widget will use default');
@@ -445,7 +451,9 @@
 
     if (initialized) {
       if (debug) {
-        console.log('[JadeAssist] Widget already initialized');
+        if (isDevelopment) {
+          console.log('[JadeAssist] Widget already initialized');
+        }
       }
       return;
     }
@@ -502,7 +510,9 @@
 
       initialized = true;
       if (debug) {
-        console.log('[JadeAssist] Widget initialized successfully');
+        if (isDevelopment) {
+          console.log('[JadeAssist] Widget initialized successfully');
+        }
       }
 
       // Ensure chat is closed on initialization (defensive)
@@ -510,7 +520,9 @@
         if (window.JadeWidget && typeof window.JadeWidget.close === 'function') {
           window.JadeWidget.close();
           if (debug) {
-            console.log('[JadeAssist] Chat ensured closed on load');
+            if (isDevelopment) {
+              console.log('[JadeAssist] Chat ensured closed on load');
+            }
           }
         }
       }, 100);
@@ -531,7 +543,9 @@
           window.removeEventListener('scroll', showTeaserOnEngagement);
 
           if (debug) {
-            console.log('[JadeAssist] Teaser shown after 25% scroll');
+            if (isDevelopment) {
+              console.log('[JadeAssist] Teaser shown after 25% scroll');
+            }
           }
         }
       };
@@ -540,7 +554,9 @@
         showTeaser();
         window.removeEventListener('scroll', showTeaserOnEngagement);
         if (debug) {
-          console.log('[JadeAssist] Teaser shown after delay');
+          if (isDevelopment) {
+            console.log('[JadeAssist] Teaser shown after delay');
+          }
         }
       }, TEASER_DELAY);
 

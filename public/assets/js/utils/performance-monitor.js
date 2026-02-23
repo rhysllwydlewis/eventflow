@@ -3,6 +3,8 @@
  * Tracks Core Web Vitals and custom metrics
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 class PerformanceMonitor {
   constructor(options = {}) {
     this.options = {
@@ -235,7 +237,9 @@ class PerformanceMonitor {
 
     console.group('Navigation Timing');
     Object.entries(this.metrics.navigation).forEach(([key, value]) => {
-      console.log(`${key}: ${value}${typeof value === 'number' ? 'ms' : ''}`);
+      if (isDevelopment) {
+        console.log(`${key}: ${value}${typeof value === 'number' ? 'ms' : ''}`);
+      }
     });
     console.groupEnd();
 
@@ -244,16 +248,26 @@ class PerformanceMonitor {
       const { lcp, fid, cls, ttfb } = this.metrics.vitals;
 
       if (lcp !== undefined) {
-        console.log(`LCP (Largest Contentful Paint): ${lcp}ms ${this.getVitalRating('lcp', lcp)}`);
+        if (isDevelopment) {
+          console.log(
+            `LCP (Largest Contentful Paint): ${lcp}ms ${this.getVitalRating('lcp', lcp)}`
+          );
+        }
       }
       if (fid !== undefined) {
-        console.log(`FID (First Input Delay): ${fid}ms ${this.getVitalRating('fid', fid)}`);
+        if (isDevelopment) {
+          console.log(`FID (First Input Delay): ${fid}ms ${this.getVitalRating('fid', fid)}`);
+        }
       }
       if (cls !== undefined) {
-        console.log(`CLS (Cumulative Layout Shift): ${cls} ${this.getVitalRating('cls', cls)}`);
+        if (isDevelopment) {
+          console.log(`CLS (Cumulative Layout Shift): ${cls} ${this.getVitalRating('cls', cls)}`);
+        }
       }
       if (ttfb !== undefined) {
-        console.log(`TTFB (Time to First Byte): ${ttfb}ms ${this.getVitalRating('ttfb', ttfb)}`);
+        if (isDevelopment) {
+          console.log(`TTFB (Time to First Byte): ${ttfb}ms ${this.getVitalRating('ttfb', ttfb)}`);
+        }
       }
       console.groupEnd();
     }
@@ -261,7 +275,9 @@ class PerformanceMonitor {
     if (Object.keys(this.metrics.custom).length > 0) {
       console.group('Custom Metrics');
       Object.entries(this.metrics.custom).forEach(([key, value]) => {
-        console.log(`${key}:`, value);
+        if (isDevelopment) {
+          console.log(`${key}:`, value);
+        }
       });
       console.groupEnd();
     }

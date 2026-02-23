@@ -3,6 +3,8 @@
  * Handles drag-and-drop photo uploads to Firebase Storage
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 import supplierPhotoUpload from './supplier-photo-upload.js';
 import supplierManager from './supplier-manager.js';
 
@@ -44,11 +46,15 @@ class SupplierGalleryManager {
     const supplierForm = document.getElementById('supplier-form');
 
     if (!dropZone || !previewContainer) {
-      console.log('Photo drop zone not found on this page');
+      if (isDevelopment) {
+        console.log('Photo drop zone not found on this page');
+      }
       return;
     }
 
-    console.log('Setting up supplier gallery manager');
+    if (isDevelopment) {
+      console.log('Setting up supplier gallery manager');
+    }
 
     // Set up drag and drop
     this.setupDragAndDrop(dropZone, previewContainer);
@@ -142,7 +148,9 @@ class SupplierGalleryManager {
       this.showPreview(file, previewContainer);
     }
 
-    console.log(`Added ${fileArray.length} photos to upload queue`);
+    if (isDevelopment) {
+      console.log(`Added ${fileArray.length} photos to upload queue`);
+    }
   }
 
   showPreview(file, previewContainer) {
@@ -238,7 +246,9 @@ class SupplierGalleryManager {
             supplierIdField.value = supplierId;
           }
 
-          console.log('Supplier created with ID:', supplierId);
+          if (isDevelopment) {
+            console.log('Supplier created with ID:', supplierId);
+          }
         }
 
         // Upload pending photos now that we have a valid supplier ID
@@ -363,7 +373,9 @@ class SupplierGalleryManager {
       // Clear pending uploads
       this.pendingUploads = [];
 
-      console.log('Photos uploaded:', this.uploadedPhotos);
+      if (isDevelopment) {
+        console.log('Photos uploaded:', this.uploadedPhotos);
+      }
     } catch (error) {
       console.error('Error uploading photos:', error);
       if (statusEl) {
@@ -392,7 +404,9 @@ class SupplierGalleryManager {
         // For existing photos, we just need the URLs
         this.uploadedPhotos = photoUrls.map(url => ({ url }));
 
-        console.log('Loaded existing photos:', this.uploadedPhotos);
+        if (isDevelopment) {
+          console.log('Loaded existing photos:', this.uploadedPhotos);
+        }
       }
     } catch (error) {
       console.error('Error loading existing photos:', error);
