@@ -85,29 +85,20 @@ const QUALITY_MAP = {
 };
 
 function getLeadQualityMeta(conv) {
-  // Label strings used directly for string-content test compatibility:
-  // 'High' -> #10b981, 'Medium' -> #f59e0b, 'Low' -> #ef4444
-  const map = {
-    High: { label: 'High', color: '#10b981', emoji: '⭐' },
-    Medium: { label: 'Medium', color: '#f59e0b', emoji: '●' },
-    Low: { label: 'Low', color: '#ef4444', emoji: '◯' },
-    Hot: { label: 'Hot', color: '#ef4444', emoji: '🔥' },
-    Good: { label: 'Good', color: '#10b981', emoji: '✓' },
-  };
-  if (conv.leadScore && map[conv.leadScore]) {
-    return map[conv.leadScore];
+  if (conv.leadScore && QUALITY_MAP[conv.leadScore]) {
+    return QUALITY_MAP[conv.leadScore];
   }
   if (typeof conv.leadScoreRaw === 'number') {
     if (conv.leadScoreRaw >= 80) {
-      return map.Hot;
+      return QUALITY_MAP.Hot;
     }
     if (conv.leadScoreRaw >= 60) {
-      return map.High;
+      return QUALITY_MAP.High;
     }
     if (conv.leadScoreRaw >= 40) {
-      return map.Good;
+      return QUALITY_MAP.Good;
     }
-    return map.Low;
+    return QUALITY_MAP.Low;
   }
   return null;
 }

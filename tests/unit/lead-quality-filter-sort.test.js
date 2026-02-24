@@ -21,18 +21,18 @@ describe('supplier-messages.js – lead quality filter/sort', () => {
     });
 
     it('maps "High" leadScore string to green color', () => {
-      // The map is defined inside the function body
-      expect(supplierMsgContent).toContain("High:   { label: 'High',");
+      // QUALITY_MAP defined at module level with these values
+      expect(supplierMsgContent).toContain("label: 'High'");
       expect(supplierMsgContent).toContain('#10b981');
     });
 
     it('maps "Medium" leadScore string to amber color', () => {
-      expect(supplierMsgContent).toContain("Medium: { label: 'Medium',");
+      expect(supplierMsgContent).toContain("label: 'Medium'");
       expect(supplierMsgContent).toContain('#f59e0b');
     });
 
     it('maps "Low" leadScore string to red color', () => {
-      expect(supplierMsgContent).toContain("Low:    { label: 'Low',");
+      expect(supplierMsgContent).toContain("label: 'Low'");
       expect(supplierMsgContent).toContain('#ef4444');
     });
 
