@@ -53,7 +53,8 @@ describe('suppliers-init.js trust badge logic', () => {
   });
 
   it('renders founding badge when isFounding/founding/badges array is set', () => {
-    expect(suppliersInitContent).toContain('supplier.isFounding || supplier.founding');
+    expect(suppliersInitContent).toContain('supplier.isFounding');
+    expect(suppliersInitContent).toContain('supplier.founding');
     expect(suppliersInitContent).toContain("supplier.badges.includes('founding')");
     expect(suppliersInitContent).toContain('badge-founding');
   });
