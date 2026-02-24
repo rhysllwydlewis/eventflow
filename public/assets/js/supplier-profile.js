@@ -591,6 +591,7 @@
    * Show empty state
    */
   function showEmptyState(container) {
+    container.removeAttribute('aria-hidden');
     container.innerHTML = `
       <div class="reviews-empty" style="text-align: center; padding: 3rem 1rem; color: var(--muted);">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 1rem; opacity: 0.5;">
@@ -606,6 +607,7 @@
    * Show error state with retry button
    */
   function showErrorState(container, errorMessage) {
+    container.removeAttribute('aria-hidden');
     container.innerHTML = `
       <div class="reviews-error" style="text-align: center; padding: 3rem 1rem;">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 1rem; color: #ef4444; opacity: 0.8;">

@@ -70,18 +70,20 @@
 
     function reinitMap() {
       loaded = false;
-      mapShell.innerHTML =
-        `<iframe id="venue-map" title="${originalTitle}" loading="lazy"` +
-        ` referrerpolicy="no-referrer-when-downgrade"` +
-        ` src="${originalSrc}"></iframe>`;
+      const newIframe = document.createElement('iframe');
+      newIframe.id = 'venue-map';
+      newIframe.title = originalTitle;
+      newIframe.loading = 'lazy';
+      newIframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+      newIframe.src = originalSrc;
+      mapShell.innerHTML = '';
+      mapShell.appendChild(newIframe);
 
-      iframe = mapShell.querySelector('#venue-map');
-      if (iframe) {
-        iframe.addEventListener('load', onLoaded);
-        iframe.addEventListener('error', () => {
-          onFailed('iframe error event');
-        });
-      }
+      iframe = newIframe;
+      iframe.addEventListener('load', onLoaded);
+      iframe.addEventListener('error', () => {
+        onFailed('iframe error event');
+      });
 
       timeoutId = setTimeout(() => {
         onFailed('timeout');
