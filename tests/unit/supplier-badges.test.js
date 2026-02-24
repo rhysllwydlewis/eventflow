@@ -75,20 +75,50 @@ describe('Supplier Profile Badge Logic', () => {
   describe('Founding badge', () => {
     it('should render when founding property is true', () => {
       const supplier = { founding: true };
-      const shouldRender = supplier.founding || supplier.isFounding;
+      const shouldRender =
+        supplier.founding ||
+        supplier.isFounding ||
+        (supplier.badges && supplier.badges.includes('founding'));
       expect(shouldRender).toBe(true);
     });
 
     it('should render when isFounding property is true', () => {
       const supplier = { isFounding: true };
-      const shouldRender = supplier.founding || supplier.isFounding;
+      const shouldRender =
+        supplier.founding ||
+        supplier.isFounding ||
+        (supplier.badges && supplier.badges.includes('founding'));
+      expect(shouldRender).toBe(true);
+    });
+
+    it('should render when badges array includes founding', () => {
+      const supplier = { badges: ['founding', 'verified'] };
+      const shouldRender =
+        supplier.founding ||
+        supplier.isFounding ||
+        (supplier.badges && supplier.badges.includes('founding'));
       expect(shouldRender).toBe(true);
     });
 
     it('should not render when neither property is true', () => {
       const supplier = {};
-      const shouldRender = supplier.founding || supplier.isFounding;
+      const shouldRender =
+        supplier.founding ||
+        supplier.isFounding ||
+        (supplier.badges && supplier.badges.includes('founding'));
       expect(shouldRender).toBeFalsy();
+    });
+
+    it('should include foundingYear in badge label when present', () => {
+      const supplier = { founding: true, foundingYear: 2024 };
+      const yearLabel = supplier.foundingYear ? ` (${String(supplier.foundingYear)})` : '';
+      expect(yearLabel).toBe(' (2024)');
+    });
+
+    it('should omit year label when foundingYear is absent', () => {
+      const supplier = { founding: true };
+      const yearLabel = supplier.foundingYear ? ` (${String(supplier.foundingYear)})` : '';
+      expect(yearLabel).toBe('');
     });
   });
 
