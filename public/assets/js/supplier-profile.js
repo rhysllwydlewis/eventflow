@@ -2,7 +2,14 @@
  * Supplier Profile Page - Reviews and Package Cards
  * Handles reviews loading and package card interactions
  * Phase 1: Added hero section rendering and SEO meta tags
+ * Phase 5: Converted to ES module — imports verification-badges directly
  */
+
+import {
+  renderVerificationBadges,
+  renderVerificationSection,
+  renderTierIcon,
+} from '/assets/js/utils/verification-badges.js';
 
 (function () {
   'use strict';

@@ -226,16 +226,7 @@
 <div id="supplier-badges-section"></div>
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/utils/tier-icon.js"></script>
-<script type="module">
-  // Import verification badges utility
-  import { renderVerificationBadges, renderVerificationSection, renderTierIcon } from '/assets/js/utils/verification-badges.js';
-  // Make available globally for supplier-profile.js (non-module script)
-  // TODO: Refactor supplier-profile.js to use ES6 modules to remove global exposure
-  window.renderVerificationBadges = renderVerificationBadges;
-  window.renderVerificationSection = renderVerificationSection;
-  window.renderTierIcon = renderTierIcon;
-</script>
-<script src="/assets/js/supplier-profile.js"></script>
+<script type="module" src="/assets/js/supplier-profile.js"></script>
 <script>window.__EF_PAGE__='supplier'</script>
 </div></main>
 <footer class="footer" role="contentinfo">

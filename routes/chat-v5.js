@@ -106,9 +106,7 @@ router.post(
         return res.status(400).json({ error: 'At least one participant is required' });
       }
 
-      // Build participants array
-      // Note: In a real implementation, you'd fetch user details from the database
-      // For now, we'll use a simplified version
+      // Build participants array — look up each participant from the users collection
       const participants = [
         {
           userId,
@@ -118,15 +116,45 @@ router.post(
         },
       ];
 
-      // Add other participants
+      // Resolve db instance for user lookups
+      let dbInstance;
+      if (dbDep && typeof dbDep.getDb === 'function') {
+        dbInstance = await dbDep.getDb();
+      } else if (dbDep && dbDep.collection) {
+        dbInstance = dbDep;
+      }
+
+      // Add other participants with real user data from the users collection
       for (const participantId of participantIds) {
         if (participantId !== userId) {
-          participants.push({
-            userId: participantId,
-            displayName: 'User', // TODO: Fetch from user service
-            avatar: null,
-            role: 'customer', // TODO: Fetch from user service
-          });
+          let displayName = 'Unknown User';
+          let avatar = null;
+          let role = 'customer';
+
+          if (dbInstance) {
+            try {
+              const usersCollection = dbInstance.collection('users');
+              let userDoc = null;
+              // Try ObjectId lookup first, fall back to string match
+              try {
+                userDoc = await usersCollection.findOne({ _id: new ObjectId(participantId) });
+              } catch (_idErr) {
+                userDoc = await usersCollection.findOne({ _id: participantId });
+              }
+              if (userDoc) {
+                displayName = userDoc.name || userDoc.email || 'Unknown User';
+                avatar = userDoc.avatar || null;
+                role = userDoc.role || 'customer';
+              }
+            } catch (lookupErr) {
+              logger.warn('Failed to look up participant user', {
+                participantId,
+                error: lookupErr.message,
+              });
+            }
+          }
+
+          participants.push({ userId: participantId, displayName, avatar, role });
         }
       }
 
