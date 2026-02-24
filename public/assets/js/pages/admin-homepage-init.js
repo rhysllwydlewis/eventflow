@@ -1,4 +1,8 @@
 (async function () {
+  // Debug logging is only enabled in local development environments
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   // Check admin authentication
   try {
     const response = await fetch('/api/v1/auth/me', {
@@ -273,22 +277,24 @@
       const uploadGallery = collageMedia.map(m => m.url);
 
       // Debug logging (admin-only, always enabled for troubleshooting)
-      console.log('[Admin] Saving collage widget configuration:', {
-        enabled,
-        source,
-        mediaTypes,
-        intervalSeconds,
-        uploadGalleryCount: uploadGallery.length,
-        uploadGalleryUrls: uploadGallery,
-        fallbackToPexels,
-        heroVideo,
-        videoQuality,
-        transition,
-        preloading,
-        mobileOptimizations,
-        contentFiltering,
-        playbackControls,
-      });
+      if (isDevelopment) {
+        console.log('[Admin] Saving collage widget configuration:', {
+          enabled,
+          source,
+          mediaTypes,
+          intervalSeconds,
+          uploadGalleryCount: uploadGallery.length,
+          uploadGalleryUrls: uploadGallery,
+          fallbackToPexels,
+          heroVideo,
+          videoQuality,
+          transition,
+          preloading,
+          mobileOptimizations,
+          contentFiltering,
+          playbackControls,
+        });
+      }
 
       // Validation
       if (!mediaTypes.photos && !mediaTypes.videos) {
@@ -331,7 +337,9 @@
       if (response.ok) {
         const result = await response.json();
         // Admin-only success log for troubleshooting
-        console.log('[Admin] Configuration saved successfully:', result.collageWidget);
+        if (isDevelopment) {
+          console.log('[Admin] Configuration saved successfully:', result.collageWidget);
+        }
         showCollageWidgetSuccess('Configuration saved successfully!');
         await loadCollageWidget(); // Reload to get updated data
       } else {

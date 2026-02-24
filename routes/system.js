@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { apiLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -157,10 +158,12 @@ router.get('/csrf-token', applyAuthLimiter, async (req, res) => {
 /**
  * GET /api/config
  * Client config endpoint - provides public configuration values
- * Apply rate limiting to prevent abuse of API key exposure
- * This endpoint is cacheable as it contains only public configuration
+ * Uses general apiLimiter (100 req/15 min) rather than authLimiter (10 req/15 min)
+ * because this endpoint is called on every page load by sentry-browser-init.js
+ * and is a public read-only endpoint, not an authentication operation.
+ * The endpoint is also cached for 5 minutes to reduce server load.
  */
-router.get('/config', applyAuthLimiter, async (req, res) => {
+router.get('/config', apiLimiter, async (req, res) => {
   if (!APP_VERSION) {
     return res.status(503).json({ error: 'Configuration service not initialized' });
   }
@@ -171,6 +174,8 @@ router.get('/config', applyAuthLimiter, async (req, res) => {
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
+    sentryDsn: process.env.SENTRY_DSN_FRONTEND || '',
+    hcaptchaSitekey: process.env.HCAPTCHA_SITE_KEY || '',
   });
 });
 

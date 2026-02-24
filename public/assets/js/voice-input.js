@@ -3,6 +3,8 @@
  * Uses Web Speech API for voice-to-text note-taking
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 class VoiceInput {
   constructor() {
     // Check for browser support
@@ -190,11 +192,15 @@ class VoiceInput {
 
   // Override these methods to handle events
   onStart() {
-    console.log('Voice input started');
+    if (isDevelopment) {
+      console.log('Voice input started');
+    }
   }
 
   onEnd() {
-    console.log('Voice input ended');
+    if (isDevelopment) {
+      console.log('Voice input ended');
+    }
   }
 
   /**

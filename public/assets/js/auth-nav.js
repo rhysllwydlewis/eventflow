@@ -11,7 +11,9 @@
  * - Duplicate event handler prevention
  */
 (function () {
-  'use strict';
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  ('use strict');
 
   // If the EF header system is present, do nothing.
   if (document.getElementById('ef-mobile-toggle') || document.getElementById('ef-mobile-menu')) {
@@ -254,7 +256,9 @@
       const isLoggedIn = user !== null;
 
       if (wasLoggedIn !== isLoggedIn) {
-        console.log('Auth state changed, updating navbar');
+        if (isDevelopment) {
+          console.log('Auth state changed, updating navbar');
+        }
         updateAuthState(user);
       }
     }, 30000);
@@ -272,7 +276,9 @@
     // Cross-tab auth state synchronization
     window.addEventListener('storage', e => {
       if (e.key === 'eventflow_logout') {
-        console.log('Logout detected in another tab, syncing...');
+        if (isDevelopment) {
+          console.log('Logout detected in another tab, syncing...');
+        }
         initAuthNav(null);
         window.location.href = `/?t=${Date.now()}`;
       }

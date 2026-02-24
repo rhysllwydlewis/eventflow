@@ -15,6 +15,10 @@
     <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" />
   <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.1.1" />
   <link rel="stylesheet" href="/assets/css/auth.css?v=18.1.1" />
+  <meta name="hcaptcha-sitekey" content="">
+  <meta name="sentry-dsn" content="">
+  <meta name="sentry-release" content="eventflow@18.1.0">
+  <meta name="sentry-environment" content="production">
   <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -120,6 +124,8 @@
 <script src="/assets/js/utils/auth-state.js" defer></script>
 <!-- Global error handler - catches all unhandled errors and API failures -->
 <script src="/assets/js/utils/global-error-handler.js" defer></script>
+<!-- Sentry browser error tracking -->
+<script src="/assets/js/utils/sentry-browser-init.js" defer></script>
 <!-- Burger menu - simple standalone implementation -->
 <script src="/assets/js/burger-menu.js" defer></script>
 <script src="/assets/js/navbar.js" defer></script>
@@ -309,6 +315,9 @@
             <input type="checkbox" id="reg-terms" name="terms" required aria-required="true">
           </label>
         </div>
+        <div class="form-row" id="reg-hcaptcha-container">
+          <!-- hCaptcha widget rendered here by JavaScript -->
+        </div>
         <div class="form-actions">
           <button class="cta" type="submit">Create account</button>
           <span class="small" id="reg-status" role="status" aria-live="polite"></span>
@@ -326,17 +335,52 @@
     <script src="/assets/js/pages/auth-init.js" defer></script>
     <script src="/assets/js/app.js" defer></script>
     <script>window.__EF_PAGE__='auth'</script>
+
+    <!-- hCaptcha: load API script and render widget in the registration form -->
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script>
+      (function () {
+        var CAPTCHA_MAX_RETRIES = 25; // 25 × 200 ms = 5 s max wait
+        var captchaRetries = 0;
+        function initRegisterCaptcha() {
+          var container = document.getElementById('reg-hcaptcha-container');
+          if (!container || !window.hcaptcha) {
+            captchaRetries++;
+            if (captchaRetries < CAPTCHA_MAX_RETRIES) {
+              setTimeout(initRegisterCaptcha, 200);
+            }
+            return;
+          }
+          // Sitekey priority: meta tag → EVENTFLOW_CONFIG (from /api/v1/config) → dev test key
+          var meta = document.querySelector('meta[name="hcaptcha-sitekey"]');
+          var sitekey =
+            (meta && meta.getAttribute('content')) ||
+            (window.EVENTFLOW_CONFIG && window.EVENTFLOW_CONFIG.hcaptchaSitekey) ||
+            '10000000-ffff-ffff-ffff-000000000001';
+          var widgetId = window.hcaptcha.render(container, { sitekey: sitekey, theme: 'light' });
+          window.__regHCaptchaWidgetId = widgetId;
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initRegisterCaptcha);
+        } else {
+          initRegisterCaptcha();
+        }
+      })();
+    </script>
     
     <!-- Fetch CSRF token on page load using api-client -->
     <script>
       (async function() {
-        // Wait for api-client to load
-        function waitForApiClient() {
-          return new Promise((resolve) => {
+        // Wait for api-client to load (max 3 s / 60 attempts at 50 ms)
+        const API_CLIENT_MAX_WAIT = 60;
+        function waitForApiClient(attempt) {
+          return new Promise((resolve, reject) => {
             if (window.apiClient) {
               resolve();
+            } else if ((attempt || 0) >= API_CLIENT_MAX_WAIT) {
+              reject(new Error('api-client did not load in time'));
             } else {
-              setTimeout(() => waitForApiClient().then(resolve), 50);
+              setTimeout(() => waitForApiClient((attempt || 0) + 1).then(resolve, reject), 50);
             }
           });
         }
@@ -348,7 +392,6 @@
             const data = await response.json();
             window.csrfToken = data.csrfToken;
             window.__CSRF_TOKEN__ = data.csrfToken; // Backward compatibility
-            console.log('✅ CSRF token fetched via api-client');
           } else {
             console.error('Failed to fetch CSRF token:', response.statusText);
           }
@@ -360,12 +403,17 @@
     
     <!-- Initialize form validation -->
     <script defer>
-      // Wait for dependencies to load before initializing
+      // Wait for dependencies to load before initializing (max 3 s / 60 × 50 ms)
+      var FORM_INIT_MAX_RETRIES = 60;
+      var formInitRetries = 0;
       function initFormValidation() {
         // Check if dependencies are loaded
         if (typeof FormValidator === 'undefined' || typeof ErrorBoundary === 'undefined') {
-          // Retry after a short delay
-          setTimeout(initFormValidation, 50);
+          formInitRetries++;
+          if (formInitRetries < FORM_INIT_MAX_RETRIES) {
+            // Retry after a short delay
+            setTimeout(initFormValidation, 50);
+          }
           return;
         }
         
@@ -416,8 +464,6 @@
           
           // Listen for valid submissions
           loginForm.addEventListener('validsubmit', function(e) {
-            const formData = e.detail;
-            console.log('Login form validated:', formData);
             // The existing auth-init.js will handle the actual submission
           });
         }
@@ -439,8 +485,6 @@
           
           // Listen for valid submissions
           registerForm.addEventListener('validsubmit', function(e) {
-            const formData = e.detail;
-            console.log('Register form validated:', formData);
             // The existing auth-init.js will handle the actual submission
           });
         }

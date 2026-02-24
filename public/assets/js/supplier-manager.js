@@ -6,6 +6,8 @@
  * All operations now use the EventFlow REST API backed by MongoDB.
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 class SupplierManager {
   constructor() {
     this.pollingIntervals = [];
@@ -32,7 +34,9 @@ class SupplierManager {
       }
 
       const result = await response.json();
-      console.log('Supplier created:', result.id);
+      if (isDevelopment) {
+        console.log('Supplier created:', result.id);
+      }
       return result.id;
     } catch (error) {
       console.error('Error creating supplier:', error);
@@ -120,7 +124,9 @@ class SupplierManager {
         throw new Error('Failed to update supplier');
       }
 
-      console.log('Supplier updated:', supplierId);
+      if (isDevelopment) {
+        console.log('Supplier updated:', supplierId);
+      }
     } catch (error) {
       console.error('Error updating supplier:', error);
       throw error;
@@ -142,7 +148,9 @@ class SupplierManager {
         throw new Error('Failed to delete supplier');
       }
 
-      console.log('Supplier deleted:', supplierId);
+      if (isDevelopment) {
+        console.log('Supplier deleted:', supplierId);
+      }
     } catch (error) {
       console.error('Error deleting supplier:', error);
       throw error;
@@ -214,7 +222,9 @@ class SupplierManager {
   async setApprovalStatus(supplierId, approved) {
     try {
       await this.updateSupplier(supplierId, { approved });
-      console.log(`Supplier ${supplierId} ${approved ? 'approved' : 'unapproved'}`);
+      if (isDevelopment) {
+        console.log(`Supplier ${supplierId} ${approved ? 'approved' : 'unapproved'}`);
+      }
     } catch (error) {
       console.error('Error setting approval status:', error);
       throw error;
@@ -229,7 +239,9 @@ class SupplierManager {
   async setVerificationStatus(supplierId, verified) {
     try {
       await this.updateSupplier(supplierId, { verified });
-      console.log(`Supplier ${supplierId} ${verified ? 'verified' : 'unverified'}`);
+      if (isDevelopment) {
+        console.log(`Supplier ${supplierId} ${verified ? 'verified' : 'unverified'}`);
+      }
     } catch (error) {
       console.error('Error setting verification status:', error);
       throw error;

@@ -77,6 +77,9 @@ function mountRoutes(app, deps) {
   app.use('/api/public', publicRoutes); // Backward compatibility
 
   // Auth routes (registration, login, logout, etc.)
+  if (deps && authRoutes.initializeDependencies) {
+    authRoutes.initializeDependencies(deps);
+  }
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/auth', authRoutes); // Backward compatibility
 

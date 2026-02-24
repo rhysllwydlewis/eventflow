@@ -3,7 +3,9 @@
  * Integrates messenger with existing notification system
  */
 
-'use strict';
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+('use strict');
 
 (function () {
   // Configuration constants
@@ -162,11 +164,15 @@
         });
 
         socket.on('disconnect', () => {
-          console.log('WebSocket disconnected, notifications will use polling');
+          if (isDevelopment) {
+            console.log('WebSocket disconnected, notifications will use polling');
+          }
         });
 
         socket.on('connect', () => {
-          console.log('WebSocket connected');
+          if (isDevelopment) {
+            console.log('WebSocket connected');
+          }
         });
       } catch (error) {
         console.error('Error setting up Socket.IO:', error);

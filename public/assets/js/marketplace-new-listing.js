@@ -3,6 +3,8 @@
  * Handles creating and editing marketplace listings
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
 
@@ -357,7 +359,9 @@
 
     // Check for CSRF error and retry once with refreshed token
     if (response.status === 403 && data.errorType === 'CSRFError' && data.canRetry) {
-      console.log('CSRF error detected, refreshing token and retrying...');
+      if (isDevelopment) {
+        console.log('CSRF error detected, refreshing token and retrying...');
+      }
       const newToken = await refreshCsrfToken();
       if (newToken) {
         const retryResponse = await fetch(uploadUrl, {

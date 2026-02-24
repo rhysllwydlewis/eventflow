@@ -3,7 +3,9 @@
  * Handles real-time communication via Socket.IO
  */
 
-'use strict';
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+('use strict');
 
 class ChatSocket {
   constructor(chatState) {
@@ -42,7 +44,9 @@ class ChatSocket {
   setupEventHandlers() {
     // Connection events
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      if (isDevelopment) {
+        console.log('WebSocket connected');
+      }
       this.connected = true;
       this.reconnectAttempts = 0;
       this.chatState.emit('socket:connected', null);
@@ -55,7 +59,9 @@ class ChatSocket {
     });
 
     this.socket.on('disconnect', reason => {
-      console.log('WebSocket disconnected:', reason);
+      if (isDevelopment) {
+        console.log('WebSocket disconnected:', reason);
+      }
       this.connected = false;
       this.chatState.emit('socket:disconnected', reason);
     });
@@ -70,7 +76,9 @@ class ChatSocket {
 
     // Authentication
     this.socket.on('auth:success', data => {
-      console.log('Authenticated:', data);
+      if (isDevelopment) {
+        console.log('Authenticated:', data);
+      }
 
       // Rejoin current conversation if any
       if (this.currentConversationId) {
@@ -154,7 +162,9 @@ class ChatSocket {
 
     this.socket.emit('chat:v5:join-conversation', { conversationId });
     this.currentConversationId = conversationId;
-    console.log('Joined conversation:', conversationId);
+    if (isDevelopment) {
+      console.log('Joined conversation:', conversationId);
+    }
   }
 
   /**
@@ -169,7 +179,9 @@ class ChatSocket {
     if (this.currentConversationId === conversationId) {
       this.currentConversationId = null;
     }
-    console.log('Left conversation:', conversationId);
+    if (isDevelopment) {
+      console.log('Left conversation:', conversationId);
+    }
   }
 
   /**

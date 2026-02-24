@@ -3,6 +3,8 @@
  * Shared utilities used across multiple dashboard components
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 /**
  * Get the currently authenticated user
  * @returns {Promise<Object|null>} User object or null if not authenticated
@@ -49,7 +51,9 @@ export function showToast(message, type = 'info') {
     if (type === 'error') {
       alert(message);
     } else {
-      console.log(`[${type.toUpperCase()}] ${message}`);
+      if (isDevelopment) {
+        console.log(`[${type.toUpperCase()}] ${message}`);
+      }
     }
   }
 }

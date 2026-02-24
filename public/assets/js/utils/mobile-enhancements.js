@@ -3,6 +3,8 @@
  * Provides mobile-specific functionality improvements
  */
 
+const isDevelopment =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 class MobileEnhancements {
   constructor() {
     this.isMobile = this.detectMobile();
@@ -357,7 +359,9 @@ class MobileEnhancements {
 
       if (diff > 100) {
         // Show refresh indicator
-        console.log('Pull to refresh triggered');
+        if (isDevelopment) {
+          console.log('Pull to refresh triggered');
+        }
       }
     });
 

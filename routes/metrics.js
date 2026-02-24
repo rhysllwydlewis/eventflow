@@ -102,26 +102,31 @@ router.get(
 
 // ---------- Admin ----------
 router.get('/admin/metrics', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
-  const users = await dbUnified.read('users');
-  const suppliers = await dbUnified.read('suppliers');
-  const plans = await dbUnified.read('plans');
-  const msgs = await dbUnified.read('messages');
-  const pkgs = await dbUnified.read('packages');
-  const threads = await dbUnified.read('threads');
-  res.json({
-    counts: {
-      usersTotal: users.length,
-      usersByRole: users.reduce((a, u) => {
-        a[u.role] = (a[u.role] || 0) + 1;
-        return a;
-      }, {}),
-      suppliersTotal: suppliers.length,
-      packagesTotal: pkgs.length,
-      plansTotal: plans.length,
-      messagesTotal: msgs.length,
-      threadsTotal: threads.length,
-    },
-  });
+  try {
+    const users = await dbUnified.read('users');
+    const suppliers = await dbUnified.read('suppliers');
+    const plans = await dbUnified.read('plans');
+    const msgs = await dbUnified.read('messages');
+    const pkgs = await dbUnified.read('packages');
+    const threads = await dbUnified.read('threads');
+    res.json({
+      counts: {
+        usersTotal: users.length,
+        usersByRole: users.reduce((a, u) => {
+          a[u.role] = (a[u.role] || 0) + 1;
+          return a;
+        }, {}),
+        suppliersTotal: suppliers.length,
+        packagesTotal: pkgs.length,
+        plansTotal: plans.length,
+        messagesTotal: msgs.length,
+        threadsTotal: threads.length,
+      },
+    });
+  } catch (error) {
+    logger.error('Error reading admin metrics:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 router.post(
