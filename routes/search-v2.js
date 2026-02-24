@@ -39,6 +39,7 @@ router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, 
     const query = {
       q: req.query.q ? String(req.query.q).trim() : '',
       category: req.query.category,
+      eventType: req.query.eventType,
       location: req.query.location,
       minPrice: req.query.minPrice,
       maxPrice: req.query.maxPrice,

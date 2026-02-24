@@ -453,4 +453,61 @@ describe('Search V2 API Integration Tests', () => {
       expect(routeContent).toContain("require('validator')");
     });
   });
+
+  describe('Phase 4 Filter Parameters', () => {
+    it('should pass eventType to search query', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('eventType: req.query.eventType');
+    });
+
+    it('should pass verifiedOnly to search query', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('verifiedOnly: req.query.verifiedOnly');
+    });
+
+    it('should pass minRating to search query', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('minRating: req.query.minRating');
+    });
+  });
+
+  describe('Suppliers HTML Filter UI', () => {
+    const suppliersHtml = fs.readFileSync(
+      path.join(__dirname, '../../public/suppliers.html'),
+      'utf8'
+    );
+
+    it('should have rating filter', () => {
+      expect(suppliersHtml).toContain('filterRating');
+    });
+
+    it('should have verified suppliers checkbox', () => {
+      expect(suppliersHtml).toContain('filterVerified');
+    });
+
+    it('should have sort dropdown', () => {
+      expect(suppliersHtml).toContain('filterSort');
+    });
+
+    it('should have ££££ price tier option', () => {
+      expect(suppliersHtml).toContain('££££');
+    });
+
+    it('should have priceAsc and priceDesc sort options', () => {
+      expect(suppliersHtml).toContain('priceAsc');
+      expect(suppliersHtml).toContain('priceDesc');
+    });
+  });
 });

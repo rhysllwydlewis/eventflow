@@ -106,3 +106,50 @@ describe('Service Worker', () => {
     });
   });
 });
+
+describe('PWA Install Prompt', () => {
+  const pwaPath = path.join(__dirname, '../../public/assets/js/pwa-install.js');
+  let pwaContent;
+
+  beforeAll(() => {
+    pwaContent = fs.readFileSync(pwaPath, 'utf8');
+  });
+
+  it('should exist at expected path', () => {
+    expect(fs.existsSync(pwaPath)).toBe(true);
+  });
+
+  it('should listen for beforeinstallprompt event', () => {
+    expect(pwaContent).toContain('beforeinstallprompt');
+  });
+
+  it('should persist dismissal state in localStorage', () => {
+    expect(pwaContent).toContain('localStorage');
+    expect(pwaContent).toContain('dismissed');
+  });
+
+  it('should only show banner when not dismissed', () => {
+    expect(pwaContent).toContain('isDismissed');
+  });
+
+  it('should provide an install button', () => {
+    expect(pwaContent).toContain('Install');
+  });
+
+  it('should include iOS Safari fallback', () => {
+    expect(pwaContent).toContain('iPad|iPhone|iPod');
+    expect(pwaContent).toContain('standalone');
+  });
+
+  it('should be included in index.html', () => {
+    const indexPath = path.join(__dirname, '../../public/index.html');
+    const indexContent = fs.readFileSync(indexPath, 'utf8');
+    expect(indexContent).toContain('pwa-install.js');
+  });
+
+  it('should be included in suppliers.html', () => {
+    const suppliersPath = path.join(__dirname, '../../public/suppliers.html');
+    const suppliersContent = fs.readFileSync(suppliersPath, 'utf8');
+    expect(suppliersContent).toContain('pwa-install.js');
+  });
+});

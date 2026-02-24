@@ -345,11 +345,23 @@ function applyFilters(suppliers, query) {
     });
   }
 
+  // Event type filter (matches category or tags)
+  if (query.eventType) {
+    const eventTypeTerm = query.eventType.toLowerCase();
+    results = results.filter(s => {
+      const category = (s.category || '').toLowerCase();
+      const tags = (s.tags || []).map(t => t.toLowerCase());
+      return category.includes(eventTypeTerm) || tags.some(t => t.includes(eventTypeTerm));
+    });
+  }
+
   // Price range filter
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
     results = results.filter(s => {
       const priceDisplay = s.price_display || '';
-      const priceLevel = priceDisplay.split('$').length - 1;
+      // Support both $ and £ price-level symbols
+      const symbol = priceDisplay.includes('£') ? '£' : '$';
+      const priceLevel = priceDisplay.split(symbol).length - 1;
 
       if (query.minPrice !== undefined && priceLevel < Number(query.minPrice)) {
         return false;
@@ -501,17 +513,34 @@ function sortResults(results, sortBy) {
 
     case 'priceAsc':
       sorted.sort((a, b) => {
-        const priceA = (a.price_display || '').split('$').length - 1;
-        const priceB = (b.price_display || '').split('$').length - 1;
+        const dispA = a.price_display || '';
+        const symA = dispA.includes('£') ? '£' : '$';
+        const priceA = dispA.split(symA).length - 1;
+        const dispB = b.price_display || '';
+        const symB = dispB.includes('£') ? '£' : '$';
+        const priceB = dispB.split(symB).length - 1;
         return priceA - priceB;
       });
       break;
 
     case 'priceDesc':
       sorted.sort((a, b) => {
-        const priceA = (a.price_display || '').split('$').length - 1;
-        const priceB = (b.price_display || '').split('$').length - 1;
+        const dispA = a.price_display || '';
+        const symA = dispA.includes('£') ? '£' : '$';
+        const priceA = dispA.split(symA).length - 1;
+        const dispB = b.price_display || '';
+        const symB = dispB.includes('£') ? '£' : '$';
+        const priceB = dispB.split(symB).length - 1;
         return priceB - priceA;
+      });
+      break;
+
+    case 'distance':
+      // Distance sort requires geolocation; fall back to relevance
+      sorted.sort((a, b) => {
+        const scoreA = a.relevanceScore || 0;
+        const scoreB = b.relevanceScore || 0;
+        return scoreB - scoreA;
       });
       break;
 
@@ -617,7 +646,9 @@ function calculateFacets(allSuppliers) {
   ];
 
   allSuppliers.forEach(s => {
-    const priceLevel = (s.price_display || '').split('$').length - 1;
+    const priceDisplay = s.price_display || '';
+    const symbol = priceDisplay.includes('£') ? '£' : '$';
+    const priceLevel = priceDisplay.split(symbol).length - 1;
     priceRanges.forEach(range => {
       if (priceLevel >= range.min && priceLevel <= range.max) {
         range.count++;
