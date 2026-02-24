@@ -851,7 +851,7 @@ async function fetchReviewStats() {
  * Create a conversion funnel widget (Views → Enquiries → Replies)
  * @param {string} containerId - Container element ID
  */
-export async function createConversionFunnelWidget(containerId) {
+export async function createConversionFunnelWidget(containerId, days = 30) {
   const container = document.getElementById(containerId);
   if (!container) {
     return;
@@ -872,7 +872,7 @@ export async function createConversionFunnelWidget(containerId) {
     let hasData = false;
 
     // Try to fetch real analytics
-    const res = await fetch('/api/supplier/analytics?days=30', { credentials: 'include' });
+    const res = await fetch(`/api/supplier/analytics?days=${days}`, { credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
       if (data.analytics) {
@@ -887,7 +887,7 @@ export async function createConversionFunnelWidget(containerId) {
       container.innerHTML = `
         <div class="card" style="padding:1.5rem;">
           <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Conversion Funnel</h3>
-          <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1rem 0;">Views → Enquiries → Replies (last 30 days)</p>
+          <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1rem 0;">Views → Enquiries → Replies (last ${days} days)</p>
           <div style="padding:1.5rem;text-align:center;background:#F9FAFB;border-radius:8px;">
             <div style="font-size:2rem;margin-bottom:0.5rem;">📊</div>
             <p style="color:#6B7280;margin:0;">Not enough data yet.</p>
@@ -937,7 +937,7 @@ export async function createConversionFunnelWidget(containerId) {
     container.innerHTML = `
       <div class="card" style="padding:1.5rem;">
         <h3 style="margin:0 0 0.25rem 0;font-size:1.25rem;color:#0B1220;">Conversion Funnel</h3>
-        <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1.25rem 0;">Last 30 days</p>
+        <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1.25rem 0;">Last ${days} days</p>
         ${stepsHtml}
       </div>`;
   } catch (error) {
@@ -953,8 +953,9 @@ export async function createConversionFunnelWidget(containerId) {
 /**
  * Create a response time widget showing average and trend
  * @param {string} containerId - Container element ID
+ * @param {number} [days=30]   - Analytics period in days (7, 30, or 90)
  */
-export async function createResponseTimeWidget(containerId) {
+export async function createResponseTimeWidget(containerId, days = 30) {
   const container = document.getElementById(containerId);
   if (!container) {
     return;
@@ -973,7 +974,7 @@ export async function createResponseTimeWidget(containerId) {
     let responseRate = 0;
     let hasData = false;
 
-    const res = await fetch('/api/supplier/analytics?days=30', { credentials: 'include' });
+    const res = await fetch(`/api/supplier/analytics?days=${days}`, { credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
       if (data.analytics) {
@@ -987,7 +988,7 @@ export async function createResponseTimeWidget(containerId) {
       container.innerHTML = `
         <div class="card" style="padding:1.5rem;">
           <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Response Time</h3>
-          <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1rem 0;">Last 30 days</p>
+          <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1rem 0;">Last ${days} days</p>
           <div style="padding:1.5rem;text-align:center;background:#F9FAFB;border-radius:8px;">
             <div style="font-size:2rem;margin-bottom:0.5rem;">⏱️</div>
             <p style="color:#6B7280;margin:0;">Not enough data yet.</p>
@@ -1027,7 +1028,7 @@ export async function createResponseTimeWidget(containerId) {
     container.innerHTML = `
       <div class="card" style="padding:1.5rem;">
         <h3 style="margin:0 0 0.25rem 0;font-size:1.25rem;color:#0B1220;">Response Time</h3>
-        <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1.25rem 0;">Last 30 days</p>
+        <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1.25rem 0;">Last ${days} days</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
           <div style="padding:1rem;background:#F9FAFB;border-radius:8px;text-align:center;">
             <div style="font-size:2rem;font-weight:700;color:#0B1220;">${timeDisplay}</div>

@@ -198,6 +198,14 @@
       this.refreshTimer = null;
       this.activeConversationId = null; // for quick-reply panel
 
+      // IDs of external filter/sort/search controls (set via options or auto-detected)
+      this._searchInputId = options.searchInputId || 'widget-search-input-supplier';
+      this._filterSelectId = options.filterSelectId || 'widget-filter-select-supplier';
+      this._sortSelectId = options.sortSelectId || 'widget-sort-select-supplier';
+
+      // Optional callback called after each render with (conversations, filteredConversations)
+      this._onRendered = typeof options.onRendered === 'function' ? options.onRendered : null;
+
       // Bound handlers kept for cleanup
       this._onOnline = () => {
         if (!this.wsConnected) {
@@ -217,6 +225,7 @@
       await this._fetchConversations();
       this._setupWebSocket();
       this._setupPolling();
+      this._setupExternalControls();
       window.addEventListener('online', this._onOnline);
       window.addEventListener('offline', this._onOffline);
       window.addEventListener('messenger:notification', this._onMessengerNotification);
@@ -396,6 +405,127 @@
         </div>`;
     }
 
+    // ── External filter/sort/search controls ──────────────────────────────────
+
+    /**
+     * Wire external search/filter/sort DOM controls to re-render without refetch.
+     * Controls are identified by IDs set in the constructor options.
+     */
+    _setupExternalControls() {
+      const rerender = () => this._render();
+
+      const searchEl = document.getElementById(this._searchInputId);
+      const filterEl = document.getElementById(this._filterSelectId);
+      const sortEl = document.getElementById(this._sortSelectId);
+
+      if (searchEl) {
+        searchEl.addEventListener('input', rerender);
+      }
+      if (filterEl) {
+        filterEl.addEventListener('change', rerender);
+      }
+      if (sortEl) {
+        sortEl.addEventListener('change', rerender);
+      }
+    }
+
+    /**
+     * Apply client-side search, lead-quality filter, and sort to conversations.
+     * Reads current values from the external controls if present.
+     * @param {Array} conversations - The full fetched conversation array.
+     * @returns {Array} Filtered and sorted subset.
+     */
+    _applyClientFilters(conversations) {
+      if (!conversations || conversations.length === 0) {
+        return conversations;
+      }
+
+      const searchEl = document.getElementById(this._searchInputId);
+      const filterEl = document.getElementById(this._filterSelectId);
+      const sortEl = document.getElementById(this._sortSelectId);
+
+      const searchQuery = searchEl ? searchEl.value.toLowerCase().trim() : '';
+      const filterValue = filterEl ? filterEl.value : 'all';
+      const sortValue = sortEl ? sortEl.value : 'newest';
+
+      // QUALITY_SCORE_MAP mirrors the one in renderLeadQualityBadge
+      const QUALITY_SCORE_MAP = { Hot: 4, High: 3, Good: 2, Medium: 2, Low: 1 };
+
+      let result = conversations.slice();
+
+      // 1. Search across participant display names and last message preview
+      if (searchQuery) {
+        result = result.filter(conv => {
+          const participants = Array.isArray(conv.participants) ? conv.participants : [];
+          const currentUserId = this._resolveCurrentUserId();
+          const other =
+            participants.find(p => String(p.userId) !== String(currentUserId || '')) ||
+            participants[0] ||
+            {};
+          const name = (other.displayName || other.businessName || other.name || '').toLowerCase();
+          const preview = (conv.lastMessage?.content || conv.lastMessage?.text || '').toLowerCase();
+          return name.includes(searchQuery) || preview.includes(searchQuery);
+        });
+      }
+
+      // 2. Quality / status filter
+      if (filterValue === 'unread') {
+        const currentUserId = this._resolveCurrentUserId();
+        result = result.filter(conv => {
+          const participants = Array.isArray(conv.participants) ? conv.participants : [];
+          const me = currentUserId
+            ? participants.find(p => String(p.userId) === currentUserId)
+            : null;
+          return ((me && me.unreadCount) || 0) > 0;
+        });
+      } else if (filterValue === 'starred') {
+        result = result.filter(conv => conv.isStarred === true);
+      } else if (filterValue === 'high') {
+        result = result.filter(
+          conv =>
+            conv.leadScore === 'High' ||
+            conv.leadScore === 'Hot' ||
+            (typeof conv.leadScoreRaw === 'number' && conv.leadScoreRaw >= 60)
+        );
+      } else if (filterValue === 'medium') {
+        result = result.filter(
+          conv =>
+            conv.leadScore === 'Medium' ||
+            conv.leadScore === 'Good' ||
+            (typeof conv.leadScoreRaw === 'number' &&
+              conv.leadScoreRaw >= 40 &&
+              conv.leadScoreRaw < 60)
+        );
+      } else if (filterValue === 'low') {
+        result = result.filter(
+          conv =>
+            conv.leadScore === 'Low' ||
+            (typeof conv.leadScoreRaw === 'number' && conv.leadScoreRaw < 40)
+        );
+      }
+
+      // 3. Sort
+      result.sort((a, b) => {
+        if (sortValue === 'oldest') {
+          return new Date(a.updatedAt || a.createdAt) - new Date(b.updatedAt || b.createdAt);
+        }
+        if (sortValue === 'score-high') {
+          const sa = a.leadScoreRaw || QUALITY_SCORE_MAP[a.leadScore] || 0;
+          const sb = b.leadScoreRaw || QUALITY_SCORE_MAP[b.leadScore] || 0;
+          return sb - sa;
+        }
+        if (sortValue === 'score-low') {
+          const sa = a.leadScoreRaw || QUALITY_SCORE_MAP[a.leadScore] || 0;
+          const sb = b.leadScoreRaw || QUALITY_SCORE_MAP[b.leadScore] || 0;
+          return sa - sb;
+        }
+        // Default: newest first
+        return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
+      });
+
+      return result;
+    }
+
     _render() {
       const pulseBadge = this.unreadCount > this._prevUnreadCount ? ' mwv4__badge--pulse' : '';
       const badgeHtml =
@@ -403,11 +533,14 @@
           ? `<span class="mwv4__badge${pulseBadge}" aria-label="${this.unreadCount} unread messages">${this.unreadCount}</span>`
           : '';
 
-      const listHtml = this.conversations.length
-        ? this.conversations.map(c => this._renderItem(c)).join('')
+      // Apply client-side filter/sort/search before rendering
+      const visible = this._applyClientFilters(this.conversations);
+
+      const listHtml = visible.length
+        ? visible.map(c => this._renderItem(c)).join('')
         : `<li class="mwv4__empty">
              <span class="mwv4__empty-icon">💬</span>
-             <p class="mwv4__empty-text">No conversations yet</p>
+             <p class="mwv4__empty-text">${this.conversations.length > 0 ? 'No conversations match your filters' : 'No conversations yet'}</p>
            </li>`;
 
       this.container.innerHTML = `
@@ -424,6 +557,15 @@
         </div>`;
 
       this._attachHandlers();
+
+      // Notify external callback with full + filtered conversation arrays
+      if (this._onRendered) {
+        try {
+          this._onRendered(this.conversations, visible);
+        } catch (e) {
+          // ignore callback errors
+        }
+      }
     }
 
     _renderItem(conv) {

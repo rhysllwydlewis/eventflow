@@ -570,10 +570,23 @@
         <div id="enquiry-trend-chart"></div>
 
         <!-- ROI Analytics Widgets: Conversion Funnel + Response Time -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem;">
-          <div id="supplier-conversion-funnel"></div>
-          <div id="supplier-response-time"></div>
-        </div>
+        <section aria-labelledby="roi-widgets-heading" style="margin-top:1.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;">
+            <h2 id="roi-widgets-heading" style="margin:0;font-size:1.125rem;font-weight:700;color:#0B1220;">Performance Overview</h2>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <label for="roi-date-range" style="font-size:0.875rem;color:#6B7280;">Period:</label>
+              <select id="roi-date-range" aria-label="Analytics date range" style="padding:0.375rem 0.75rem;border:1px solid #E5E7EB;border-radius:8px;font-size:0.875rem;background:white;cursor:pointer;">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+            <div id="supplier-conversion-funnel"></div>
+            <div id="supplier-response-time"></div>
+          </div>
+        </section>
 
         <!-- Earnings Overview Section - Enhanced Liquid Glass Design -->
         <section
@@ -1736,6 +1749,16 @@
               </div>
             </div>
           </div>
+          <!-- Lead Quality Summary Stats -->
+          <div id="lead-quality-summary-stats" style="display:none;padding:0.75rem 1rem;margin-bottom:0.75rem;background:#F9FAFB;border-radius:8px;border:1px solid #E5E7EB;">
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+              <span style="font-size:0.8125rem;font-weight:600;color:#374151;">Lead Quality:</span>
+              <span id="lqs-high" style="font-size:0.8125rem;display:inline-flex;align-items:center;gap:0.25rem;"><span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;"></span><span id="lqs-high-text">0 High</span></span>
+              <span id="lqs-medium" style="font-size:0.8125rem;display:inline-flex;align-items:center;gap:0.25rem;"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;"></span><span id="lqs-medium-text">0 Medium</span></span>
+              <span id="lqs-low" style="font-size:0.8125rem;display:inline-flex;align-items:center;gap:0.25rem;"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;"></span><span id="lqs-low-text">0 Low</span></span>
+              <span id="lqs-pct" style="font-size:0.8125rem;color:#6B7280;margin-left:auto;"></span>
+            </div>
+          </div>
           <!-- Messenger Dashboard Widget -->
           <div id="messenger-dashboard-widget-supplier" style="margin-bottom: 1rem;"></div>
           <div id="threads-sup" class="section">
@@ -2176,9 +2199,19 @@
               // Create enquiry trend chart
               await createEnquiryTrendChart('enquiry-trend-chart');
 
-              // Initialize ROI analytics widgets
+              // Initialize ROI analytics widgets (uses date-range selector)
               await createConversionFunnelWidget('supplier-conversion-funnel');
               await createResponseTimeWidget('supplier-response-time');
+
+              // Wire date-range selector to refresh ROI widgets
+              const roiDateRange = document.getElementById('roi-date-range');
+              if (roiDateRange) {
+                roiDateRange.addEventListener('change', async () => {
+                  const days = parseInt(roiDateRange.value, 10) || 30;
+                  await createConversionFunnelWidget('supplier-conversion-funnel', days);
+                  await createResponseTimeWidget('supplier-response-time', days);
+                });
+              }
 
               // Initialize Lead Quality widget
               await createLeadQualityWidget('lead-quality-breakdown');
@@ -2784,7 +2817,48 @@
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         if (typeof MessengerWidgetV4 !== 'undefined') {
-          new MessengerWidgetV4('messenger-dashboard-widget-supplier', { maxItems: 5 });
+          new MessengerWidgetV4('messenger-dashboard-widget-supplier', {
+            maxItems: 5,
+            // onRendered(allConversations, filteredConversations) – called after each render
+            onRendered: function(allConversations, _filteredConversations) {
+              // Update the lead quality summary stats block
+              var statsEl = document.getElementById('lead-quality-summary-stats');
+              if (!statsEl || !allConversations || allConversations.length === 0) {
+                return;
+              }
+
+              var high = 0, medium = 0, low = 0;
+              allConversations.forEach(function(conv) {
+                var score = conv.leadScore;
+                var raw = conv.leadScoreRaw;
+                var label = score;
+                if (!label && typeof raw === 'number') {
+                  if (raw >= 80) label = 'Hot';
+                  else if (raw >= 60) label = 'High';
+                  else if (raw >= 40) label = 'Good';
+                  else label = 'Low';
+                }
+                if (label === 'High' || label === 'Hot') high++;
+                else if (label === 'Medium' || label === 'Good') medium++;
+                else if (label === 'Low') low++;
+              });
+
+              var total = allConversations.length;
+              var hasQuality = high + medium + low > 0;
+              if (!hasQuality) return;
+
+              var highPct = total > 0 ? Math.round((high / total) * 100) : 0;
+              statsEl.style.display = 'block';
+              var highText = document.getElementById('lqs-high-text');
+              var medText = document.getElementById('lqs-medium-text');
+              var lowText = document.getElementById('lqs-low-text');
+              var pctText = document.getElementById('lqs-pct');
+              if (highText) highText.textContent = high + ' High';
+              if (medText) medText.textContent = medium + ' Medium';
+              if (lowText) lowText.textContent = low + ' Low';
+              if (pctText) pctText.textContent = highPct + '% high-quality leads';
+            }
+          });
         }
       });
     </script>

@@ -335,7 +335,7 @@ describe('supplier-analytics-chart.js – conversion funnel + response time', ()
 
   describe('createConversionFunnelWidget', () => {
     it('is exported', () => {
-      expect(chartJs).toContain('export async function createConversionFunnelWidget(containerId)');
+      expect(chartJs).toContain('export async function createConversionFunnelWidget(containerId');
     });
 
     it('shows "Not enough data yet" empty state', () => {
@@ -344,14 +344,14 @@ describe('supplier-analytics-chart.js – conversion funnel + response time', ()
 
     it('fetches analytics from supplier analytics API', () => {
       const fn = chartJs
-        .split('export async function createConversionFunnelWidget(containerId)')[1]
+        .split('export async function createConversionFunnelWidget(containerId')[1]
         .split('export async function ')[0];
       expect(fn).toContain('/api/supplier/analytics');
     });
 
     it('renders Views, Enquiries, Replies funnel steps', () => {
       const fn = chartJs
-        .split('export async function createConversionFunnelWidget(containerId)')[1]
+        .split('export async function createConversionFunnelWidget(containerId')[1]
         .split('export async function ')[0];
       expect(fn).toContain('Profile Views');
       expect(fn).toContain('Enquiries');
@@ -360,14 +360,14 @@ describe('supplier-analytics-chart.js – conversion funnel + response time', ()
 
     it('shows loading skeleton', () => {
       const fn = chartJs
-        .split('export async function createConversionFunnelWidget(containerId)')[1]
+        .split('export async function createConversionFunnelWidget(containerId')[1]
         .split('export async function ')[0];
       expect(fn).toContain('skeleton');
     });
 
     it('handles fetch error gracefully', () => {
       const fn = chartJs
-        .split('export async function createConversionFunnelWidget(containerId)')[1]
+        .split('export async function createConversionFunnelWidget(containerId')[1]
         .split('export async function ')[0];
       expect(fn).toContain('catch (error)');
       expect(fn).toContain('Unable to load');
@@ -376,33 +376,33 @@ describe('supplier-analytics-chart.js – conversion funnel + response time', ()
 
   describe('createResponseTimeWidget', () => {
     it('is exported', () => {
-      expect(chartJs).toContain('export async function createResponseTimeWidget(containerId)');
+      expect(chartJs).toContain('export async function createResponseTimeWidget(containerId');
     });
 
     it('shows "Not enough data yet" empty state', () => {
       const fn = chartJs
-        .split('export async function createResponseTimeWidget(containerId)')[1]
+        .split('export async function createResponseTimeWidget(containerId')[1]
         .split('export default')[0];
       expect(fn).toContain('Not enough data yet');
     });
 
     it('displays avg response time', () => {
       const fn = chartJs
-        .split('export async function createResponseTimeWidget(containerId)')[1]
+        .split('export async function createResponseTimeWidget(containerId')[1]
         .split('export default')[0];
       expect(fn).toContain('Avg Response Time');
     });
 
     it('displays response rate', () => {
       const fn = chartJs
-        .split('export async function createResponseTimeWidget(containerId)')[1]
+        .split('export async function createResponseTimeWidget(containerId')[1]
         .split('export default')[0];
       expect(fn).toContain('Response Rate');
     });
 
     it('handles fetch error gracefully', () => {
       const fn = chartJs
-        .split('export async function createResponseTimeWidget(containerId)')[1]
+        .split('export async function createResponseTimeWidget(containerId')[1]
         .split('export default')[0];
       expect(fn).toContain('catch (error)');
       expect(fn).toContain('Unable to load');
@@ -441,5 +441,104 @@ describe('MessengerWidgetV4.js – lead quality badge rendering', () => {
   it('returns empty string when no quality data', () => {
     const fn = widgetJs.split('function renderLeadQualityBadge(conv)')[1].split(/\n {2}\/\/ /)[0];
     expect(fn).toContain("return ''");
+  });
+
+  it('defines _applyClientFilters method', () => {
+    expect(widgetJs).toContain('_applyClientFilters(conversations)');
+  });
+
+  it('_applyClientFilters filters by "high" quality', () => {
+    const fn = widgetJs.split('_applyClientFilters(conversations)')[1].split('_render()')[0];
+    expect(fn).toContain("filterValue === 'high'");
+    expect(fn).toContain("leadScore === 'High'");
+  });
+
+  it('_applyClientFilters filters by "medium" quality', () => {
+    const fn = widgetJs.split('_applyClientFilters(conversations)')[1].split('_render()')[0];
+    expect(fn).toContain("filterValue === 'medium'");
+  });
+
+  it('_applyClientFilters filters by "low" quality', () => {
+    const fn = widgetJs.split('_applyClientFilters(conversations)')[1].split('_render()')[0];
+    expect(fn).toContain("filterValue === 'low'");
+  });
+
+  it('_applyClientFilters supports score-high and score-low sort', () => {
+    const fn = widgetJs.split('_applyClientFilters(conversations)')[1].split('_render()')[0];
+    expect(fn).toContain("sortValue === 'score-high'");
+    expect(fn).toContain("sortValue === 'score-low'");
+  });
+
+  it('_applyClientFilters is called inside _render', () => {
+    // Check that _render calls _applyClientFilters
+    expect(widgetJs).toContain('_applyClientFilters(this.conversations)');
+  });
+
+  it('defines _setupExternalControls method', () => {
+    expect(widgetJs).toContain('_setupExternalControls()');
+  });
+
+  it('_setupExternalControls listens to filter, sort and search controls', () => {
+    // Split on the method definition, not the call site
+    const fn = widgetJs
+      .split('_setupExternalControls() {')[1]
+      .split('_applyClientFilters(conversations)')[0];
+    expect(fn).toContain('this._filterSelectId');
+    expect(fn).toContain('this._sortSelectId');
+    expect(fn).toContain('this._searchInputId');
+    expect(fn).toContain("addEventListener('change'");
+    expect(fn).toContain("addEventListener('input'");
+  });
+
+  it('supports onRendered callback option', () => {
+    expect(widgetJs).toContain('onRendered');
+    expect(widgetJs).toContain('this._onRendered');
+  });
+
+  it('calls _setupExternalControls in _init', () => {
+    const fn = widgetJs.split('async _init()')[1].split('_resolveCurrentUserId')[0];
+    expect(fn).toContain('_setupExternalControls()');
+  });
+});
+
+// ─── dashboard-supplier.html – date range selector + summary stats ────────────
+
+describe('dashboard-supplier.html – ROI widgets date range + summary stats', () => {
+  const html = fs.readFileSync(path.join(process.cwd(), 'public/dashboard-supplier.html'), 'utf8');
+
+  it('has date range selector for ROI analytics widgets', () => {
+    expect(html).toContain('id="roi-date-range"');
+  });
+
+  it('date range selector has 7/30/90 day options', () => {
+    expect(html).toContain('<option value="7">Last 7 days</option>');
+    expect(html).toContain('<option value="30" selected>Last 30 days</option>');
+    expect(html).toContain('<option value="90">Last 90 days</option>');
+  });
+
+  it('wires date range change to refresh ROI widgets', () => {
+    expect(html).toContain('roi-date-range');
+    expect(html).toContain("createConversionFunnelWidget('supplier-conversion-funnel'");
+    expect(html).toContain("createResponseTimeWidget('supplier-response-time'");
+  });
+
+  it('has lead quality summary stats container', () => {
+    expect(html).toContain('id="lead-quality-summary-stats"');
+  });
+
+  it('summary stats shows high/medium/low counts', () => {
+    expect(html).toContain('id="lqs-high-text"');
+    expect(html).toContain('id="lqs-medium-text"');
+    expect(html).toContain('id="lqs-low-text"');
+  });
+
+  it('summary stats shows high-quality percentage', () => {
+    expect(html).toContain('id="lqs-pct"');
+    expect(html).toContain('high-quality leads');
+  });
+
+  it('uses onRendered callback to populate summary stats', () => {
+    expect(html).toContain('onRendered: function');
+    expect(html).toContain('lead-quality-summary-stats');
   });
 });
