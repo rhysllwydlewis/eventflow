@@ -53,7 +53,11 @@ function createSupplierCard(supplier, position) {
     supplier.subscriptionTier || supplier.subscription?.tier || (supplier.isPro ? 'pro' : null);
   const badges = [];
   // Founding supplier badge
-  if (supplier.isFounding || supplier.founding) {
+  if (
+    supplier.isFounding ||
+    supplier.founding ||
+    (supplier.badges && supplier.badges.includes('founding'))
+  ) {
     const yearLabel = supplier.foundingYear
       ? ` (${escapeHtml(String(supplier.foundingYear))})`
       : '';
@@ -61,7 +65,7 @@ function createSupplierCard(supplier, position) {
       `<span class="badge badge-founding" title="Founding Supplier - Original member since 2024">⭐ Founding${yearLabel}</span>`
     );
   }
-  if (supplier.verified) {
+  if (supplier.verified || supplier.approved) {
     badges.push('<span class="badge badge-verified">✓ Verified</span>');
   }
   if (tier === 'pro_plus') {
@@ -109,7 +113,7 @@ function createSupplierCard(supplier, position) {
         </div>
         <p class="supplier-card-description">${escapeHtml(supplier.description_short || '')}</p>
         <div class="supplier-card-badges">${badges.join('')}</div>
-        <div class="supplier-card-price">${priceDisplay}</div>
+        <div class="supplier-card-price">${escapeHtml(priceDisplay)}</div>
         <div class="supplier-card-actions">
           <button class="btn btn-primary btn-quote" data-supplier-id="${escapeHtml(supplier.id)}">
             Request Quote

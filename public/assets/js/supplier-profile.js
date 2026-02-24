@@ -616,7 +616,7 @@
           <line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
         <h3 style="margin-bottom: 0.5rem; color: #ef4444;">Failed to load reviews</h3>
-        <p style="color: var(--muted); margin-bottom: 1rem;">${escapeHtml(errorMessage)}</p>
+        <p style="color: var(--muted); margin-bottom: 1rem;">${escapeHtml(errorMessage || 'An unexpected error occurred.')}</p>
         <button id="retry-reviews-btn" class="btn btn-primary">Retry</button>
       </div>
     `;
@@ -630,7 +630,7 @@
   function renderReviews(container, reviews) {
     container.removeAttribute('aria-hidden');
     const reviewsHTML = reviews
-      .map(review => {
+      .map((review, index) => {
         const rating = Math.max(1, Math.min(5, review.rating || 0));
         const starsHTML = generateStarRating(rating);
 
@@ -645,7 +645,7 @@
               <div class="small" style="color: var(--muted);">${formatDate(review.createdAt)}</div>
             </div>
           </div>
-          <div class="review-content" data-review-index="${reviews.indexOf(review)}"></div>
+          <div class="review-content" data-review-index="${index}"></div>
         </div>
       `;
       })

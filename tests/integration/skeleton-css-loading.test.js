@@ -52,13 +52,19 @@ describe('suppliers-init.js trust badge logic', () => {
     );
   });
 
-  it('renders founding badge when isFounding is set', () => {
+  it('renders founding badge when isFounding/founding/badges array is set', () => {
     expect(suppliersInitContent).toContain('supplier.isFounding || supplier.founding');
+    expect(suppliersInitContent).toContain("supplier.badges.includes('founding')");
     expect(suppliersInitContent).toContain('badge-founding');
   });
 
   it('renders founding badge with foundingYear when present', () => {
     expect(suppliersInitContent).toContain('supplier.foundingYear');
+  });
+
+  it('renders verified badge for both verified and approved suppliers', () => {
+    expect(suppliersInitContent).toContain('supplier.verified || supplier.approved');
+    expect(suppliersInitContent).toContain('badge-verified');
   });
 
   it('renders email verification badge', () => {
@@ -80,6 +86,10 @@ describe('suppliers-init.js trust badge logic', () => {
     expect(suppliersInitContent).toContain('error-state');
     expect(suppliersInitContent).toContain('error-state-action');
     expect(suppliersInitContent).toContain('retry-suppliers-btn');
+  });
+
+  it('escapes priceDisplay in card HTML to prevent XSS', () => {
+    expect(suppliersInitContent).toContain('escapeHtml(priceDisplay)');
   });
 });
 
@@ -108,5 +118,30 @@ describe('supplier-profile.js skeleton and error-state usage', () => {
   it('renders error-state with retry button on supplier load failure', () => {
     expect(supplierProfileContent).toContain('error-state-action');
     expect(supplierProfileContent).toContain('retry-supplier-btn');
+  });
+
+  it('uses map index instead of indexOf in renderReviews', () => {
+    expect(supplierProfileContent).toContain('.map((review, index) =>');
+    expect(supplierProfileContent).not.toContain('reviews.indexOf(review)');
+  });
+
+  it('provides a fallback error message when errorMessage is falsy', () => {
+    expect(supplierProfileContent).toContain("errorMessage || 'An unexpected error occurred.'");
+  });
+});
+
+describe('reviews.css completeness', () => {
+  let reviewsCssContent;
+
+  beforeAll(() => {
+    reviewsCssContent = fs.readFileSync(path.join(publicDir, 'assets/css/reviews.css'), 'utf8');
+  });
+
+  it('defines .reviews-error style for the review error state', () => {
+    expect(reviewsCssContent).toContain('.reviews-error');
+  });
+
+  it('defines .reviews-empty style for the empty reviews state', () => {
+    expect(reviewsCssContent).toContain('.reviews-empty');
   });
 });
