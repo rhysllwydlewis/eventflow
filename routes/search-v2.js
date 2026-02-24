@@ -39,7 +39,7 @@ router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, 
     const query = {
       q: req.query.q ? String(req.query.q).trim() : '',
       category: req.query.category,
-      eventType: req.query.eventType,
+      eventType: req.query.eventType ? String(req.query.eventType).trim() : undefined,
       location: req.query.location,
       minPrice: req.query.minPrice,
       maxPrice: req.query.maxPrice,
@@ -60,6 +60,25 @@ router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, 
         success: false,
         error: 'Search query too long (max 200 characters)',
       });
+    }
+    if (query.eventType && query.eventType.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'Event type filter too long (max 100 characters)',
+      });
+    }
+    const VALID_SORT_VALUES = [
+      'relevance',
+      'rating',
+      'reviews',
+      'name',
+      'newest',
+      'priceAsc',
+      'priceDesc',
+      'distance',
+    ];
+    if (query.sortBy && !VALID_SORT_VALUES.includes(query.sortBy)) {
+      query.sortBy = 'relevance';
     }
 
     // Perform search

@@ -240,7 +240,16 @@ async function searchSuppliers(filters, page = 1) {
     }
 
     const result = await response.json();
-    return result.data || { results: [], pagination: { total: 0, page: 1, totalPages: 1 } };
+    const data = result.data || { results: [], pagination: { total: 0, page: 1, pages: 1 } };
+    // Normalise: API returns `pages`, but components use `totalPages`
+    if (
+      data.pagination &&
+      data.pagination.pages !== undefined &&
+      data.pagination.totalPages === undefined
+    ) {
+      data.pagination.totalPages = data.pagination.pages;
+    }
+    return data;
   } catch (error) {
     console.error('Search error:', error);
     return { results: [], pagination: { total: 0, page: 1, totalPages: 1 } };

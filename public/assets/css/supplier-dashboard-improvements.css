@@ -1335,6 +1335,28 @@ body.supplier-dashboard-page .supplier-cta-section {
   gap: var(--ef-space-3, 12px);
 }
 
+/* Checkbox filter group variant */
+.filter-group--checkbox {
+  justify-content: flex-end;
+}
+
+.filter-label--checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--ef-space-2, 8px);
+  cursor: pointer;
+  font-weight: var(--ef-font-normal, 400);
+  user-select: none;
+}
+
+.filter-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--ef-primary, #0b8073);
+  cursor: pointer;
+}
+
 /* ===========================================
    8. EMPTY STATE STYLES
    =========================================== */

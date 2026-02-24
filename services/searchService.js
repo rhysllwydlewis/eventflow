@@ -371,13 +371,15 @@ function applyFilters(suppliers, query) {
 
   // Price range filter
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+    const minPrice = query.minPrice !== undefined ? Number(query.minPrice) : NaN;
+    const maxPrice = query.maxPrice !== undefined ? Number(query.maxPrice) : NaN;
     results = results.filter(s => {
       const priceLevel = getPriceLevel(s.price_display);
 
-      if (query.minPrice !== undefined && priceLevel < Number(query.minPrice)) {
+      if (!isNaN(minPrice) && priceLevel < minPrice) {
         return false;
       }
-      if (query.maxPrice !== undefined && priceLevel > Number(query.maxPrice)) {
+      if (!isNaN(maxPrice) && priceLevel > maxPrice) {
         return false;
       }
 
@@ -386,9 +388,11 @@ function applyFilters(suppliers, query) {
   }
 
   // Rating filter
-  if (query.minRating !== undefined) {
+  if (query.minRating !== undefined && query.minRating !== '') {
     const minRating = Number(query.minRating);
-    results = results.filter(s => (s.averageRating || 0) >= minRating);
+    if (!isNaN(minRating)) {
+      results = results.filter(s => (s.averageRating || 0) >= minRating);
+    }
   }
 
   // Amenities filter

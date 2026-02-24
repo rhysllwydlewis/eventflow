@@ -535,5 +535,20 @@ describe('Search Service', () => {
       expect(result.results[1].id).toBe('gp3'); // ££
       expect(result.results[2].id).toBe('gp2'); // £
     });
+
+    it('should not crash when minRating is NaN', async () => {
+      const result = await searchService.searchSuppliers({ minRating: 'notanumber' });
+      expect(result.results.length).toBe(3);
+    });
+
+    it('should skip minRating filter when value is empty string', async () => {
+      const result = await searchService.searchSuppliers({ minRating: '' });
+      expect(result.results.length).toBe(3);
+    });
+
+    it('should not crash when minPrice is NaN', async () => {
+      const result = await searchService.searchSuppliers({ minPrice: 'bad', maxPrice: 'bad' });
+      expect(result.results.length).toBe(3);
+    });
   });
 });
