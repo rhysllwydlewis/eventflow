@@ -847,6 +847,211 @@ async function fetchReviewStats() {
   }
 }
 
+/**
+ * Create a conversion funnel widget (Views → Enquiries → Replies)
+ * @param {string} containerId - Container element ID
+ */
+export async function createConversionFunnelWidget(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return;
+  }
+
+  // Loading skeleton
+  container.innerHTML = `
+    <div class="card" style="padding:1.5rem;">
+      <h3 style="margin:0 0 1rem 0;font-size:1.25rem;color:#0B1220;">Conversion Funnel</h3>
+      <div class="skeleton skeleton-text skeleton-text-long" style="margin-bottom:0.5rem;"></div>
+      <div class="skeleton skeleton-text skeleton-text-medium"></div>
+    </div>`;
+
+  try {
+    let views = 0;
+    let enquiries = 0;
+    let replies = 0;
+    let hasData = false;
+
+    // Try to fetch real analytics
+    const res = await fetch('/api/supplier/analytics?days=30', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.analytics) {
+        views = data.analytics.totalViews || 0;
+        enquiries = data.analytics.totalEnquiries || 0;
+        replies = data.analytics.messageReplies || 0;
+        hasData = views > 0 || enquiries > 0 || replies > 0;
+      }
+    }
+
+    if (!hasData) {
+      container.innerHTML = `
+        <div class="card" style="padding:1.5rem;">
+          <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Conversion Funnel</h3>
+          <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1rem 0;">Views → Enquiries → Replies (last 30 days)</p>
+          <div style="padding:1.5rem;text-align:center;background:#F9FAFB;border-radius:8px;">
+            <div style="font-size:2rem;margin-bottom:0.5rem;">📊</div>
+            <p style="color:#6B7280;margin:0;">Not enough data yet.</p>
+            <p style="color:#9CA3AF;font-size:0.875rem;margin-top:0.25rem;">Data will appear once you start receiving profile views and enquiries.</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const enqRate = views > 0 ? ((enquiries / views) * 100).toFixed(1) : '—';
+    const replyRate = enquiries > 0 ? ((replies / enquiries) * 100).toFixed(1) : '—';
+
+    const steps = [
+      { label: 'Profile Views', value: views, color: '#3B82F6', width: 100 },
+      {
+        label: 'Enquiries',
+        value: enquiries,
+        color: '#10B981',
+        width: views > 0 ? Math.max(4, Math.round((enquiries / views) * 100)) : 4,
+        rate: enqRate !== '—' ? `${enqRate}% conversion` : '',
+      },
+      {
+        label: 'Replies',
+        value: replies,
+        color: '#8B5CF6',
+        width: enquiries > 0 ? Math.max(4, Math.round((replies / enquiries) * 100)) : 4,
+        rate: replyRate !== '—' ? `${replyRate}% reply rate` : '',
+      },
+    ];
+
+    const stepsHtml = steps
+      .map(
+        step => `
+      <div style="margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+          <span style="font-size:0.875rem;color:#374151;font-weight:500;">${step.label}</span>
+          <span style="font-size:0.875rem;color:#374151;font-weight:700;">${step.value.toLocaleString()}</span>
+        </div>
+        <div style="height:10px;background:#E5E7EB;border-radius:5px;overflow:hidden;">
+          <div style="height:100%;background:${step.color};width:${step.width}%;transition:width 0.5s;border-radius:5px;"></div>
+        </div>
+        ${step.rate ? `<div style="font-size:0.75rem;color:#6B7280;margin-top:0.2rem;">${step.rate}</div>` : ''}
+      </div>`
+      )
+      .join('');
+
+    container.innerHTML = `
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="margin:0 0 0.25rem 0;font-size:1.25rem;color:#0B1220;">Conversion Funnel</h3>
+        <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1.25rem 0;">Last 30 days</p>
+        ${stepsHtml}
+      </div>`;
+  } catch (error) {
+    console.error('Error creating conversion funnel widget:', error);
+    container.innerHTML = `
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Conversion Funnel</h3>
+        <p style="color:#6B7280;">Unable to load funnel data. Please try again later.</p>
+      </div>`;
+  }
+}
+
+/**
+ * Create a response time widget showing average and trend
+ * @param {string} containerId - Container element ID
+ */
+export async function createResponseTimeWidget(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return;
+  }
+
+  // Loading skeleton
+  container.innerHTML = `
+    <div class="card" style="padding:1.5rem;">
+      <h3 style="margin:0 0 1rem 0;font-size:1.25rem;color:#0B1220;">Response Time</h3>
+      <div class="skeleton skeleton-text skeleton-text-long" style="margin-bottom:0.5rem;"></div>
+      <div class="skeleton skeleton-text skeleton-text-medium"></div>
+    </div>`;
+
+  try {
+    let avgResponseTime = 0;
+    let responseRate = 0;
+    let hasData = false;
+
+    const res = await fetch('/api/supplier/analytics?days=30', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.analytics) {
+        avgResponseTime = data.analytics.avgResponseTime || 0;
+        responseRate = data.analytics.responseRate || 0;
+        hasData = data.analytics.totalEnquiries > 0;
+      }
+    }
+
+    if (!hasData) {
+      container.innerHTML = `
+        <div class="card" style="padding:1.5rem;">
+          <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Response Time</h3>
+          <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1rem 0;">Last 30 days</p>
+          <div style="padding:1.5rem;text-align:center;background:#F9FAFB;border-radius:8px;">
+            <div style="font-size:2rem;margin-bottom:0.5rem;">⏱️</div>
+            <p style="color:#6B7280;margin:0;">Not enough data yet.</p>
+            <p style="color:#9CA3AF;font-size:0.875rem;margin-top:0.25rem;">Respond to enquiries to see your response time stats.</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    // Format response time nicely
+    let timeDisplay;
+    if (avgResponseTime < 1) {
+      timeDisplay = `${Math.round(avgResponseTime * 60)}m`;
+    } else if (avgResponseTime < 24) {
+      timeDisplay = `${avgResponseTime.toFixed(1)}h`;
+    } else {
+      timeDisplay = `${(avgResponseTime / 24).toFixed(1)}d`;
+    }
+
+    // Performance label
+    let perfLabel = 'Good';
+    let perfColor = '#10B981';
+    if (avgResponseTime <= 1) {
+      perfLabel = 'Excellent';
+      perfColor = '#10B981';
+    } else if (avgResponseTime <= 4) {
+      perfLabel = 'Good';
+      perfColor = '#10B981';
+    } else if (avgResponseTime <= 24) {
+      perfLabel = 'Average';
+      perfColor = '#F59E0B';
+    } else {
+      perfLabel = 'Slow';
+      perfColor = '#EF4444';
+    }
+
+    container.innerHTML = `
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="margin:0 0 0.25rem 0;font-size:1.25rem;color:#0B1220;">Response Time</h3>
+        <p style="color:#6B7280;font-size:0.875rem;margin:0 0 1.25rem 0;">Last 30 days</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div style="padding:1rem;background:#F9FAFB;border-radius:8px;text-align:center;">
+            <div style="font-size:2rem;font-weight:700;color:#0B1220;">${timeDisplay}</div>
+            <div style="font-size:0.875rem;color:#6B7280;margin-top:0.25rem;">Avg Response Time</div>
+            <span style="display:inline-block;margin-top:0.5rem;background:${perfColor};color:white;padding:0.15rem 0.5rem;border-radius:99px;font-size:0.75rem;font-weight:600;">${perfLabel}</span>
+          </div>
+          <div style="padding:1rem;background:#F9FAFB;border-radius:8px;text-align:center;">
+            <div style="font-size:2rem;font-weight:700;color:#0B1220;">${responseRate}%</div>
+            <div style="font-size:0.875rem;color:#6B7280;margin-top:0.25rem;">Response Rate</div>
+            <span style="display:inline-block;margin-top:0.5rem;background:${responseRate >= 80 ? '#10B981' : responseRate >= 50 ? '#F59E0B' : '#EF4444'};color:white;padding:0.15rem 0.5rem;border-radius:99px;font-size:0.75rem;font-weight:600;">${responseRate >= 80 ? 'Great' : responseRate >= 50 ? 'OK' : 'Low'}</span>
+          </div>
+        </div>
+        <p style="font-size:0.75rem;color:#9CA3AF;margin-top:1rem;margin-bottom:0;">💡 Suppliers who respond within 1 hour receive 3× more bookings.</p>
+      </div>`;
+  } catch (error) {
+    console.error('Error creating response time widget:', error);
+    container.innerHTML = `
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Response Time</h3>
+        <p style="color:#6B7280;">Unable to load response time data. Please try again later.</p>
+      </div>`;
+  }
+}
+
 // Export functions
 export default {
   createAnalyticsChart,
@@ -856,4 +1061,6 @@ export default {
   createLeadQualityWidget,
   loadReviewStats,
   loadChartJS,
+  createConversionFunnelWidget,
+  createResponseTimeWidget,
 };

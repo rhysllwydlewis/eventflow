@@ -569,6 +569,12 @@
         <!-- Enquiry Trend Chart -->
         <div id="enquiry-trend-chart"></div>
 
+        <!-- ROI Analytics Widgets: Conversion Funnel + Response Time -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem;">
+          <div id="supplier-conversion-funnel"></div>
+          <div id="supplier-response-time"></div>
+        </div>
+
         <!-- Earnings Overview Section - Enhanced Liquid Glass Design -->
         <section
           id="earnings-overview"
@@ -1683,6 +1689,23 @@
                   <option value="all">All</option>
                   <option value="unread">Unread</option>
                   <option value="starred">Starred</option>
+                  <option value="high">High Quality</option>
+                  <option value="medium">Medium Quality</option>
+                  <option value="low">Low Quality</option>
+                </select>
+
+                <!-- Sort dropdown -->
+                <select id="widget-sort-select-supplier" aria-label="Sort conversations" style="
+                  padding: 6px 12px;
+                  border: 1px solid #E5E7EB;
+                  border-radius: 8px;
+                  font-size: 14px;
+                  background: white;
+                ">
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="score-high">Lead Score ↑</option>
+                  <option value="score-low">Lead Score ↓</option>
                 </select>
                 
                 <button
@@ -2019,6 +2042,8 @@
             createEnquiryTrendChart,
             createLeadQualityWidget,
             loadReviewStats,
+            createConversionFunnelWidget,
+            createResponseTimeWidget,
           } from '/assets/js/supplier-analytics-chart.js';
           import { initCountUp } from '/assets/js/count-up-animation.js';
 
@@ -2150,6 +2175,10 @@
 
               // Create enquiry trend chart
               await createEnquiryTrendChart('enquiry-trend-chart');
+
+              // Initialize ROI analytics widgets
+              await createConversionFunnelWidget('supplier-conversion-funnel');
+              await createResponseTimeWidget('supplier-response-time');
 
               // Initialize Lead Quality widget
               await createLeadQualityWidget('lead-quality-breakdown');

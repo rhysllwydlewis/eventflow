@@ -66,6 +66,49 @@
     return typeof str === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
   }
 
+  // Render a lead quality badge from a conversation object.
+  // Uses leadScore (string) or leadScoreRaw (number 0-100) stored on the conversation.
+  // Returns a safe HTML string or empty string when no quality data is present.
+  function renderLeadQualityBadge(conv) {
+    const QUALITY_MAP = {
+      High: { label: 'High', color: '#10b981', emoji: '⭐' },
+      Medium: { label: 'Medium', color: '#f59e0b', emoji: '●' },
+      Low: { label: 'Low', color: '#ef4444', emoji: '◯' },
+      Hot: { label: 'Hot', color: '#ef4444', emoji: '🔥' },
+      Good: { label: 'Good', color: '#10b981', emoji: '✓' },
+    };
+
+    let meta = null;
+
+    if (conv.leadScore && QUALITY_MAP[conv.leadScore]) {
+      meta = QUALITY_MAP[conv.leadScore];
+    } else if (typeof conv.leadScoreRaw === 'number') {
+      if (conv.leadScoreRaw >= 80) {
+        meta = QUALITY_MAP.Hot;
+      } else if (conv.leadScoreRaw >= 60) {
+        meta = QUALITY_MAP.High;
+      } else if (conv.leadScoreRaw >= 40) {
+        meta = QUALITY_MAP.Good;
+      } else {
+        meta = QUALITY_MAP.Low;
+      }
+    }
+
+    if (!meta) {
+      return '';
+    }
+
+    const scoreHtml =
+      typeof conv.leadScoreRaw === 'number'
+        ? ` <span style="opacity:0.8;font-size:0.7rem;" aria-hidden="true">(${conv.leadScoreRaw})</span>`
+        : '';
+    const label = escapeHtml(meta.label);
+    const emoji = escapeHtml(meta.emoji);
+    const color = escapeHtml(meta.color);
+
+    return `<span class="mwv4__lead-badge lead-badge" role="status" aria-label="Lead quality: ${label}" style="background:${color};color:white;padding:0.15rem 0.4rem;border-radius:4px;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:0.2rem;">${emoji} ${label}${scoreHtml}</span>`;
+  }
+
   // Returns the first safe (non-email) display name from the arguments, or fallback
   function safeDisplayName(...candidates) {
     let firstEmail = null;
@@ -424,6 +467,8 @@
           ? `<span class="mwv4__item-badge" aria-label="${unread} unread">${unread > 99 ? '99+' : unread}</span>`
           : '';
 
+      const leadBadge = renderLeadQualityBadge(conv);
+
       return `
         <li class="mwv4__item${unread > 0 ? ' mwv4__item--unread' : ''}"
             data-conversation-id="${convId}"
@@ -435,7 +480,7 @@
               ${unreadDot}
             </div>
             <div class="mwv4__content">
-              <div class="mwv4__name">${name}</div>
+              <div class="mwv4__name">${name}${leadBadge}</div>
               <div class="mwv4__preview">${preview || '<em>No messages yet</em>'}</div>
             </div>
             <div class="mwv4__meta">
