@@ -52,7 +52,20 @@ function createSupplierCard(supplier, position) {
   const tier =
     supplier.subscriptionTier || supplier.subscription?.tier || (supplier.isPro ? 'pro' : null);
   const badges = [];
-  if (supplier.verified) {
+  // Founding supplier badge
+  if (
+    supplier.isFounding ||
+    supplier.founding ||
+    (supplier.badges && supplier.badges.includes('founding'))
+  ) {
+    const yearLabel = supplier.foundingYear
+      ? ` (${escapeHtml(String(supplier.foundingYear))})`
+      : '';
+    badges.push(
+      `<span class="badge badge-founding" title="Founding Supplier - Original member since 2024">⭐ Founding${yearLabel}</span>`
+    );
+  }
+  if (supplier.verified || supplier.approved) {
     badges.push('<span class="badge badge-verified">✓ Verified</span>');
   }
   if (tier === 'pro_plus') {
@@ -62,6 +75,18 @@ function createSupplierCard(supplier, position) {
   }
   if (supplier.featuredSupplier) {
     badges.push('<span class="badge badge-featured">Featured</span>');
+  }
+  // Verification badges from verifications object
+  if (supplier.verifications) {
+    if (supplier.verifications.email && supplier.verifications.email.verified) {
+      badges.push('<span class="badge badge-email-verified">✓ Email</span>');
+    }
+    if (supplier.verifications.phone && supplier.verifications.phone.verified) {
+      badges.push('<span class="badge badge-phone-verified">✓ Phone</span>');
+    }
+    if (supplier.verifications.business && supplier.verifications.business.verified) {
+      badges.push('<span class="badge badge-business-verified">✓ Business</span>');
+    }
   }
 
   // Inline tier icon — use shared EFTierIcon helper if available (tier-icon.js)
@@ -88,7 +113,7 @@ function createSupplierCard(supplier, position) {
         </div>
         <p class="supplier-card-description">${escapeHtml(supplier.description_short || '')}</p>
         <div class="supplier-card-badges">${badges.join('')}</div>
-        <div class="supplier-card-price">${priceDisplay}</div>
+        <div class="supplier-card-price">${escapeHtml(priceDisplay)}</div>
         <div class="supplier-card-actions">
           <button class="btn btn-primary btn-quote" data-supplier-id="${escapeHtml(supplier.id)}">
             Request Quote
@@ -130,14 +155,24 @@ function createSupplierCard(supplier, position) {
 
 // Skeleton loading cards
 function createSkeletonCards(count = 3) {
-  return Array(count)
-    .fill()
-    .map(
-      () => `
-    <div class="card skeleton-card" style="height: 250px; margin-bottom: 20px;"></div>
-  `
-    )
-    .join('');
+  const card = `
+    <div class="skeleton-supplier-card-full skeleton-card" aria-hidden="true">
+      <div class="skeleton-supplier-header">
+        <div class="skeleton skeleton-avatar-large"></div>
+        <div style="flex:1">
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-text skeleton-text-medium"></div>
+        </div>
+      </div>
+      <div class="skeleton skeleton-text skeleton-text-long"></div>
+      <div class="skeleton skeleton-text skeleton-text-medium"></div>
+      <div class="skeleton-supplier-meta">
+        <div class="skeleton skeleton-text skeleton-text-short"></div>
+        <div class="skeleton skeleton-text skeleton-text-short"></div>
+      </div>
+    </div>
+  `;
+  return Array(count).fill(card).join('');
 }
 
 // Empty state
@@ -294,8 +329,18 @@ async function initSuppliersPage() {
       }
     } catch (error) {
       console.error('Render error:', error);
-      resultsContainer.innerHTML =
-        '<div class="card"><p>Error loading suppliers. Please try again.</p></div>';
+      resultsContainer.innerHTML = `
+        <div class="error-state" role="status" aria-live="polite">
+          <div class="error-state-icon">⚠️</div>
+          <div class="error-state-title">Unable to load suppliers</div>
+          <div class="error-state-description">Please check your connection and try again.</div>
+          <button class="error-state-action" id="retry-suppliers-btn">Try Again</button>
+        </div>
+      `;
+      const retryBtn = resultsContainer.querySelector('#retry-suppliers-btn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => renderResults());
+      }
     } finally {
       isLoading = false;
     }

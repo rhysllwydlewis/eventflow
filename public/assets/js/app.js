@@ -330,7 +330,10 @@ function supplierCard(s, user) {
 
   // Founding supplier badge
   if (s.isFounding || (s.badges && s.badges.includes('founding'))) {
-    supplierBadges.push('<span class="badge badge-founding">Founding Supplier</span>');
+    const yearLabel = s.foundingYear ? ` (${escapeHtml(String(s.foundingYear))})` : '';
+    supplierBadges.push(
+      `<span class="badge badge-founding" title="Founding Supplier - Original member since 2024">⭐ Founding${yearLabel}</span>`
+    );
   }
 
   // Pro/Pro Plus/Featured tier badges
@@ -730,8 +733,11 @@ async function initSupplier() {
   }
 
   // Founding supplier (check both founding and isFounding properties)
-  if (s.founding || s.isFounding) {
-    badges.push('<span class="badge badge-founding" title="Founding Supplier">🏆 Founding</span>');
+  if (s.founding || s.isFounding || (s.badges && s.badges.includes('founding'))) {
+    const yearLabel = s.foundingYear ? ` (${escapeHtml(String(s.foundingYear))})` : '';
+    badges.push(
+      `<span class="badge badge-founding" title="Founding Supplier - Original member since 2024">⭐ Founding${yearLabel}</span>`
+    );
   }
 
   // Featured supplier (check both featured and featuredSupplier properties)

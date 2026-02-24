@@ -979,6 +979,24 @@
   line-height: 1.6;
 }
 
+.reviews-error {
+  padding: 3rem 2rem;
+  text-align: center;
+  animation: fadeIn 0.5s ease;
+}
+
+.reviews-error h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ef4444;
+  margin-bottom: 0.5rem;
+}
+
+.reviews-error p {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
 /* ========================================
    Admin Moderation Interface
    ======================================== */

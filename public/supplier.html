@@ -30,6 +30,7 @@
   <link rel="stylesheet" href="/assets/css/reviews.css?v=18.0.0">
   <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.1.1">
   <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.0">
+  <link rel="stylesheet" href="/assets/css/skeleton.css?v=18.1.1">
   <link rel="stylesheet" href="/assets/css/supplier-profile.css?v=18.2.0">
   <link rel="stylesheet" href="/assets/css/badges.css?v=18.2.0">
   
@@ -146,7 +147,7 @@
           <span class="separator" aria-hidden="true">›</span>
         </li>
         <li>
-          <span class="current" id="breadcrumb-supplier-name">Loading...</span>
+          <span class="current" id="breadcrumb-supplier-name" aria-busy="true"><span aria-hidden="true" class="skeleton skeleton-text" style="display:inline-block;width:120px;height:0.9rem;vertical-align:middle;"></span><span class="sr-only">Loading supplier name</span></span>
         </li>
       </ol>
     </nav>
@@ -166,7 +167,7 @@
       </div>
       
       <div class="hero-content">
-        <h1 id="hero-title">Loading Supplier...<span id="hero-tier-icon"></span></h1>
+        <h1 id="hero-title" aria-busy="true"><span class="sr-only">Loading supplier profile</span><span aria-hidden="true" class="skeleton skeleton-title" style="display:inline-block;width:220px;height:1.75rem;vertical-align:middle;"></span><span id="hero-tier-icon"></span></h1>
         <p class="supplier-tagline" id="hero-tagline"></p>
         
         <div class="supplier-meta" id="hero-meta">
@@ -203,7 +204,25 @@
 <script src="/assets/js/websocket-client.js" defer></script>
 <main id="main-content" class='section'><div class='container'>
 <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;">Supplier Profile</h1>
-<div id="supplier-container"><div class="card"><p>Loading supplier…</p></div></div>
+<div id="supplier-container">
+  <div class="card" aria-hidden="true">
+    <div class="skeleton-supplier-header">
+      <div class="skeleton skeleton-avatar-large"></div>
+      <div style="flex:1">
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-text skeleton-text-medium"></div>
+        <div class="skeleton skeleton-text skeleton-text-short"></div>
+      </div>
+    </div>
+    <div class="skeleton skeleton-image" style="margin-top:1rem;"></div>
+    <div class="skeleton skeleton-text skeleton-text-long" style="margin-top:1rem;"></div>
+    <div class="skeleton skeleton-text skeleton-text-medium"></div>
+    <div class="skeleton-supplier-meta">
+      <div class="skeleton skeleton-text skeleton-text-short"></div>
+      <div class="skeleton skeleton-text skeleton-text-short"></div>
+    </div>
+  </div>
+</div>
 <div id="supplier-badges-section"></div>
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/utils/tier-icon.js"></script>
@@ -225,6 +244,7 @@
     <div class="version">Version: <span id="ef-version-label">loading…</span></div>
     <div class="small"><a href="/blog">Guides</a> ·
       <a href="/marketplace">Marketplace</a> ·
+      <a href="/pricing">Pricing</a> ·
       <a href="/credits">Credits</a> · <a href="/contact">Contact</a> · <a href="/legal">Legal Hub</a></div>
   </div>
 </footer>

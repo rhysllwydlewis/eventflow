@@ -172,6 +172,7 @@
     // Update title with inline tier icon
     const heroTitle = document.getElementById('hero-title');
     if (heroTitle) {
+      heroTitle.removeAttribute('aria-busy');
       heroTitle.textContent = supplier.name;
       const tierIconEl = document.getElementById('hero-tier-icon');
       if (tierIconEl) {
@@ -188,6 +189,7 @@
     // Update breadcrumb
     const breadcrumbName = document.getElementById('breadcrumb-supplier-name');
     if (breadcrumbName) {
+      breadcrumbName.removeAttribute('aria-busy');
       breadcrumbName.textContent = supplier.name;
     }
 
@@ -501,7 +503,23 @@
       console.error('Error loading supplier data:', error);
       const heroTitle = document.getElementById('hero-title');
       if (heroTitle) {
+        heroTitle.removeAttribute('aria-busy');
         heroTitle.textContent = 'Supplier Not Found';
+      }
+      const container = document.getElementById('supplier-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="error-state" role="status" aria-live="polite">
+            <div class="error-state-icon">⚠️</div>
+            <div class="error-state-title">Unable to load supplier</div>
+            <div class="error-state-description">The supplier profile could not be loaded. Please try again.</div>
+            <button class="error-state-action" id="retry-supplier-btn">Try Again</button>
+          </div>
+        `;
+        const retryBtn = container.querySelector('#retry-supplier-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', loadSupplierData);
+        }
       }
     }
   }
@@ -561,11 +579,11 @@
    * Show loading state
    */
   function showLoadingState(container) {
+    container.setAttribute('aria-hidden', 'true');
     container.innerHTML = `
-      <div class="reviews-loading" style="text-align: center; padding: 2rem;">
-        <div class="spinner" style="margin: 0 auto 1rem;"></div>
-        <p>Loading reviews...</p>
-      </div>
+      <div class="skeleton-list-item"><div class="skeleton skeleton-avatar"></div><div style="flex:1"><div class="skeleton skeleton-text skeleton-text-medium" style="margin-bottom:0.25rem;"></div><div class="skeleton skeleton-text skeleton-text-short"></div></div></div>
+      <div class="skeleton-list-item"><div class="skeleton skeleton-avatar"></div><div style="flex:1"><div class="skeleton skeleton-text skeleton-text-medium" style="margin-bottom:0.25rem;"></div><div class="skeleton skeleton-text skeleton-text-short"></div></div></div>
+      <div class="skeleton-list-item"><div class="skeleton skeleton-avatar"></div><div style="flex:1"><div class="skeleton skeleton-text skeleton-text-medium" style="margin-bottom:0.25rem;"></div><div class="skeleton skeleton-text skeleton-text-short"></div></div></div>
     `;
   }
 
@@ -573,6 +591,7 @@
    * Show empty state
    */
   function showEmptyState(container) {
+    container.removeAttribute('aria-hidden');
     container.innerHTML = `
       <div class="reviews-empty" style="text-align: center; padding: 3rem 1rem; color: var(--muted);">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 1rem; opacity: 0.5;">
@@ -588,6 +607,7 @@
    * Show error state with retry button
    */
   function showErrorState(container, errorMessage) {
+    container.removeAttribute('aria-hidden');
     container.innerHTML = `
       <div class="reviews-error" style="text-align: center; padding: 3rem 1rem;">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 1rem; color: #ef4444; opacity: 0.8;">
@@ -596,7 +616,7 @@
           <line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
         <h3 style="margin-bottom: 0.5rem; color: #ef4444;">Failed to load reviews</h3>
-        <p style="color: var(--muted); margin-bottom: 1rem;">${escapeHtml(errorMessage)}</p>
+        <p style="color: var(--muted); margin-bottom: 1rem;">${escapeHtml(errorMessage || 'An unexpected error occurred.')}</p>
         <button id="retry-reviews-btn" class="btn btn-primary">Retry</button>
       </div>
     `;
@@ -608,8 +628,9 @@
    * Render reviews
    */
   function renderReviews(container, reviews) {
+    container.removeAttribute('aria-hidden');
     const reviewsHTML = reviews
-      .map(review => {
+      .map((review, index) => {
         const rating = Math.max(1, Math.min(5, review.rating || 0));
         const starsHTML = generateStarRating(rating);
 
@@ -624,7 +645,7 @@
               <div class="small" style="color: var(--muted);">${formatDate(review.createdAt)}</div>
             </div>
           </div>
-          <div class="review-content" data-review-index="${reviews.indexOf(review)}"></div>
+          <div class="review-content" data-review-index="${index}"></div>
         </div>
       `;
       })
