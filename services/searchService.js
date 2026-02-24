@@ -13,6 +13,20 @@ const {
 } = require('../utils/searchWeighting');
 
 /**
+ * Count price-tier symbols in a price_display string.
+ * Supports both £ and $ notation (e.g. "££", "$$$").
+ * @param {string} priceDisplay - e.g. "££" or "$$$"
+ * @returns {number} Number of price-level symbols (0 if none)
+ */
+function getPriceLevel(priceDisplay) {
+  if (!priceDisplay) {
+    return 0;
+  }
+  const matches = priceDisplay.match(/[£$]/g);
+  return matches ? matches.length : 0;
+}
+
+/**
  * Project safe public fields from supplier object
  * Excludes sensitive information like email, phone, addresses, etc.
  */
@@ -345,16 +359,27 @@ function applyFilters(suppliers, query) {
     });
   }
 
+  // Event type filter (matches category or tags)
+  if (query.eventType) {
+    const eventTypeTerm = query.eventType.toLowerCase();
+    results = results.filter(s => {
+      const category = (s.category || '').toLowerCase();
+      const tags = (s.tags || []).map(t => t.toLowerCase());
+      return category.includes(eventTypeTerm) || tags.some(t => t.includes(eventTypeTerm));
+    });
+  }
+
   // Price range filter
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+    const minPrice = query.minPrice !== undefined ? Number(query.minPrice) : NaN;
+    const maxPrice = query.maxPrice !== undefined ? Number(query.maxPrice) : NaN;
     results = results.filter(s => {
-      const priceDisplay = s.price_display || '';
-      const priceLevel = priceDisplay.split('$').length - 1;
+      const priceLevel = getPriceLevel(s.price_display);
 
-      if (query.minPrice !== undefined && priceLevel < Number(query.minPrice)) {
+      if (!isNaN(minPrice) && priceLevel < minPrice) {
         return false;
       }
-      if (query.maxPrice !== undefined && priceLevel > Number(query.maxPrice)) {
+      if (!isNaN(maxPrice) && priceLevel > maxPrice) {
         return false;
       }
 
@@ -363,9 +388,11 @@ function applyFilters(suppliers, query) {
   }
 
   // Rating filter
-  if (query.minRating !== undefined) {
+  if (query.minRating !== undefined && query.minRating !== '') {
     const minRating = Number(query.minRating);
-    results = results.filter(s => (s.averageRating || 0) >= minRating);
+    if (!isNaN(minRating)) {
+      results = results.filter(s => (s.averageRating || 0) >= minRating);
+    }
   }
 
   // Amenities filter
@@ -500,18 +527,19 @@ function sortResults(results, sortBy) {
       break;
 
     case 'priceAsc':
-      sorted.sort((a, b) => {
-        const priceA = (a.price_display || '').split('$').length - 1;
-        const priceB = (b.price_display || '').split('$').length - 1;
-        return priceA - priceB;
-      });
+      sorted.sort((a, b) => getPriceLevel(a.price_display) - getPriceLevel(b.price_display));
       break;
 
     case 'priceDesc':
+      sorted.sort((a, b) => getPriceLevel(b.price_display) - getPriceLevel(a.price_display));
+      break;
+
+    case 'distance':
+      // Distance sort requires geolocation; fall back to relevance
       sorted.sort((a, b) => {
-        const priceA = (a.price_display || '').split('$').length - 1;
-        const priceB = (b.price_display || '').split('$').length - 1;
-        return priceB - priceA;
+        const scoreA = a.relevanceScore || 0;
+        const scoreB = b.relevanceScore || 0;
+        return scoreB - scoreA;
       });
       break;
 
@@ -617,7 +645,7 @@ function calculateFacets(allSuppliers) {
   ];
 
   allSuppliers.forEach(s => {
-    const priceLevel = (s.price_display || '').split('$').length - 1;
+    const priceLevel = getPriceLevel(s.price_display);
     priceRanges.forEach(range => {
       if (priceLevel >= range.min && priceLevel <= range.max) {
         range.count++;

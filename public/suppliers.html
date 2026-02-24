@@ -228,14 +228,40 @@
           <label for="filterPrice" class="filter-label">Price range</label>
           <select id="filterPrice" class="filter-select">
             <option value="">Any</option>
-            <option>£</option>
-            <option>££</option>
-            <option>£££</option>
+            <option value="1">£</option>
+            <option value="2">££</option>
+            <option value="3">£££</option>
+            <option value="4">££££</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterRating" class="filter-label">Min rating</label>
+          <select id="filterRating" class="filter-select">
+            <option value="">Any</option>
+            <option value="4">4+ ⭐</option>
+            <option value="4.5">4.5+ ⭐</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterSort" class="filter-label">Sort by</label>
+          <select id="filterSort" class="filter-select">
+            <option value="relevance">Relevance</option>
+            <option value="rating">Rating</option>
+            <option value="priceAsc">Price: low → high</option>
+            <option value="priceDesc">Price: high → low</option>
+            <option value="newest">Recently joined</option>
+            <option value="reviews">Most reviewed</option>
           </select>
         </div>
         <div class="filter-group">
           <label for="filterQuery" class="filter-label">Search</label>
           <input id="filterQuery" class="filter-input" placeholder="Search by name or description">
+        </div>
+        <div class="filter-group filter-group--checkbox">
+          <label class="filter-label filter-label--checkbox">
+            <input type="checkbox" id="filterVerified" class="filter-checkbox">
+            Verified suppliers only
+          </label>
         </div>
       </div>
       <div class="filter-actions">
@@ -389,5 +415,6 @@
 <!-- Messenger Trigger -->
 <script src="/messenger/js/QuickComposeV4.js" defer></script>
 <script src="/messenger/js/MessengerTrigger.js" defer></script>
+<script src="/assets/js/pwa-install.js" defer></script>
 </body>
 </html>

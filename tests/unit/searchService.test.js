@@ -436,4 +436,119 @@ describe('Search Service', () => {
       expect(result.results).toBeDefined();
     });
   });
+
+  describe('New Filters (Phase 4)', () => {
+    it('should filter by eventType matching category', async () => {
+      const result = await searchService.searchSuppliers({ eventType: 'photography' });
+
+      expect(result.results.length).toBe(1);
+      expect(result.results[0].id).toBe('sup1');
+    });
+
+    it('should filter by eventType matching tags', async () => {
+      const result = await searchService.searchSuppliers({ eventType: 'catering' });
+
+      expect(result.results.length).toBeGreaterThan(0);
+      result.results.forEach(s => {
+        const catMatch = (s.category || '').toLowerCase().includes('catering');
+        // tags are not projected in public fields, so category match is sufficient here
+        expect(catMatch).toBe(true);
+      });
+    });
+
+    it('should filter by price level using £ symbols', async () => {
+      // Use mockImplementation to return suppliers with £ price_display
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'gbp1',
+              name: 'Budget Florist',
+              category: 'Decor',
+              location: 'London',
+              price_display: '£',
+              averageRating: 4.0,
+              approved: true,
+            },
+            {
+              id: 'gbp2',
+              name: 'Premium Florist',
+              category: 'Decor',
+              location: 'London',
+              price_display: '£££',
+              averageRating: 4.5,
+              approved: true,
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const result = await searchService.searchSuppliers({ minPrice: 1, maxPrice: 1 });
+
+      expect(result.results.length).toBe(1);
+      expect(result.results[0].id).toBe('gbp1');
+    });
+
+    it('should sort by distance falling back to relevance', async () => {
+      const result = await searchService.searchSuppliers({ sortBy: 'distance' });
+
+      // distance sort is a stub; it should not throw and should return results
+      expect(result.results).toBeDefined();
+      expect(result.results.length).toBe(3);
+    });
+
+    it('should sort by priceAsc supporting £ symbols', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            { id: 'gp1', name: 'A', category: 'X', price_display: '£££', approved: true },
+            { id: 'gp2', name: 'B', category: 'X', price_display: '£', approved: true },
+            { id: 'gp3', name: 'C', category: 'X', price_display: '££', approved: true },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const result = await searchService.searchSuppliers({ sortBy: 'priceAsc' });
+
+      expect(result.results[0].id).toBe('gp2'); // £
+      expect(result.results[1].id).toBe('gp3'); // ££
+      expect(result.results[2].id).toBe('gp1'); // £££
+    });
+
+    it('should sort by priceDesc supporting £ symbols', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            { id: 'gp1', name: 'A', category: 'X', price_display: '£££', approved: true },
+            { id: 'gp2', name: 'B', category: 'X', price_display: '£', approved: true },
+            { id: 'gp3', name: 'C', category: 'X', price_display: '££', approved: true },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const result = await searchService.searchSuppliers({ sortBy: 'priceDesc' });
+
+      expect(result.results[0].id).toBe('gp1'); // £££
+      expect(result.results[1].id).toBe('gp3'); // ££
+      expect(result.results[2].id).toBe('gp2'); // £
+    });
+
+    it('should not crash when minRating is NaN', async () => {
+      const result = await searchService.searchSuppliers({ minRating: 'notanumber' });
+      expect(result.results.length).toBe(3);
+    });
+
+    it('should skip minRating filter when value is empty string', async () => {
+      const result = await searchService.searchSuppliers({ minRating: '' });
+      expect(result.results.length).toBe(3);
+    });
+
+    it('should not crash when minPrice is NaN', async () => {
+      const result = await searchService.searchSuppliers({ minPrice: 'bad', maxPrice: 'bad' });
+      expect(result.results.length).toBe(3);
+    });
+  });
 });

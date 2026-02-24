@@ -178,7 +178,12 @@ function createSkeletonCards(count = 3) {
 // Empty state
 function createEmptyState(filters) {
   const hasFilters =
-    filters.q || filters.category || filters.location || filters.budgetMin || filters.budgetMax;
+    filters.q ||
+    filters.category ||
+    filters.location ||
+    filters.priceLevel ||
+    filters.minRating ||
+    filters.verifiedOnly;
 
   return `
     <div class="empty-state">
@@ -209,13 +214,17 @@ async function searchSuppliers(filters, page = 1) {
   if (filters.eventType) {
     params.set('eventType', filters.eventType);
   }
-  if (filters.budgetMin) {
-    params.set('minPrice', filters.budgetMin);
+  if (filters.priceLevel) {
+    params.set('minPrice', filters.priceLevel);
+    params.set('maxPrice', filters.priceLevel);
   }
-  if (filters.budgetMax) {
-    params.set('maxPrice', filters.budgetMax);
+  if (filters.minRating) {
+    params.set('minRating', filters.minRating);
   }
-  if (filters.sort) {
+  if (filters.verifiedOnly) {
+    params.set('verifiedOnly', 'true');
+  }
+  if (filters.sort && filters.sort !== 'relevance') {
     params.set('sortBy', filters.sort);
   }
   params.set('page', page);
@@ -231,7 +240,16 @@ async function searchSuppliers(filters, page = 1) {
     }
 
     const result = await response.json();
-    return result.data || { results: [], pagination: { total: 0, page: 1, totalPages: 1 } };
+    const data = result.data || { results: [], pagination: { total: 0, page: 1, pages: 1 } };
+    // Normalise: API returns `pages`, but components use `totalPages`
+    if (
+      data.pagination &&
+      data.pagination.pages !== undefined &&
+      data.pagination.totalPages === undefined
+    ) {
+      data.pagination.totalPages = data.pagination.pages;
+    }
+    return data;
   } catch (error) {
     console.error('Search error:', error);
     return { results: [], pagination: { total: 0, page: 1, totalPages: 1 } };
@@ -245,6 +263,9 @@ async function initSuppliersPage() {
   const filterCategoryEl = document.getElementById('filterCategory');
   const filterPriceEl = document.getElementById('filterPrice');
   const filterQueryEl = document.getElementById('filterQuery');
+  const filterRatingEl = document.getElementById('filterRating');
+  const filterVerifiedEl = document.getElementById('filterVerified');
+  const filterSortEl = document.getElementById('filterSort');
 
   if (!resultsContainer) {
     console.warn('Results container not found, skipping suppliers init');
@@ -262,14 +283,17 @@ async function initSuppliersPage() {
     if (filterCategoryEl && currentFilters.category) {
       filterCategoryEl.value = currentFilters.category;
     }
-    if (filterPriceEl && currentFilters.budgetMin && currentFilters.budgetMax) {
-      // Map budget to price range
-      const priceMap = {
-        1000: '£',
-        2000: '££',
-        5000: '£££',
-      };
-      filterPriceEl.value = priceMap[currentFilters.budgetMax] || '';
+    if (filterPriceEl && currentFilters.priceLevel) {
+      filterPriceEl.value = currentFilters.priceLevel;
+    }
+    if (filterRatingEl && currentFilters.minRating) {
+      filterRatingEl.value = currentFilters.minRating;
+    }
+    if (filterVerifiedEl) {
+      filterVerifiedEl.checked = !!currentFilters.verifiedOnly;
+    }
+    if (filterSortEl && currentFilters.sort) {
+      filterSortEl.value = currentFilters.sort;
     }
   }
 
@@ -456,6 +480,15 @@ async function initSuppliersPage() {
         if (filterPriceEl) {
           filterPriceEl.value = '';
         }
+        if (filterRatingEl) {
+          filterRatingEl.value = '';
+        }
+        if (filterVerifiedEl) {
+          filterVerifiedEl.checked = false;
+        }
+        if (filterSortEl) {
+          filterSortEl.value = 'relevance';
+        }
         renderResults();
       });
     }
@@ -488,24 +521,46 @@ async function initSuppliersPage() {
 
   if (filterPriceEl) {
     filterPriceEl.addEventListener('change', e => {
-      // Map price range to budget
-      const priceMap = {
-        '£': { min: '0', max: '1000' },
-        '££': { min: '1000', max: '2000' },
-        '£££': { min: '2000', max: '5000' },
-      };
-      const range = priceMap[e.target.value];
-      if (range) {
-        currentFilters.budgetMin = range.min;
-        currentFilters.budgetMax = range.max;
+      const level = e.target.value;
+      if (level) {
+        currentFilters.priceLevel = level;
       } else {
-        delete currentFilters.budgetMin;
-        delete currentFilters.budgetMax;
+        delete currentFilters.priceLevel;
       }
       currentFilters.page = 1;
       updateURL(currentFilters);
       renderResults();
-      trackFilterChange('price', e.target.value);
+      trackFilterChange('price', level);
+    });
+  }
+
+  if (filterRatingEl) {
+    filterRatingEl.addEventListener('change', e => {
+      currentFilters.minRating = e.target.value;
+      currentFilters.page = 1;
+      updateURL(currentFilters);
+      renderResults();
+      trackFilterChange('minRating', e.target.value);
+    });
+  }
+
+  if (filterVerifiedEl) {
+    filterVerifiedEl.addEventListener('change', e => {
+      currentFilters.verifiedOnly = e.target.checked;
+      currentFilters.page = 1;
+      updateURL(currentFilters);
+      renderResults();
+      trackFilterChange('verifiedOnly', e.target.checked);
+    });
+  }
+
+  if (filterSortEl) {
+    filterSortEl.addEventListener('change', e => {
+      currentFilters.sort = e.target.value;
+      currentFilters.page = 1;
+      updateURL(currentFilters);
+      renderResults();
+      trackFilterChange('sort', e.target.value);
     });
   }
 
@@ -544,6 +599,15 @@ async function initSuppliersPage() {
       }
       if (filterPriceEl) {
         filterPriceEl.value = '';
+      }
+      if (filterRatingEl) {
+        filterRatingEl.value = '';
+      }
+      if (filterVerifiedEl) {
+        filterVerifiedEl.checked = false;
+      }
+      if (filterSortEl) {
+        filterSortEl.value = 'relevance';
       }
       renderResults();
     });

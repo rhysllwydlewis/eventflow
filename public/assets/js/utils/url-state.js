@@ -5,23 +5,20 @@
 
 /**
  * Read filters from URL parameters
- * @returns {Object} Filter object with category, location, budgetMin, budgetMax, q, eventType, sort, page
+ * @returns {Object} Filter object with category, location, priceLevel, q, eventType, sort, minRating, verifiedOnly, page
  */
 export function getFiltersFromURL() {
   const params = new URLSearchParams(window.location.search);
 
-  // Support both priceMin/Max and budgetMin/Max for backward compatibility
-  const budgetMin = params.get('budgetMin') || params.get('priceMin') || '';
-  const budgetMax = params.get('budgetMax') || params.get('priceMax') || '';
-
   return {
     category: params.get('category') || '',
     location: params.get('location') || '',
-    budgetMin: budgetMin,
-    budgetMax: budgetMax,
+    priceLevel: params.get('priceLevel') || '',
     q: params.get('q') || '',
     eventType: params.get('eventType') || '',
     sort: params.get('sort') || 'relevance',
+    minRating: params.get('minRating') || '',
+    verifiedOnly: params.get('verifiedOnly') === 'true',
     page: parseInt(params.get('page'), 10) || 1,
   };
 }
@@ -41,18 +38,20 @@ export function updateURL(filters, replace = false) {
   if (filters.location) {
     params.set('location', filters.location);
   }
-  // Use priceMin/Max as canonical names (requirement specifies these)
-  if (filters.budgetMin) {
-    params.set('priceMin', filters.budgetMin);
-  }
-  if (filters.budgetMax) {
-    params.set('priceMax', filters.budgetMax);
+  if (filters.priceLevel) {
+    params.set('priceLevel', filters.priceLevel);
   }
   if (filters.q) {
     params.set('q', filters.q);
   }
   if (filters.eventType) {
     params.set('eventType', filters.eventType);
+  }
+  if (filters.minRating) {
+    params.set('minRating', filters.minRating);
+  }
+  if (filters.verifiedOnly) {
+    params.set('verifiedOnly', 'true');
   }
   if (filters.sort && filters.sort !== 'relevance') {
     params.set('sort', filters.sort);

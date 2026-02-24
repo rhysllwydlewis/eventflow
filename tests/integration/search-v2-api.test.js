@@ -453,4 +453,99 @@ describe('Search V2 API Integration Tests', () => {
       expect(routeContent).toContain("require('validator')");
     });
   });
+
+  describe('Phase 4 Filter Parameters', () => {
+    it('should pass eventType to search query', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('eventType: req.query.eventType');
+    });
+
+    it('should pass verifiedOnly to search query', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('verifiedOnly: req.query.verifiedOnly');
+    });
+
+    it('should pass minRating to search query', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('minRating: req.query.minRating');
+    });
+  });
+
+  describe('Suppliers HTML Filter UI', () => {
+    const suppliersHtml = fs.readFileSync(
+      path.join(__dirname, '../../public/suppliers.html'),
+      'utf8'
+    );
+
+    it('should have rating filter', () => {
+      expect(suppliersHtml).toContain('filterRating');
+    });
+
+    it('should have verified suppliers checkbox', () => {
+      expect(suppliersHtml).toContain('filterVerified');
+    });
+
+    it('should have sort dropdown', () => {
+      expect(suppliersHtml).toContain('filterSort');
+    });
+
+    it('should have ££££ price tier option', () => {
+      expect(suppliersHtml).toContain('££££');
+    });
+
+    it('should have priceAsc and priceDesc sort options', () => {
+      expect(suppliersHtml).toContain('priceAsc');
+      expect(suppliersHtml).toContain('priceDesc');
+    });
+  });
+
+  describe('Input validation in route', () => {
+    it('should validate sortBy against allowed values', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+      expect(routeContent).toContain('VALID_SORT_VALUES');
+      expect(routeContent).toContain("'priceAsc'");
+      expect(routeContent).toContain("'distance'");
+    });
+
+    it('should validate eventType max length', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+      expect(routeContent).toContain('eventType.length > 100');
+    });
+
+    it('should sanitize eventType input by trimming', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/search-v2.js'),
+        'utf8'
+      );
+      expect(routeContent).toContain('String(req.query.eventType).trim()');
+    });
+  });
+
+  describe('Pagination normalisation', () => {
+    it('should normalise pages to totalPages in suppliers-init.js', () => {
+      const suppliersSrc = fs.readFileSync(
+        path.join(__dirname, '../../public/assets/js/pages/suppliers-init.js'),
+        'utf8'
+      );
+      expect(suppliersSrc).toContain('totalPages = data.pagination.pages');
+    });
+  });
 });

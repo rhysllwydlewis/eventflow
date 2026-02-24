@@ -272,4 +272,24 @@ describe('Pricing and payment system fixes', () => {
       expect(customerSection).toContain("'/pricing.html'");
     });
   });
+
+  // Fix 8: subscription.html loads correct script
+  describe('subscription.html: loads subscription.js (not missing subscription-stripe.js)', () => {
+    it('references js/subscription.js', () => {
+      const src = readSrc('public', 'supplier', 'subscription.html');
+      expect(src).toContain('js/subscription.js');
+    });
+
+    it('does not reference the non-existent subscription-stripe.js', () => {
+      const src = readSrc('public', 'supplier', 'subscription.html');
+      expect(src).not.toContain('subscription-stripe.js');
+    });
+
+    it('js/subscription.js file exists on disk', () => {
+      const exists = fs.existsSync(
+        path.resolve(__dirname, '..', '..', 'public', 'supplier', 'js', 'subscription.js')
+      );
+      expect(exists).toBe(true);
+    });
+  });
 });
