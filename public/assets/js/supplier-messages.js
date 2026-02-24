@@ -448,9 +448,8 @@ async function openConversation(conversationId, user, supplierProfile) {
   }
 
   // Mark messages as read
-  messagingSystem
-    .markMessagesAsRead(conversationId)
-    .catch(err => console.warn('markMessagesAsRead failed:', err));
+  const _readP = messagingSystem.markMessagesAsRead(conversationId);
+  _readP.catch(err => console.warn('markMessagesAsRead failed:', err));
 }
 
 /**
