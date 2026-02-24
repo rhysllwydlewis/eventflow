@@ -10,15 +10,9 @@
 export function getFiltersFromURL() {
   const params = new URLSearchParams(window.location.search);
 
-  // Support legacy budgetMin/Max params for backward compatibility
-  const budgetMin = params.get('budgetMin') || params.get('priceMin') || '';
-  const budgetMax = params.get('budgetMax') || params.get('priceMax') || '';
-
   return {
     category: params.get('category') || '',
     location: params.get('location') || '',
-    budgetMin: budgetMin,
-    budgetMax: budgetMax,
     priceLevel: params.get('priceLevel') || '',
     q: params.get('q') || '',
     eventType: params.get('eventType') || '',

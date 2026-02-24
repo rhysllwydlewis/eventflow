@@ -13,6 +13,20 @@ const {
 } = require('../utils/searchWeighting');
 
 /**
+ * Count price-tier symbols in a price_display string.
+ * Supports both £ and $ notation (e.g. "££", "$$$").
+ * @param {string} priceDisplay - e.g. "££" or "$$$"
+ * @returns {number} Number of price-level symbols (0 if none)
+ */
+function getPriceLevel(priceDisplay) {
+  if (!priceDisplay) {
+    return 0;
+  }
+  const matches = priceDisplay.match(/[£$]/g);
+  return matches ? matches.length : 0;
+}
+
+/**
  * Project safe public fields from supplier object
  * Excludes sensitive information like email, phone, addresses, etc.
  */
@@ -358,10 +372,7 @@ function applyFilters(suppliers, query) {
   // Price range filter
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
     results = results.filter(s => {
-      const priceDisplay = s.price_display || '';
-      // Support both $ and £ price-level symbols
-      const symbol = priceDisplay.includes('£') ? '£' : '$';
-      const priceLevel = priceDisplay.split(symbol).length - 1;
+      const priceLevel = getPriceLevel(s.price_display);
 
       if (query.minPrice !== undefined && priceLevel < Number(query.minPrice)) {
         return false;
@@ -512,27 +523,11 @@ function sortResults(results, sortBy) {
       break;
 
     case 'priceAsc':
-      sorted.sort((a, b) => {
-        const dispA = a.price_display || '';
-        const symA = dispA.includes('£') ? '£' : '$';
-        const priceA = dispA.split(symA).length - 1;
-        const dispB = b.price_display || '';
-        const symB = dispB.includes('£') ? '£' : '$';
-        const priceB = dispB.split(symB).length - 1;
-        return priceA - priceB;
-      });
+      sorted.sort((a, b) => getPriceLevel(a.price_display) - getPriceLevel(b.price_display));
       break;
 
     case 'priceDesc':
-      sorted.sort((a, b) => {
-        const dispA = a.price_display || '';
-        const symA = dispA.includes('£') ? '£' : '$';
-        const priceA = dispA.split(symA).length - 1;
-        const dispB = b.price_display || '';
-        const symB = dispB.includes('£') ? '£' : '$';
-        const priceB = dispB.split(symB).length - 1;
-        return priceB - priceA;
-      });
+      sorted.sort((a, b) => getPriceLevel(b.price_display) - getPriceLevel(a.price_display));
       break;
 
     case 'distance':
@@ -646,9 +641,7 @@ function calculateFacets(allSuppliers) {
   ];
 
   allSuppliers.forEach(s => {
-    const priceDisplay = s.price_display || '';
-    const symbol = priceDisplay.includes('£') ? '£' : '$';
-    const priceLevel = priceDisplay.split(symbol).length - 1;
+    const priceLevel = getPriceLevel(s.price_display);
     priceRanges.forEach(range => {
       if (priceLevel >= range.min && priceLevel <= range.max) {
         range.count++;
