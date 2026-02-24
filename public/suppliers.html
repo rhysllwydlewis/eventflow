@@ -258,8 +258,33 @@
     </div>
 
     <div id="resultCount" class="small results-count"></div>
-    <div id="results" class="section">
-      <div class="card"><p>Loading suppliers…</p></div>
+    <div id="results" class="section" aria-live="polite">
+      <div aria-hidden="true">
+        <div class="skeleton-supplier-card-full skeleton-card">
+          <div class="skeleton-supplier-header">
+            <div class="skeleton skeleton-avatar-large"></div>
+            <div style="flex:1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text skeleton-text-medium"></div></div>
+          </div>
+          <div class="skeleton skeleton-text skeleton-text-long"></div>
+          <div class="skeleton skeleton-text skeleton-text-medium"></div>
+        </div>
+        <div class="skeleton-supplier-card-full skeleton-card">
+          <div class="skeleton-supplier-header">
+            <div class="skeleton skeleton-avatar-large"></div>
+            <div style="flex:1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text skeleton-text-medium"></div></div>
+          </div>
+          <div class="skeleton skeleton-text skeleton-text-long"></div>
+          <div class="skeleton skeleton-text skeleton-text-medium"></div>
+        </div>
+        <div class="skeleton-supplier-card-full skeleton-card">
+          <div class="skeleton-supplier-header">
+            <div class="skeleton skeleton-avatar-large"></div>
+            <div style="flex:1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text skeleton-text-medium"></div></div>
+          </div>
+          <div class="skeleton skeleton-text skeleton-text-long"></div>
+          <div class="skeleton skeleton-text skeleton-text-medium"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Shortlist and Quote Request Components -->
@@ -346,9 +371,11 @@
     <div class="version">Version: v17.0.0</div>
     <div class="small"><a href="/blog">Guides</a> ·
       <a href="/marketplace">Marketplace</a> ·
+      <a href="/pricing">Pricing</a> ·
       <a href="/credits">Credits</a> · <a href="/contact">Contact</a> · <a href="/legal">Legal Hub</a></div>
   </div>
 </footer>
+<script src="/assets/js/map.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
 <script src="/assets/js/utils/p3-features.js" defer></script>
 <script src="/assets/js/keyboard-shortcuts.js" defer></script>

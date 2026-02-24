@@ -330,7 +330,10 @@ function supplierCard(s, user) {
 
   // Founding supplier badge
   if (s.isFounding || (s.badges && s.badges.includes('founding'))) {
-    supplierBadges.push('<span class="badge badge-founding">Founding Supplier</span>');
+    const yearLabel = s.foundingYear ? ` (${escapeHtml(String(s.foundingYear))})` : '';
+    supplierBadges.push(
+      `<span class="badge badge-founding" title="Founding Supplier - Original member since 2024">⭐ Founding${yearLabel}</span>`
+    );
   }
 
   // Pro/Pro Plus/Featured tier badges
