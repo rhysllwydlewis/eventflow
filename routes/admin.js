@@ -686,12 +686,7 @@ router.post(
       // Optionally mirror Pro flag to the owning user, if present.
       try {
         if (s.ownerUserId) {
-          const users = await dbUnified.read('users');
-          const u = users.find(u => u.id === s.ownerUserId);
-          if (u) {
-            u.isPro = !!s.isPro;
-            await dbUnified.write('users', users);
-          }
+          await dbUnified.updateOne('users', { id: s.ownerUserId }, { $set: { isPro: !!s.isPro } });
         }
       } catch (_e) {
         // ignore errors from user store
@@ -1273,14 +1268,22 @@ router.post(
       }
       const all = await dbUnified.read('users');
       let count = 0;
-      all.forEach(u => {
-        if (userIds.includes(u.id)) {
-          u.verified = true;
-          u.verifiedAt = new Date().toISOString();
+      const now = new Date().toISOString();
+      const verifyPromises = userIds.map(userId => {
+        const user = all.find(u => u.id === userId);
+        if (user) {
           count++;
+          return dbUnified.updateOne(
+            'users',
+            { id: userId },
+            {
+              $set: { verified: true, verifiedAt: now },
+            }
+          );
         }
+        return Promise.resolve();
       });
-      await dbUnified.write('users', all);
+      await Promise.all(verifyPromises);
       await auditLog({
         action: AUDIT_ACTIONS.BULK_USERS_VERIFIED,
         userId: req.user.id,
@@ -1317,15 +1320,24 @@ router.post(
       const suspendUntil = duration ? new Date(Date.now() + parseDuration(duration)) : null;
       const all = await dbUnified.read('users');
       let count = 0;
-      all.forEach(u => {
-        if (filteredIds.includes(u.id) && u.id !== req.user.id) {
-          u.suspended = true;
-          u.suspendedAt = new Date().toISOString();
-          u.suspendedUntil = suspendUntil ? suspendUntil.toISOString() : null;
+      const suspendedAt = new Date().toISOString();
+      const suspendPromises = filteredIds
+        .filter(id => id !== req.user.id && all.find(u => u.id === id))
+        .map(userId => {
           count++;
-        }
-      });
-      await dbUnified.write('users', all);
+          return dbUnified.updateOne(
+            'users',
+            { id: userId },
+            {
+              $set: {
+                suspended: true,
+                suspendedAt,
+                suspendedUntil: suspendUntil ? suspendUntil.toISOString() : null,
+              },
+            }
+          );
+        });
+      await Promise.all(suspendPromises);
       await auditLog({
         action: AUDIT_ACTIONS.BULK_USERS_SUSPENDED,
         userId: req.user.id,

@@ -279,22 +279,19 @@ router.post(
       const { userId, badgeId } = req.params;
 
       const users = await dbUnified.read('users');
-      const userIndex = users.findIndex(u => u.id === userId);
+      const user = users.find(u => u.id === userId);
 
-      if (userIndex === -1) {
+      if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      if (!users[userIndex].badges) {
-        users[userIndex].badges = [];
+      const badges = user.badges || [];
+      if (!badges.includes(badgeId)) {
+        badges.push(badgeId);
+        await dbUnified.updateOne('users', { id: userId }, { $set: { badges } });
       }
 
-      if (!users[userIndex].badges.includes(badgeId)) {
-        users[userIndex].badges.push(badgeId);
-        await dbUnified.write('users', users);
-      }
-
-      res.json({ success: true, user: users[userIndex] });
+      res.json({ success: true, user: { ...user, badges } });
     } catch (error) {
       logger.error('Error awarding badge:', error);
       res.status(500).json({ error: 'Failed to award badge' });
@@ -316,18 +313,16 @@ router.delete(
       const { userId, badgeId } = req.params;
 
       const users = await dbUnified.read('users');
-      const userIndex = users.findIndex(u => u.id === userId);
+      const user = users.find(u => u.id === userId);
 
-      if (userIndex === -1) {
+      if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      if (users[userIndex].badges) {
-        users[userIndex].badges = users[userIndex].badges.filter(b => b !== badgeId);
-        await dbUnified.write('users', users);
-      }
+      const badges = (user.badges || []).filter(b => b !== badgeId);
+      await dbUnified.updateOne('users', { id: userId }, { $set: { badges } });
 
-      res.json({ success: true, user: users[userIndex] });
+      res.json({ success: true, user: { ...user, badges } });
     } catch (error) {
       logger.error('Error removing badge:', error);
       res.status(500).json({ error: 'Failed to remove badge' });
