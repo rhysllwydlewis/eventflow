@@ -8,14 +8,22 @@ This document records every change made in the Phase 5 quality cleanup PR, organ
 
 ## Pre-Merge Checklist Results
 
-1. ✅ **No regressions** — All modified files have correct syntax, no missing imports, no broken references
+1. ✅ **No regressions** — All modified files have correct syntax, no missing imports, no broken references; 146/147 test suites pass (1 was already skipped before these changes)
 2. ✅ **Test compatibility** — Jest coverage thresholds raised modestly (15/17/20/20 → 20/22/25/25); CI should not fail on existing coverage levels
-3. ✅ **ES module conversion** — `supplier-profile.js` imports `renderVerificationBadges`, `renderVerificationSection`, and `renderTierIcon` directly; the intermediate `window.*` exposure block removed from `supplier.html`
+3. ✅ **ES module conversion** — `supplier-profile.js` imports `renderVerificationBadges`, `renderVerificationSection`, and `renderTierIcon` directly; the intermediate `window.*` exposure block removed from `supplier.html`; stale comment updated
 4. ✅ **Documentation accuracy** — `UNIMPLEMENTED_FEATURES.md` and `BACKEND_APIS_STATUS.md` now reflect Phase 3–4 shipped features; `MARKETPLACE_FILTER_STATUS.md` created
-5. ✅ **Leftover TODOs** — Resolved TODOs removed; remaining TODOs (attachment cloud storage) are accurate and intentional
+5. ✅ **Leftover TODOs** — Resolved TODOs removed; remaining TODOs (attachment cloud storage, save-to-favorites) are accurate and intentional
 6. ✅ **No secrets or test data** leaked in changes
 7. ✅ **Lint pass** — Formatting consistent with existing codebase style
 8. ✅ **This summary document** created at `docs/history/PHASE_5_QUALITY_CLEANUP_SUMMARY.md`
+
+### Post-Initial-Commit Review Corrections
+
+After a self-review pass the following bugs introduced in the initial commit were fixed:
+
+- **`config/content-config.js`** — `validateProductionConfig()` incorrectly included `[Not currently VAT` in the placeholder detection list, causing a false-positive info log on every server startup (the `vatNumber: '[Not currently VAT registered]'` value is a permanent legal note, not a replaceable placeholder). Removed from the detection list.
+- **`public/assets/js/supplier-profile.js`** — Stale comment "Try to import and use verification-badges module" updated now that the functions are imported directly at module scope.
+- **`services/searchService.js`** — Upgraded the minimal distance stub comment to match the detailed explanation added to `search.js` (requirements for 2dsphere index, postcode lookup, `$geoNear`).
 
 ---
 

@@ -188,7 +188,10 @@ function getConfig() {
  * Warns if production config contains placeholder values that need updating
  */
 function validateProductionConfig() {
-  const placeholders = ['REPLACE_ME_', '[Not currently VAT'];
+  // Only detect fields that are intentionally temporary placeholders needing replacement.
+  // 'vatNumber' uses a permanent default ("[Not currently VAT registered]") that is NOT a
+  // placeholder — it reflects the actual legal status and must not trigger a false warning.
+  const placeholders = ['REPLACE_ME_'];
 
   const configStr = JSON.stringify(contentConfig);
   const foundPlaceholders = placeholders.filter(p => configStr.includes(p));

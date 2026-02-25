@@ -110,10 +110,9 @@ import {
       heroBanner.alt = `${supplier.name} banner`;
     }
 
-    // Render badges using verification-badges utility
+    // Render badges using verification-badges utility (imported at module scope above)
     const badgesContainer = document.getElementById('hero-badges');
     if (badgesContainer) {
-      // Try to import and use verification-badges module
       if (typeof renderVerificationBadges !== 'undefined') {
         // Use the utility function if available
         badgesContainer.innerHTML = renderVerificationBadges(supplier, { size: 'normal' });
