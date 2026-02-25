@@ -514,29 +514,35 @@ router.get('/metrics', authRequired, roleRequired('admin'), (_req, res) => {
  * POST /api/admin/reset-demo
  * Reset demo data by clearing all collections and re-seeding
  */
-router.post('/reset-demo', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  try {
-    // Clear key collections and rerun seeding
-    const collections = [
-      'users',
-      'suppliers',
-      'packages',
-      'plans',
-      'notes',
-      'messages',
-      'threads',
-      'events',
-    ];
-    collections.forEach(name => write(name, []));
-    if (seedFn) {
-      seedFn();
+router.post(
+  '/reset-demo',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      // Clear key collections and rerun seeding
+      const collections = [
+        'users',
+        'suppliers',
+        'packages',
+        'plans',
+        'notes',
+        'messages',
+        'threads',
+        'events',
+      ];
+      await Promise.all(collections.map(name => dbUnified.write(name, [])));
+      if (seedFn) {
+        seedFn();
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error('Reset demo failed', err);
+      res.status(500).json({ error: 'Reset demo failed' });
     }
-    res.json({ ok: true });
-  } catch (err) {
-    logger.error('Reset demo failed', err);
-    res.status(500).json({ error: 'Reset demo failed' });
   }
-});
+);
 
 /**
  * GET /api/admin/suppliers
@@ -2034,31 +2040,37 @@ router.get('/content/homepage', authRequired, roleRequired('admin'), (req, res) 
  * PUT /api/admin/content/homepage
  * Update homepage hero content
  */
-router.put('/content/homepage', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { title, subtitle, ctaText } = req.body;
+router.put(
+  '/content/homepage',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { title, subtitle, ctaText } = req.body;
 
-  const content = read('content') || {};
-  content.homepage = {
-    title: title || 'Plan Your Perfect Event',
-    subtitle: subtitle || 'Discover amazing suppliers and packages for your special day',
-    ctaText: ctaText || 'Start Planning',
-    updatedAt: new Date().toISOString(),
-    updatedBy: req.user.email,
-  };
+    const content = (await dbUnified.read('content')) || {};
+    content.homepage = {
+      title: title || 'Plan Your Perfect Event',
+      subtitle: subtitle || 'Discover amazing suppliers and packages for your special day',
+      ctaText: ctaText || 'Start Planning',
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user.email,
+    };
 
-  write('content', content);
+    await dbUnified.write('content', content);
 
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'CONTENT_UPDATED',
-    targetType: 'homepage',
-    targetId: null,
-    details: { title, subtitle, ctaText },
-  });
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'CONTENT_UPDATED',
+      targetType: 'homepage',
+      targetId: null,
+      details: { title, subtitle, ctaText },
+    });
 
-  res.json({ success: true, content: content.homepage });
-});
+    res.json({ success: true, content: content.homepage });
+  }
+);
 
 /**
  * POST /api/admin/homepage/hero-image
@@ -2127,14 +2139,14 @@ router.post(
       }
 
       // Save to homepage settings
-      const content = read('content') || {};
+      const content = (await dbUnified.read('content')) || {};
       if (!content.homepage) {
         content.homepage = {};
       }
       content.homepage.heroImage = imageUrl;
       content.homepage.heroImageUpdatedAt = new Date().toISOString();
       content.homepage.heroImageUpdatedBy = req.user.email;
-      write('content', content);
+      await dbUnified.write('content', content);
 
       // Audit log
       auditLog({
@@ -2180,14 +2192,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { message, type, active } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    const content = read('content') || {};
+    const content = (await dbUnified.read('content')) || {};
     if (!content.announcements) {
       content.announcements = [];
     }
@@ -2202,7 +2214,7 @@ router.post(
     };
 
     content.announcements.push(announcement);
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,
@@ -2242,10 +2254,10 @@ router.put(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { message, type, active } = req.body;
 
-    const content = read('content') || {};
+    const content = (await dbUnified.read('content')) || {};
     if (!content.announcements) {
       return res.status(404).json({ error: 'Announcement not found' });
     }
@@ -2264,7 +2276,7 @@ router.put(
       updatedBy: req.user.email,
     };
 
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,
@@ -2288,8 +2300,8 @@ router.delete(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const content = read('content') || {};
+  async (req, res) => {
+    const content = (await dbUnified.read('content')) || {};
     if (!content.announcements) {
       return res.status(404).json({ error: 'Announcement not found' });
     }
@@ -2300,7 +2312,7 @@ router.delete(
     }
 
     const deleted = content.announcements.splice(announcementIndex, 1)[0];
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,
@@ -2329,41 +2341,47 @@ router.get('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
  * POST /api/admin/content/faqs
  * Create a new FAQ
  */
-router.post('/content/faqs', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { question, answer, category } = req.body;
+router.post(
+  '/content/faqs',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { question, answer, category } = req.body;
 
-  if (!question || !answer) {
-    return res.status(400).json({ error: 'Question and answer are required' });
+    if (!question || !answer) {
+      return res.status(400).json({ error: 'Question and answer are required' });
+    }
+
+    const content = (await dbUnified.read('content')) || {};
+    if (!content.faqs) {
+      content.faqs = [];
+    }
+
+    const faq = {
+      id: generateUniqueId('faq'),
+      question,
+      answer,
+      category: category || 'General',
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.email,
+    };
+
+    content.faqs.push(faq);
+    await dbUnified.write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'FAQ_CREATED',
+      targetType: 'faq',
+      targetId: faq.id,
+      details: { question, category },
+    });
+
+    res.json({ success: true, faq });
   }
-
-  const content = read('content') || {};
-  if (!content.faqs) {
-    content.faqs = [];
-  }
-
-  const faq = {
-    id: generateUniqueId('faq'),
-    question,
-    answer,
-    category: category || 'General',
-    createdAt: new Date().toISOString(),
-    createdBy: req.user.email,
-  };
-
-  content.faqs.push(faq);
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'FAQ_CREATED',
-    targetType: 'faq',
-    targetId: faq.id,
-    details: { question, category },
-  });
-
-  res.json({ success: true, faq });
-});
+);
 
 /**
  * GET /api/admin/content/faqs/:id

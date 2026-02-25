@@ -8,6 +8,7 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const { read, write, uid } = require('../store');
+const dbUnified = require('../db-unified');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
@@ -29,7 +30,7 @@ const reportLimiter = rateLimit({
  * Create a new report
  * Body: { type, targetId, reason, details }
  */
-router.post('/', authRequired, csrfProtection, reportLimiter, (req, res) => {
+router.post('/', authRequired, csrfProtection, reportLimiter, async (req, res) => {
   const { type, targetId, reason, details } = req.body;
 
   // Validate input
@@ -66,24 +67,24 @@ router.post('/', authRequired, csrfProtection, reportLimiter, (req, res) => {
 
   switch (type) {
     case 'supplier':
-      targetData = read('suppliers').find(s => s.id === targetId);
+      targetData = (await dbUnified.read('suppliers')).find(s => s.id === targetId);
       targetExists = !!targetData;
       break;
     case 'review':
-      targetData = read('reviews').find(r => r.id === targetId);
+      targetData = (await dbUnified.read('reviews')).find(r => r.id === targetId);
       targetExists = !!targetData;
       break;
     case 'message':
-      targetData = read('messages').find(m => m.id === targetId);
+      targetData = (await dbUnified.read('messages')).find(m => m.id === targetId);
       targetExists = !!targetData;
       break;
     case 'user':
-      targetData = read('users').find(u => u.id === targetId);
+      targetData = (await dbUnified.read('users')).find(u => u.id === targetId);
       targetExists = !!targetData;
       break;
     case 'photo': {
       // Photos are embedded in suppliers, need to check differently
-      const suppliers = read('suppliers');
+      const suppliers = await dbUnified.read('suppliers');
       for (const supplier of suppliers) {
         if (supplier.photos && supplier.photos.some(p => p.id === targetId)) {
           targetExists = true;
@@ -102,7 +103,7 @@ router.post('/', authRequired, csrfProtection, reportLimiter, (req, res) => {
   }
 
   // Check for duplicate reports (same user reporting same target)
-  const existingReports = read('reports');
+  const existingReports = await dbUnified.read('reports');
   const duplicateReport = existingReports.find(
     r => r.reportedBy === req.user.id && r.targetId === targetId && r.status === 'pending'
   );
@@ -134,7 +135,7 @@ router.post('/', authRequired, csrfProtection, reportLimiter, (req, res) => {
   };
 
   existingReports.push(report);
-  write('reports', existingReports);
+  await dbUnified.insertOne('reports', report);
 
   logger.info(`New report created: ${type} ${targetId} by ${req.user.email}`);
 
@@ -155,10 +156,10 @@ router.post('/', authRequired, csrfProtection, reportLimiter, (req, res) => {
  * List all reports (admin only)
  * Query params: status, type, page, perPage
  */
-router.get('/admin/reports', authRequired, roleRequired('admin'), (req, res) => {
+router.get('/admin/reports', authRequired, roleRequired('admin'), async (req, res) => {
   const { status, type, page = 1, perPage = 20 } = req.query;
 
-  let reports = read('reports');
+  let reports = await dbUnified.read('reports');
 
   // Filter by status
   if (status) {
@@ -199,8 +200,8 @@ router.get('/admin/reports', authRequired, roleRequired('admin'), (req, res) => 
  * GET /api/admin/reports/pending
  * Get count of pending reports (admin only)
  */
-router.get('/admin/reports/pending', authRequired, roleRequired('admin'), (req, res) => {
-  const reports = read('reports');
+router.get('/admin/reports/pending', authRequired, roleRequired('admin'), async (req, res) => {
+  const reports = await dbUnified.read('reports');
   const pendingCount = reports.filter(r => r.status === 'pending').length;
 
   res.json({ count: pendingCount });
@@ -210,10 +211,9 @@ router.get('/admin/reports/pending', authRequired, roleRequired('admin'), (req, 
  * GET /api/admin/reports/:id
  * Get a specific report (admin only)
  */
-router.get('/admin/reports/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.get('/admin/reports/:id', authRequired, roleRequired('admin'), async (req, res) => {
   const { id } = req.params;
-  const reports = read('reports');
-  const report = reports.find(r => r.id === id);
+  const report = await dbUnified.findOne('reports', { id });
 
   if (!report) {
     return res.status(404).json({ error: 'Report not found' });
@@ -234,7 +234,7 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { id } = req.params;
     const { resolution, action, notes } = req.body;
 
@@ -249,14 +249,11 @@ router.post(
       });
     }
 
-    const reports = read('reports');
-    const reportIndex = reports.findIndex(r => r.id === id);
+    const report = await dbUnified.findOne('reports', { id });
 
-    if (reportIndex === -1) {
+    if (!report) {
       return res.status(404).json({ error: 'Report not found' });
     }
-
-    const report = reports[reportIndex];
 
     if (report.status === 'resolved' || report.status === 'dismissed') {
       return res.status(400).json({ error: 'Report has already been resolved' });
@@ -264,17 +261,18 @@ router.post(
 
     // Update report
     const now = new Date().toISOString();
-    report.status = 'resolved';
-    report.resolution = resolution;
-    report.action = action || 'no_action';
-    report.resolutionNotes = notes || '';
-    report.resolvedBy = req.user.id;
-    report.resolvedByEmail = req.user.email;
-    report.resolvedAt = now;
-    report.updatedAt = now;
+    const setFields = {
+      status: 'resolved',
+      resolution,
+      action: action || 'no_action',
+      resolutionNotes: notes || '',
+      resolvedBy: req.user.id,
+      resolvedByEmail: req.user.email,
+      resolvedAt: now,
+      updatedAt: now,
+    };
 
-    reports[reportIndex] = report;
-    write('reports', reports);
+    await dbUnified.updateOne('reports', { id }, { $set: setFields });
 
     // Create audit log
     auditLog({
@@ -310,32 +308,34 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { id } = req.params;
     const { notes } = req.body;
 
-    const reports = read('reports');
-    const reportIndex = reports.findIndex(r => r.id === id);
+    const report = await dbUnified.findOne('reports', { id });
 
-    if (reportIndex === -1) {
+    if (!report) {
       return res.status(404).json({ error: 'Report not found' });
     }
 
-    const report = reports[reportIndex];
-
     // Update report
     const now = new Date().toISOString();
-    report.status = 'dismissed';
-    report.resolution = 'invalid';
-    report.action = 'no_action';
-    report.resolutionNotes = notes || 'Dismissed by admin';
-    report.resolvedBy = req.user.id;
-    report.resolvedByEmail = req.user.email;
-    report.resolvedAt = now;
-    report.updatedAt = now;
-
-    reports[reportIndex] = report;
-    write('reports', reports);
+    await dbUnified.updateOne(
+      'reports',
+      { id },
+      {
+        $set: {
+          status: 'dismissed',
+          resolution: 'invalid',
+          action: 'no_action',
+          resolutionNotes: notes || 'Dismissed by admin',
+          resolvedBy: req.user.id,
+          resolvedByEmail: req.user.email,
+          resolvedAt: now,
+          updatedAt: now,
+        },
+      }
+    );
 
     // Create audit log
     auditLog({
