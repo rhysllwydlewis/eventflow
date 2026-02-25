@@ -58,14 +58,11 @@ class UserService {
    * @returns {Promise<Object>} - Updated user
    */
   async updateUser(id, updates, requestUserId, requestUserRole) {
-    const users = await this.db.read('users');
-    const userIndex = users.findIndex(u => u.id === id);
+    const user = await this.db.findOne('users', { id });
 
-    if (userIndex === -1) {
+    if (!user) {
       throw new NotFoundError('User not found');
     }
-
-    const user = users[userIndex];
 
     // Authorization check
     if (requestUserRole !== 'admin' && requestUserId !== id) {
@@ -93,24 +90,26 @@ class UserService {
       allowedFields.push('role', 'verified', 'isPro');
     }
 
-    // Apply updates
+    // Build the $set payload from allowed fields
+    const setFields = {};
     allowedFields.forEach(field => {
       if (updates[field] !== undefined) {
-        user[field] = updates[field];
+        setFields[field] = updates[field];
       }
     });
 
     // Update full name if firstName/lastName changed
     if (updates.firstName || updates.lastName) {
-      user.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      setFields.name =
+        `${updates.firstName || user.firstName || ''} ${updates.lastName || user.lastName || ''}`.trim();
     }
 
-    users[userIndex] = user;
-    await this.db.write('users', users);
+    setFields.updatedAt = new Date().toISOString();
+    await this.db.updateOne('users', { id }, { $set: setFields });
 
     logger.info(`User updated: ${id} by ${requestUserId}`);
 
-    return this._sanitizeUser(user);
+    return this._sanitizeUser({ ...user, ...setFields });
   }
 
   /**
@@ -129,25 +128,25 @@ class UserService {
       throw new ValidationError('Weak password');
     }
 
-    const users = await this.db.read('users');
-    const userIndex = users.findIndex(u => u.id === userId);
+    const user = await this.db.findOne('users', { id: userId });
 
-    if (userIndex === -1) {
+    if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    const user = users[userIndex];
-
     // Verify current password
-    const isValid = bcrypt.compareSync(currentPassword, user.passwordHash);
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
       throw new ValidationError('Current password is incorrect');
     }
 
     // Update password
-    user.passwordHash = bcrypt.hashSync(newPassword, 10);
-    users[userIndex] = user;
-    await this.db.write('users', users);
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await this.db.updateOne(
+      'users',
+      { id: userId },
+      { $set: { passwordHash: newHash, updatedAt: new Date().toISOString() } }
+    );
 
     logger.info(`Password changed for user ${userId}`);
   }
@@ -165,16 +164,14 @@ class UserService {
       throw new AuthorizationError('You do not have permission to delete this user');
     }
 
-    const users = await this.db.read('users');
-    const user = users.find(u => u.id === id);
+    const user = await this.db.findOne('users', { id });
 
     if (!user) {
       throw new NotFoundError('User not found');
     }
 
     // Remove user
-    const filtered = users.filter(u => u.id !== id);
-    await this.db.write('users', filtered);
+    await this.db.deleteOne('users', id);
 
     logger.info(`User deleted: ${id} by ${requestUserId}`);
   }
@@ -240,30 +237,28 @@ class UserService {
    * @returns {Promise<Object>} - Updated user
    */
   async updatePreferences(userId, preferences) {
-    const users = await this.db.read('users');
-    const userIndex = users.findIndex(u => u.id === userId);
+    const user = await this.db.findOne('users', { id: userId });
 
-    if (userIndex === -1) {
+    if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    const user = users[userIndex];
-
-    // Update notification preferences
+    // Build preference update set
+    const setFields = {};
     if (preferences.notify_account !== undefined) {
-      user.notify_account = !!preferences.notify_account;
+      setFields.notify_account = !!preferences.notify_account;
     }
     if (preferences.notify_marketing !== undefined) {
-      user.notify_marketing = !!preferences.notify_marketing;
-      user.marketingOptIn = !!preferences.notify_marketing; // Keep legacy field in sync
+      setFields.notify_marketing = !!preferences.notify_marketing;
+      setFields.marketingOptIn = !!preferences.notify_marketing; // Keep legacy field in sync
     }
 
-    users[userIndex] = user;
-    await this.db.write('users', users);
+    setFields.updatedAt = new Date().toISOString();
+    await this.db.updateOne('users', { id: userId }, { $set: setFields });
 
     logger.info(`Preferences updated for user ${userId}`);
 
-    return this._sanitizeUser(user);
+    return this._sanitizeUser({ ...user, ...setFields });
   }
 
   /**

@@ -383,8 +383,7 @@ async function voteOnReview(reviewId, voteType, userId, ipAddress) {
   await dbUnified.insertOne('reviewVotes', vote);
 
   // Update review counts
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r.id === reviewId);
+  const review = await dbUnified.findOne('reviews', { id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');
@@ -424,8 +423,7 @@ async function addSupplierResponse(reviewId, supplierId, responseText, responder
     throw new Error('Response cannot exceed 1000 characters');
   }
 
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r.id === reviewId);
+  const review = await dbUnified.findOne('reviews', { id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');

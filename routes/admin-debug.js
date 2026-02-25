@@ -10,6 +10,7 @@ const express = require('express');
 const logger = require('../utils/logger');
 const bcrypt = require('bcryptjs');
 const { read, write } = require('../store');
+const dbUnified = require('../db-unified');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const { auditLog } = require('../middleware/audit');
@@ -101,11 +102,14 @@ router.post(
 
     try {
       // Hash the new password
-      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Update user
-      users[idx].passwordHash = hashedPassword;
-      write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id: users[idx].id },
+        { $set: { passwordHash: hashedPassword } }
+      );
 
       // Audit log
       await auditLog({
@@ -270,7 +274,7 @@ router.post(
   roleRequired('admin'),
   csrfProtection,
   express.json(),
-  (req, res) => {
+  async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -310,7 +314,7 @@ router.post(
     } else {
       // Test password
       try {
-        const matches = bcrypt.compareSync(password, user.passwordHash);
+        const matches = await bcrypt.compare(password, user.passwordHash);
         diagnostics.passwordMatches = matches;
 
         if (!matches) {

@@ -171,7 +171,7 @@ router.post('/users', authRequired, roleRequired('admin'), csrfProtection, async
       name: String(name).trim().slice(0, MAX_NAME_LENGTH),
       email: String(email).toLowerCase(),
       role: roleFinal,
-      passwordHash: bcrypt.hashSync(password, 10),
+      passwordHash: await bcrypt.hash(password, 10),
       notify: true,
       marketingOptIn: false,
       verified: true, // Admin-created users are pre-verified

@@ -302,7 +302,7 @@ router.post(
       lastName: String(userLastName).trim().slice(0, 40),
       email: String(email).toLowerCase(),
       role: isOwner ? 'admin' : roleDecision.role, // Owner gets admin immediately
-      passwordHash: bcrypt.hashSync(password, 10),
+      passwordHash: await bcrypt.hash(password, 10),
       location: String(location).trim().slice(0, 100),
       postcode: postcode ? String(postcode).trim().slice(0, 10) : undefined,
       company: company ? String(company).trim().slice(0, 100) : undefined,
@@ -470,7 +470,7 @@ router.post('/login', authLimiter, async (req, res) => {
   // Try to compare password
   let passwordMatches = false;
   try {
-    passwordMatches = bcrypt.compareSync(password, user.passwordHash);
+    passwordMatches = await bcrypt.compare(password, user.passwordHash);
     logger.debug('[LOGIN] Password check complete', { match: passwordMatches });
   } catch (error) {
     logger.error('[LOGIN] Password comparison error:', error.message);
@@ -1073,7 +1073,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     logger.info('[PASSWORD RESET VERIFY] Resetting password');
 
     // Hash new password
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update user
     await dbUnified.updateOne(
