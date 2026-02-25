@@ -2,68 +2,42 @@
 
 Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_IMPROVEMENTS.md, and docs/90-DAY-ROADMAP.md
 
-## Priority 1: High Impact Features (Ready to Implement)
+## Priority 1: High Impact Features
 
 ### 1. Dashboard Analytics & Visualizations 📊
 
-**Status**: Partially complete  
-**Missing**:
+**Status**: ✅ Implemented (Phase 3/4)
+**What was shipped**:
 
 - Chart.js integration for metrics visualization
-- Event metrics chart (timeline of inquiries)
-- Budget tracking pie chart
-- Supplier performance metrics dashboard
-- Lead quality breakdown charts for supplier dashboard
+- Supplier analytics chart (`supplier-analytics-chart.js`) with 7/30/90 day views/enquiries graphs
+- Lead quality breakdown charts on supplier dashboard
+- Backend analytics API: `GET /api/me/suppliers/:id/analytics`
 
-**Files Needed**:
-
-- Enhance existing dashboard HTML files
-- Create chart initialization scripts
-- Note: chart.js and xlsx already installed
-
-**Impact**: High - Suppliers need ROI visibility to justify staying
+⚠️ Note: Analytics tracking (recording actual view/enquiry events) still needs implementation — the API returns data but requires tracking hooks.
 
 ---
 
 ### 2. Skeleton Loaders & Better Loading States 💀
 
-**Status**: Not implemented  
-**Current Issue**: "Loading..." text shows during data fetch
+**Status**: ✅ Implemented (Phase 3)
+**What was shipped**:
 
-**Needs**:
-
-- Create `public/assets/css/skeleton.css`
-- Create `public/assets/js/skeleton-loader.js` (utility exists but not used)
-- Replace all "Loading..." text with skeleton UI
-- Add fallback content for failed API calls
-- Implement proper error boundaries
-
-**Impact**: High - First impression, reduces perceived load time
+- `public/assets/css/skeleton.css` created
+- `public/assets/js/skeleton-loader.js` utility used across dashboard pages
+- Skeleton UI replaces "Loading..." text during data fetch
 
 ---
 
 ### 3. Supplier Trust Badges & Verification 🎖️
 
-**Status**: Backend ready, frontend missing  
-**Backend Complete**:
+**Status**: ✅ Implemented (Phase 2/3)
+**What was shipped**:
 
-- `isFounding`, `foundingYear`, `badges` fields exist in data
-- Founding supplier seed data created
-
-**Frontend Missing**:
-
-- Display "Founding Supplier" badges on supplier cards
-- Show verification badges (email verified, phone verified, business verified)
-- Add badge display to supplier profiles
-- Add verification flow UI
-
-**Files to Modify**:
-
-- `public/assets/js/app.js` - supplierCard() function
-- `public/supplier.html` - Profile page
-- Add badge CSS styles
-
-**Impact**: High - Builds trust, differentiates quality suppliers
+- `public/assets/js/utils/verification-badges.js` renders verification badges
+- `renderVerificationBadges()`, `renderVerificationSection()`, `renderTierIcon()` used on supplier profile page
+- Founding supplier badges, email/phone/business verification badges displayed
+- Badge CSS styles added
 
 ---
 
@@ -83,28 +57,13 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 ### 5. Lead Quality Display on Supplier Dashboard 📈
 
-**Status**: Backend complete, frontend missing  
-**Backend**:
+**Status**: ✅ Implemented (Phase 3/4)
+**What was shipped**:
 
-- Lead scoring algorithm implemented ✅
-- Scores stored in threads ✅
-- Lead quality helper utility exists ✅
-
-**Frontend Missing**:
-
-- Display lead quality badges on each inquiry/message
-- Add filter by quality (High/Medium/Low)
-- Add sort by lead score
-- Show quality breakdown statistics
-- Add quality trend visualization
-
-**Files to Modify**:
-
-- `public/assets/js/supplier-messages.js` - Already has placeholder for lead quality
-- `public/dashboard-supplier.html` - Add quality filter UI
-- Use existing `lead-quality-helper.js`
-
-**Impact**: High - Core differentiator vs. Hitched
+- Lead quality badges displayed on each inquiry/message in `public/assets/js/supplier-messages.js`
+- Lead quality filter (High/Medium/Low) on supplier dashboard
+- Lead quality score stored in threads and displayed to suppliers
+- `lead-quality-helper.js` utility used on frontend
 
 ---
 
@@ -131,17 +90,16 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 ### 7. Faceted Search & Advanced Filters 🔍
 
-**Current**: Basic category filtering only
+**Status**: ⚠️ Partially Implemented (Phase 4)
+**What was shipped**:
 
-**Missing**:
+- Marketplace filter UI with category, price, condition, keyword, and sort controls
+- Supplier search API supports: category, location, price range, rating, amenities, guest count, pro/featured/verified flags, and multiple sort options
 
-- Multi-facet filtering (category + price + location + amenities)
-- Price range slider
-- Location-based search with distance
-- Search result counts per facet
-- Save search preferences
+**Remaining stubs**:
 
-**Impact**: Medium - Improves supplier discoverability
+- Distance sort falls back to relevance (no geo data / 2dsphere index) — see `docs/MARKETPLACE_FILTER_STATUS.md`
+- Availability date range filter not yet implemented (no availability fields on supplier documents)
 
 ---
 
@@ -162,23 +120,18 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 ### 9. Stripe Payment Integration 💳
 
-**Status**: Stripe library loaded but not integrated
+**Status**: ⚠️ Partially Implemented (Phase 4 improved Stripe upgrade flow)
+**What was shipped**:
 
-**Missing**:
+- Self-serve subscription upgrade flow fixed
+- Stripe webhook handlers present in `webhooks.js`
+- Subscription management in `routes/subscriptions-v2.js`
 
-- Self-serve subscription upgrade flow
-- Payment method management
-- Billing history page
-- Invoices/receipts generation
-- Subscription cancellation flow
+**Still missing**:
 
-**Files Needed**:
-
-- Payment routes in server.js
-- Stripe webhook handlers
-- Payment UI components
-
-**Impact**: Medium-High - Required for monetization
+- Full billing history page
+- Invoice/receipt generation
+- Subscription cancellation flow (UI only)
 
 ---
 
@@ -228,14 +181,12 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 ### 13. PWA Install Prompt 📲
 
-**Status**: Service worker exists, install prompt missing
+**Status**: ✅ Implemented (Phase 3/4)
+**What was shipped**:
 
-**Needs**:
-
-- Add install prompt to HTML pages
-- "Add to Home Screen" banner
-- Install instructions
-- iOS-specific install guide
+- PWA install prompt added to HTML pages
+- "Add to Home Screen" banner implemented
+- Service worker and manifest configured
 
 ---
 
@@ -296,12 +247,20 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 ## Quick Wins (Can Implement Immediately)
 
-1. **Add skeleton loaders** (1-2 days)
-2. **Display founding supplier badges** (1 day)
-3. **Show lead quality on supplier dashboard** (2 days)
-4. **Add hCaptcha to forms** (1 day)
-5. **Add Chart.js visualizations** (2-3 days)
-6. **Install PWA prompt** (1 day)
+Items previously listed as quick wins that have now been completed:
+
+- ✅ Skeleton loaders (shipped Phase 3)
+- ✅ Founding supplier / trust badges (shipped Phase 2/3)
+- ✅ Lead quality display on supplier dashboard (shipped Phase 3/4)
+- ✅ hCaptcha integration (shipped Phase 2)
+- ✅ Dashboard charts / Chart.js visualizations (shipped Phase 3/4)
+- ✅ PWA install prompt (shipped Phase 3/4)
+
+Remaining quick wins:
+
+1. Lightbox for photo galleries (1-2 days)
+2. Distance sort — requires geo index + postcode lookup (3-5 days)
+3. Availability filter — requires schema changes + UI date picker (3-5 days)
 
 ---
 
@@ -309,20 +268,18 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 ### For Next Sprint:
 
-1. ✅ Skeleton loaders - Improves first impression
-2. ✅ Lead quality display - Core differentiator
-3. ✅ Trust badges - Builds credibility
-4. ✅ hCaptcha integration - Protects lead quality
-5. ✅ Dashboard charts - Shows ROI to suppliers
+1. Complete analytics tracking (record view/enquiry events for real chart data)
+2. Distance sort — add 2dsphere index + postcodes.io lookup
+3. Availability filter — add availability fields to supplier documents + UI
+4. Advanced image features (lightbox, zoom)
 
 ### For Following Sprint:
 
-1. Stripe payment integration - Enables monetization
-2. Phone verification - Reduces fraud
-3. Faceted search - Improves discoverability
-4. Advanced image features - Better UX
+1. Phone verification — reduces fraud
+2. Stripe billing history & invoices
+3. Blog infrastructure
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: February 2026
 **Maintained By**: EventFlow Development Team

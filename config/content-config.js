@@ -35,6 +35,12 @@ const contentConfig = {
   },
 
   // Company Information
+  // ─────────────────────────────────────────────────────────────────────────────
+  // IMPORTANT: The fields below contain intentional defaults that MUST be replaced
+  // before production launch. Set the corresponding environment variables, or
+  // update the fallback strings directly. Leaving these defaults in production
+  // will trigger a startup warning.
+  // ─────────────────────────────────────────────────────────────────────────────
   company: {
     name: 'EventFlow Limited',
     nameLegal: 'EventFlow Limited',
@@ -42,13 +48,11 @@ const contentConfig = {
 
     // Company registration details
     // Set via environment variables in production
-    registrationNumber: process.env.COMPANY_NUMBER || '12345678', // PLACEHOLDER
-    companyNumber:
-      process.env.COMPANY_NUMBER ||
-      '[Pending Registration - To be added upon Companies House registration]',
+    registrationNumber: process.env.COMPANY_NUMBER || 'REPLACE_ME_COMPANY_NUMBER',
+    companyNumber: process.env.COMPANY_NUMBER || 'REPLACE_ME_COMPANY_NUMBER',
 
     // Registered office address
-    registeredOffice: process.env.REGISTERED_OFFICE || '[To be added upon company registration]',
+    registeredOffice: process.env.REGISTERED_OFFICE || 'REPLACE_ME_REGISTERED_OFFICE',
 
     // VAT registration
     vatNumber: '[Not currently VAT registered]', // Update if/when VAT registered
@@ -58,6 +62,10 @@ const contentConfig = {
   },
 
   // Contact Information
+  // ─────────────────────────────────────────────────────────────────────────────
+  // IMPORTANT: Phone number and address fields below are intentional defaults
+  // that MUST be replaced before production launch via environment variables.
+  // ─────────────────────────────────────────────────────────────────────────────
   contact: {
     supportEmail: 'support@event-flow.co.uk',
     adminEmail: 'admin@event-flow.co.uk',
@@ -67,14 +75,14 @@ const contentConfig = {
     securityEmail: 'security@event-flow.co.uk',
 
     // Business phone number
-    phone: process.env.BUSINESS_PHONE || '+44 20 1234 5678', // PLACEHOLDER
+    phone: process.env.BUSINESS_PHONE || 'REPLACE_ME_BUSINESS_PHONE',
 
     // Business address (for legal/contact pages)
     address: {
-      line1: process.env.BUSINESS_ADDRESS_LINE1 || '123 Business Street', // PLACEHOLDER
-      line2: process.env.BUSINESS_ADDRESS_LINE2 || 'Floor 2', // PLACEHOLDER
-      city: process.env.BUSINESS_CITY || 'London', // PLACEHOLDER
-      postcode: process.env.BUSINESS_POSTCODE || 'EC1A 1BB', // PLACEHOLDER
+      line1: process.env.BUSINESS_ADDRESS_LINE1 || 'REPLACE_ME_ADDRESS_LINE1',
+      line2: process.env.BUSINESS_ADDRESS_LINE2 || '',
+      city: process.env.BUSINESS_CITY || 'REPLACE_ME_CITY',
+      postcode: process.env.BUSINESS_POSTCODE || 'REPLACE_ME_POSTCODE',
       country: 'United Kingdom',
     },
   },
@@ -180,32 +188,30 @@ function getConfig() {
  * Warns if production config contains placeholder values that need updating
  */
 function validateProductionConfig() {
-  const placeholders = [
-    '12345678',
-    '[Pending Registration',
-    '[To be added',
-    '[Not currently VAT',
-    '123 Business Street',
-    'EC1A 1BB',
-  ];
+  // Only detect fields that are intentionally temporary placeholders needing replacement.
+  // 'vatNumber' uses a permanent default ("[Not currently VAT registered]") that is NOT a
+  // placeholder — it reflects the actual legal status and must not trigger a false warning.
+  const placeholders = ['REPLACE_ME_'];
 
   const configStr = JSON.stringify(contentConfig);
   const foundPlaceholders = placeholders.filter(p => configStr.includes(p));
 
-  if (foundPlaceholders.length > 0 && process.env.NODE_ENV === 'production') {
+  if (foundPlaceholders.length > 0) {
     const strictValidation = process.env.CONTENT_CONFIG_STRICT === 'true';
 
-    if (strictValidation) {
+    if (process.env.NODE_ENV === 'production' || strictValidation) {
       logger.warn('');
       logger.warn('⚠️  WARNING: Production config contains placeholder values!');
-      logger.warn('⚠️  Update config/content-config.js before launch');
+      logger.warn('⚠️  Update config/content-config.js or set environment variables before launch');
       logger.warn('⚠️  Found placeholders:', foundPlaceholders);
       logger.warn('');
       return;
     }
 
-    logger.info('ℹ️  Content config contains default placeholder values (strict mode disabled).');
-    logger.info('   Set CONTENT_CONFIG_STRICT=true to enforce startup warnings.');
+    logger.info(
+      'ℹ️  Content config contains placeholder values that must be replaced before production launch.',
+      { foundPlaceholders }
+    );
   }
 }
 

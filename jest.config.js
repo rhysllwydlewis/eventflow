@@ -37,13 +37,13 @@ module.exports = {
   // Ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '/data/', '/uploads/'],
 
-  // Coverage thresholds – set to current baseline; increase as test coverage grows
+  // Coverage thresholds – raised from baseline (15/17/20/20) as coverage grows
   coverageThreshold: {
     global: {
-      branches: 15,
-      functions: 17,
-      lines: 20,
-      statements: 20,
+      branches: 20,
+      functions: 22,
+      lines: 25,
+      statements: 25,
     },
   },
 
@@ -51,7 +51,7 @@ module.exports = {
   testTimeout: 10000,
 
   // Force Jest to exit after all tests complete; prevents hanging on open handles
-  // TODO: remove once all remaining open handles (test-isolation leaks) are resolved
+  // Known issue: test-isolation open handle leaks remain unresolved (thresholds updated Feb 2026)
   forceExit: true,
 
   // Verbose output

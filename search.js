@@ -159,6 +159,13 @@ async function searchSuppliers(query) {
       const priceB = (b.price_display || '').split('$').length - 1;
       return priceB - priceA;
     });
+  } else if (sortBy === 'distance') {
+    // STUB: Distance sort falls back to relevance (no geo data available).
+    // To implement properly:
+    //   1. Add a 2dsphere index to the suppliers collection on a `location.coordinates` field
+    //   2. Implement a postcode → lat/lng lookup (e.g. postcodes.io API or stored lookup table)
+    //   3. Pass the user's coordinates as query parameters and use MongoDB $geoNear aggregation
+    // For now the order is unchanged (relevance/insertion order).
   }
 
   // Pagination

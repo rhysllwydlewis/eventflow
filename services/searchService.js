@@ -535,7 +535,12 @@ function sortResults(results, sortBy) {
       break;
 
     case 'distance':
-      // Distance sort requires geolocation; fall back to relevance
+      // STUB: Distance sort requires geolocation; falls back to relevance order.
+      // To implement properly:
+      //   1. Add a 2dsphere index to the suppliers collection on a `location.coordinates` field
+      //   2. Implement a postcode → lat/lng lookup (e.g. postcodes.io API or stored lookup table)
+      //   3. Accept user coordinates as query parameters and use MongoDB $geoNear aggregation
+      // For now the relevance order is preserved unchanged.
       sorted.sort((a, b) => {
         const scoreA = a.relevanceScore || 0;
         const scoreB = b.relevanceScore || 0;

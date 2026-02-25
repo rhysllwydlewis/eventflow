@@ -1294,7 +1294,13 @@ const isDevelopment =
       // Close modal
       closeModal(overlay);
 
-      // Reload listings (in future, could filter by location)
+      // STUB: Location/distance filter saved to localStorage but not yet applied to API queries.
+      // To implement properly:
+      //   1. Resolve postcode to lat/lng (e.g. postcodes.io API)
+      //   2. Pass coordinates + radius to the listings API endpoint
+      //   3. Add a 2dsphere index on listing location field in MongoDB
+      //   4. Use MongoDB $geoNear or $near operator in the query
+      // For now, listings are reloaded without distance filtering.
       loadListings();
 
       showToast('Location updated');

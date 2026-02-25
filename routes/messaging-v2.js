@@ -171,12 +171,26 @@ async function initializeServices() {
 
 /**
  * Helper function to store attachment files
- * For now, stores files in uploads directory
+ * Currently stores files to the local filesystem (uploads/attachments/).
+ *
+ * ⚠️  PRODUCTION LIMITATION: Local files are lost on every redeployment (e.g. Railway).
+ * To fix for production, integrate with the existing photo-upload infrastructure:
+ *   1. Use the S3/Cloudinary upload helpers already present in photo-upload.js
+ *   2. Store the returned cloud URL in the attachment object instead of a local path
+ *   3. Remove the local fs.writeFile call once cloud storage is confirmed working
  * TODO: Integrate with existing photo-upload for cloud storage
  */
 async function storeAttachment(file) {
   const fs = require('fs').promises;
   const crypto = require('crypto');
+
+  // Warn on every invocation so the limitation is visible in logs
+  if (logger) {
+    logger.warn(
+      'Attachment stored to local filesystem — files will be lost on redeployment. ' +
+        'Configure cloud storage (S3/Cloudinary) for production.'
+    );
+  }
 
   // Sanitize original filename to prevent path traversal and special chars
   const sanitizedOriginalName = file.originalname
