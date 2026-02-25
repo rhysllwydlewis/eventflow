@@ -3,10 +3,11 @@
  * Toggle between monthly and annual pricing
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   const FREE_MONTHS = 2; // Number of free months with annual billing
   const MONTHS_IN_YEAR = 12;

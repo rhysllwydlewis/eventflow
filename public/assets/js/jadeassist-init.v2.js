@@ -6,10 +6,11 @@
  * - debug mode, offsetBottom/Left positioning, mobile positioning overrides
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Global initialization guard - prevent double-init if script loads twice
   if (window.__JADE_WIDGET_INITIALIZED__) {

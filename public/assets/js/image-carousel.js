@@ -3,10 +3,11 @@
  * Simple, accessible image carousel for galleries
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   let currentIndex = 0;
   let images = [];
