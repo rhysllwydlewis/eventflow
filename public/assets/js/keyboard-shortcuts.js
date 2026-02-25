@@ -3,10 +3,11 @@
  * Global keyboard shortcuts for improved navigation and UX
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Detect if Mac or Windows for correct key display
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;

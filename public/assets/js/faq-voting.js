@@ -3,10 +3,11 @@
  * Allow users to vote on FAQ helpfulness
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   /**
    * Initialize FAQ voting on FAQ page
