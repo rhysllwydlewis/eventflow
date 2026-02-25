@@ -56,6 +56,9 @@
     const benignPatterns = [
       'ResizeObserver loop limit exceeded',
       'ResizeObserver loop completed with undelivered notifications',
+      // Module syntax errors (e.g. missing named export) – logged but not shown to users
+      'does not provide an export named',
+      'The requested module',
     ];
     return benignPatterns.some(pattern => errorMessage.includes(pattern));
   }
