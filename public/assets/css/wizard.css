@@ -485,6 +485,34 @@
   margin: 2rem 0;
 }
 
+/* Error state for failed package loading (Bug 1.9) */
+.wizard-packages-error {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+  color: #92400e;
+}
+
+.wizard-packages-error p {
+  margin: 0 0 0.75rem;
+}
+
+/* Proximity info for venue step (Bug 2.13 — no inline styles) */
+.wizard-proximity-info {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #0369a1;
+}
+
+.wizard-proximity-info p {
+  margin: 0;
+}
+
 .wizard-package-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

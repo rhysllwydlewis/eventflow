@@ -82,7 +82,15 @@ function planOwnerOnly(req, res, next) {
 
 // ---------- Plan Routes ----------
 
-router.get('/plan', applyAuthRequired, async (req, res) => {
+// Deprecation middleware for legacy plan endpoints (Bug 3.4)
+function deprecationWarning(req, res, next) {
+  res.setHeader('Deprecation', 'true');
+  res.setHeader('Sunset', 'Sat, 01 Jan 2027 00:00:00 GMT');
+  res.setHeader('Link', '</api/v1/me/plans>; rel="successor-version"');
+  next();
+}
+
+router.get('/plan', deprecationWarning, applyAuthRequired, async (req, res) => {
   try {
     if (req.user.role !== 'customer') {
       return res.status(403).json({ error: 'Customers only' });
@@ -97,47 +105,62 @@ router.get('/plan', applyAuthRequired, async (req, res) => {
   }
 });
 
-router.post('/plan', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    if (req.user.role !== 'customer') {
-      return res.status(403).json({ error: 'Customers only' });
+router.post(
+  '/plan',
+  deprecationWarning,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      if (req.user.role !== 'customer') {
+        return res.status(403).json({ error: 'Customers only' });
+      }
+      const { supplierId } = req.body || {};
+      if (!supplierId) {
+        return res.status(400).json({ error: 'Missing supplierId' });
+      }
+      const s = (await dbUnified.read('suppliers')).find(x => x.id === supplierId && x.approved);
+      if (!s) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+      const all = await dbUnified.read('plans');
+      if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) {
+        await dbUnified.insertOne('plans', {
+          id: uid('pln'),
+          userId: req.user.id,
+          supplierId,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      res.json({ ok: true });
+    } catch (error) {
+      logger.error('Error saving plan:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    const { supplierId } = req.body || {};
-    if (!supplierId) {
-      return res.status(400).json({ error: 'Missing supplierId' });
-    }
-    const s = (await dbUnified.read('suppliers')).find(x => x.id === supplierId && x.approved);
-    if (!s) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
-    const all = await dbUnified.read('plans');
-    if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) {
-      await dbUnified.insertOne('plans', {
-        id: uid('pln'),
-        userId: req.user.id,
-        supplierId,
-        createdAt: new Date().toISOString(),
-      });
-    }
-    res.json({ ok: true });
-  } catch (error) {
-    logger.error('Error saving plan:', error);
-    return res.status(500).json({ error: 'Internal server error' });
   }
-});
+);
 
-router.delete('/plan/:supplierId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    if (req.user.role !== 'customer') {
-      return res.status(403).json({ error: 'Customers only' });
+router.delete(
+  '/plan/:supplierId',
+  deprecationWarning,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      if (req.user.role !== 'customer') {
+        return res.status(403).json({ error: 'Customers only' });
+      }
+      await dbUnified.deleteOne('plans', {
+        userId: req.user.id,
+        supplierId: req.params.supplierId,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      logger.error('Error deleting plan:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    await dbUnified.deleteOne('plans', { userId: req.user.id, supplierId: req.params.supplierId });
-    res.json({ ok: true });
-  } catch (error) {
-    logger.error('Error deleting plan:', error);
-    return res.status(500).json({ error: 'Internal server error' });
   }
-});
+);
 
 // ---------- Notes Routes ----------
 
@@ -187,6 +210,7 @@ router.post('/notes', applyAuthRequired, applyCsrfProtection, async (req, res) =
 
 router.post(
   '/me/plan/save',
+  deprecationWarning,
   applyAuthRequired,
   planOwnerOnly,
   applyCsrfProtection,
@@ -208,7 +232,7 @@ router.post(
   }
 );
 
-router.get('/me/plan', applyAuthRequired, planOwnerOnly, async (req, res) => {
+router.get('/me/plan', deprecationWarning, applyAuthRequired, planOwnerOnly, async (req, res) => {
   try {
     const plans = await dbUnified.read('plans');
     const p = plans.find(x => x.userId === req.userId);

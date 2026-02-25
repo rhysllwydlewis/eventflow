@@ -131,19 +131,9 @@ describe('WizardState', () => {
     });
   });
 
-  describe('validateStep', () => {
-    it('should validate event type step', () => {
-      const result1 = window.WizardState.validateStep(0, { eventType: 'Wedding' });
-      expect(result1.valid).toBe(true);
-
-      const result2 = window.WizardState.validateStep(0, { eventType: '' });
-      expect(result2.valid).toBe(false);
-      expect(result2.errors.length).toBeGreaterThan(0);
-    });
-
-    it('should allow skippable location step', () => {
-      const result = window.WizardState.validateStep(1, {});
-      expect(result.valid).toBe(true);
+  describe('validateStep (removed from WizardState — now in WizardValidation)', () => {
+    it('should not expose validateStep on WizardState', () => {
+      expect(window.WizardState.validateStep).toBeUndefined();
     });
   });
 
@@ -154,21 +144,40 @@ describe('WizardState', () => {
       expect(result.missing).toContain('Event type');
     });
 
-    it('should be ready with event type', () => {
+    it('should be ready with Wedding event type', () => {
       window.WizardState.saveStep(0, { eventType: 'Wedding' });
       const result = window.WizardState.isReadyForPlanCreation();
       expect(result.ready).toBe(true);
       expect(result.missing.length).toBe(0);
     });
+
+    it('should be ready with Corporate event type', () => {
+      window.WizardState.saveStep(0, { eventType: 'Corporate' });
+      const result = window.WizardState.isReadyForPlanCreation();
+      expect(result.ready).toBe(true);
+    });
+
+    it('should be ready with Birthday event type', () => {
+      window.WizardState.saveStep(0, { eventType: 'Birthday' });
+      const result = window.WizardState.isReadyForPlanCreation();
+      expect(result.ready).toBe(true);
+    });
+
+    it('should be ready with Other event type', () => {
+      window.WizardState.saveStep(0, { eventType: 'Other' });
+      const result = window.WizardState.isReadyForPlanCreation();
+      expect(result.ready).toBe(true);
+    });
   });
 
   describe('exportForPlanCreation', () => {
-    it('should export complete state for API', () => {
+    it('should export complete state for API including notes', () => {
       window.WizardState.saveStep(0, { eventType: 'Wedding' });
       window.WizardState.saveStep(1, {
         location: 'London',
         date: '2024-07-10',
         guests: 150,
+        notes: 'Please contact us first',
       });
       window.WizardState.selectPackage('venues', 'pkg1');
       window.WizardState.selectPackage('photography', 'pkg2');
@@ -179,6 +188,18 @@ describe('WizardState', () => {
       expect(exported.date).toBe('2024-07-10');
       expect(exported.guests).toBe(150);
       expect(exported.packages).toEqual(['pkg1', 'pkg2']);
+    });
+
+    it('should export Corporate event type correctly', () => {
+      window.WizardState.saveStep(0, { eventType: 'Corporate' });
+      const exported = window.WizardState.exportForPlanCreation();
+      expect(exported.eventType).toBe('Corporate');
+    });
+
+    it('should export Birthday event type correctly', () => {
+      window.WizardState.saveStep(0, { eventType: 'Birthday' });
+      const exported = window.WizardState.exportForPlanCreation();
+      expect(exported.eventType).toBe('Birthday');
     });
   });
 

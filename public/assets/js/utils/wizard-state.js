@@ -20,7 +20,7 @@
   const DEFAULT_STATE = {
     currentStep: 0,
     completed: false,
-    eventType: '', // 'Wedding' or 'Other'
+    eventType: '', // 'Wedding' | 'Corporate' | 'Birthday' | 'Other'
     eventName: '',
     location: '',
     date: '',
@@ -170,37 +170,6 @@
   }
 
   /**
-   * Validate step data
-   * @param {number} stepIndex - Step to validate
-   * @param {Object} data - Data to validate
-   * @returns {Object} { valid: boolean, errors: string[] }
-   */
-  function validateStep(stepIndex, data) {
-    const errors = [];
-
-    switch (stepIndex) {
-      case 0: // Event type
-        if (!data.eventType || (data.eventType !== 'Wedding' && data.eventType !== 'Other')) {
-          errors.push('Please select an event type');
-        }
-        break;
-
-      case 1: // Location (skippable but validate if provided)
-        // Location is optional, no validation needed
-        break;
-
-      default:
-        // Category steps (2+) are all skippable
-        break;
-    }
-
-    return {
-      valid: errors.length === 0,
-      errors,
-    };
-  }
-
-  /**
    * Get the next step index
    * @param {number} currentStep - Current step index
    * @param {Array} categories - Array of categories for wizard steps
@@ -289,7 +258,6 @@
     getSelectedPackages,
     clearState,
     markCompleted,
-    validateStep,
     getNextStep,
     getPreviousStep,
     isReadyForPlanCreation,

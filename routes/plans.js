@@ -61,8 +61,12 @@ router.get('/:id', authRequired, async (req, res) => {
 /**
  * POST /api/me/plans
  * Create a new plan
- * Body: { name, eventType, eventDate, location, guests, budget, timeline, checklist }
+ * Body: { name, eventType, eventDate, location, guests, budget, notes, packages, timeline, checklist }
  */
+
+// Maximum plans allowed per user (free tier)
+const MAX_PLANS_PER_USER = 3;
+
 router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -75,6 +79,7 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
       location,
       guests,
       budget,
+      notes,
       packages,
       timeline,
       checklist,
@@ -92,26 +97,76 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
       return res.status(400).json({ error: 'Plan name or event type is required' });
     }
 
+    // Plan creation limit per user (Bug 3.3 — free tier cap)
+    const plans = await dbUnified.read('plans');
+    const userPlanCount = plans.filter(p => p.userId === userId).length;
+    if (userPlanCount >= MAX_PLANS_PER_USER) {
+      return res.status(403).json({
+        error: 'Plan limit reached',
+        message: `You have reached the maximum of ${MAX_PLANS_PER_USER} plans. Please delete an existing plan to create a new one.`,
+      });
+    }
+
+    // Input sanitization (Bug 3.2)
+    const sanitizedGuests = guests ? Math.max(0, Math.min(10000, parseInt(guests, 10) || 0)) : null;
+    const sanitizedBudget = budget
+      ? String(budget)
+          .trim()
+          .replace(/<[^>]*>/g, '')
+          .slice(0, 100)
+      : null;
+    const sanitizedNotes = notes
+      ? String(notes)
+          .trim()
+          .replace(/<[^>]*>/g, '')
+          .slice(0, 2000)
+      : null;
+    const sanitizedPackages = Array.isArray(packages)
+      ? packages
+          .slice(0, 20)
+          .map(p => String(p).trim())
+          .filter(Boolean)
+      : [];
+
+    // Validate date if provided (discard unparseable values; past dates are allowed for re-scheduling)
+    let resolvedDate = eventDate || date || null;
+    if (resolvedDate) {
+      const dateObj = new Date(resolvedDate);
+      if (isNaN(dateObj.getTime())) {
+        resolvedDate = null; // Discard invalid dates
+      }
+    }
+
     const now = new Date().toISOString();
     const newPlan = {
       id: uid('plan'),
       userId,
-      name: resolvedName.slice(0, 200),
-      eventName: eventName ? String(eventName).trim().slice(0, 200) : null,
+      name: resolvedName.replace(/<[^>]*>/g, '').slice(0, 200),
+      eventName: eventName
+        ? String(eventName)
+            .trim()
+            .replace(/<[^>]*>/g, '')
+            .slice(0, 200)
+        : null,
       eventType: eventType ? String(eventType).trim().slice(0, 100) : null,
-      eventDate: eventDate || date || null,
-      date: date || eventDate || null, // legacy field support
-      location: location ? String(location).trim().slice(0, 200) : null,
-      guests: guests ? Math.max(0, parseInt(guests, 10) || 0) : null,
-      budget,
-      packages: Array.isArray(packages) ? packages : [],
+      eventDate: resolvedDate,
+      date: resolvedDate, // legacy field support
+      location: location
+        ? String(location)
+            .trim()
+            .replace(/<[^>]*>/g, '')
+            .slice(0, 200)
+        : null,
+      guests: sanitizedGuests,
+      budget: sanitizedBudget,
+      notes: sanitizedNotes,
+      packages: sanitizedPackages,
       timeline: Array.isArray(timeline) ? timeline : [],
       checklist: Array.isArray(checklist) ? checklist : [],
       createdAt: now,
       updatedAt: now,
     };
 
-    const plans = await dbUnified.read('plans');
     await dbUnified.insertOne('plans', newPlan);
 
     // Return both modern and legacy success flags for compatibility.
