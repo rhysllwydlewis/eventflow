@@ -938,15 +938,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const all = read('packages');
-    const i = all.findIndex(p => p.id === req.params.id);
-    if (i < 0) {
+  async (req, res) => {
+    const pkg = await dbUnified.findOne('packages', { id: req.params.id });
+    if (!pkg) {
       return res.status(404).json({ error: 'Not found' });
     }
-    all[i].approved = !!(req.body && req.body.approved);
-    write('packages', all);
-    res.json({ ok: true, package: all[i] });
+    const approved = !!(req.body && req.body.approved);
+    await dbUnified.updateOne('packages', { id: req.params.id }, { $set: { approved } });
+    res.json({ ok: true, package: { ...pkg, approved } });
   }
 );
 
@@ -959,15 +958,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const all = read('packages');
-    const i = all.findIndex(p => p.id === req.params.id);
-    if (i < 0) {
+  async (req, res) => {
+    const pkg = await dbUnified.findOne('packages', { id: req.params.id });
+    if (!pkg) {
       return res.status(404).json({ error: 'Not found' });
     }
-    all[i].featured = !!(req.body && req.body.featured);
-    write('packages', all);
-    res.json({ ok: true, package: all[i] });
+    const featured = !!(req.body && req.body.featured);
+    await dbUnified.updateOne('packages', { id: req.params.id }, { $set: { featured } });
+    res.json({ ok: true, package: { ...pkg, featured } });
   }
 );
 
