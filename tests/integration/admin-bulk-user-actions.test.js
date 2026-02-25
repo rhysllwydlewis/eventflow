@@ -36,6 +36,9 @@ jest.mock('../../middleware/domain-admin', () => ({
 jest.mock('../../db-unified', () => ({
   read: jest.fn(),
   write: jest.fn(),
+  updateOne: jest.fn(),
+  deleteOne: jest.fn(),
+  insertOne: jest.fn(),
 }));
 
 const dbUnified = require('../../db-unified');
@@ -74,9 +77,45 @@ describe('Admin Bulk User Actions (contract tests)', () => {
       }
     });
 
+    // updateOne: apply $set updates to the in-memory users array
+    dbUnified.updateOne.mockImplementation(async (collection, filter, update) => {
+      if (collection === 'users') {
+        const idx = users.findIndex(u => Object.keys(filter).every(k => u[k] === filter[k]));
+        if (idx >= 0 && update.$set) {
+          users[idx] = { ...users[idx], ...update.$set };
+          return true;
+        }
+        return false;
+      }
+      return true;
+    });
+
+    // deleteOne: remove matching user from in-memory array
+    dbUnified.deleteOne.mockImplementation(async (collection, id) => {
+      if (collection === 'users') {
+        const idx = users.findIndex(u => u.id === id);
+        if (idx >= 0) {
+          users.splice(idx, 1);
+          return true;
+        }
+        return false;
+      }
+      return true;
+    });
+
+    dbUnified.insertOne.mockImplementation(async (collection, doc) => {
+      if (collection === 'users') {
+        users.push(doc);
+      }
+      return doc;
+    });
+
     mockAuditLog.mockClear();
     dbUnified.read.mockClear();
     dbUnified.write.mockClear();
+    dbUnified.updateOne.mockClear();
+    dbUnified.deleteOne.mockClear();
+    dbUnified.insertOne.mockClear();
   });
 
   describe('POST /api/admin/users/bulk-delete', () => {
@@ -98,7 +137,8 @@ describe('Admin Bulk User Actions (contract tests)', () => {
       expect(res.body.totalRequested).toBe(3);
 
       expect(users.map(u => u.id)).toEqual(['admin-1', 'usr-2', 'usr-3']);
-      expect(dbUnified.write).toHaveBeenCalledTimes(1);
+      expect(dbUnified.deleteOne).toHaveBeenCalledTimes(1);
+      expect(dbUnified.deleteOne).toHaveBeenCalledWith('users', 'usr-1');
       expect(mockAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'BULK_USERS_DELETED',
@@ -124,7 +164,12 @@ describe('Admin Bulk User Actions (contract tests)', () => {
       expect(res.body.totalRequested).toBe(3);
 
       expect(users.find(u => u.id === 'usr-1').verified).toBe(true);
-      expect(dbUnified.write).toHaveBeenCalledTimes(1);
+      expect(dbUnified.updateOne).toHaveBeenCalledTimes(1);
+      expect(dbUnified.updateOne).toHaveBeenCalledWith(
+        'users',
+        { id: 'usr-1' },
+        expect.objectContaining({ $set: expect.objectContaining({ verified: true }) })
+      );
       expect(mockAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'BULK_USERS_VERIFIED',
@@ -153,6 +198,7 @@ describe('Admin Bulk User Actions (contract tests)', () => {
       expect(users.find(u => u.id === 'admin-1').suspended).toBeUndefined();
       expect(users.find(u => u.id === 'usr-1').suspended).toBe(true);
       expect(users.find(u => u.id === 'usr-3').suspended).toBe(true);
+      expect(dbUnified.updateOne).toHaveBeenCalledTimes(2);
       expect(mockAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'BULK_USERS_SUSPENDED',

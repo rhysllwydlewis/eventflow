@@ -392,23 +392,23 @@ router.put(
 
       const user = users[userIndex];
       const changes = {};
+      const adminUpdates = {};
 
       if (name && name !== user.name) {
         changes.name = { before: user.name, after: name };
-        user.name = name;
+        adminUpdates.name = name;
       }
       if (email && email !== user.email) {
         changes.email = { before: user.email, after: email };
-        user.email = email;
+        adminUpdates.email = email;
       }
       if (role && role !== user.role) {
         changes.role = { before: user.role, after: role };
-        user.role = role;
+        adminUpdates.role = role;
       }
 
-      user.updatedAt = new Date().toISOString();
-      users[userIndex] = user;
-      await dbUnified.write('users', users);
+      adminUpdates.updatedAt = new Date().toISOString();
+      await dbUnified.updateOne('users', { id }, { $set: adminUpdates });
 
       // Create audit log
       await createAuditLog({
@@ -484,8 +484,7 @@ router.delete(
         });
       }
 
-      const filteredUsers = users.filter(u => u.id !== id);
-      await dbUnified.write('users', filteredUsers);
+      await dbUnified.deleteOne('users', id);
 
       // Create audit log
       await createAuditLog({
@@ -539,9 +538,9 @@ router.post(
       const { reason } = req.body;
 
       const users = await dbUnified.read('users');
-      const userIndex = users.findIndex(u => u.id === id);
+      const user = users.find(u => u.id === id);
 
-      if (userIndex === -1) {
+      if (!user) {
         return res.status(404).json({
           success: false,
           error: 'User not found',
@@ -550,14 +549,18 @@ router.post(
         });
       }
 
-      const user = users[userIndex];
-      user.banned = true;
-      user.bannedAt = new Date().toISOString();
-      user.bannedBy = req.user.id;
-      user.banReason = reason || '';
-
-      users[userIndex] = user;
-      await dbUnified.write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id },
+        {
+          $set: {
+            banned: true,
+            bannedAt: new Date().toISOString(),
+            bannedBy: req.user.id,
+            banReason: reason || '',
+          },
+        }
+      );
 
       // Create audit log
       await createAuditLog({
@@ -610,9 +613,9 @@ router.post(
       const { id } = req.params;
 
       const users = await dbUnified.read('users');
-      const userIndex = users.findIndex(u => u.id === id);
+      const user = users.find(u => u.id === id);
 
-      if (userIndex === -1) {
+      if (!user) {
         return res.status(404).json({
           success: false,
           error: 'User not found',
@@ -621,13 +624,17 @@ router.post(
         });
       }
 
-      const user = users[userIndex];
-      user.banned = false;
-      user.unbannedAt = new Date().toISOString();
-      user.unbannedBy = req.user.id;
-
-      users[userIndex] = user;
-      await dbUnified.write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id },
+        {
+          $set: {
+            banned: false,
+            unbannedAt: new Date().toISOString(),
+            unbannedBy: req.user.id,
+          },
+        }
+      );
 
       // Create audit log
       await createAuditLog({

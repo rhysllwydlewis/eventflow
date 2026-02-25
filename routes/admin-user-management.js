@@ -179,8 +179,7 @@ router.post('/users', authRequired, roleRequired('admin'), csrfProtection, async
       createdBy: req.user.id, // Track who created the user
     };
 
-    users.push(user);
-    await dbUnified.write('users', users);
+    await dbUnified.insertOne('users', user);
 
     // Create audit log
     auditLog({
@@ -732,23 +731,32 @@ router.post(
       let verifiedCount = 0;
       let alreadyVerifiedCount = 0;
 
+      const updatePromises = [];
       userIds.forEach(userId => {
-        const index = users.findIndex(u => u.id === userId);
-        if (index >= 0 && !users[index].verified) {
-          users[index].verified = true;
-          users[index].verifiedAt = now;
-          users[index].verifiedBy = req.user.id;
-          users[index].verificationToken = null;
-          users[index].updatedAt = now;
+        const user = users.find(u => u.id === userId);
+        if (user && !user.verified) {
+          updatePromises.push(
+            dbUnified.updateOne(
+              'users',
+              { id: userId },
+              {
+                $set: {
+                  verified: true,
+                  verifiedAt: now,
+                  verifiedBy: req.user.id,
+                  verificationToken: null,
+                  updatedAt: now,
+                },
+              }
+            )
+          );
           verifiedCount++;
-        } else if (index >= 0 && users[index].verified) {
+        } else if (user && user.verified) {
           alreadyVerifiedCount++;
         }
       });
 
-      if (verifiedCount > 0) {
-        await dbUnified.write('users', users);
-      }
+      await Promise.all(updatePromises);
 
       // Create audit log
       await auditLog({
@@ -798,35 +806,37 @@ router.post(
       const now = new Date().toISOString();
       let updatedCount = 0;
 
+      const suspendPromises = [];
       userIds.forEach(userId => {
-        const index = users.findIndex(u => u.id === userId);
-        if (index >= 0 && users[index].id !== req.user.id) {
+        const user = users.find(u => u.id === userId);
+        if (user && user.id !== req.user.id) {
           // Don't allow admins to suspend themselves
-          users[index].suspended = !!suspended;
-          users[index].suspendedAt = suspended ? now : null;
-          users[index].suspendedBy = suspended ? req.user.id : null;
-          users[index].suspensionReason = suspended ? reason || 'Bulk suspension' : null;
-          users[index].suspensionDuration = suspended ? duration : null;
-          users[index].updatedAt = now;
+          const suspendUpdates = {
+            suspended: !!suspended,
+            suspendedAt: suspended ? now : null,
+            suspendedBy: suspended ? req.user.id : null,
+            suspensionReason: suspended ? reason || 'Bulk suspension' : null,
+            suspensionDuration: suspended ? duration : null,
+            suspensionExpiresAt: null,
+            updatedAt: now,
+          };
 
           // Calculate expiry if duration is provided
           if (suspended && duration) {
             const durationMs = parseDuration(duration);
             if (durationMs > 0) {
-              const expiryDate = new Date(Date.now() + durationMs);
-              users[index].suspensionExpiresAt = expiryDate.toISOString();
+              suspendUpdates.suspensionExpiresAt = new Date(Date.now() + durationMs).toISOString();
             }
-          } else {
-            users[index].suspensionExpiresAt = null;
           }
 
+          suspendPromises.push(
+            dbUnified.updateOne('users', { id: userId }, { $set: suspendUpdates })
+          );
           updatedCount++;
         }
       });
 
-      if (updatedCount > 0) {
-        await dbUnified.write('users', users);
-      }
+      await Promise.all(suspendPromises);
 
       // Create audit log
       await auditLog({
@@ -876,11 +886,10 @@ router.post(
       const deletedUsers = [];
 
       // Filter out users that cannot be deleted
+      const deletePromises = [];
       userIds.forEach(userId => {
-        const index = users.findIndex(u => u.id === userId);
-        if (index >= 0) {
-          const user = users[index];
-
+        const user = users.find(u => u.id === userId);
+        if (user) {
           // Prevent admins from deleting themselves
           if (user.id === req.user.id) {
             return;
@@ -893,14 +902,12 @@ router.post(
           }
 
           deletedUsers.push({ id: user.id, email: user.email, name: user.name });
-          users.splice(index, 1);
+          deletePromises.push(dbUnified.deleteOne('users', userId));
           deletedCount++;
         }
       });
 
-      if (deletedCount > 0) {
-        await dbUnified.write('users', users);
-      }
+      await Promise.all(deletePromises);
 
       // Create audit log
       await auditLog({
