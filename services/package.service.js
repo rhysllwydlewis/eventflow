@@ -66,7 +66,7 @@ class PackageService {
 
     const packages = await this.db.read('packages');
     packages.push(packageData);
-    await this.db.write('packages', packages);
+    await this.db.insertOne('packages', packageData);
 
     logger.info(`Package created: ${packageData.id} by user ${userId}`);
 
@@ -115,22 +115,18 @@ class PackageService {
    * @returns {Promise<Object>} - Updated package
    */
   async updatePackage(id, updates, userId, userRole) {
-    const packages = await this.db.read('packages');
-    const pkgIndex = packages.findIndex(p => p.id === id);
+    const pkg = await this.db.findOne('packages', { id });
 
-    if (pkgIndex === -1) {
+    if (!pkg) {
       throw new NotFoundError('Package not found');
     }
-
-    const pkg = packages[pkgIndex];
 
     // Authorization check
     if (userRole !== 'admin') {
       // Get supplier ID for this user
-      const suppliers = await this.db.read('suppliers');
-      const supplierProfile = suppliers.find(s => s.ownerUserId === userId);
+      const supplier = await this.db.findOne('suppliers', { ownerUserId: userId });
 
-      if (!supplierProfile || pkg.supplierId !== supplierProfile.id) {
+      if (!supplier || pkg.supplierId !== supplier.id) {
         throw new AuthorizationError('You do not have permission to update this package');
       }
     }
@@ -145,20 +141,18 @@ class PackageService {
       'features',
       'available',
     ];
+    const setFields = { updatedAt: new Date().toISOString() };
     allowedFields.forEach(field => {
       if (updates[field] !== undefined) {
-        pkg[field] = updates[field];
+        setFields[field] = updates[field];
       }
     });
 
-    pkg.updatedAt = new Date().toISOString();
-
-    packages[pkgIndex] = pkg;
-    await this.db.write('packages', packages);
+    await this.db.updateOne('packages', { id }, { $set: setFields });
 
     logger.info(`Package updated: ${id} by user ${userId}`);
 
-    return pkg;
+    return { ...pkg, ...setFields };
   }
 
   /**
@@ -169,8 +163,7 @@ class PackageService {
    * @returns {Promise<void>}
    */
   async deletePackage(id, userId, userRole) {
-    const packages = await this.db.read('packages');
-    const pkg = packages.find(p => p.id === id);
+    const pkg = await this.db.findOne('packages', { id });
 
     if (!pkg) {
       throw new NotFoundError('Package not found');
@@ -178,17 +171,15 @@ class PackageService {
 
     // Authorization check
     if (userRole !== 'admin') {
-      const suppliers = await this.db.read('suppliers');
-      const supplierProfile = suppliers.find(s => s.ownerUserId === userId);
+      const supplier = await this.db.findOne('suppliers', { ownerUserId: userId });
 
-      if (!supplierProfile || pkg.supplierId !== supplierProfile.id) {
+      if (!supplier || pkg.supplierId !== supplier.id) {
         throw new AuthorizationError('You do not have permission to delete this package');
       }
     }
 
     // Remove package
-    const filtered = packages.filter(p => p.id !== id);
-    await this.db.write('packages', filtered);
+    await this.db.deleteOne('packages', id);
 
     logger.info(`Package deleted: ${id} by user ${userId}`);
   }

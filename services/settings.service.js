@@ -19,8 +19,7 @@ class SettingsService {
    * @returns {Promise<Object>} - User settings
    */
   async getSettings(userId) {
-    const users = await this.db.read('users');
-    const user = users.find(u => u.id === userId);
+    const user = await this.db.findOne('users', { id: userId });
 
     if (!user) {
       throw new NotFoundError('User not found');
@@ -57,27 +56,25 @@ class SettingsService {
    * @returns {Promise<Object>} - Updated settings
    */
   async updateNotificationSettings(userId, settings) {
-    const users = await this.db.read('users');
-    const userIndex = users.findIndex(u => u.id === userId);
+    const user = await this.db.findOne('users', { id: userId });
 
-    if (userIndex === -1) {
+    if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    const user = users[userIndex];
-
+    const setFields = {};
     if (settings.notify_account !== undefined) {
-      user.notify_account = !!settings.notify_account;
-      user.notify = !!settings.notify_account; // Keep legacy field in sync
+      setFields.notify_account = !!settings.notify_account;
+      setFields.notify = !!settings.notify_account; // Keep legacy field in sync
     }
 
     if (settings.notify_marketing !== undefined) {
-      user.notify_marketing = !!settings.notify_marketing;
-      user.marketingOptIn = !!settings.notify_marketing; // Keep legacy field in sync
+      setFields.notify_marketing = !!settings.notify_marketing;
+      setFields.marketingOptIn = !!settings.notify_marketing; // Keep legacy field in sync
     }
 
-    users[userIndex] = user;
-    await this.db.write('users', users);
+    setFields.updatedAt = new Date().toISOString();
+    await this.db.updateOne('users', { id: userId }, { $set: setFields });
 
     logger.info(`Notification settings updated for user ${userId}`);
 
@@ -91,14 +88,11 @@ class SettingsService {
    * @returns {Promise<Object>} - Updated settings
    */
   async updateProfileSettings(userId, profile) {
-    const users = await this.db.read('users');
-    const userIndex = users.findIndex(u => u.id === userId);
+    const user = await this.db.findOne('users', { id: userId });
 
-    if (userIndex === -1) {
+    if (!user) {
       throw new NotFoundError('User not found');
     }
-
-    const user = users[userIndex];
 
     // Update allowed profile fields
     const allowedFields = [
@@ -113,19 +107,21 @@ class SettingsService {
       'avatarUrl',
     ];
 
+    const setFields = {};
     allowedFields.forEach(field => {
       if (profile[field] !== undefined) {
-        user[field] = profile[field];
+        setFields[field] = profile[field];
       }
     });
 
     // Update full name if firstName/lastName changed
     if (profile.firstName || profile.lastName) {
-      user.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      setFields.name =
+        `${profile.firstName || user.firstName || ''} ${profile.lastName || user.lastName || ''}`.trim();
     }
 
-    users[userIndex] = user;
-    await this.db.write('users', users);
+    setFields.updatedAt = new Date().toISOString();
+    await this.db.updateOne('users', { id: userId }, { $set: setFields });
 
     logger.info(`Profile settings updated for user ${userId}`);
 
