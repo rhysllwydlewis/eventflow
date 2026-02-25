@@ -105,6 +105,36 @@ async function createIndexes() {
     await reviewsCollection.createIndex({ supplierId: 1 });
     await reviewsCollection.createIndex({ userId: 1 });
     await reviewsCollection.createIndex({ rating: -1 });
+    const threadsCollection = mongodb.collection('threads');
+    await threadsCollection.createIndex({ participantIds: 1 });
+    await threadsCollection.createIndex({ createdAt: -1 });
+    await threadsCollection.createIndex({ supplierId: 1 });
+    const ticketsCollection = mongodb.collection('tickets');
+    await ticketsCollection.createIndex({ userId: 1 });
+    await ticketsCollection.createIndex({ status: 1 });
+    await ticketsCollection.createIndex({ createdAt: -1 });
+    const paymentsCollection = mongodb.collection('payments');
+    await paymentsCollection.createIndex({ userId: 1 });
+    await paymentsCollection.createIndex({ status: 1 });
+    await paymentsCollection.createIndex({ createdAt: -1 });
+    const subscriptionsCollection = mongodb.collection('subscriptions');
+    await subscriptionsCollection.createIndex({ userId: 1 });
+    await subscriptionsCollection.createIndex({ status: 1 });
+    const marketplaceCollection = mongodb.collection('marketplace_listings');
+    await marketplaceCollection.createIndex({ sellerId: 1 });
+    await marketplaceCollection.createIndex({ sellerUserId: 1 });
+    await marketplaceCollection.createIndex({ category: 1 });
+    await marketplaceCollection.createIndex({ status: 1 });
+    await marketplaceCollection.createIndex({ createdAt: -1 });
+    const quoteRequestsCollection = mongodb.collection('quoteRequests');
+    await quoteRequestsCollection.createIndex({ userId: 1 });
+    await quoteRequestsCollection.createIndex({ supplierId: 1 });
+    await quoteRequestsCollection.createIndex({ status: 1 });
+    const shortlistsCollection = mongodb.collection('shortlists');
+    await shortlistsCollection.createIndex({ userId: 1 }, { unique: true });
+    const notificationsCollection = mongodb.collection('notifications');
+    await notificationsCollection.createIndex({ userId: 1, createdAt: -1 });
+    await notificationsCollection.createIndex({ read: 1 });
     logger.info('✅ Database indexes created successfully');
   } catch (error) {
     logger.info('ℹ️  Database indexes:', error.message);
@@ -239,15 +269,36 @@ async function find(collectionName, filter) {
 async function updateOne(collectionName, id, updates) {
   await initializeDatabase();
   try {
+    // Normalise the filter: accept either a string id or a plain filter object
+    const filter = typeof id === 'object' && id !== null ? id : { id };
+
+    // Detect whether the caller already supplied MongoDB update operators
+    // (e.g. { $set: {...} }, { $set: {...}, $unset: {...} })
+    const hasOperators =
+      updates !== null &&
+      typeof updates === 'object' &&
+      Object.keys(updates).some(k => k.startsWith('$'));
+
     if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
-      const result = await collection.updateOne({ id }, { $set: updates });
+      const mongoUpdate = hasOperators ? updates : { $set: updates };
+      const result = await collection.updateOne(filter, mongoUpdate);
       return result.modifiedCount > 0;
     } else {
       const all = store.read(collectionName);
-      const index = all.findIndex(item => item.id === id);
+      const index = all.findIndex(item => Object.keys(filter).every(k => item[k] === filter[k]));
       if (index >= 0) {
-        all[index] = { ...all[index], ...updates };
+        // Apply $set fields
+        const setFields = hasOperators ? updates.$set || {} : updates;
+        all[index] = { ...all[index], ...setFields };
+
+        // Apply $unset fields (remove keys)
+        if (hasOperators && updates.$unset) {
+          for (const key of Object.keys(updates.$unset)) {
+            delete all[index][key];
+          }
+        }
+
         store.write(collectionName, all);
         return true;
       }

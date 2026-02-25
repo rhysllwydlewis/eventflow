@@ -203,12 +203,7 @@ router.post(
     // Optionally mirror Pro flag to the owning user, if present.
     try {
       if (s.ownerUserId) {
-        const users = await dbUnified.read('users');
-        const u = users.find(u => u.id === s.ownerUserId);
-        if (u) {
-          u.isPro = !!s.isPro;
-          await dbUnified.write('users', users);
-        }
+        await dbUnified.updateOne('users', { id: s.ownerUserId }, { $set: { isPro: !!s.isPro } });
       }
     } catch (_e) {
       // ignore errors from user store

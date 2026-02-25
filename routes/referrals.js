@@ -50,8 +50,11 @@ router.get('/', authRequired, async (req, res) => {
     // Generate referral code if user doesn't have one
     if (!user.referralCode) {
       user.referralCode = generateReferralCode(userId);
-      users[userIndex] = user;
-      await dbUnified.write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id: userId },
+        { $set: { referralCode: user.referralCode } }
+      );
     }
 
     const referralCode = user.referralCode;

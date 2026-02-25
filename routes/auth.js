@@ -61,12 +61,11 @@ function initializeDependencies(deps) {
  */
 async function updateLastLogin(userId) {
   try {
-    const allUsers = await dbUnified.read('users');
-    const idx = allUsers.findIndex(u => u.id === userId);
-    if (idx !== -1) {
-      allUsers[idx].lastLoginAt = new Date().toISOString();
-      await dbUnified.write('users', allUsers);
-    }
+    await dbUnified.updateOne(
+      'users',
+      { id: userId },
+      { $set: { lastLoginAt: new Date().toISOString() } }
+    );
   } catch (e) {
     logger.error('Failed to update lastLoginAt', e);
   }
