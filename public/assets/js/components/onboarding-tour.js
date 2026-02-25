@@ -3,104 +3,107 @@
  * Interactive tour for new users
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-class OnboardingTour {
-  constructor(options = {}) {
-    if (isDevelopment) {
-      console.log('[OnboardingTour] Initializing with options:', options);
-    }
+(function () {
+  'use strict';
 
-    this.options = {
-      steps: options.steps || [],
-      onComplete: options.onComplete || null,
-      onSkip: options.onSkip || null,
-      storageKey: options.storageKey || 'ef_tour_completed',
-      autoStart: options.autoStart !== false,
-    };
-
-    this.currentStep = 0;
-    this.overlay = null;
-    this.isActive = false;
-
-    if (isDevelopment) {
-      console.log('[OnboardingTour] Steps count:', this.options.steps.length);
-    }
-    if (isDevelopment) {
-      console.log('[OnboardingTour] Has completed tour:', this.hasCompletedTour());
-    }
-
-    if (this.options.autoStart && !this.hasCompletedTour()) {
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  class OnboardingTour {
+    constructor(options = {}) {
       if (isDevelopment) {
-        console.log('[OnboardingTour] Auto-starting tour');
+        console.log('[OnboardingTour] Initializing with options:', options);
       }
-      this.start();
-    } else {
+
+      this.options = {
+        steps: options.steps || [],
+        onComplete: options.onComplete || null,
+        onSkip: options.onSkip || null,
+        storageKey: options.storageKey || 'ef_tour_completed',
+        autoStart: options.autoStart !== false,
+      };
+
+      this.currentStep = 0;
+      this.overlay = null;
+      this.isActive = false;
+
       if (isDevelopment) {
-        console.log(
-          '[OnboardingTour] Tour not auto-starting. AutoStart:',
-          this.options.autoStart,
-          'Completed:',
-          this.hasCompletedTour()
-        );
+        console.log('[OnboardingTour] Steps count:', this.options.steps.length);
+      }
+      if (isDevelopment) {
+        console.log('[OnboardingTour] Has completed tour:', this.hasCompletedTour());
+      }
+
+      if (this.options.autoStart && !this.hasCompletedTour()) {
+        if (isDevelopment) {
+          console.log('[OnboardingTour] Auto-starting tour');
+        }
+        this.start();
+      } else {
+        if (isDevelopment) {
+          console.log(
+            '[OnboardingTour] Tour not auto-starting. AutoStart:',
+            this.options.autoStart,
+            'Completed:',
+            this.hasCompletedTour()
+          );
+        }
       }
     }
-  }
 
-  hasCompletedTour() {
-    const completed = localStorage.getItem(this.options.storageKey) === 'true';
-    if (isDevelopment) {
-      console.log(
-        '[OnboardingTour] Checking completion status:',
-        completed,
-        'for key:',
-        this.options.storageKey
-      );
-    }
-    return completed;
-  }
-
-  markTourCompleted() {
-    if (isDevelopment) {
-      console.log('[OnboardingTour] Marking tour as completed');
-    }
-    localStorage.setItem(this.options.storageKey, 'true');
-  }
-
-  resetTour() {
-    if (isDevelopment) {
-      console.log('[OnboardingTour] Resetting tour');
-    }
-    localStorage.removeItem(this.options.storageKey);
-  }
-
-  start() {
-    if (this.isActive || this.options.steps.length === 0) {
+    hasCompletedTour() {
+      const completed = localStorage.getItem(this.options.storageKey) === 'true';
       if (isDevelopment) {
         console.log(
-          '[OnboardingTour] Cannot start. Active:',
-          this.isActive,
-          'Steps:',
-          this.options.steps.length
+          '[OnboardingTour] Checking completion status:',
+          completed,
+          'for key:',
+          this.options.storageKey
         );
       }
-      return;
+      return completed;
     }
 
-    if (isDevelopment) {
-      console.log('[OnboardingTour] Starting tour');
+    markTourCompleted() {
+      if (isDevelopment) {
+        console.log('[OnboardingTour] Marking tour as completed');
+      }
+      localStorage.setItem(this.options.storageKey, 'true');
     }
-    this.isActive = true;
-    this.currentStep = 0;
-    this.createOverlay();
-    this.showStep(0);
-    this.injectStyles();
-  }
 
-  createOverlay() {
-    this.overlay = document.createElement('div');
-    this.overlay.className = 'onboarding-overlay';
-    this.overlay.innerHTML = `
+    resetTour() {
+      if (isDevelopment) {
+        console.log('[OnboardingTour] Resetting tour');
+      }
+      localStorage.removeItem(this.options.storageKey);
+    }
+
+    start() {
+      if (this.isActive || this.options.steps.length === 0) {
+        if (isDevelopment) {
+          console.log(
+            '[OnboardingTour] Cannot start. Active:',
+            this.isActive,
+            'Steps:',
+            this.options.steps.length
+          );
+        }
+        return;
+      }
+
+      if (isDevelopment) {
+        console.log('[OnboardingTour] Starting tour');
+      }
+      this.isActive = true;
+      this.currentStep = 0;
+      this.createOverlay();
+      this.showStep(0);
+      this.injectStyles();
+    }
+
+    createOverlay() {
+      this.overlay = document.createElement('div');
+      this.overlay.className = 'onboarding-overlay';
+      this.overlay.innerHTML = `
       <div class="onboarding-spotlight"></div>
       <div class="onboarding-tooltip">
         <div class="onboarding-tooltip-header">
@@ -120,236 +123,236 @@ class OnboardingTour {
       </div>
     `;
 
-    document.body.appendChild(this.overlay);
+      document.body.appendChild(this.overlay);
 
-    // Event listeners
-    this.overlay.querySelector('.onboarding-skip').addEventListener('click', () => {
-      this.skip();
-    });
-
-    this.overlay.querySelector('.onboarding-prev').addEventListener('click', () => {
-      this.previousStep();
-    });
-
-    this.overlay.querySelector('.onboarding-next').addEventListener('click', () => {
-      this.nextStep();
-    });
-
-    // Close on ESC key
-    this.escapeHandler = e => {
-      if (e.key === 'Escape') {
+      // Event listeners
+      this.overlay.querySelector('.onboarding-skip').addEventListener('click', () => {
         this.skip();
+      });
+
+      this.overlay.querySelector('.onboarding-prev').addEventListener('click', () => {
+        this.previousStep();
+      });
+
+      this.overlay.querySelector('.onboarding-next').addEventListener('click', () => {
+        this.nextStep();
+      });
+
+      // Close on ESC key
+      this.escapeHandler = e => {
+        if (e.key === 'Escape') {
+          this.skip();
+        }
+      };
+      document.addEventListener('keydown', this.escapeHandler);
+    }
+
+    showStep(stepIndex) {
+      if (stepIndex < 0 || stepIndex >= this.options.steps.length) {
+        return;
       }
-    };
-    document.addEventListener('keydown', this.escapeHandler);
-  }
 
-  showStep(stepIndex) {
-    if (stepIndex < 0 || stepIndex >= this.options.steps.length) {
-      return;
-    }
+      this.currentStep = stepIndex;
+      const step = this.options.steps[stepIndex];
 
-    this.currentStep = stepIndex;
-    const step = this.options.steps[stepIndex];
+      // Update step indicator
+      this.overlay.querySelector('.current-step').textContent = stepIndex + 1;
 
-    // Update step indicator
-    this.overlay.querySelector('.current-step').textContent = stepIndex + 1;
+      // Update content
+      this.overlay.querySelector('.onboarding-title').textContent = step.title;
+      this.overlay.querySelector('.onboarding-description').textContent = step.description;
 
-    // Update content
-    this.overlay.querySelector('.onboarding-title').textContent = step.title;
-    this.overlay.querySelector('.onboarding-description').textContent = step.description;
+      // Update buttons
+      const prevBtn = this.overlay.querySelector('.onboarding-prev');
+      const nextBtn = this.overlay.querySelector('.onboarding-next');
 
-    // Update buttons
-    const prevBtn = this.overlay.querySelector('.onboarding-prev');
-    const nextBtn = this.overlay.querySelector('.onboarding-next');
+      prevBtn.style.display = stepIndex > 0 ? 'block' : 'none';
+      nextBtn.textContent = stepIndex === this.options.steps.length - 1 ? 'Finish' : 'Next';
 
-    prevBtn.style.display = stepIndex > 0 ? 'block' : 'none';
-    nextBtn.textContent = stepIndex === this.options.steps.length - 1 ? 'Finish' : 'Next';
-
-    // Highlight element
-    if (step.element) {
-      this.highlightElement(step.element, step.position || 'bottom');
-    } else {
-      this.positionTooltip('center');
-    }
-
-    // Execute step action if provided
-    if (step.action && typeof step.action === 'function') {
-      step.action();
-    }
-  }
-
-  highlightElement(selector, position) {
-    const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
-
-    if (!element) {
-      console.warn('Onboarding: Element not found:', selector);
-      this.positionTooltip('center');
-      return;
-    }
-
-    // Scroll element into view
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // Add spotlight class to element
-    element.classList.add('onboarding-highlighted');
-
-    // Remove previous highlights
-    document.querySelectorAll('.onboarding-highlighted').forEach(el => {
-      if (el !== element) {
-        el.classList.remove('onboarding-highlighted');
+      // Highlight element
+      if (step.element) {
+        this.highlightElement(step.element, step.position || 'bottom');
+      } else {
+        this.positionTooltip('center');
       }
-    });
 
-    // Position spotlight
-    setTimeout(() => {
-      const rect = element.getBoundingClientRect();
-      const spotlight = this.overlay.querySelector('.onboarding-spotlight');
+      // Execute step action if provided
+      if (step.action && typeof step.action === 'function') {
+        step.action();
+      }
+    }
 
-      spotlight.style.top = `${rect.top - 8}px`;
-      spotlight.style.left = `${rect.left - 8}px`;
-      spotlight.style.width = `${rect.width + 16}px`;
-      spotlight.style.height = `${rect.height + 16}px`;
-      spotlight.style.opacity = '1';
+    highlightElement(selector, position) {
+      const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
 
-      // Position tooltip
-      this.positionTooltip(position, rect);
-    }, 100);
-  }
+      if (!element) {
+        console.warn('Onboarding: Element not found:', selector);
+        this.positionTooltip('center');
+        return;
+      }
 
-  positionTooltip(position, elementRect = null) {
-    const tooltip = this.overlay.querySelector('.onboarding-tooltip');
+      // Scroll element into view
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    if (position === 'center' || !elementRect) {
-      tooltip.style.top = '50%';
-      tooltip.style.left = '50%';
-      tooltip.style.transform = 'translate(-50%, -50%)';
+      // Add spotlight class to element
+      element.classList.add('onboarding-highlighted');
+
+      // Remove previous highlights
+      document.querySelectorAll('.onboarding-highlighted').forEach(el => {
+        if (el !== element) {
+          el.classList.remove('onboarding-highlighted');
+        }
+      });
+
+      // Position spotlight
+      setTimeout(() => {
+        const rect = element.getBoundingClientRect();
+        const spotlight = this.overlay.querySelector('.onboarding-spotlight');
+
+        spotlight.style.top = `${rect.top - 8}px`;
+        spotlight.style.left = `${rect.left - 8}px`;
+        spotlight.style.width = `${rect.width + 16}px`;
+        spotlight.style.height = `${rect.height + 16}px`;
+        spotlight.style.opacity = '1';
+
+        // Position tooltip
+        this.positionTooltip(position, rect);
+      }, 100);
+    }
+
+    positionTooltip(position, elementRect = null) {
+      const tooltip = this.overlay.querySelector('.onboarding-tooltip');
+
+      if (position === 'center' || !elementRect) {
+        tooltip.style.top = '50%';
+        tooltip.style.left = '50%';
+        tooltip.style.transform = 'translate(-50%, -50%)';
+        tooltip.style.bottom = 'auto';
+        tooltip.style.right = 'auto';
+        return;
+      }
+
+      const padding = 20;
+      tooltip.style.transform = 'none';
+      tooltip.style.top = 'auto';
+      tooltip.style.left = 'auto';
       tooltip.style.bottom = 'auto';
       tooltip.style.right = 'auto';
-      return;
-    }
 
-    const padding = 20;
-    tooltip.style.transform = 'none';
-    tooltip.style.top = 'auto';
-    tooltip.style.left = 'auto';
-    tooltip.style.bottom = 'auto';
-    tooltip.style.right = 'auto';
-
-    switch (position) {
-      case 'top':
-        tooltip.style.bottom = `${window.innerHeight - elementRect.top + padding}px`;
-        tooltip.style.left = `${elementRect.left}px`;
-        break;
-      case 'bottom':
-        tooltip.style.top = `${elementRect.bottom + padding}px`;
-        tooltip.style.left = `${elementRect.left}px`;
-        break;
-      case 'left':
-        tooltip.style.right = `${window.innerWidth - elementRect.left + padding}px`;
-        tooltip.style.top = `${elementRect.top}px`;
-        break;
-      case 'right':
-        tooltip.style.left = `${elementRect.right + padding}px`;
-        tooltip.style.top = `${elementRect.top}px`;
-        break;
-    }
-
-    // Ensure tooltip stays within viewport
-    setTimeout(() => {
-      const tooltipRect = tooltip.getBoundingClientRect();
-
-      if (tooltipRect.right > window.innerWidth - 20) {
-        tooltip.style.left = 'auto';
-        tooltip.style.right = '20px';
+      switch (position) {
+        case 'top':
+          tooltip.style.bottom = `${window.innerHeight - elementRect.top + padding}px`;
+          tooltip.style.left = `${elementRect.left}px`;
+          break;
+        case 'bottom':
+          tooltip.style.top = `${elementRect.bottom + padding}px`;
+          tooltip.style.left = `${elementRect.left}px`;
+          break;
+        case 'left':
+          tooltip.style.right = `${window.innerWidth - elementRect.left + padding}px`;
+          tooltip.style.top = `${elementRect.top}px`;
+          break;
+        case 'right':
+          tooltip.style.left = `${elementRect.right + padding}px`;
+          tooltip.style.top = `${elementRect.top}px`;
+          break;
       }
 
-      if (tooltipRect.left < 20) {
-        tooltip.style.left = '20px';
-        tooltip.style.right = 'auto';
-      }
-
-      if (tooltipRect.bottom > window.innerHeight - 20) {
-        tooltip.style.top = 'auto';
-        tooltip.style.bottom = '20px';
-      }
-
-      if (tooltipRect.top < 20) {
-        tooltip.style.top = '20px';
-        tooltip.style.bottom = 'auto';
-      }
-    }, 10);
-  }
-
-  nextStep() {
-    if (this.currentStep < this.options.steps.length - 1) {
-      this.showStep(this.currentStep + 1);
-    } else {
-      this.complete();
-    }
-  }
-
-  previousStep() {
-    if (this.currentStep > 0) {
-      this.showStep(this.currentStep - 1);
-    }
-  }
-
-  complete() {
-    this.markTourCompleted();
-    this.cleanup();
-
-    if (this.options.onComplete) {
-      this.options.onComplete();
-    }
-
-    if (typeof showToast === 'function') {
-      showToast("Tour completed! You're all set 🎉", 'success');
-    }
-  }
-
-  skip() {
-    this.cleanup();
-
-    if (this.options.onSkip) {
-      this.options.onSkip();
-    }
-  }
-
-  cleanup() {
-    this.isActive = false;
-
-    // Remove highlights
-    document.querySelectorAll('.onboarding-highlighted').forEach(el => {
-      el.classList.remove('onboarding-highlighted');
-    });
-
-    // Remove overlay
-    if (this.overlay) {
-      this.overlay.classList.add('fade-out');
+      // Ensure tooltip stays within viewport
       setTimeout(() => {
-        if (this.overlay && this.overlay.parentNode) {
-          this.overlay.parentNode.removeChild(this.overlay);
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        if (tooltipRect.right > window.innerWidth - 20) {
+          tooltip.style.left = 'auto';
+          tooltip.style.right = '20px';
         }
-        this.overlay = null;
-      }, 300);
+
+        if (tooltipRect.left < 20) {
+          tooltip.style.left = '20px';
+          tooltip.style.right = 'auto';
+        }
+
+        if (tooltipRect.bottom > window.innerHeight - 20) {
+          tooltip.style.top = 'auto';
+          tooltip.style.bottom = '20px';
+        }
+
+        if (tooltipRect.top < 20) {
+          tooltip.style.top = '20px';
+          tooltip.style.bottom = 'auto';
+        }
+      }, 10);
     }
 
-    // Remove event listener
-    if (this.escapeHandler) {
-      document.removeEventListener('keydown', this.escapeHandler);
-      this.escapeHandler = null;
-    }
-  }
-
-  injectStyles() {
-    if (document.getElementById('onboarding-tour-styles')) {
-      return;
+    nextStep() {
+      if (this.currentStep < this.options.steps.length - 1) {
+        this.showStep(this.currentStep + 1);
+      } else {
+        this.complete();
+      }
     }
 
-    const styles = document.createElement('style');
-    styles.id = 'onboarding-tour-styles';
-    styles.textContent = `
+    previousStep() {
+      if (this.currentStep > 0) {
+        this.showStep(this.currentStep - 1);
+      }
+    }
+
+    complete() {
+      this.markTourCompleted();
+      this.cleanup();
+
+      if (this.options.onComplete) {
+        this.options.onComplete();
+      }
+
+      if (typeof showToast === 'function') {
+        showToast("Tour completed! You're all set 🎉", 'success');
+      }
+    }
+
+    skip() {
+      this.cleanup();
+
+      if (this.options.onSkip) {
+        this.options.onSkip();
+      }
+    }
+
+    cleanup() {
+      this.isActive = false;
+
+      // Remove highlights
+      document.querySelectorAll('.onboarding-highlighted').forEach(el => {
+        el.classList.remove('onboarding-highlighted');
+      });
+
+      // Remove overlay
+      if (this.overlay) {
+        this.overlay.classList.add('fade-out');
+        setTimeout(() => {
+          if (this.overlay && this.overlay.parentNode) {
+            this.overlay.parentNode.removeChild(this.overlay);
+          }
+          this.overlay = null;
+        }, 300);
+      }
+
+      // Remove event listener
+      if (this.escapeHandler) {
+        document.removeEventListener('keydown', this.escapeHandler);
+        this.escapeHandler = null;
+      }
+    }
+
+    injectStyles() {
+      if (document.getElementById('onboarding-tour-styles')) {
+        return;
+      }
+
+      const styles = document.createElement('style');
+      styles.id = 'onboarding-tour-styles';
+      styles.textContent = `
       .onboarding-overlay {
         position: fixed;
         inset: 0;
@@ -507,15 +510,18 @@ class OnboardingTour {
         }
       }
     `;
-    document.head.appendChild(styles);
+      document.head.appendChild(styles);
+    }
+
+    reset() {
+      localStorage.removeItem(this.options.storageKey);
+    }
   }
 
-  reset() {
-    localStorage.removeItem(this.options.storageKey);
-  }
-}
+  window.OnboardingTour = OnboardingTour;
 
-// Export for use in modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = OnboardingTour;
-}
+  // Export for use in modules
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = OnboardingTour;
+  }
+})();

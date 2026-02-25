@@ -153,7 +153,12 @@
         });
 
         // Suppress user notification for benign 404s (uploads, images, analytics)
-        const requestUrl = typeof args[0] === 'string' ? args[0] : '';
+        const requestUrl =
+          typeof args[0] === 'string'
+            ? args[0]
+            : args[0] instanceof URL
+              ? args[0].href
+              : (args[0] && args[0].url) || '';
         const isBenign404 =
           response.status === 404 &&
           (requestUrl.indexOf('/uploads/') !== -1 ||

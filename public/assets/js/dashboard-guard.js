@@ -4,10 +4,11 @@
  * Prevents users from accessing dashboards they don't have permission for
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (async function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Get current page
   const currentPath = window.location.pathname;
