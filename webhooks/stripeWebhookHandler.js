@@ -101,10 +101,17 @@ async function handleInvoicePaymentSucceeded(invoice) {
   const invoiceRecord = invoices.find(inv => inv.stripeInvoiceId === invoice.id);
 
   if (invoiceRecord) {
-    invoiceRecord.status = 'paid';
-    invoiceRecord.paidAt = new Date().toISOString();
-    invoiceRecord.updatedAt = new Date().toISOString();
-    await dbUnified.write('invoices', invoices);
+    await dbUnified.updateOne(
+      'invoices',
+      { stripeInvoiceId: invoice.id },
+      {
+        $set: {
+          status: 'paid',
+          paidAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    );
 
     // Add billing record to subscription
     await subscriptionService.addBillingRecord(subscription.id, {
@@ -155,13 +162,20 @@ async function handleInvoicePaymentFailed(invoice) {
   const invoiceRecord = invoices.find(inv => inv.stripeInvoiceId === invoice.id);
 
   if (invoiceRecord) {
-    invoiceRecord.status = 'open';
-    invoiceRecord.attemptCount = (invoiceRecord.attemptCount || 0) + 1;
-    invoiceRecord.nextPaymentAttempt = invoice.next_payment_attempt
-      ? new Date(invoice.next_payment_attempt * 1000).toISOString()
-      : null;
-    invoiceRecord.updatedAt = new Date().toISOString();
-    await dbUnified.write('invoices', invoices);
+    await dbUnified.updateOne(
+      'invoices',
+      { stripeInvoiceId: invoice.id },
+      {
+        $set: {
+          status: 'open',
+          attemptCount: (invoiceRecord.attemptCount || 0) + 1,
+          nextPaymentAttempt: invoice.next_payment_attempt
+            ? new Date(invoice.next_payment_attempt * 1000).toISOString()
+            : null,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    );
   }
 
   // Update subscription status to past_due

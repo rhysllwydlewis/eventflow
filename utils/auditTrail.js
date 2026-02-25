@@ -64,9 +64,7 @@ async function createAuditLog(params) {
   };
 
   try {
-    const logs = await dbUnified.read('audit_logs');
-    logs.push(logEntry);
-    await dbUnified.write('audit_logs', logs);
+    await dbUnified.insertOne('audit_logs', logEntry);
 
     logger.info('Audit log created', {
       action,

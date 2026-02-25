@@ -266,9 +266,7 @@ async function createReview(reviewData, metadata = {}) {
   };
 
   // Save review
-  const reviews = await dbUnified.read('reviews');
-  reviews.push(review);
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.insertOne('reviews', review);
 
   // Update supplier analytics
   await updateSupplierAnalytics(reviewData.supplierId);
@@ -382,8 +380,7 @@ async function voteOnReview(reviewId, voteType, userId, ipAddress) {
     createdAt: new Date().toISOString(),
   };
 
-  votes.push(vote);
-  await dbUnified.write('reviewVotes', votes);
+  await dbUnified.insertOne('reviewVotes', vote);
 
   // Update review counts
   const reviews = await dbUnified.read('reviews');
@@ -393,16 +390,21 @@ async function voteOnReview(reviewId, voteType, userId, ipAddress) {
     throw new Error('Review not found');
   }
 
-  if (voteType === 'helpful') {
-    review.helpfulCount = (review.helpfulCount || 0) + 1;
-  } else {
-    review.unhelpfulCount = (review.unhelpfulCount || 0) + 1;
-  }
+  const helpfulCount =
+    voteType === 'helpful' ? (review.helpfulCount || 0) + 1 : review.helpfulCount || 0;
+  const unhelpfulCount =
+    voteType !== 'helpful' ? (review.unhelpfulCount || 0) + 1 : review.unhelpfulCount || 0;
+  const updatedAt = new Date().toISOString();
 
-  review.updatedAt = new Date().toISOString();
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne(
+    'reviews',
+    { id: reviewId },
+    {
+      $set: { helpfulCount, unhelpfulCount, updatedAt },
+    }
+  );
 
-  return review;
+  return { ...review, helpfulCount, unhelpfulCount, updatedAt };
 }
 
 /**
@@ -437,14 +439,20 @@ async function addSupplierResponse(reviewId, supplierId, responseText, responder
     throw new Error('You have already responded to this review');
   }
 
-  review.supplierResponse = {
+  const supplierResponse = {
     text: responseText,
     respondedAt: new Date().toISOString(),
     respondedBy: responderId,
   };
+  const updatedAt = new Date().toISOString();
 
-  review.updatedAt = new Date().toISOString();
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne(
+    'reviews',
+    { id: reviewId },
+    {
+      $set: { supplierResponse, updatedAt },
+    }
+  );
 
   // Update analytics (response rate)
   await updateSupplierAnalytics(supplierId);
@@ -625,16 +633,16 @@ async function moderateReview(reviewId, action, moderatorId, reason = '') {
   const previousState = { ...review };
 
   // Update review
-  review.approved = action === 'approve';
-  review.approvedAt = new Date().toISOString();
-  review.approvedBy = moderatorId;
-  review.flagged = action === 'reject';
-  review.updatedAt = new Date().toISOString();
-
-  await dbUnified.write('reviews', reviews);
+  const reviewUpdates = {
+    approved: action === 'approve',
+    approvedAt: new Date().toISOString(),
+    approvedBy: moderatorId,
+    flagged: action === 'reject',
+    updatedAt: new Date().toISOString(),
+  };
+  await dbUnified.updateOne('reviews', { id: reviewId }, { $set: reviewUpdates });
 
   // Create moderation audit record
-  const moderations = await dbUnified.read('reviewModerations');
   const moderation = {
     id: uid('mod'),
     reviewId,
@@ -644,8 +652,7 @@ async function moderateReview(reviewId, action, moderatorId, reason = '') {
     previousState,
     createdAt: new Date().toISOString(),
   };
-  moderations.push(moderation);
-  await dbUnified.write('reviewModerations', moderations);
+  await dbUnified.insertOne('reviewModerations', moderation);
 
   // Update supplier analytics
   await updateSupplierAnalytics(review.supplierId);
@@ -708,13 +715,13 @@ async function deleteReview(reviewId, userId, isAdmin = false) {
   const supplierId = review.supplierId;
 
   // Delete review
-  const filtered = reviews.filter(r => r.id !== reviewId);
-  await dbUnified.write('reviews', filtered);
+  await dbUnified.deleteOne('reviews', reviewId);
 
   // Delete associated votes
   const votes = await dbUnified.read('reviewVotes');
-  const filteredVotes = votes.filter(v => v.reviewId !== reviewId);
-  await dbUnified.write('reviewVotes', filteredVotes);
+  await Promise.all(
+    votes.filter(v => v.reviewId === reviewId).map(v => dbUnified.deleteOne('reviewVotes', v.id))
+  );
 
   // Update analytics
   await updateSupplierAnalytics(supplierId);

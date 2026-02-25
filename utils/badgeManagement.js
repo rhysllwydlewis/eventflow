@@ -98,6 +98,7 @@ const BADGE_DEFINITIONS = {
 async function initializeDefaultBadges() {
   try {
     const badges = await dbUnified.read('badges');
+    const insertPromises = [];
 
     for (const badgeDef of Object.values(BADGE_DEFINITIONS)) {
       const exists = badges.find(b => b.id === badgeDef.id);
@@ -108,12 +109,12 @@ async function initializeDefaultBadges() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        badges.push(badge);
+        insertPromises.push(dbUnified.insertOne('badges', badge));
         logger.info(`✓ Initialized badge: ${badge.name}`);
       }
     }
 
-    await dbUnified.write('badges', badges);
+    await Promise.all(insertPromises);
   } catch (error) {
     logger.error('Error initializing default badges:', error);
   }
@@ -312,8 +313,13 @@ async function evaluateSupplierBadges(supplierId) {
 
     // Update supplier if badges changed
     if (awarded.length > 0 || revoked.length > 0) {
-      suppliers[supplierIndex] = supplier;
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: supplier.id },
+        {
+          $set: { badges: supplier.badges },
+        }
+      );
     }
 
     return { awarded, revoked };

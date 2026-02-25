@@ -48,11 +48,12 @@ async function trackSearch(searchData) {
     searchHistory.push(historyEntry);
 
     // Keep only last 10000 entries to prevent unbounded growth
+    // Insert new entry first, then trim overflow via write if needed
+    await dbUnified.insertOne('searchHistory', historyEntry);
     if (searchHistory.length > 10000) {
       searchHistory.splice(0, searchHistory.length - 10000);
+      await dbUnified.write('searchHistory', searchHistory);
     }
-
-    await dbUnified.write('searchHistory', searchHistory);
 
     // Update popular searches asynchronously
     updatePopularSearches(searchData.queryText).catch(err =>
@@ -77,9 +78,13 @@ async function trackClick(searchId, resultId, position) {
     const index = searchHistory.findIndex(s => s.id === searchId);
 
     if (index !== -1) {
-      searchHistory[index].resultClicked = resultId;
-      searchHistory[index].clickPosition = position;
-      await dbUnified.write('searchHistory', searchHistory);
+      await dbUnified.updateOne(
+        'searchHistory',
+        { id: searchId },
+        {
+          $set: { resultClicked: resultId, clickPosition: position },
+        }
+      );
     }
   } catch (error) {
     logger.error('Failed to track click:', error);
