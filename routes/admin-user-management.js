@@ -453,16 +453,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { suspended, reason, duration } = req.body;
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === req.params.id);
+    const user = await dbUnified.findOne('users', { id: req.params.id });
 
-    if (userIndex < 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = users[userIndex];
     const now = new Date().toISOString();
 
     // Prevent admins from suspending themselves
@@ -480,26 +478,25 @@ router.post(
       });
     }
 
-    user.suspended = !!suspended;
-    user.suspendedAt = suspended ? now : null;
-    user.suspendedBy = suspended ? req.user.id : null;
-    user.suspensionReason = suspended ? reason || 'No reason provided' : null;
-    user.suspensionDuration = suspended ? duration : null;
-    user.updatedAt = now;
+    const setFields = {
+      suspended: !!suspended,
+      suspendedAt: suspended ? now : null,
+      suspendedBy: suspended ? req.user.id : null,
+      suspensionReason: suspended ? reason || 'No reason provided' : null,
+      suspensionDuration: suspended ? duration : null,
+      suspensionExpiresAt: null,
+      updatedAt: now,
+    };
 
     // Calculate expiry if duration is provided
     if (suspended && duration) {
       const durationMs = parseDuration(duration);
       if (durationMs > 0) {
-        const expiryDate = new Date(Date.now() + durationMs);
-        user.suspensionExpiresAt = expiryDate.toISOString();
+        setFields.suspensionExpiresAt = new Date(Date.now() + durationMs).toISOString();
       }
-    } else {
-      user.suspensionExpiresAt = null;
     }
 
-    users[userIndex] = user;
-    write('users', users);
+    await dbUnified.updateOne('users', { id: user.id }, { $set: setFields });
 
     // Create audit log (requiring audit.js)
     auditLog({
@@ -516,8 +513,8 @@ router.post(
       user: {
         id: user.id,
         email: user.email,
-        suspended: user.suspended,
-        suspensionReason: user.suspensionReason,
+        suspended: setFields.suspended,
+        suspensionReason: setFields.suspensionReason,
       },
     });
   }
@@ -528,62 +525,67 @@ router.post(
  * Ban or unban a user permanently
  * Body: { banned: boolean, reason: string }
  */
-router.post('/users/:id/ban', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { banned, reason } = req.body;
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === req.params.id);
+router.post(
+  '/users/:id/ban',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { banned, reason } = req.body;
+    const user = await dbUnified.findOne('users', { id: req.params.id });
 
-  if (userIndex < 0) {
-    return res.status(404).json({ error: 'User not found' });
-  }
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-  const user = users[userIndex];
-  const now = new Date().toISOString();
+    const now = new Date().toISOString();
 
-  // Prevent admins from banning themselves
-  if (user.id === req.user.id) {
-    return res.status(400).json({ error: 'You cannot ban your own account' });
-  }
+    // Prevent admins from banning themselves
+    if (user.id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot ban your own account' });
+    }
 
-  // ⚠️ SECURITY: Prevent banning of the owner account
-  const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
-  if (isOwner) {
-    return res.status(403).json({
-      error: 'Cannot ban owner account',
-      message: 'The owner account is protected and cannot be banned.',
-      code: 'OWNER_ACCOUNT_PROTECTED',
+    // ⚠️ SECURITY: Prevent banning of the owner account
+    const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
+    if (isOwner) {
+      return res.status(403).json({
+        error: 'Cannot ban owner account',
+        message: 'The owner account is protected and cannot be banned.',
+        code: 'OWNER_ACCOUNT_PROTECTED',
+      });
+    }
+
+    const setFields = {
+      banned: !!banned,
+      bannedAt: banned ? now : null,
+      bannedBy: banned ? req.user.id : null,
+      banReason: banned ? reason || 'No reason provided' : null,
+      updatedAt: now,
+    };
+
+    await dbUnified.updateOne('users', { id: user.id }, { $set: setFields });
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: banned ? AUDIT_ACTIONS.USER_BANNED : AUDIT_ACTIONS.USER_UNBANNED,
+      targetType: 'user',
+      targetId: user.id,
+      details: { reason, email: user.email },
+    });
+
+    res.json({
+      message: banned ? 'User banned successfully' : 'User unbanned successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        banned: setFields.banned,
+        banReason: setFields.banReason,
+      },
     });
   }
-
-  user.banned = !!banned;
-  user.bannedAt = banned ? now : null;
-  user.bannedBy = banned ? req.user.id : null;
-  user.banReason = banned ? reason || 'No reason provided' : null;
-  user.updatedAt = now;
-
-  users[userIndex] = user;
-  write('users', users);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: banned ? AUDIT_ACTIONS.USER_BANNED : AUDIT_ACTIONS.USER_UNBANNED,
-    targetType: 'user',
-    targetId: user.id,
-    details: { reason, email: user.email },
-  });
-
-  res.json({
-    message: banned ? 'User banned successfully' : 'User unbanned successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-      banned: user.banned,
-      banReason: user.banReason,
-    },
-  });
-});
+);
 
 /**
  * POST /api/admin/users/:id/verify
@@ -594,29 +596,32 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === req.params.id);
+  async (req, res) => {
+    const user = await dbUnified.findOne('users', { id: req.params.id });
 
-    if (userIndex < 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = users[userIndex];
     const now = new Date().toISOString();
 
     if (user.verified) {
       return res.status(400).json({ error: 'User is already verified' });
     }
 
-    user.verified = true;
-    user.verifiedAt = now;
-    user.verifiedBy = req.user.id;
-    user.verificationToken = null; // Clear verification token
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: {
+          verified: true,
+          verifiedAt: now,
+          verifiedBy: req.user.id,
+          verificationToken: null,
+          updatedAt: now,
+        },
+      }
+    );
 
     // Create audit log
     auditLog({
@@ -633,7 +638,7 @@ router.post(
       user: {
         id: user.id,
         email: user.email,
-        verified: user.verified,
+        verified: true,
       },
     });
   }
@@ -680,13 +685,18 @@ router.post(
     }
 
     // Only save changes after email is successfully sent
-    user.resetToken = resetToken;
-    user.resetTokenExpiresAt = resetTokenExpiresAt;
-    user.passwordResetRequired = true;
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: {
+          resetToken,
+          resetTokenExpiresAt,
+          passwordResetRequired: true,
+          updatedAt: now,
+        },
+      }
+    );
 
     // Create audit log
     auditLog({
@@ -1418,106 +1428,112 @@ router.post(
  * PUT /api/admin/packages/:id
  * Edit package details (admin only)
  */
-router.put('/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const {
-    title,
-    description,
-    price,
-    price_display,
-    image,
-    approved,
-    featured,
-    features,
-    availability,
-    status,
-    scheduledPublishAt,
-  } = req.body;
+router.put(
+  '/packages/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      price,
+      price_display,
+      image,
+      approved,
+      featured,
+      features,
+      availability,
+      status,
+      scheduledPublishAt,
+    } = req.body;
 
-  const packages = read('packages');
-  const pkgIndex = packages.findIndex(p => p.id === id);
+    const pkg = await dbUnified.findOne('packages', { id });
 
-  if (pkgIndex === -1) {
-    return res.status(404).json({ error: 'Package not found' });
-  }
-
-  const pkg = packages[pkgIndex];
-
-  // Store previous version for history
-  if (!pkg.versionHistory) {
-    pkg.versionHistory = [];
-  }
-  pkg.versionHistory.push({
-    timestamp: new Date().toISOString(),
-    editedBy: req.user.id,
-    previousState: { ...pkg },
-  });
-
-  // Update fields if provided
-  if (title !== undefined) {
-    pkg.title = title;
-    // Regenerate slug if title changes
-    const newSlug = generateSlug(title);
-    if (newSlug && newSlug !== pkg.slug) {
-      // Check if new slug is already taken
-      const existingPackage = packages.find((p, idx) => idx !== pkgIndex && p.slug === newSlug);
-      if (existingPackage) {
-        return res.status(400).json({
-          error: 'A package with this title already exists. Please use a different title.',
-        });
-      }
-      pkg.slug = newSlug;
+    if (!pkg) {
+      return res.status(404).json({ error: 'Package not found' });
     }
-  }
-  if (description !== undefined) {
-    pkg.description = description;
-  }
-  if (price !== undefined) {
-    pkg.price = price;
-  }
-  if (price_display !== undefined) {
-    pkg.price_display = price_display;
-  }
-  if (image !== undefined) {
-    pkg.image = image;
-  }
-  if (approved !== undefined) {
-    pkg.approved = approved;
-  }
-  if (featured !== undefined) {
-    pkg.featured = featured;
-  }
-  if (features !== undefined) {
-    pkg.features = features;
-  }
-  if (availability !== undefined) {
-    pkg.availability = availability;
-  }
-  if (status !== undefined) {
-    pkg.status = status;
-  }
-  if (scheduledPublishAt !== undefined) {
-    pkg.scheduledPublishAt = scheduledPublishAt;
-  }
 
-  pkg.updatedAt = new Date().toISOString();
-  pkg.lastEditedBy = req.user.id;
+    // Build version history entry
+    const versionHistory = [
+      ...(pkg.versionHistory || []),
+      {
+        timestamp: new Date().toISOString(),
+        editedBy: req.user.id,
+        previousState: { ...pkg },
+      },
+    ];
 
-  packages[pkgIndex] = pkg;
-  write('packages', packages);
+    const setFields = {
+      updatedAt: new Date().toISOString(),
+      lastEditedBy: req.user.id,
+      versionHistory,
+    };
 
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.PACKAGE_EDITED,
-    targetType: 'package',
-    targetId: id,
-    details: { packageTitle: pkg.title, changes: req.body },
-  });
+    // Update fields if provided
+    if (title !== undefined) {
+      setFields.title = title;
+      // Regenerate slug if title changes
+      const newSlug = generateSlug(title);
+      if (newSlug && newSlug !== pkg.slug) {
+        // Check if new slug is already taken
+        const allPkgs = await dbUnified.read('packages');
+        const existingPackage = allPkgs.find(p => p.id !== id && p.slug === newSlug);
+        if (existingPackage) {
+          return res.status(400).json({
+            error: 'A package with this title already exists. Please use a different title.',
+          });
+        }
+        setFields.slug = newSlug;
+      }
+    }
+    if (description !== undefined) {
+      setFields.description = description;
+    }
+    if (price !== undefined) {
+      setFields.price = price;
+    }
+    if (price_display !== undefined) {
+      setFields.price_display = price_display;
+    }
+    if (image !== undefined) {
+      setFields.image = image;
+    }
+    if (approved !== undefined) {
+      setFields.approved = approved;
+    }
+    if (featured !== undefined) {
+      setFields.featured = featured;
+    }
+    if (features !== undefined) {
+      setFields.features = features;
+    }
+    if (availability !== undefined) {
+      setFields.availability = availability;
+    }
+    if (status !== undefined) {
+      setFields.status = status;
+    }
+    if (scheduledPublishAt !== undefined) {
+      setFields.scheduledPublishAt = scheduledPublishAt;
+    }
 
-  res.json({ success: true, package: pkg });
-});
+    await dbUnified.updateOne('packages', { id }, { $set: setFields });
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.PACKAGE_EDITED,
+      targetType: 'package',
+      targetId: id,
+      details: { packageTitle: setFields.title || pkg.title, changes: req.body },
+    });
+
+    res.json({ success: true, package: { ...pkg, ...setFields } });
+  }
+);
 
 /**
  * PUT /api/admin/suppliers/:id
@@ -1620,18 +1636,15 @@ router.put(
  * PUT /api/admin/users/:id
  * Edit user profile (admin only)
  */
-router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
+router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   const { id } = req.params;
   const { name, email, role, verified, marketingOptIn } = req.body;
 
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === id);
+  const user = await dbUnified.findOne('users', { id });
 
-  if (userIndex === -1) {
+  if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
-
-  const user = users[userIndex];
 
   // ⚠️ SECURITY: Protect owner account from modifications
   const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
@@ -1647,9 +1660,6 @@ router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (r
   }
 
   // Store previous version for history (excluding sensitive data)
-  if (!user.versionHistory) {
-    user.versionHistory = [];
-  }
   const {
     // eslint-disable-next-line no-unused-vars
     password: _password,
@@ -1661,35 +1671,37 @@ router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (r
     twoFactorSecret: _twoFactorSecret,
     ...safeState
   } = user;
-  user.versionHistory.push({
-    timestamp: new Date().toISOString(),
-    editedBy: req.user.id,
-    previousState: safeState,
-  });
+  const versionHistory = [
+    ...(user.versionHistory || []),
+    {
+      timestamp: new Date().toISOString(),
+      editedBy: req.user.id,
+      previousState: safeState,
+    },
+  ];
 
-  // Update fields if provided
+  const setFields = {
+    updatedAt: new Date().toISOString(),
+    lastEditedBy: req.user.id,
+    versionHistory,
+  };
   if (name !== undefined) {
-    user.name = name;
+    setFields.name = name;
   }
   if (email !== undefined) {
-    // Prevent email change for protected accounts
-    user.email = email;
+    setFields.email = email;
   }
   if (role !== undefined) {
-    user.role = role;
+    setFields.role = role;
   }
   if (verified !== undefined) {
-    user.verified = verified;
+    setFields.verified = verified;
   }
   if (marketingOptIn !== undefined) {
-    user.marketingOptIn = marketingOptIn;
+    setFields.marketingOptIn = marketingOptIn;
   }
 
-  user.updatedAt = new Date().toISOString();
-  user.lastEditedBy = req.user.id;
-
-  users[userIndex] = user;
-  write('users', users);
+  await dbUnified.updateOne('users', { id }, { $set: setFields });
 
   // Create audit log
   auditLog({
@@ -1701,55 +1713,57 @@ router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (r
     details: { email: user.email, changes: req.body },
   });
 
-  res.json({ success: true, user });
+  res.json({ success: true, user: { ...user, ...setFields } });
 });
 
 /**
  * DELETE /api/admin/users/:id
  * Delete a user account (admin only)
  */
-router.delete('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === id);
+router.delete(
+  '/users/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { id } = req.params;
+    const user = await dbUnified.findOne('users', { id });
 
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'User not found' });
-  }
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-  const user = users[userIndex];
+    // Prevent admins from deleting themselves
+    if (user.id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account' });
+    }
 
-  // Prevent admins from deleting themselves
-  if (user.id === req.user.id) {
-    return res.status(400).json({ error: 'You cannot delete your own account' });
-  }
+    // ⚠️ SECURITY: Prevent deletion of the owner account
+    const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
+    if (isOwner) {
+      return res.status(403).json({
+        error: 'Cannot delete owner account',
+        message: 'The owner account is protected and cannot be deleted.',
+        code: 'OWNER_ACCOUNT_PROTECTED',
+      });
+    }
 
-  // ⚠️ SECURITY: Prevent deletion of the owner account
-  const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
-  if (isOwner) {
-    return res.status(403).json({
-      error: 'Cannot delete owner account',
-      message: 'The owner account is protected and cannot be deleted.',
-      code: 'OWNER_ACCOUNT_PROTECTED',
+    // Remove the user
+    await dbUnified.deleteOne('users', id);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_DELETED,
+      targetType: 'user',
+      targetId: user.id,
+      details: { email: user.email, name: user.name },
     });
+
+    res.json({ success: true, message: 'User deleted successfully' });
   }
-
-  // Remove the user
-  users.splice(userIndex, 1);
-  write('users', users);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_DELETED,
-    targetType: 'user',
-    targetId: user.id,
-    details: { email: user.email, name: user.name },
-  });
-
-  res.json({ success: true, message: 'User deleted successfully' });
-});
+);
 
 /**
  * DELETE /api/admin/suppliers/:id
@@ -1805,33 +1819,35 @@ router.delete(
  * DELETE /api/admin/packages/:id
  * Delete a package (admin only)
  */
-router.delete('/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const packages = read('packages');
-  const packageIndex = packages.findIndex(p => p.id === id);
+router.delete(
+  '/packages/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { id } = req.params;
+    const pkg = await dbUnified.findOne('packages', { id });
 
-  if (packageIndex === -1) {
-    return res.status(404).json({ error: 'Package not found' });
+    if (!pkg) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    // Remove the package
+    await dbUnified.deleteOne('packages', id);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'package_deleted',
+      targetType: 'package',
+      targetId: pkg.id,
+      details: { title: pkg.title },
+    });
+
+    res.json({ success: true, message: 'Package deleted successfully' });
   }
-
-  const pkg = packages[packageIndex];
-
-  // Remove the package
-  packages.splice(packageIndex, 1);
-  write('packages', packages);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'package_deleted',
-    targetType: 'package',
-    targetId: pkg.id,
-    details: { title: pkg.title },
-  });
-
-  res.json({ success: true, message: 'Package deleted successfully' });
-});
+);
 
 /**
  * PATCH /api/admin/packages/:id/tags (P3-28: Seasonal Tagging)
@@ -1920,16 +1936,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { id } = req.params;
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === id);
+    const user = await dbUnified.findOne('users', { id });
 
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = users[userIndex];
     const now = new Date().toISOString();
 
     // Check if user already has admin role
@@ -1937,15 +1951,19 @@ router.post(
       return res.status(400).json({ error: 'User already has admin privileges' });
     }
 
-    // Store previous role
-    user.previousRole = user.role;
-    user.role = 'admin';
-    user.adminGrantedAt = now;
-    user.adminGrantedBy = req.user.id;
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id },
+      {
+        $set: {
+          previousRole: user.role,
+          role: 'admin',
+          adminGrantedAt: now,
+          adminGrantedBy: req.user.id,
+          updatedAt: now,
+        },
+      }
+    );
 
     // Create audit log
     auditLog({
@@ -1967,7 +1985,7 @@ router.post(
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,
+        role: 'admin',
       },
     });
   }
@@ -1982,17 +2000,15 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { id } = req.params;
     const { newRole = 'customer' } = req.body;
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === id);
+    const user = await dbUnified.findOne('users', { id });
 
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = users[userIndex];
     const now = new Date().toISOString();
 
     // Check if user has admin role
@@ -2017,15 +2033,19 @@ router.post(
       return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
     }
 
-    // Store previous role
-    user.previousRole = user.role;
-    user.role = newRole;
-    user.adminRevokedAt = now;
-    user.adminRevokedBy = req.user.id;
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id },
+      {
+        $set: {
+          previousRole: user.role,
+          role: newRole,
+          adminRevokedAt: now,
+          adminRevokedBy: req.user.id,
+          updatedAt: now,
+        },
+      }
+    );
 
     // Create audit log
     auditLog({
@@ -2121,9 +2141,13 @@ router.post(
     }
 
     // Only save reset token after email is successfully sent
-    users[userIndex].resetToken = token;
-    users[userIndex].resetTokenExpiresAt = expires;
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: { resetToken: token, resetTokenExpiresAt: expires },
+      }
+    );
 
     auditLog({
       adminId: req.user.id,
@@ -2150,20 +2174,26 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === req.params.id);
+  async (req, res) => {
+    const user = await dbUnified.findOne('users', { id: req.params.id });
 
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    users[userIndex].suspended = false;
-    users[userIndex].suspendedAt = null;
-    users[userIndex].suspendedBy = null;
-    users[userIndex].suspendedReason = null;
-
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: req.params.id },
+      {
+        $set: {
+          suspended: false,
+          suspendedAt: null,
+          suspendedBy: null,
+          suspendedReason: null,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    );
 
     auditLog({
       adminId: req.user.id,
@@ -2171,10 +2201,10 @@ router.post(
       action: 'USER_UNSUSPENDED',
       targetType: 'user',
       targetId: req.params.id,
-      details: { userEmail: users[userIndex].email },
+      details: { userEmail: user.email },
     });
 
-    res.json({ success: true, message: 'User unsuspended', user: users[userIndex] });
+    res.json({ success: true, message: 'User unsuspended', user: { ...user, suspended: false } });
   }
 );
 
@@ -2230,9 +2260,13 @@ router.post(
     }
 
     // Only update token after email is successfully sent
-    users[idx].verificationToken = verificationToken;
-    users[idx].verificationTokenExpiresAt = tokenExpiresAt;
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: { verificationToken, verificationTokenExpiresAt: tokenExpiresAt },
+      }
+    );
 
     res.json({
       ok: true,
@@ -2270,14 +2304,12 @@ router.post(
           .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
       }
 
-      const users = read('users');
-      const userIndex = users.findIndex(u => u.id === id);
+      const user = await dbUnified.findOne('users', { id });
 
-      if (userIndex < 0) {
+      if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const user = users[userIndex];
       const now = new Date();
       const startDate = now.toISOString();
       let endDate = null;
@@ -2318,26 +2350,33 @@ router.post(
       };
 
       // Initialize subscription history if it doesn't exist
-      if (!user.subscriptionHistory) {
-        user.subscriptionHistory = [];
-      }
-
-      // Add to subscription history
-      user.subscriptionHistory.push({
-        tier,
-        action,
-        date: startDate,
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        reason: reason || 'Manual admin grant',
-        previousTier,
-        duration,
-        endDate,
-      });
+      const subscriptionHistory = [
+        ...(user.subscriptionHistory || []),
+        {
+          tier,
+          action,
+          date: startDate,
+          adminId: req.user.id,
+          adminEmail: req.user.email,
+          reason: reason || 'Manual admin grant',
+          previousTier,
+          duration,
+          endDate,
+        },
+      ];
 
       // Save updated user
-      users[userIndex] = user;
-      write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id },
+        {
+          $set: {
+            subscription: user.subscription,
+            subscriptionHistory,
+            updatedAt: new Date().toISOString(),
+          },
+        }
+      );
 
       // Log to audit
       auditLog({
@@ -2376,54 +2415,54 @@ router.delete(
       const { id } = req.params;
       const { reason } = req.body;
 
-      const users = read('users');
-      const userIndex = users.findIndex(u => u.id === id);
+      const user = await dbUnified.findOne('users', { id });
 
-      if (userIndex < 0) {
+      if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-
-      const user = users[userIndex];
 
       if (!user.subscription || user.subscription.tier === 'free') {
         return res.status(400).json({ error: 'User has no active subscription to remove' });
       }
 
       const previousTier = user.subscription.tier;
+      const now = new Date().toISOString();
 
       // Update subscription to cancelled/free
-      user.subscription = {
+      const newSubscription = {
         tier: 'free',
         status: 'cancelled',
-        startDate: new Date().toISOString(),
+        startDate: now,
         endDate: null,
         grantedBy: req.user.id,
-        grantedAt: new Date().toISOString(),
+        grantedAt: now,
         reason: reason || 'Manual admin removal',
         autoRenew: false,
       };
 
-      // Initialize subscription history if it doesn't exist
-      if (!user.subscriptionHistory) {
-        user.subscriptionHistory = [];
-      }
-
-      // Add to subscription history
-      user.subscriptionHistory.push({
-        tier: 'free',
-        action: 'cancelled',
-        date: new Date().toISOString(),
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        reason: reason || 'Manual admin removal',
-        previousTier,
-        duration: null,
-        endDate: null,
-      });
+      const subscriptionHistory = [
+        ...(user.subscriptionHistory || []),
+        {
+          tier: 'free',
+          action: 'cancelled',
+          date: now,
+          adminId: req.user.id,
+          adminEmail: req.user.email,
+          reason: reason || 'Manual admin removal',
+          previousTier,
+          duration: null,
+          endDate: null,
+        },
+      ];
 
       // Save updated user
-      users[userIndex] = user;
-      write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id },
+        {
+          $set: { subscription: newSubscription, subscriptionHistory, updatedAt: now },
+        }
+      );
 
       // Log to audit
       auditLog({
@@ -2505,7 +2544,7 @@ router.post(
           .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
       }
 
-      const users = read('users');
+      const users = await dbUnified.read('users');
       const now = new Date();
       const startDate = now.toISOString();
       let endDate = null;
@@ -2526,16 +2565,16 @@ router.post(
 
       const successfulUserIds = [];
       const failedUserIds = [];
+      const updateOps = [];
 
       userIds.forEach(userId => {
-        const userIndex = users.findIndex(u => u.id === userId);
+        const user = users.find(u => u.id === userId);
 
-        if (userIndex < 0) {
+        if (!user) {
           failedUserIds.push(userId);
           return;
         }
 
-        const user = users[userIndex];
         const previousTier = user.subscription?.tier || 'free';
         const action =
           !user.subscription || user.subscription.tier === 'free'
@@ -2544,8 +2583,7 @@ router.post(
               ? 'upgraded'
               : 'renewed';
 
-        // Update user subscription
-        user.subscription = {
+        const newSubscription = {
           tier,
           status: 'active',
           startDate,
@@ -2556,30 +2594,35 @@ router.post(
           autoRenew: false,
         };
 
-        // Initialize subscription history if it doesn't exist
-        if (!user.subscriptionHistory) {
-          user.subscriptionHistory = [];
-        }
+        const subscriptionHistory = [
+          ...(user.subscriptionHistory || []),
+          {
+            tier,
+            action,
+            date: startDate,
+            adminId: req.user.id,
+            adminEmail: req.user.email,
+            reason: reason || 'Bulk admin grant',
+            previousTier,
+            duration,
+            endDate,
+          },
+        ];
 
-        // Add to subscription history
-        user.subscriptionHistory.push({
-          tier,
-          action,
-          date: startDate,
-          adminId: req.user.id,
-          adminEmail: req.user.email,
-          reason: reason || 'Bulk admin grant',
-          previousTier,
-          duration,
-          endDate,
-        });
-
-        users[userIndex] = user;
+        updateOps.push(
+          dbUnified.updateOne(
+            'users',
+            { id: userId },
+            {
+              $set: { subscription: newSubscription, subscriptionHistory, updatedAt: startDate },
+            }
+          )
+        );
         successfulUserIds.push(userId);
       });
 
-      // Save all updated users
-      write('users', users);
+      // Save all updated users atomically
+      await Promise.all(updateOps);
 
       // Log to audit
       auditLog({
