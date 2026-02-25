@@ -36,7 +36,7 @@
   // Valid event types accepted by the wizard
   const VALID_EVENT_TYPES = ['Wedding', 'Corporate', 'Birthday', 'Other'];
 
-  let currentStep = -1; // Start at -1 for welcome screen
+  let currentStep = STEP_CONFIG.WELCOME; // Start at welcome screen
   let wizardState = null;
   const availablePackages = {}; // { categoryKey: [packages] }
   let hasShownWelcome = false;
@@ -67,7 +67,7 @@
     if (hasShownWelcome && wizardState.currentStep >= 0) {
       currentStep = wizardState.currentStep;
     } else {
-      currentStep = -1; // Show welcome screen
+      currentStep = STEP_CONFIG.WELCOME; // Show welcome screen
     }
 
     // Parse URL params and prefill wizard state if present
@@ -75,13 +75,13 @@
     const hasParams = Array.from(urlParams.keys()).length > 0;
 
     if (hasParams) {
-      // Prefill step 0 (event type) if provided
+      // Prefill step EVENT_TYPE (event type) if provided
       const eventType = urlParams.get('eventType');
       if (eventType && VALID_EVENT_TYPES.includes(eventType)) {
-        window.WizardState.saveStep(0, { eventType });
+        window.WizardState.saveStep(STEP_CONFIG.EVENT_TYPE, { eventType });
       }
 
-      // Prefill step 1 (location, guests, budget) if provided
+      // Prefill step EVENT_BASICS (location, guests, budget) if provided
       const prefillData = {};
       const location = urlParams.get('location');
       const guests = urlParams.get('guests');
@@ -99,7 +99,7 @@
 
       // Only save if we have data to prefill
       if (Object.keys(prefillData).length > 0) {
-        window.WizardState.saveStep(1, prefillData);
+        window.WizardState.saveStep(STEP_CONFIG.EVENT_BASICS, prefillData);
       }
 
       // Reload state after prefilling
@@ -229,7 +229,7 @@
     let html = '';
 
     // Step-specific rendering
-    if (stepIndex === -1) {
+    if (stepIndex === STEP_CONFIG.WELCOME) {
       // Welcome screen (no progress indicator)
       html += renderWelcomeScreen();
     } else {
@@ -237,9 +237,9 @@
       html += renderProgressIndicator(stepIndex);
 
       // Render step content
-      if (stepIndex === 0) {
+      if (stepIndex === STEP_CONFIG.EVENT_TYPE) {
         html += renderEventTypeStep();
-      } else if (stepIndex === 1) {
+      } else if (stepIndex === STEP_CONFIG.EVENT_BASICS) {
         html += renderEventBasicsStep();
       } else if (stepIndex >= STEP_CONFIG.CATEGORY_START && stepIndex < STEP_CONFIG.REVIEW) {
         const categoryIndex = stepIndex - STEP_CONFIG.CATEGORY_START;
@@ -638,13 +638,15 @@
    */
   function attachStepListeners(stepIndex) {
     // Welcome screen
-    if (stepIndex === -1) {
+    if (stepIndex === STEP_CONFIG.WELCOME) {
       const getStartedBtn = document.querySelector('.wizard-get-started');
       if (getStartedBtn) {
         getStartedBtn.addEventListener('click', () => {
           hasShownWelcome = true;
-          currentStep = 0;
-          window.WizardState.saveStep(0, { wizardStartedAt: new Date().toISOString() });
+          currentStep = STEP_CONFIG.EVENT_TYPE;
+          window.WizardState.saveStep(STEP_CONFIG.EVENT_TYPE, {
+            wizardStartedAt: new Date().toISOString(),
+          });
           renderStep(currentStep);
           renderPlanSummary();
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -654,7 +656,7 @@
     }
 
     // Event type selection
-    if (stepIndex === 0) {
+    if (stepIndex === STEP_CONFIG.EVENT_TYPE) {
       // Load event type images from Pexels
       loadEventTypeImages();
 
@@ -666,7 +668,7 @@
           options.forEach(o => o.classList.remove('selected'));
           this.classList.add('selected');
           const value = this.getAttribute('data-value');
-          window.WizardState.saveStep(0, { eventType: value });
+          window.WizardState.saveStep(STEP_CONFIG.EVENT_TYPE, { eventType: value });
           if (nextBtn) {
             nextBtn.disabled = false;
           }
@@ -676,7 +678,7 @@
     }
 
     // Event basics - setup validation
-    if (stepIndex === 1) {
+    if (stepIndex === STEP_CONFIG.EVENT_BASICS) {
       if (window.WizardValidation) {
         const eventNameField = document.getElementById('wizard-event-name');
         const locationField = document.getElementById('wizard-location');
@@ -773,10 +775,10 @@
       backBtn.addEventListener('click', handleBack);
     }
 
-    // Skip button
+    // Skip button — advances without enforcing field validation
     const skipBtn = document.querySelector('.wizard-skip');
     if (skipBtn) {
-      skipBtn.addEventListener('click', handleNext);
+      skipBtn.addEventListener('click', handleSkip);
     }
 
     // Create plan button
@@ -947,6 +949,35 @@
     renderPlanSummary();
 
     // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /**
+   * Handle skip button — advances without enforcing validation.
+   * Per spec: validation only blocks the "Continue" button, not "Skip for now".
+   */
+  function handleSkip() {
+    // Save any partial data already entered (best-effort, no validation)
+    if (currentStep === STEP_CONFIG.EVENT_BASICS) {
+      const eventName = document.getElementById('wizard-event-name')?.value || '';
+      const location = document.getElementById('wizard-location')?.value || '';
+      const date = document.getElementById('wizard-date')?.value || '';
+      const guests = document.getElementById('wizard-guests')?.value || null;
+      const budget = document.getElementById('wizard-budget')?.value || '';
+
+      window.WizardState.saveStep(currentStep, {
+        eventName,
+        location,
+        date,
+        guests: guests ? parseInt(guests, 10) : null,
+        budget,
+      });
+    }
+
+    // Advance unconditionally (no validation)
+    currentStep = Math.min(currentStep + 1, STEP_CONFIG.REVIEW);
+    renderStep(currentStep);
+    renderPlanSummary();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
