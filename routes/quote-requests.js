@@ -103,8 +103,7 @@ router.post('/', csrfProtection, async (req, res) => {
     };
 
     const quoteRequests = (await dbUnified.read('quoteRequests')) || [];
-    quoteRequests.push(quoteRequest);
-    await dbUnified.write('quoteRequests', quoteRequests);
+    await dbUnified.insertOne('quoteRequests', quoteRequest);
 
     res.json({
       success: true,

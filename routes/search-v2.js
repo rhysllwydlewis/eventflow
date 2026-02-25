@@ -262,8 +262,7 @@ router.post('/saved', authRequired, csrfProtection, async (req, res) => {
       useCount: 0,
     };
 
-    savedSearches.push(savedSearch);
-    await dbUnified.write('savedSearches', savedSearches);
+    await dbUnified.insertOne('savedSearches', savedSearch);
 
     res.json({
       success: true,
@@ -321,8 +320,7 @@ router.delete('/saved/:id', authRequired, csrfProtection, async (req, res) => {
       });
     }
 
-    savedSearches.splice(index, 1);
-    await dbUnified.write('savedSearches', savedSearches);
+    await dbUnified.deleteOne('savedSearches', id);
 
     res.json({
       success: true,

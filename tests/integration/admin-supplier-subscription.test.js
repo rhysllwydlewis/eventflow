@@ -45,6 +45,9 @@ jest.mock('../../utils/logger', () => ({
 jest.mock('../../db-unified', () => ({
   read: jest.fn(),
   write: jest.fn(),
+  updateOne: jest.fn().mockResolvedValue(true),
+  insertOne: jest.fn().mockResolvedValue(true),
+  deleteOne: jest.fn().mockResolvedValue(true),
 }));
 
 const dbUnified = require('../../db-unified');
@@ -99,18 +102,18 @@ describe('Admin Supplier Subscription API', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.message).toMatch(/Pro/i);
-      expect(dbUnified.write).toHaveBeenCalledWith(
+      expect(dbUnified.updateOne).toHaveBeenCalledWith(
         'suppliers',
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 'sup-001',
+        { id: 'sup-001' },
+        expect.objectContaining({
+          $set: expect.objectContaining({
             isPro: true,
             subscription: expect.objectContaining({
               tier: 'pro',
               status: 'active',
             }),
           }),
-        ])
+        })
       );
     });
 
@@ -122,17 +125,17 @@ describe('Admin Supplier Subscription API', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.message).toMatch(/Pro\+/i);
-      expect(dbUnified.write).toHaveBeenCalledWith(
+      expect(dbUnified.updateOne).toHaveBeenCalledWith(
         'suppliers',
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 'sup-001',
+        { id: 'sup-001' },
+        expect.objectContaining({
+          $set: expect.objectContaining({
             subscription: expect.objectContaining({
               tier: 'pro_plus',
               status: 'active',
             }),
           }),
-        ])
+        })
       );
     });
 
@@ -144,9 +147,9 @@ describe('Admin Supplier Subscription API', () => {
         .send({ tier: 'pro', days: 30 });
       const afterMs = Date.now();
 
-      const written = dbUnified.write.mock.calls[0][1];
-      const supplier = written.find(s => s.id === 'sup-001');
-      const expiry = new Date(supplier.subscription.endDate).getTime();
+      const updateCall = dbUnified.updateOne.mock.calls[0];
+      const setData = updateCall[2].$set;
+      const expiry = new Date(setData.subscription.endDate).getTime();
       const expectedMin = beforeMs + 30 * 24 * 60 * 60 * 1000;
       const expectedMax = afterMs + 30 * 24 * 60 * 60 * 1000;
       expect(expiry).toBeGreaterThanOrEqual(expectedMin);
@@ -197,11 +200,11 @@ describe('Admin Supplier Subscription API', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.message).toMatch(/removed/i);
-      expect(dbUnified.write).toHaveBeenCalledWith(
+      expect(dbUnified.updateOne).toHaveBeenCalledWith(
         'suppliers',
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 'sup-001',
+        { id: 'sup-001' },
+        expect.objectContaining({
+          $set: expect.objectContaining({
             isPro: false,
             proPlan: null,
             proPlanExpiry: null,
@@ -210,7 +213,7 @@ describe('Admin Supplier Subscription API', () => {
               status: 'cancelled',
             }),
           }),
-        ])
+        })
       );
     });
 

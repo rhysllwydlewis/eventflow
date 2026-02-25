@@ -65,7 +65,19 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
       existingSubscriber.source = source;
       existingSubscriber.updatedAt = new Date().toISOString();
 
-      await dbUnified.write('newsletterSubscribers', subscribers);
+      await dbUnified.updateOne(
+        'newsletterSubscribers',
+        { id: existingSubscriber.id },
+        {
+          $set: {
+            confirmToken,
+            confirmTokenExpiry,
+            status: 'pending-confirmation',
+            source,
+            updatedAt: existingSubscriber.updatedAt,
+          },
+        }
+      );
     } else {
       // Create new subscriber
       const newSubscriber = {
@@ -83,8 +95,7 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
         updatedAt: new Date().toISOString(),
       };
 
-      subscribers.push(newSubscriber);
-      await dbUnified.write('newsletterSubscribers', subscribers);
+      await dbUnified.insertOne('newsletterSubscribers', newSubscriber);
     }
 
     // Send confirmation email
@@ -165,7 +176,19 @@ router.get('/confirm', async (req, res) => {
     subscriber.confirmTokenExpiry = null;
     subscriber.updatedAt = new Date().toISOString();
 
-    await dbUnified.write('newsletterSubscribers', subscribers);
+    await dbUnified.updateOne(
+      'newsletterSubscribers',
+      { id: subscriber.id },
+      {
+        $set: {
+          status: 'active',
+          confirmedAt: subscriber.confirmedAt,
+          confirmToken: null,
+          confirmTokenExpiry: null,
+          updatedAt: subscriber.updatedAt,
+        },
+      }
+    );
 
     // Send optional welcome email
     try {
@@ -221,7 +244,17 @@ router.post('/unsubscribe', async (req, res) => {
     subscriber.unsubscribedAt = new Date().toISOString();
     subscriber.updatedAt = new Date().toISOString();
 
-    await dbUnified.write('newsletterSubscribers', subscribers);
+    await dbUnified.updateOne(
+      'newsletterSubscribers',
+      { id: subscriber.id },
+      {
+        $set: {
+          status: 'unsubscribed',
+          unsubscribedAt: subscriber.unsubscribedAt,
+          updatedAt: subscriber.updatedAt,
+        },
+      }
+    );
 
     res.json({
       success: true,

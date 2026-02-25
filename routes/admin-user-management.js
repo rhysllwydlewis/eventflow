@@ -964,8 +964,20 @@ router.post(
       supplier.verificationStatus = verified ? 'verified' : 'rejected';
       supplier.updatedAt = now;
 
-      suppliers[supplierIndex] = supplier;
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: supplier.id },
+        {
+          $set: {
+            verified: supplier.verified,
+            verifiedAt: supplier.verifiedAt,
+            verifiedBy: supplier.verifiedBy,
+            verificationNotes: supplier.verificationNotes,
+            verificationStatus: supplier.verificationStatus,
+            updatedAt: supplier.updatedAt,
+          },
+        }
+      );
 
       // Create audit log
       auditLog({
@@ -1042,8 +1054,19 @@ router.post(
       supplier.proPlan = tier === 'pro_plus' ? 'Pro+' : 'Pro';
       supplier.proPlanExpiry = expiryDate;
 
-      suppliers[supplierIndex] = supplier;
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: supplier.id },
+        {
+          $set: {
+            subscription: supplier.subscription,
+            updatedAt: supplier.updatedAt,
+            isPro: supplier.isPro,
+            proPlan: supplier.proPlan,
+            proPlanExpiry: supplier.proPlanExpiry,
+          },
+        }
+      );
 
       // Create audit log with specific action
       auditLog({
@@ -1110,8 +1133,19 @@ router.delete(
       supplier.proPlan = null;
       supplier.proPlanExpiry = null;
 
-      suppliers[supplierIndex] = supplier;
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: supplier.id },
+        {
+          $set: {
+            subscription: supplier.subscription,
+            updatedAt: supplier.updatedAt,
+            isPro: supplier.isPro,
+            proPlan: supplier.proPlan,
+            proPlanExpiry: supplier.proPlanExpiry,
+          },
+        }
+      );
 
       // Create audit log with specific action
       auditLog({
@@ -1202,18 +1236,22 @@ router.post(
       const suppliers = await dbUnified.read('suppliers');
       let updatedCount = 0;
 
-      supplierIds.forEach(supplierId => {
+      for (const supplierId of supplierIds) {
         const index = suppliers.findIndex(s => s.id === supplierId);
         if (index >= 0) {
-          suppliers[index].approved = true;
-          suppliers[index].updatedAt = new Date().toISOString();
-          suppliers[index].approvedBy = req.user.id;
+          await dbUnified.updateOne(
+            'suppliers',
+            { id: supplierId },
+            {
+              $set: {
+                approved: true,
+                updatedAt: new Date().toISOString(),
+                approvedBy: req.user.id,
+              },
+            }
+          );
           updatedCount++;
         }
-      });
-
-      if (updatedCount > 0) {
-        await dbUnified.write('suppliers', suppliers);
       }
 
       // Create audit log
@@ -1267,19 +1305,23 @@ router.post(
       const suppliers = await dbUnified.read('suppliers');
       let updatedCount = 0;
 
-      supplierIds.forEach(supplierId => {
+      for (const supplierId of supplierIds) {
         const index = suppliers.findIndex(s => s.id === supplierId);
         if (index >= 0) {
-          suppliers[index].approved = false;
-          suppliers[index].rejected = true;
-          suppliers[index].updatedAt = new Date().toISOString();
-          suppliers[index].rejectedBy = req.user.id;
+          await dbUnified.updateOne(
+            'suppliers',
+            { id: supplierId },
+            {
+              $set: {
+                approved: false,
+                rejected: true,
+                updatedAt: new Date().toISOString(),
+                rejectedBy: req.user.id,
+              },
+            }
+          );
           updatedCount++;
         }
-      });
-
-      if (updatedCount > 0) {
-        await dbUnified.write('suppliers', suppliers);
       }
 
       // Create audit log
@@ -1331,20 +1373,22 @@ router.post(
       }
 
       const suppliers = await dbUnified.read('suppliers');
-      const initialCount = suppliers.length;
 
       // Filter out suppliers to delete
-      const remainingSuppliers = suppliers.filter(s => !supplierIds.includes(s.id));
-      const deletedCount = initialCount - remainingSuppliers.length;
+      const toDelete = suppliers.filter(s => supplierIds.includes(s.id));
+      const deletedCount = toDelete.length;
 
       if (deletedCount > 0) {
-        await dbUnified.write('suppliers', remainingSuppliers);
+        for (const supplierId of supplierIds.filter(id => suppliers.some(s => s.id === id))) {
+          await dbUnified.deleteOne('suppliers', supplierId);
+        }
 
         // Also delete associated packages
         const packages = await dbUnified.read('packages');
-        const remainingPackages = packages.filter(p => !supplierIds.includes(p.supplierId));
-        if (remainingPackages.length < packages.length) {
-          await dbUnified.write('packages', remainingPackages);
+        for (const pkg of packages) {
+          if (supplierIds.includes(pkg.supplierId)) {
+            await dbUnified.deleteOne('packages', pkg.id);
+          }
         }
       }
 
@@ -1535,8 +1579,24 @@ router.put(
       supplier.updatedAt = new Date().toISOString();
       supplier.lastEditedBy = req.user.id;
 
-      suppliers[supplierIndex] = supplier;
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: supplier.id },
+        {
+          $set: {
+            name: supplier.name,
+            description: supplier.description,
+            contact: supplier.contact,
+            categories: supplier.categories,
+            amenities: supplier.amenities,
+            location: supplier.location,
+            serviceAreas: supplier.serviceAreas,
+            updatedAt: supplier.updatedAt,
+            lastEditedBy: supplier.lastEditedBy,
+            versionHistory: supplier.versionHistory,
+          },
+        }
+      );
 
       // Create audit log
       auditLog({
@@ -1713,14 +1773,14 @@ router.delete(
       const supplier = suppliers[supplierIndex];
 
       // Remove the supplier
-      suppliers.splice(supplierIndex, 1);
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.deleteOne('suppliers', id);
 
       // Also delete associated packages
       const packages = await dbUnified.read('packages');
-      const updatedPackages = packages.filter(p => p.supplierId !== id);
-      if (updatedPackages.length < packages.length) {
-        await dbUnified.write('packages', updatedPackages);
+      for (const pkg of packages) {
+        if (pkg.supplierId === id) {
+          await dbUnified.deleteOne('packages', pkg.id);
+        }
       }
 
       // Create audit log
@@ -1821,10 +1881,14 @@ router.patch(
       }
 
       // Update seasonal tags
-      packages[pkgIndex].seasonalTags = seasonalTags.map(t => t.toLowerCase());
-      packages[pkgIndex].updatedAt = new Date().toISOString();
+      const updatedSeasonalTags = seasonalTags.map(t => t.toLowerCase());
+      const updatedAt = new Date().toISOString();
 
-      await dbUnified.write('packages', packages);
+      await dbUnified.updateOne(
+        'packages',
+        { id: id },
+        { $set: { seasonalTags: updatedSeasonalTags, updatedAt: updatedAt } }
+      );
 
       // Log the action
       auditLog({
@@ -1838,7 +1902,7 @@ router.patch(
 
       res.json({
         success: true,
-        package: packages[pkgIndex],
+        package: { ...packages[pkgIndex], seasonalTags: updatedSeasonalTags, updatedAt: updatedAt },
       });
     } catch (error) {
       logger.error('Error updating seasonal tags:', error);

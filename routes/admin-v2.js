@@ -766,8 +766,7 @@ router.put(
       });
 
       supplier.updatedAt = new Date().toISOString();
-      suppliers[supplierIndex] = supplier;
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.updateOne('suppliers', { id: supplier.id }, { $set: supplier });
 
       // Create audit log
       await createAuditLog({
@@ -828,8 +827,7 @@ router.delete(
         });
       }
 
-      const filteredSuppliers = suppliers.filter(s => s.id !== id);
-      await dbUnified.write('suppliers', filteredSuppliers);
+      await dbUnified.deleteOne('suppliers', id);
 
       // Create audit log
       await createAuditLog({
@@ -897,8 +895,17 @@ router.post(
       supplier.verifiedAt = new Date().toISOString();
       supplier.verifiedBy = req.user.id;
 
-      suppliers[supplierIndex] = supplier;
-      await dbUnified.write('suppliers', suppliers);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: supplier.id },
+        {
+          $set: {
+            verified: true,
+            verifiedAt: supplier.verifiedAt,
+            verifiedBy: supplier.verifiedBy,
+          },
+        }
+      );
 
       // Create audit log
       await createAuditLog({
@@ -1035,8 +1042,7 @@ router.put(
       });
 
       pkg.updatedAt = new Date().toISOString();
-      packages[packageIndex] = pkg;
-      await dbUnified.write('packages', packages);
+      await dbUnified.updateOne('packages', { id: pkg.id }, { $set: pkg });
 
       // Create audit log
       await createAuditLog({
@@ -1097,8 +1103,7 @@ router.delete(
         });
       }
 
-      const filteredPackages = packages.filter(p => p.id !== id);
-      await dbUnified.write('packages', filteredPackages);
+      await dbUnified.deleteOne('packages', id);
 
       // Create audit log
       await createAuditLog({
@@ -1259,7 +1264,17 @@ router.post(
       review.approvedBy = req.user.id;
 
       reviews[reviewIndex] = review;
-      await dbUnified.write('reviews', reviews);
+      await dbUnified.updateOne(
+        'reviews',
+        { id: review.id },
+        {
+          $set: {
+            status: 'approved',
+            approvedAt: review.approvedAt,
+            approvedBy: review.approvedBy,
+          },
+        }
+      );
 
       // Create audit log
       await createAuditLog({
@@ -1332,7 +1347,18 @@ router.post(
       review.rejectionReason = reason || '';
 
       reviews[reviewIndex] = review;
-      await dbUnified.write('reviews', reviews);
+      await dbUnified.updateOne(
+        'reviews',
+        { id: review.id },
+        {
+          $set: {
+            status: 'rejected',
+            rejectedAt: review.rejectedAt,
+            rejectedBy: review.rejectedBy,
+            rejectionReason: review.rejectionReason,
+          },
+        }
+      );
 
       // Create audit log
       await createAuditLog({
@@ -1501,7 +1527,11 @@ router.post(
                 photoObj.approved = action === 'approve';
                 photoObj.approvedAt = Date.now();
                 photoObj.approvedBy = req.user.id;
-                await dbUnified.write('suppliers', suppliers);
+                await dbUnified.updateOne(
+                  'suppliers',
+                  { id: supplier.id },
+                  { $set: { photosGallery: supplier.photosGallery } }
+                );
                 results.processed++;
               }
             }
@@ -1515,7 +1545,11 @@ router.post(
                 photoObj.approved = action === 'approve';
                 photoObj.approvedAt = Date.now();
                 photoObj.approvedBy = req.user.id;
-                await dbUnified.write('packages', packages);
+                await dbUnified.updateOne(
+                  'packages',
+                  { id: pkg.id },
+                  { $set: { gallery: pkg.gallery } }
+                );
                 results.processed++;
               }
             }
