@@ -293,8 +293,7 @@ class DateManagementService {
       // Create audit log entry
       if (this.dbUnified) {
         try {
-          const auditLogs = await this.dbUnified.read('audit_logs');
-          auditLogs.push({
+          await this.dbUnified.insertOne('audit_logs', {
             id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
             userId,
             action: manual ? 'MANUAL_DATE_UPDATE' : 'AUTO_DATE_UPDATE',
@@ -305,7 +304,6 @@ class DateManagementService {
             timestamp: now,
             ipAddress: 'system',
           });
-          await this.dbUnified.write('audit_logs', auditLogs);
         } catch (auditError) {
           this.logger.error('Failed to create audit log:', auditError);
         }
@@ -503,20 +501,20 @@ class DateManagementService {
           ? `Legal document dates automatically updated from ${updateInfo.previousDate} to ${updateInfo.newDate}`
           : `Legal document dates manually updated`;
 
-      for (const admin of admins) {
-        notifications.push({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-          userId: admin.id,
-          type: 'system',
-          title: 'Legal Document Dates Updated',
-          message,
-          data: updateInfo,
-          read: false,
-          createdAt: new Date().toISOString(),
-        });
-      }
-
-      await this.dbUnified.write('notifications', notifications);
+      await Promise.all(
+        admins.map(admin =>
+          this.dbUnified.insertOne('notifications', {
+            id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+            userId: admin.id,
+            type: 'system',
+            title: 'Legal Document Dates Updated',
+            message,
+            data: updateInfo,
+            read: false,
+            createdAt: new Date().toISOString(),
+          })
+        )
+      );
 
       this.logger.info('Admin notifications sent', {
         count: admins.length,

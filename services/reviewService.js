@@ -170,9 +170,7 @@ async function createReview(reviewData, userId) {
   });
 
   // Save review
-  const reviews = await dbUnified.read('reviews');
-  reviews.push(review);
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.insertOne('reviews', review);
 
   // Track review received event
   const supplierAnalytics = require('../utils/supplierAnalytics');
@@ -305,7 +303,7 @@ async function moderateReview(reviewId, action, moderatorId, reason) {
 
   ReviewModel.updateModerationState(review, newState, moderatorId, reason);
 
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne('reviews', { _id: reviewId }, { $set: review });
 
   return review;
 }
@@ -332,7 +330,7 @@ async function requestChanges(reviewId, moderatorId, reason) {
     reason
   );
 
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne('reviews', { _id: reviewId }, { $set: review });
 
   return review;
 }
@@ -368,7 +366,7 @@ async function addSupplierResponse(reviewId, supplierId, text, _userId) {
 
   ReviewModel.addResponse(review, supplierId, text);
 
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne('reviews', { _id: reviewId }, { $set: review });
 
   return review;
 }
@@ -389,7 +387,7 @@ async function voteOnReview(reviewId, userId, helpful) {
   }
 
   ReviewModel.addVote(review, userId, helpful);
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne('reviews', { _id: reviewId }, { $set: review });
   return review;
 }
 
@@ -415,7 +413,7 @@ async function fileDispute(reviewId, userId, reason, evidence) {
 
   ReviewModel.fileDispute(review, userId, reason, evidence);
 
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne('reviews', { _id: reviewId }, { $set: review });
 
   return {
     disputeId: review._id,
@@ -446,7 +444,7 @@ async function resolveDispute(reviewId, resolution, adminId, reason) {
 
   ReviewModel.resolveDispute(review, resolution, adminId, reason);
 
-  await dbUnified.write('reviews', reviews);
+  await dbUnified.updateOne('reviews', { _id: reviewId }, { $set: review });
 
   return review;
 }

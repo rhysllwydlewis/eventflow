@@ -56,6 +56,23 @@ describe('Subscription Service Integration Tests', () => {
       }
     });
 
+    dbUnified.updateOne.mockImplementation(async (collection, filter, update) => {
+      if (collection === 'users' && update.$set) {
+        const idx = mockUsers.findIndex(u => u.id === filter.id);
+        if (idx >= 0) {
+          mockUsers[idx] = { ...mockUsers[idx], ...update.$set };
+        }
+      }
+      if (collection === 'subscriptions' && update.$set) {
+        const idx = mockSubscriptions.findIndex(s =>
+          Object.keys(filter).every(k => s[k] === filter[k])
+        );
+        if (idx >= 0) {
+          mockSubscriptions[idx] = { ...mockSubscriptions[idx], ...update.$set };
+        }
+      }
+    });
+
     // Clear any existing mocks
     jest.clearAllMocks();
   });

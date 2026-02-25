@@ -238,17 +238,11 @@ async function batchApprove(params) {
     const items = await dbUnified.read(collection);
     const updatedIds = [];
     const errors = [];
+    const now = new Date().toISOString();
 
     ids.forEach(id => {
       const index = items.findIndex(item => item.id === id);
       if (index !== -1) {
-        if (type === 'reviews') {
-          items[index].status = 'approved';
-        } else {
-          items[index].approved = true;
-        }
-        items[index].approvedAt = new Date().toISOString();
-        items[index].approvedBy = actor.id;
         updatedIds.push(id);
       } else {
         errors.push({ id, error: 'Item not found' });
@@ -256,7 +250,13 @@ async function batchApprove(params) {
     });
 
     if (updatedIds.length > 0) {
-      await dbUnified.write(collection, items);
+      const approveFields =
+        type === 'reviews'
+          ? { status: 'approved', approvedAt: now, approvedBy: actor.id }
+          : { approved: true, approvedAt: now, approvedBy: actor.id };
+      await Promise.all(
+        updatedIds.map(id => dbUnified.updateOne(collection, { id }, { $set: approveFields }))
+      );
 
       // Create audit log
       await createAuditLog({
@@ -330,18 +330,11 @@ async function batchReject(params) {
     const items = await dbUnified.read(collection);
     const updatedIds = [];
     const errors = [];
+    const now = new Date().toISOString();
 
     ids.forEach(id => {
       const index = items.findIndex(item => item.id === id);
       if (index !== -1) {
-        if (type === 'reviews') {
-          items[index].status = 'rejected';
-        } else {
-          items[index].approved = false;
-        }
-        items[index].rejectedAt = new Date().toISOString();
-        items[index].rejectedBy = actor.id;
-        items[index].rejectionReason = reason;
         updatedIds.push(id);
       } else {
         errors.push({ id, error: 'Item not found' });
@@ -349,7 +342,13 @@ async function batchReject(params) {
     });
 
     if (updatedIds.length > 0) {
-      await dbUnified.write(collection, items);
+      const rejectFields =
+        type === 'reviews'
+          ? { status: 'rejected', rejectedAt: now, rejectedBy: actor.id, rejectionReason: reason }
+          : { approved: false, rejectedAt: now, rejectedBy: actor.id, rejectionReason: reason };
+      await Promise.all(
+        updatedIds.map(id => dbUnified.updateOne(collection, { id }, { $set: rejectFields }))
+      );
 
       // Create audit log
       await createAuditLog({
@@ -424,16 +423,20 @@ async function batchDelete(params) {
     const deletedIds = [];
     const errors = [];
 
-    const remainingItems = items.filter(item => {
+    items.forEach(item => {
       if (ids.includes(item.id)) {
         deletedIds.push(item.id);
-        return false; // Remove from array
       }
-      return true; // Keep in array
+    });
+    // Check for IDs not found
+    ids.forEach(id => {
+      if (!deletedIds.includes(id)) {
+        errors.push({ id, error: 'Item not found' });
+      }
     });
 
     if (deletedIds.length > 0) {
-      await dbUnified.write(collection, remainingItems);
+      await Promise.all(deletedIds.map(id => dbUnified.deleteOne(collection, id)));
 
       // Create audit log
       await createAuditLog({
