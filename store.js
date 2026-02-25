@@ -38,6 +38,12 @@ const files = {
   invoices: path.join(DATA_DIR, 'invoices.json'),
   bookings: path.join(DATA_DIR, 'bookings.json'),
   notifications: path.join(DATA_DIR, 'notifications.json'),
+  supplierAnalytics: path.join(DATA_DIR, 'supplierAnalytics.json'),
+  reviewVotes: path.join(DATA_DIR, 'reviewVotes.json'),
+  reviewModerations: path.join(DATA_DIR, 'reviewModerations.json'),
+  popularSearches: path.join(DATA_DIR, 'popularSearches.json'),
+  ab_views: path.join(DATA_DIR, 'ab_views.json'),
+  ab_conversions: path.join(DATA_DIR, 'ab_conversions.json'),
 };
 
 function ensure() {

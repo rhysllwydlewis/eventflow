@@ -489,11 +489,10 @@ async function updateSupplierAnalytics(supplierId) {
     const allAnalytics = await dbUnified.read('supplierAnalytics');
     const existingIndex = allAnalytics.findIndex(a => a.supplierId === supplierId);
     if (existingIndex >= 0) {
-      allAnalytics[existingIndex] = analytics;
+      await dbUnified.updateOne('supplierAnalytics', { supplierId }, { $set: analytics });
     } else {
-      allAnalytics.push(analytics);
+      await dbUnified.insertOne('supplierAnalytics', analytics);
     }
-    await dbUnified.write('supplierAnalytics', allAnalytics);
 
     return analytics;
   }
@@ -568,20 +567,26 @@ async function updateSupplierAnalytics(supplierId) {
   const allAnalytics = await dbUnified.read('supplierAnalytics');
   const existingIndex = allAnalytics.findIndex(a => a.supplierId === supplierId);
   if (existingIndex >= 0) {
-    allAnalytics[existingIndex] = analytics;
+    await dbUnified.updateOne('supplierAnalytics', { supplierId }, { $set: analytics });
   } else {
-    allAnalytics.push(analytics);
+    await dbUnified.insertOne('supplierAnalytics', analytics);
   }
-  await dbUnified.write('supplierAnalytics', allAnalytics);
 
   // Update supplier record with basic metrics
   const suppliers = await dbUnified.read('suppliers');
   const supplier = suppliers.find(s => s.id === supplierId);
   if (supplier) {
-    supplier.averageRating = analytics.averageRating;
-    supplier.reviewCount = analytics.totalReviews;
-    supplier.trustScore = analytics.trustScore;
-    await dbUnified.write('suppliers', suppliers);
+    await dbUnified.updateOne(
+      'suppliers',
+      { id: supplierId },
+      {
+        $set: {
+          averageRating: analytics.averageRating,
+          reviewCount: analytics.totalReviews,
+          trustScore: analytics.trustScore,
+        },
+      }
+    );
   }
 
   return analytics;

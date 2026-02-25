@@ -107,8 +107,16 @@ async function updatePopularSearches(queryText) {
   let popularEntry = popularSearches.find(p => p.normalizedQuery === normalizedQuery);
 
   if (popularEntry) {
-    popularEntry.searchCount++;
-    popularEntry.lastSearched = new Date().toISOString();
+    await dbUnified.updateOne(
+      'popularSearches',
+      { normalizedQuery },
+      {
+        $set: {
+          searchCount: popularEntry.searchCount + 1,
+          lastSearched: new Date().toISOString(),
+        },
+      }
+    );
   } else {
     popularEntry = {
       id: `popular_${Date.now()}_${crypto.randomUUID()}`,
@@ -121,10 +129,8 @@ async function updatePopularSearches(queryText) {
       lastSearched: new Date().toISOString(),
       trendScore: 0,
     };
-    popularSearches.push(popularEntry);
+    await dbUnified.insertOne('popularSearches', popularEntry);
   }
-
-  await dbUnified.write('popularSearches', popularSearches);
 
   // Clear popular queries cache
   await cache.del('search:popular:queries');

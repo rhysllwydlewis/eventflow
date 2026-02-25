@@ -135,6 +135,15 @@ async function createIndexes() {
     const notificationsCollection = mongodb.collection('notifications');
     await notificationsCollection.createIndex({ userId: 1, createdAt: -1 });
     await notificationsCollection.createIndex({ read: 1 });
+    const supplierAnalyticsCollection = mongodb.collection('supplierAnalytics');
+    await supplierAnalyticsCollection.createIndex({ supplierId: 1 }, { unique: true });
+    const reviewVotesCollection = mongodb.collection('reviewVotes');
+    await reviewVotesCollection.createIndex({ reviewId: 1 });
+    await reviewVotesCollection.createIndex({ userId: 1, reviewId: 1 });
+    const reviewModerationsCollection = mongodb.collection('reviewModerations');
+    await reviewModerationsCollection.createIndex({ reviewId: 1 });
+    const popularSearchesCollection = mongodb.collection('popularSearches');
+    await popularSearchesCollection.createIndex({ query: 1 }, { unique: true });
     logger.info('✅ Database indexes created successfully');
   } catch (error) {
     logger.info('ℹ️  Database indexes:', error.message);

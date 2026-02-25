@@ -374,9 +374,13 @@ async function handleSubscriptionDeleted(stripeSubscription) {
   const users = await dbUnified.read('users');
   const user = users.find(u => u.id === subscription.userId);
   if (user) {
-    user.proExpiresAt = null;
-    user.updatedAt = new Date().toISOString();
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: subscription.userId },
+      {
+        $set: { proExpiresAt: null, updatedAt: new Date().toISOString() },
+      }
+    );
   }
 }
 
