@@ -563,29 +563,37 @@ router.put(
 
       const categories = await dbUnified.read('categories');
 
-      // Update order based on position in array
-      orderedIds.forEach((id, index) => {
-        const category = categories.find(c => c.id === id);
-        if (category) {
-          category.order = index + 1;
+      // Build a map of id -> new order for efficient lookup
+      const orderMap = new Map(orderedIds.map((id, index) => [id, index + 1]));
+
+      // Assign order to orphaned categories (not in orderedIds)
+      const orphanStart = orderedIds.length + 1;
+      let orphanOffset = 0;
+      categories.forEach(c => {
+        if (!orderMap.has(c.id)) {
+          orderMap.set(c.id, orphanStart + orphanOffset++);
         }
       });
 
-      // Handle orphaned categories (not in orderedIds) - assign them to the end
-      const orderedSet = new Set(orderedIds);
-      const orphanedCategories = categories.filter(c => !orderedSet.has(c.id));
-      orphanedCategories.forEach((category, index) => {
-        category.order = orderedIds.length + index + 1;
-      });
+      // Persist order for each category atomically
+      await Promise.all(
+        categories.map(c => {
+          const newOrder = orderMap.get(c.id);
+          if (newOrder !== undefined && newOrder !== c.order) {
+            return dbUnified.updateOne('categories', { id: c.id }, { $set: { order: newOrder } });
+          }
+          return Promise.resolve();
+        })
+      );
 
-      // Sort by order
-      categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      await dbUnified.write('categories', categories);
+      // Return sorted list for the response
+      const sorted = categories
+        .map(c => ({ ...c, order: orderMap.get(c.id) ?? c.order }))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       res.json({
         ok: true,
-        categories,
+        categories: sorted,
       });
     } catch (error) {
       logger.error('Error reordering categories:', error);

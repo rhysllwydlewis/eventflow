@@ -289,8 +289,7 @@ async function getSupplierReviews(supplierId, options = {}) {
  * @returns {Promise<Object>} Updated review
  */
 async function moderateReview(reviewId, action, moderatorId, reason) {
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r._id === reviewId);
+  const review = await dbUnified.findOne('reviews', { _id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');
@@ -316,8 +315,7 @@ async function moderateReview(reviewId, action, moderatorId, reason) {
  * @returns {Promise<Object>} Updated review
  */
 async function requestChanges(reviewId, moderatorId, reason) {
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r._id === reviewId);
+  const review = await dbUnified.findOne('reviews', { _id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');
@@ -344,8 +342,7 @@ async function requestChanges(reviewId, moderatorId, reason) {
  * @returns {Promise<Object>} Updated review
  */
 async function addSupplierResponse(reviewId, supplierId, text, _userId) {
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r._id === reviewId);
+  const review = await dbUnified.findOne('reviews', { _id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');
@@ -379,8 +376,7 @@ async function addSupplierResponse(reviewId, supplierId, text, _userId) {
  * @returns {Promise<Object>} Updated review
  */
 async function voteOnReview(reviewId, userId, helpful) {
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r._id === reviewId);
+  const review = await dbUnified.findOne('reviews', { _id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');
@@ -400,8 +396,7 @@ async function voteOnReview(reviewId, userId, helpful) {
  * @returns {Promise<Object>} Dispute info
  */
 async function fileDispute(reviewId, userId, reason, evidence) {
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r._id === reviewId);
+  const review = await dbUnified.findOne('reviews', { _id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');
@@ -431,8 +426,7 @@ async function fileDispute(reviewId, userId, reason, evidence) {
  * @returns {Promise<Object>} Updated review
  */
 async function resolveDispute(reviewId, resolution, adminId, reason) {
-  const reviews = await dbUnified.read('reviews');
-  const review = reviews.find(r => r._id === reviewId);
+  const review = await dbUnified.findOne('reviews', { _id: reviewId });
 
   if (!review) {
     throw new Error('Review not found');

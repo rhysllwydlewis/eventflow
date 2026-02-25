@@ -80,7 +80,7 @@ describe('Admin Enhancements', () => {
 
       expect(bulkApproveMatch).toBeTruthy();
       expect(bulkApproveMatch[0]).toContain('await dbUnified.read');
-      expect(bulkApproveMatch[0]).toContain('await dbUnified.write');
+      expect(bulkApproveMatch[0]).toMatch(/dbUnified\.(write|updateOne)\(/);
 
       expect(bulkVerifyMatch).toBeTruthy();
       expect(bulkVerifyMatch[0]).toContain('await dbUnified.read');

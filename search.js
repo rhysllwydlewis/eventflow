@@ -335,12 +335,14 @@ async function saveSearchHistory(userId, query) {
     timestamp: new Date().toISOString(),
   };
 
-  await dbUnified.insertOne('searchHistory', historyEntry);
+  searchHistory.push(historyEntry);
 
-  // Trim if needed (in local mode only - MongoDB uses TTL indexes)
-  if (searchHistory.length >= 1000) {
-    searchHistory.splice(0, searchHistory.length - 999);
+  // Trim to last 1000 entries to prevent unbounded growth
+  if (searchHistory.length > 1000) {
+    searchHistory.splice(0, searchHistory.length - 1000);
     await dbUnified.write('searchHistory', searchHistory);
+  } else {
+    await dbUnified.insertOne('searchHistory', historyEntry);
   }
 }
 

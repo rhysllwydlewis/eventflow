@@ -80,6 +80,13 @@ describe('Review Service Integration Tests', () => {
       }
     });
 
+    dbUnified.findOne.mockImplementation(async (collection, filter) => {
+      if (collection === 'reviews') {
+        return mockReviews.find(r => Object.keys(filter).every(k => r[k] === filter[k])) || null;
+      }
+      return null;
+    });
+
     // Mock uid to return predictable IDs
     jest.spyOn(require('../../store'), 'uid').mockReturnValue('rev-test-123');
   });

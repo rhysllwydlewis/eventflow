@@ -48,11 +48,11 @@ async function trackSearch(searchData) {
     searchHistory.push(historyEntry);
 
     // Keep only last 10000 entries to prevent unbounded growth
-    // Insert new entry first, then trim overflow via write if needed
-    await dbUnified.insertOne('searchHistory', historyEntry);
     if (searchHistory.length > 10000) {
       searchHistory.splice(0, searchHistory.length - 10000);
       await dbUnified.write('searchHistory', searchHistory);
+    } else {
+      await dbUnified.insertOne('searchHistory', historyEntry);
     }
 
     // Update popular searches asynchronously
