@@ -241,8 +241,7 @@ router.post(
       createdAt: new Date().toISOString(),
     };
     const all = allPkgs;
-    all.push(pkg);
-    await dbUnified.write('packages', all);
+    await dbUnified.insertOne('packages', pkg);
     res.json({ ok: true, package: pkg });
   }
 );
@@ -279,7 +278,7 @@ router.post(
       p.gallery = [];
     }
     p.gallery.push({ url, approved: false, uploadedAt: Date.now() });
-    await dbUnified.write('packages', pkgs);
+    await dbUnified.updateOne('packages', { id: req.params.id }, { $set: { gallery: p.gallery } });
     res.json({ ok: true, url });
   }
 );
@@ -308,13 +307,18 @@ router.post(
   applyCsrfProtection,
   async (req, res) => {
     const all = await dbUnified.read('packages');
-    const i = all.findIndex(p => p.id === req.params.id);
-    if (i < 0) {
+    const pkg = all.find(p => p.id === req.params.id);
+    if (!pkg) {
       return res.status(404).json({ error: 'Not found' });
     }
-    all[i].approved = !!(req.body && req.body.approved);
-    await dbUnified.write('packages', all);
-    res.json({ ok: true, package: all[i] });
+    await dbUnified.updateOne(
+      'packages',
+      { id: req.params.id },
+      {
+        $set: { approved: !!(req.body && req.body.approved) },
+      }
+    );
+    res.json({ ok: true, package: { ...pkg, approved: !!(req.body && req.body.approved) } });
   }
 );
 
@@ -329,13 +333,18 @@ router.post(
   applyCsrfProtection,
   async (req, res) => {
     const all = await dbUnified.read('packages');
-    const i = all.findIndex(p => p.id === req.params.id);
-    if (i < 0) {
+    const pkg = all.find(p => p.id === req.params.id);
+    if (!pkg) {
       return res.status(404).json({ error: 'Not found' });
     }
-    all[i].featured = !!(req.body && req.body.featured);
-    await dbUnified.write('packages', all);
-    res.json({ ok: true, package: all[i] });
+    await dbUnified.updateOne(
+      'packages',
+      { id: req.params.id },
+      {
+        $set: { featured: !!(req.body && req.body.featured) },
+      }
+    );
+    res.json({ ok: true, package: { ...pkg, featured: !!(req.body && req.body.featured) } });
   }
 );
 
@@ -351,40 +360,39 @@ router.put(
   async (req, res) => {
     const { id } = req.params;
     const packages = await dbUnified.read('packages');
-    const pkgIndex = packages.findIndex(p => p.id === id);
+    const pkg = packages.find(p => p.id === id);
 
-    if (pkgIndex === -1) {
+    if (!pkg) {
       return res.status(404).json({ error: 'Package not found' });
     }
 
-    const pkg = packages[pkgIndex];
     const now = new Date().toISOString();
+    const pkgUpdates = {};
 
     // Update allowed fields
     if (req.body.title) {
-      pkg.title = req.body.title;
+      pkgUpdates.title = req.body.title;
     }
     if (req.body.description) {
-      pkg.description = req.body.description;
+      pkgUpdates.description = req.body.description;
     }
     if (req.body.price_display) {
-      pkg.price_display = req.body.price_display;
+      pkgUpdates.price_display = req.body.price_display;
     }
     if (req.body.image) {
-      pkg.image = req.body.image;
+      pkgUpdates.image = req.body.image;
     }
     if (typeof req.body.approved === 'boolean') {
-      pkg.approved = req.body.approved;
+      pkgUpdates.approved = req.body.approved;
     }
     if (typeof req.body.featured === 'boolean') {
-      pkg.featured = req.body.featured;
+      pkgUpdates.featured = req.body.featured;
     }
-    pkg.updatedAt = now;
+    pkgUpdates.updatedAt = now;
 
-    packages[pkgIndex] = pkg;
-    await dbUnified.write('packages', packages);
+    await dbUnified.updateOne('packages', { id }, { $set: pkgUpdates });
 
-    res.json({ ok: true, package: pkg });
+    res.json({ ok: true, package: { ...pkg, ...pkgUpdates } });
   }
 );
 
@@ -400,13 +408,13 @@ router.delete(
   async (req, res) => {
     const { id } = req.params;
     const packages = await dbUnified.read('packages');
-    const filtered = packages.filter(p => p.id !== id);
+    const pkg = packages.find(p => p.id === id);
 
-    if (filtered.length === packages.length) {
+    if (!pkg) {
       return res.status(404).json({ error: 'Package not found' });
     }
 
-    await dbUnified.write('packages', filtered);
+    await dbUnified.deleteOne('packages', id);
     res.json({ ok: true, message: 'Package deleted successfully' });
   }
 );
@@ -449,16 +457,17 @@ router.post(
       );
 
       // Update package with new image URL
-      packages[packageIndex].image = imageData.optimized || imageData.large;
-      packages[packageIndex].updatedAt = new Date().toISOString();
-
-      await dbUnified.write('packages', packages);
+      const imageUpdates = {
+        image: imageData.optimized || imageData.large,
+        updatedAt: new Date().toISOString(),
+      };
+      await dbUnified.updateOne('packages', { id: packageId }, { $set: imageUpdates });
 
       logger.info(`Package image uploaded successfully for package ${packageId}`);
 
       res.json({
         ok: true,
-        package: packages[packageIndex],
+        package: { ...packages[packageIndex], ...imageUpdates },
         imageUrl: packages[packageIndex].image,
       });
     } catch (error) {

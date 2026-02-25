@@ -332,15 +332,19 @@ async function insertOne(collectionName, document) {
 async function deleteOne(collectionName, id) {
   await initializeDatabase();
   try {
+    // Normalise the filter: accept either a string id or a plain filter object
+    const filter = typeof id === 'object' && id !== null ? id : { id };
+
     if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
-      const result = await collection.deleteOne({ id });
+      const result = await collection.deleteOne(filter);
       return result.deletedCount > 0;
     } else {
       const all = store.read(collectionName);
-      const filtered = all.filter(item => item.id !== id);
-      if (filtered.length < all.length) {
-        store.write(collectionName, filtered);
+      const index = all.findIndex(item => Object.keys(filter).every(k => item[k] === filter[k]));
+      if (index >= 0) {
+        all.splice(index, 1);
+        store.write(collectionName, all);
         return true;
       }
       return false;

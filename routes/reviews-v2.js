@@ -126,24 +126,25 @@ router.put('/:id', authRequired, csrfProtection, async (req, res) => {
       return res.status(403).json({ error: editCheck.reason });
     }
 
-    // Update fields
+    // Build update
+    const reviewUpdates = {};
     if (title !== undefined) {
-      review.title = title;
+      reviewUpdates.title = title;
     }
     if (text !== undefined) {
-      review.text = text;
+      reviewUpdates.text = text;
     }
     if (rating !== undefined) {
-      review.rating = parseInt(rating, 10);
+      reviewUpdates.rating = parseInt(rating, 10);
     }
 
-    review.updatedAt = new Date().toISOString();
+    reviewUpdates.updatedAt = new Date().toISOString();
 
-    await dbUnified.write('reviews', reviews);
+    await dbUnified.updateOne('reviews', { _id: id }, { $set: reviewUpdates });
 
     res.json({
       success: true,
-      data: review,
+      data: { ...review, ...reviewUpdates },
       message: 'Review updated successfully',
     });
   } catch (error) {
@@ -165,21 +166,18 @@ router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
 
     const dbUnified = require('../db-unified');
     const reviews = await dbUnified.read('reviews');
-    const reviewIndex = reviews.findIndex(r => r._id === id);
+    const review = reviews.find(r => r._id === id);
 
-    if (reviewIndex === -1) {
+    if (!review) {
       return res.status(404).json({ error: 'Review not found' });
     }
-
-    const review = reviews[reviewIndex];
 
     // Check permissions
     if (review.authorId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
-    reviews.splice(reviewIndex, 1);
-    await dbUnified.write('reviews', reviews);
+    await dbUnified.deleteOne('reviews', { _id: id });
 
     res.json({
       success: true,
@@ -322,13 +320,22 @@ router.put(
 
       review.response.text = text;
       review.response.updatedAt = new Date().toISOString();
-      review.updatedAt = new Date().toISOString();
+      const responseUpdatedAt = new Date().toISOString();
 
-      await dbUnified.write('reviews', reviews);
+      await dbUnified.updateOne(
+        'reviews',
+        { _id: id },
+        {
+          $set: {
+            response: { ...review.response, text, updatedAt: responseUpdatedAt },
+            updatedAt: responseUpdatedAt,
+          },
+        }
+      );
 
       res.json({
         success: true,
-        data: review.response,
+        data: { ...review.response, text, updatedAt: responseUpdatedAt },
         message: 'Response updated successfully',
       });
     } catch (error) {

@@ -112,8 +112,7 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
     };
 
     const plans = await dbUnified.read('plans');
-    plans.push(newPlan);
-    await dbUnified.write('plans', plans);
+    await dbUnified.insertOne('plans', newPlan);
 
     // Return both modern and legacy success flags for compatibility.
     res.status(200).json({
@@ -137,48 +136,47 @@ router.patch('/:id', authRequired, csrfProtection, writeLimiter, async (req, res
     const userId = req.user.id;
     const { id } = req.params;
     const plans = await dbUnified.read('plans');
-    const planIndex = plans.findIndex(p => p.id === id && p.userId === userId);
+    const plan = plans.find(p => p.id === id && p.userId === userId);
 
-    if (planIndex === -1) {
+    if (!plan) {
       return res.status(404).json({ error: 'Plan not found' });
     }
 
     const { name, eventType, eventDate, location, guests, budget, timeline, checklist } = req.body;
-    const plan = plans[planIndex];
+    const planUpdates = {};
 
     // Update fields if provided
     if (name !== undefined) {
-      plan.name = String(name).trim().slice(0, 200);
+      planUpdates.name = String(name).trim().slice(0, 200);
     }
     if (eventType !== undefined) {
-      plan.eventType = eventType ? String(eventType).trim().slice(0, 100) : null;
+      planUpdates.eventType = eventType ? String(eventType).trim().slice(0, 100) : null;
     }
     if (eventDate !== undefined) {
-      plan.eventDate = eventDate || null;
+      planUpdates.eventDate = eventDate || null;
     }
     if (location !== undefined) {
-      plan.location = location ? String(location).trim().slice(0, 200) : null;
+      planUpdates.location = location ? String(location).trim().slice(0, 200) : null;
     }
     if (guests !== undefined) {
-      plan.guests = guests ? Math.max(0, parseInt(guests, 10) || 0) : null;
+      planUpdates.guests = guests ? Math.max(0, parseInt(guests, 10) || 0) : null;
     }
     if (budget !== undefined) {
-      plan.budget = budget ? Math.max(0, parseFloat(budget) || 0) : null;
+      planUpdates.budget = budget ? Math.max(0, parseFloat(budget) || 0) : null;
     }
     if (timeline !== undefined) {
-      plan.timeline = Array.isArray(timeline) ? timeline : [];
+      planUpdates.timeline = Array.isArray(timeline) ? timeline : [];
     }
     if (checklist !== undefined) {
-      plan.checklist = Array.isArray(checklist) ? checklist : [];
+      planUpdates.checklist = Array.isArray(checklist) ? checklist : [];
     }
 
-    plan.updatedAt = new Date().toISOString();
-    plans[planIndex] = plan;
-    await dbUnified.write('plans', plans);
+    planUpdates.updatedAt = new Date().toISOString();
+    await dbUnified.updateOne('plans', { id }, { $set: planUpdates });
 
     res.json({
       success: true,
-      plan,
+      plan: { ...plan, ...planUpdates },
     });
   } catch (error) {
     logger.error('Error updating plan:', error);
@@ -195,14 +193,13 @@ router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, re
     const userId = req.user.id;
     const { id } = req.params;
     const plans = await dbUnified.read('plans');
-    const planIndex = plans.findIndex(p => p.id === id && p.userId === userId);
+    const plan = plans.find(p => p.id === id && p.userId === userId);
 
-    if (planIndex === -1) {
+    if (!plan) {
       return res.status(404).json({ error: 'Plan not found' });
     }
 
-    plans.splice(planIndex, 1);
-    await dbUnified.write('plans', plans);
+    await dbUnified.deleteOne('plans', id);
 
     res.json({
       success: true,
@@ -418,9 +415,9 @@ router.post('/:planId/budget', authRequired, csrfProtection, writeLimiter, async
     }
 
     const plans = await dbUnified.read('plans');
-    const planIndex = plans.findIndex(p => p.id === planId && p.userId === userId);
+    const plan = plans.find(p => p.id === planId && p.userId === userId);
 
-    if (planIndex === -1) {
+    if (!plan) {
       return res.status(404).json({ error: 'Plan not found' });
     }
 
@@ -438,10 +435,13 @@ router.post('/:planId/budget', authRequired, csrfProtection, writeLimiter, async
       updatedAt: now,
     }));
 
-    plans[planIndex].budgetItems = sanitizedItems;
-    plans[planIndex].updatedAt = now;
-
-    await dbUnified.write('plans', plans);
+    await dbUnified.updateOne(
+      'plans',
+      { id: planId },
+      {
+        $set: { budgetItems: sanitizedItems, updatedAt: now },
+      }
+    );
 
     res.json({
       success: true,

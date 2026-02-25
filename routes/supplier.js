@@ -55,14 +55,19 @@ router.post('/trial/activate', authRequired, csrfProtection, async (req, res) =>
     const now = new Date();
     const trialEndsAt = new Date(now.getTime() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
-    supplier.subscriptionStatus = 'trial';
-    supplier.trialStartedAt = now.toISOString();
-    supplier.trialEndsAt = trialEndsAt.toISOString();
-    supplier.trialUsed = true;
-    supplier.updatedAt = now.toISOString();
-
-    suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
+    await dbUnified.updateOne(
+      'suppliers',
+      { id: supplier.id },
+      {
+        $set: {
+          subscriptionStatus: 'trial',
+          trialStartedAt: now.toISOString(),
+          trialEndsAt: trialEndsAt.toISOString(),
+          trialUsed: true,
+          updatedAt: now.toISOString(),
+        },
+      }
+    );
 
     res.json({
       success: true,

@@ -247,9 +247,7 @@ router.post(
       }
     }
 
-    const all = await dbUnified.read('suppliers');
-    all.push(s);
-    await dbUnified.write('suppliers', all);
+    await dbUnified.insertOne('suppliers', s);
     res.json({ ok: true, supplier: s });
   }
 );
@@ -266,14 +264,15 @@ router.patch(
   applyCsrfProtection,
   async (req, res) => {
     const all = await dbUnified.read('suppliers');
-    const i = all.findIndex(s => s.id === req.params.id && s.ownerUserId === req.user.id);
-    if (i < 0) {
+    const s = all.find(sup => sup.id === req.params.id && sup.ownerUserId === req.user.id);
+    if (!s) {
       return res.status(404).json({ error: 'Not found' });
     }
     const b = req.body || {};
+    const supplierPatch = {};
 
     // If updating a Venues category supplier with venuePostcode
-    if (b.venuePostcode && all[i].category === 'Venues') {
+    if (b.venuePostcode && s.category === 'Venues') {
       if (!geocoding.isValidUKPostcode(b.venuePostcode)) {
         return res.status(400).json({
           error: 'Invalid UK postcode format',
@@ -281,17 +280,17 @@ router.patch(
       }
 
       // Update postcode and geocode
-      all[i].venuePostcode = String(b.venuePostcode).trim().toUpperCase();
+      supplierPatch.venuePostcode = String(b.venuePostcode).trim().toUpperCase();
 
       try {
-        const coords = await geocoding.geocodePostcode(all[i].venuePostcode);
+        const coords = await geocoding.geocodePostcode(supplierPatch.venuePostcode);
         if (coords) {
-          all[i].latitude = coords.latitude;
-          all[i].longitude = coords.longitude;
-          all[i].venuePostcode = coords.postcode;
-          logger.info(`✅ Geocoded venue ${all[i].name}: ${coords.latitude}, ${coords.longitude}`);
+          supplierPatch.latitude = coords.latitude;
+          supplierPatch.longitude = coords.longitude;
+          supplierPatch.venuePostcode = coords.postcode;
+          logger.info(`✅ Geocoded venue ${s.name}: ${coords.latitude}, ${coords.longitude}`);
         } else {
-          logger.warn(`⚠️ Could not geocode postcode ${all[i].venuePostcode}`);
+          logger.warn(`⚠️ Could not geocode postcode ${supplierPatch.venuePostcode}`);
         }
       } catch (error) {
         logger.error('Geocoding error:', error);
@@ -312,7 +311,7 @@ router.patch(
     ];
     for (const k of fields) {
       if (typeof b[k] === 'string') {
-        all[i][k] = b[k];
+        supplierPatch[k] = b[k];
       }
     }
 
@@ -320,27 +319,27 @@ router.patch(
     if (b.themeColor && typeof b.themeColor === 'string') {
       const hexColorRegex = /^#[0-9A-F]{6}$/i;
       if (hexColorRegex.test(b.themeColor.trim())) {
-        all[i].themeColor = b.themeColor.trim();
+        supplierPatch.themeColor = b.themeColor.trim();
       }
     }
 
     // Handle array fields
     if (b.amenities) {
-      all[i].amenities = String(b.amenities)
+      supplierPatch.amenities = String(b.amenities)
         .split(',')
         .map(x => x.trim())
         .filter(Boolean);
     }
 
     if (b.highlights && Array.isArray(b.highlights)) {
-      all[i].highlights = b.highlights
+      supplierPatch.highlights = b.highlights
         .map(x => String(x).trim())
         .filter(Boolean)
         .slice(0, 5); // Limit to 5 highlights
     }
 
     if (b.featuredServices && Array.isArray(b.featuredServices)) {
-      all[i].featuredServices = b.featuredServices
+      supplierPatch.featuredServices = b.featuredServices
         .map(x => String(x).trim())
         .filter(Boolean)
         .slice(0, 10); // Limit to 10 services
@@ -348,7 +347,7 @@ router.patch(
 
     // Handle social links with validation
     if (b.socialLinks && typeof b.socialLinks === 'object') {
-      all[i].socialLinks = {};
+      supplierPatch.socialLinks = {};
       const allowedPlatforms = [
         'facebook',
         'instagram',
@@ -366,7 +365,7 @@ router.patch(
             // Only allow http and https protocols
             if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
               // Use the parsed URL to prevent XSS
-              all[i].socialLinks[platform] = parsedUrl.href;
+              supplierPatch.socialLinks[platform] = parsedUrl.href;
             }
           } catch (err) {
             // Invalid URL, skip it
@@ -378,19 +377,19 @@ router.patch(
 
     // eslint-disable-next-line eqeqeq
     if (b.maxGuests != null) {
-      all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;
+      supplierPatch.maxGuests = parseInt(b.maxGuests, 10) || 0;
     }
     if (b.photos) {
       const photos = (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/))
         .map(x => String(x).trim())
         .filter(Boolean);
       if (photos.length) {
-        all[i].photos = photos;
+        supplierPatch.photos = photos;
       }
     }
-    all[i].approved = false;
-    await dbUnified.write('suppliers', all);
-    res.json({ ok: true, supplier: all[i] });
+    supplierPatch.approved = false;
+    await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: supplierPatch });
+    res.json({ ok: true, supplier: { ...s, ...supplierPatch } });
   }
 );
 
@@ -406,15 +405,18 @@ router.post(
   async (req, res) => {
     const suppliers = await dbUnified.read('suppliers');
     let changed = 0;
+    const proUpdatePromises = [];
     suppliers.forEach(s => {
       if (s.ownerUserId === req.user.id) {
         if (!s.isPro) {
-          s.isPro = true;
+          proUpdatePromises.push(
+            dbUnified.updateOne('suppliers', { id: s.id }, { $set: { isPro: true } })
+          );
           changed += 1;
         }
       }
     });
-    await dbUnified.write('suppliers', suppliers);
+    await Promise.all(proUpdatePromises);
 
     // Optionally also mirror this onto the user record if present
     try {

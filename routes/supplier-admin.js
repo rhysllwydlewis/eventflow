@@ -143,13 +143,18 @@ router.post(
   applyCsrfProtection,
   async (req, res) => {
     const all = await dbUnified.read('suppliers');
-    const i = all.findIndex(s => s.id === req.params.id);
-    if (i < 0) {
+    const s = all.find(sup => sup.id === req.params.id);
+    if (!s) {
       return res.status(404).json({ error: 'Not found' });
     }
-    all[i].approved = !!(req.body && req.body.approved);
-    await dbUnified.write('suppliers', all);
-    res.json({ ok: true, supplier: all[i] });
+    await dbUnified.updateOne(
+      'suppliers',
+      { id: req.params.id },
+      {
+        $set: { approved: !!(req.body && req.body.approved) },
+      }
+    );
+    res.json({ ok: true, supplier: { ...s, approved: !!(req.body && req.body.approved) } });
   }
 );
 
@@ -165,17 +170,17 @@ router.post(
   async (req, res) => {
     const { mode, duration } = req.body || {};
     const all = await dbUnified.read('suppliers');
-    const i = all.findIndex(s => s.id === req.params.id);
-    if (i < 0) {
+    const s = all.find(sup => sup.id === req.params.id);
+    if (!s) {
       return res.status(404).json({ error: 'Not found' });
     }
 
-    const s = all[i];
     const now = Date.now();
+    const proUpdates = {};
 
     if (mode === 'cancel') {
-      s.isPro = false;
-      s.proExpiresAt = null;
+      proUpdates.isPro = false;
+      proUpdates.proExpiresAt = null;
     } else if (mode === 'duration') {
       let ms = 0;
       switch (duration) {
@@ -194,8 +199,8 @@ router.post(
         default:
           return res.status(400).json({ error: 'Invalid duration' });
       }
-      s.isPro = true;
-      s.proExpiresAt = new Date(now + ms).toISOString();
+      proUpdates.isPro = true;
+      proUpdates.proExpiresAt = new Date(now + ms).toISOString();
     } else {
       return res.status(400).json({ error: 'Invalid mode' });
     }
@@ -203,22 +208,26 @@ router.post(
     // Optionally mirror Pro flag to the owning user, if present.
     try {
       if (s.ownerUserId) {
-        await dbUnified.updateOne('users', { id: s.ownerUserId }, { $set: { isPro: !!s.isPro } });
+        await dbUnified.updateOne(
+          'users',
+          { id: s.ownerUserId },
+          { $set: { isPro: !!proUpdates.isPro } }
+        );
       }
     } catch (_e) {
       // ignore errors from user store
     }
 
-    all[i] = s;
-    await dbUnified.write('suppliers', all);
+    await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: proUpdates });
+    const updatedSupplier = { ...s, ...proUpdates };
 
-    const active = await supplierIsProActive(s);
+    const active = await supplierIsProActive(updatedSupplier);
     res.json({
       ok: true,
       supplier: {
-        ...s,
+        ...updatedSupplier,
         isPro: active,
-        proExpiresAt: s.proExpiresAt || null,
+        proExpiresAt: updatedSupplier.proExpiresAt || null,
       },
     });
   }
@@ -236,68 +245,48 @@ router.put(
   async (req, res) => {
     const { id } = req.params;
     const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === id);
+    const supplier = suppliers.find(s => s.id === id);
 
-    if (supplierIndex === -1) {
+    if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found' });
     }
 
-    const supplier = suppliers[supplierIndex];
     const now = new Date().toISOString();
+    const supplierUpdates = {};
 
     // Update allowed fields
-    if (req.body.name !== undefined) {
-      supplier.name = req.body.name;
-    }
-    if (req.body.category !== undefined) {
-      supplier.category = req.body.category;
-    }
-    if (req.body.location !== undefined) {
-      supplier.location = req.body.location;
-    }
-    if (req.body.price_display !== undefined) {
-      supplier.price_display = req.body.price_display;
-    }
-    if (req.body.website !== undefined) {
-      supplier.website = req.body.website;
-    }
-    if (req.body.email !== undefined) {
-      supplier.email = req.body.email;
-    }
-    if (req.body.phone !== undefined) {
-      supplier.phone = req.body.phone;
-    }
-    if (req.body.maxGuests !== undefined) {
-      supplier.maxGuests = req.body.maxGuests;
-    }
-    if (req.body.description_short !== undefined) {
-      supplier.description_short = req.body.description_short;
-    }
-    if (req.body.description_long !== undefined) {
-      supplier.description_long = req.body.description_long;
-    }
-    if (req.body.blurb !== undefined) {
-      supplier.blurb = req.body.blurb;
-    }
-    if (req.body.amenities !== undefined) {
-      supplier.amenities = req.body.amenities;
+    const fields = [
+      'name',
+      'category',
+      'location',
+      'price_display',
+      'website',
+      'email',
+      'phone',
+      'maxGuests',
+      'description_short',
+      'description_long',
+      'blurb',
+      'amenities',
+      'tags',
+    ];
+    for (const field of fields) {
+      if (req.body[field] !== undefined) {
+        supplierUpdates[field] = req.body[field];
+      }
     }
     if (typeof req.body.approved === 'boolean') {
-      supplier.approved = req.body.approved;
+      supplierUpdates.approved = req.body.approved;
     }
     if (typeof req.body.verified === 'boolean') {
-      supplier.verified = req.body.verified;
-    }
-    if (req.body.tags !== undefined) {
-      supplier.tags = req.body.tags;
+      supplierUpdates.verified = req.body.verified;
     }
 
-    supplier.updatedAt = now;
+    supplierUpdates.updatedAt = now;
 
-    suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
+    await dbUnified.updateOne('suppliers', { id }, { $set: supplierUpdates });
 
-    res.json({ ok: true, supplier });
+    res.json({ ok: true, supplier: { ...supplier, ...supplierUpdates } });
   }
 );
 
@@ -315,22 +304,19 @@ router.post(
       const { supplierId, badgeId } = req.params;
 
       const suppliers = await dbUnified.read('suppliers');
-      const supplierIndex = suppliers.findIndex(s => s.id === supplierId);
+      const supplier = suppliers.find(s => s.id === supplierId);
 
-      if (supplierIndex === -1) {
+      if (!supplier) {
         return res.status(404).json({ error: 'Supplier not found' });
       }
 
-      if (!suppliers[supplierIndex].badges) {
-        suppliers[supplierIndex].badges = [];
+      const badges = supplier.badges || [];
+      if (!badges.includes(badgeId)) {
+        badges.push(badgeId);
+        await dbUnified.updateOne('suppliers', { id: supplierId }, { $set: { badges } });
       }
 
-      if (!suppliers[supplierIndex].badges.includes(badgeId)) {
-        suppliers[supplierIndex].badges.push(badgeId);
-        await dbUnified.write('suppliers', suppliers);
-      }
-
-      res.json({ success: true, supplier: suppliers[supplierIndex] });
+      res.json({ success: true, supplier: { ...supplier, badges } });
     } catch (error) {
       logger.error('Error awarding badge:', error);
       res.status(500).json({ error: 'Failed to award badge' });
@@ -352,20 +338,16 @@ router.delete(
       const { supplierId, badgeId } = req.params;
 
       const suppliers = await dbUnified.read('suppliers');
-      const supplierIndex = suppliers.findIndex(s => s.id === supplierId);
+      const supplier = suppliers.find(s => s.id === supplierId);
 
-      if (supplierIndex === -1) {
+      if (!supplier) {
         return res.status(404).json({ error: 'Supplier not found' });
       }
 
-      if (suppliers[supplierIndex].badges) {
-        suppliers[supplierIndex].badges = suppliers[supplierIndex].badges.filter(
-          b => b !== badgeId
-        );
-        await dbUnified.write('suppliers', suppliers);
-      }
+      const badges = (supplier.badges || []).filter(b => b !== badgeId);
+      await dbUnified.updateOne('suppliers', { id: supplierId }, { $set: { badges } });
 
-      res.json({ success: true, supplier: suppliers[supplierIndex] });
+      res.json({ success: true, supplier: { ...supplier, badges } });
     } catch (error) {
       logger.error('Error removing badge:', error);
       res.status(500).json({ error: 'Failed to remove badge' });
@@ -422,7 +404,17 @@ router.post(
       updated.push({ id: s.id, aiTags: tags, aiScore: score });
     });
 
-    await dbUnified.write('suppliers', all);
+    await Promise.all(
+      all.map(s =>
+        dbUnified.updateOne(
+          'suppliers',
+          { id: s.id },
+          {
+            $set: { aiTags: s.aiTags, aiScore: s.aiScore, aiUpdatedAt: now },
+          }
+        )
+      )
+    );
     res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
   }
 );
