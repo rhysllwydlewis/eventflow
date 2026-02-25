@@ -95,20 +95,21 @@ router.post(
       };
 
       const plans = await dbUnified.read('plans');
-      const planIndex = plans.findIndex(p => p.id === planId);
+      const plan = plans.find(p => p.id === planId);
 
-      if (planIndex === -1) {
+      if (!plan) {
         return res.status(404).json({ error: 'Plan not found' });
       }
 
-      if (!plans[planIndex].guests) {
-        plans[planIndex].guests = [];
-      }
-
-      plans[planIndex].guests.push(newGuest);
-      plans[planIndex].updatedAt = now;
-
-      await dbUnified.write('plans', plans);
+      const guests = plan.guests || [];
+      guests.push(newGuest);
+      await dbUnified.updateOne(
+        'plans',
+        { id: planId },
+        {
+          $set: { guests, updatedAt: now },
+        }
+      );
 
       res.status(201).json({
         success: true,
@@ -137,13 +138,12 @@ router.patch(
       const { name, email, plusOne, dietary, rsvpStatus, notes } = req.body;
 
       const plans = await dbUnified.read('plans');
-      const planIndex = plans.findIndex(p => p.id === planId);
+      const plan = plans.find(p => p.id === planId);
 
-      if (planIndex === -1) {
+      if (!plan) {
         return res.status(404).json({ error: 'Plan not found' });
       }
 
-      const plan = plans[planIndex];
       if (!plan.guests || !Array.isArray(plan.guests)) {
         return res.status(404).json({ error: 'Guest not found' });
       }
@@ -153,7 +153,7 @@ router.patch(
         return res.status(404).json({ error: 'Guest not found' });
       }
 
-      const guest = plan.guests[guestIndex];
+      const guest = { ...plan.guests[guestIndex] };
       const now = new Date().toISOString();
 
       if (name !== undefined) {
@@ -176,10 +176,15 @@ router.patch(
       }
 
       guest.updatedAt = now;
-      plan.guests[guestIndex] = guest;
-      plan.updatedAt = now;
-
-      await dbUnified.write('plans', plans);
+      const updatedGuests = [...plan.guests];
+      updatedGuests[guestIndex] = guest;
+      await dbUnified.updateOne(
+        'plans',
+        { id: planId },
+        {
+          $set: { guests: updatedGuests, updatedAt: now },
+        }
+      );
 
       res.json({
         success: true,
@@ -206,13 +211,12 @@ router.delete(
       const { planId, id } = req.params;
 
       const plans = await dbUnified.read('plans');
-      const planIndex = plans.findIndex(p => p.id === planId);
+      const plan = plans.find(p => p.id === planId);
 
-      if (planIndex === -1) {
+      if (!plan) {
         return res.status(404).json({ error: 'Plan not found' });
       }
 
-      const plan = plans[planIndex];
       if (!plan.guests || !Array.isArray(plan.guests)) {
         return res.status(404).json({ error: 'Guest not found' });
       }
@@ -222,10 +226,14 @@ router.delete(
         return res.status(404).json({ error: 'Guest not found' });
       }
 
-      plan.guests.splice(guestIndex, 1);
-      plan.updatedAt = new Date().toISOString();
-
-      await dbUnified.write('plans', plans);
+      const updatedGuests = plan.guests.filter(g => g.id !== id);
+      await dbUnified.updateOne(
+        'plans',
+        { id: planId },
+        {
+          $set: { guests: updatedGuests, updatedAt: new Date().toISOString() },
+        }
+      );
 
       res.json({
         success: true,

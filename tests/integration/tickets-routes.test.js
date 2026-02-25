@@ -32,6 +32,9 @@ jest.mock('../../middleware/audit', () => ({
 jest.mock('../../db-unified', () => ({
   read: jest.fn(),
   write: jest.fn(),
+  insertOne: jest.fn(),
+  updateOne: jest.fn(),
+  deleteOne: jest.fn(),
 }));
 
 const dbUnified = require('../../db-unified');
@@ -56,6 +59,14 @@ describe('Tickets Routes Integration', () => {
 
     dbUnified.read.mockReset();
     dbUnified.write.mockReset();
+    dbUnified.insertOne.mockReset();
+    dbUnified.updateOne.mockReset();
+    dbUnified.deleteOne.mockReset();
+
+    // Default mock implementations
+    dbUnified.insertOne.mockResolvedValue(true);
+    dbUnified.updateOne.mockResolvedValue(true);
+    dbUnified.deleteOne.mockResolvedValue(true);
   });
 
   it('rejects ticket creation when senderType does not match account role', async () => {
@@ -90,7 +101,7 @@ describe('Tickets Routes Integration', () => {
     expect(response.body.ticket.priority).toBe('medium');
     expect(response.body.ticket.subject).toBe('Help with invoice');
     expect(response.body.ticket.message).toBe('I cannot download my invoice for order #1001.');
-    expect(dbUnified.write).toHaveBeenCalledTimes(1);
+    expect(dbUnified.insertOne).toHaveBeenCalledTimes(1);
   });
 
   it('rejects oversized subject/message payloads', async () => {

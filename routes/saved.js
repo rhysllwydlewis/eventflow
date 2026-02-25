@@ -108,7 +108,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
     };
 
     savedItems.push(newSavedItem);
-    await dbUnified.write('savedItems', savedItems);
+    await dbUnified.insertOne('savedItems', newSavedItem);
 
     res.status(201).json({
       success: true,

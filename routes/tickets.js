@@ -150,7 +150,7 @@ router.post(
       };
 
       tickets.push(newTicket);
-      await dbUnified.write('tickets', tickets);
+      await dbUnified.insertOne('tickets', newTicket);
 
       // Audit log
       auditLog({
@@ -379,7 +379,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
 
     ticket.updatedAt = now;
     tickets[ticketIndex] = ticket;
-    await dbUnified.write('tickets', tickets);
+    await dbUnified.updateOne('tickets', { id: ticket.id }, { $set: ticket });
 
     // Audit log
     auditLog({
@@ -422,8 +422,7 @@ router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, re
     }
 
     const ticket = tickets[ticketIndex];
-    tickets.splice(ticketIndex, 1);
-    await dbUnified.write('tickets', tickets);
+    await dbUnified.deleteOne('tickets', ticket.id);
 
     // Audit log
     auditLog({
@@ -511,7 +510,7 @@ router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req
     ticket.lastReplyBy = userRole;
 
     tickets[ticketIndex] = ticket;
-    await dbUnified.write('tickets', tickets);
+    await dbUnified.updateOne('tickets', { id: ticket.id }, { $set: ticket });
 
     // Send email notification to ticket creator (if reply is from admin)
     if (userRole === 'admin' && ticket.senderEmail) {
