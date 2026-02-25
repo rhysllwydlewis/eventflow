@@ -471,14 +471,16 @@ router.get('/metrics/timeseries', authRequired, roleRequired('admin'), (_req, re
  * GET /api/admin/metrics
  * Get admin dashboard metrics
  */
-router.get('/metrics', authRequired, roleRequired('admin'), (_req, res) => {
+router.get('/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
   try {
-    const users = read('users') || [];
-    const suppliers = read('suppliers') || [];
-    const plans = read('plans') || [];
-    const msgs = read('messages') || [];
-    const pkgs = read('packages') || [];
-    const threads = read('threads') || [];
+    const [users, suppliers, plans, msgs, pkgs, threads] = await Promise.all([
+      dbUnified.read('users').then(d => d || []),
+      dbUnified.read('suppliers').then(d => d || []),
+      dbUnified.read('plans').then(d => d || []),
+      dbUnified.read('messages').then(d => d || []),
+      dbUnified.read('packages').then(d => d || []),
+      dbUnified.read('threads').then(d => d || []),
+    ]);
     res.json({
       counts: {
         usersTotal: users.length,
@@ -2403,41 +2405,47 @@ router.get('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) 
  * PUT /api/admin/content/faqs/:id
  * Update a FAQ
  */
-router.put('/content/faqs/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { question, answer, category } = req.body;
+router.put(
+  '/content/faqs/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { question, answer, category } = req.body;
 
-  const content = read('content') || {};
-  if (!content.faqs) {
-    return res.status(404).json({ error: 'FAQ not found' });
+    const content = (await dbUnified.read('content')) || {};
+    if (!content.faqs) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
+    if (faqIndex === -1) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    content.faqs[faqIndex] = {
+      ...content.faqs[faqIndex],
+      question: question || content.faqs[faqIndex].question,
+      answer: answer || content.faqs[faqIndex].answer,
+      category: category || content.faqs[faqIndex].category,
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user.email,
+    };
+
+    await dbUnified.write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'FAQ_UPDATED',
+      targetType: 'faq',
+      targetId: req.params.id,
+      details: { question, category },
+    });
+
+    res.json({ success: true, faq: content.faqs[faqIndex] });
   }
-
-  const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
-  if (faqIndex === -1) {
-    return res.status(404).json({ error: 'FAQ not found' });
-  }
-
-  content.faqs[faqIndex] = {
-    ...content.faqs[faqIndex],
-    question: question || content.faqs[faqIndex].question,
-    answer: answer || content.faqs[faqIndex].answer,
-    category: category || content.faqs[faqIndex].category,
-    updatedAt: new Date().toISOString(),
-    updatedBy: req.user.email,
-  };
-
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'FAQ_UPDATED',
-    targetType: 'faq',
-    targetId: req.params.id,
-    details: { question, category },
-  });
-
-  res.json({ success: true, faq: content.faqs[faqIndex] });
-});
+);
 
 /**
  * DELETE /api/admin/content/faqs/:id
@@ -2448,8 +2456,8 @@ router.delete(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const content = read('content') || {};
+  async (req, res) => {
+    const content = (await dbUnified.read('content')) || {};
     if (!content.faqs) {
       return res.status(404).json({ error: 'FAQ not found' });
     }
@@ -2460,7 +2468,7 @@ router.delete(
     }
 
     const deleted = content.faqs.splice(faqIndex, 1)[0];
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,

@@ -654,14 +654,12 @@ router.post(
   roleRequired('admin'),
   csrfProtection,
   async (req, res) => {
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === req.params.id);
+    const user = await dbUnified.findOne('users', { id: req.params.id });
 
-    if (userIndex < 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = users[userIndex];
     const now = new Date().toISOString();
 
     // Generate reset token
@@ -2079,9 +2077,8 @@ router.post(
  * GET /api/admin/users/:id
  * Get detailed information about a specific user
  */
-router.get('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
-  const users = read('users');
-  const user = users.find(u => u.id === req.params.id);
+router.get('/users/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  const user = await dbUnified.findOne('users', { id: req.params.id });
 
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -2103,14 +2100,11 @@ router.post(
   roleRequired('admin'),
   csrfProtection,
   async (req, res) => {
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === req.params.id);
+    const user = await dbUnified.findOne('users', { id: req.params.id });
 
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    const user = users[userIndex];
 
     // Generate reset token
     const token = uid('reset');
@@ -2228,14 +2222,11 @@ router.post(
       return res.status(400).json({ error: 'Missing user ID' });
     }
 
-    const users = read('users');
-    const idx = users.findIndex(u => u.id === userId);
+    const user = await dbUnified.findOne('users', { id: userId });
 
-    if (idx === -1) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    const user = users[idx];
 
     // Check if user is already verified
     if (user.verified === true) {
@@ -2489,29 +2480,33 @@ router.delete(
  * GET /api/admin/users/:id/subscription-history
  * Get subscription history for a user
  */
-router.get('/users/:id/subscription-history', authRequired, roleRequired('admin'), (req, res) => {
-  try {
-    const { id } = req.params;
+router.get(
+  '/users/:id/subscription-history',
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    const users = read('users');
-    const user = users.find(u => u.id === id);
+      const user = await dbUnified.findOne('users', { id });
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const history = user.subscriptionHistory || [];
+
+      res.json({
+        success: true,
+        history,
+        currentSubscription: user.subscription || null,
+      });
+    } catch (error) {
+      logger.error('Error fetching subscription history:', error);
+      res.status(500).json({ error: 'Failed to fetch subscription history' });
     }
-
-    const history = user.subscriptionHistory || [];
-
-    res.json({
-      success: true,
-      history,
-      currentSubscription: user.subscription || null,
-    });
-  } catch (error) {
-    logger.error('Error fetching subscription history:', error);
-    res.status(500).json({ error: 'Failed to fetch subscription history' });
   }
-});
+);
 
 /**
  * POST /api/admin/bulk/subscriptions
