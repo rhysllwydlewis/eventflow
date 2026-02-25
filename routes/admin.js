@@ -471,14 +471,16 @@ router.get('/metrics/timeseries', authRequired, roleRequired('admin'), (_req, re
  * GET /api/admin/metrics
  * Get admin dashboard metrics
  */
-router.get('/metrics', authRequired, roleRequired('admin'), (_req, res) => {
+router.get('/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
   try {
-    const users = read('users') || [];
-    const suppliers = read('suppliers') || [];
-    const plans = read('plans') || [];
-    const msgs = read('messages') || [];
-    const pkgs = read('packages') || [];
-    const threads = read('threads') || [];
+    const [users, suppliers, plans, msgs, pkgs, threads] = await Promise.all([
+      dbUnified.read('users').then(d => d || []),
+      dbUnified.read('suppliers').then(d => d || []),
+      dbUnified.read('plans').then(d => d || []),
+      dbUnified.read('messages').then(d => d || []),
+      dbUnified.read('packages').then(d => d || []),
+      dbUnified.read('threads').then(d => d || []),
+    ]);
     res.json({
       counts: {
         usersTotal: users.length,
@@ -514,29 +516,35 @@ router.get('/metrics', authRequired, roleRequired('admin'), (_req, res) => {
  * POST /api/admin/reset-demo
  * Reset demo data by clearing all collections and re-seeding
  */
-router.post('/reset-demo', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  try {
-    // Clear key collections and rerun seeding
-    const collections = [
-      'users',
-      'suppliers',
-      'packages',
-      'plans',
-      'notes',
-      'messages',
-      'threads',
-      'events',
-    ];
-    collections.forEach(name => write(name, []));
-    if (seedFn) {
-      seedFn();
+router.post(
+  '/reset-demo',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      // Clear key collections and rerun seeding
+      const collections = [
+        'users',
+        'suppliers',
+        'packages',
+        'plans',
+        'notes',
+        'messages',
+        'threads',
+        'events',
+      ];
+      await Promise.all(collections.map(name => dbUnified.write(name, [])));
+      if (seedFn) {
+        seedFn();
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error('Reset demo failed', err);
+      res.status(500).json({ error: 'Reset demo failed' });
     }
-    res.json({ ok: true });
-  } catch (err) {
-    logger.error('Reset demo failed', err);
-    res.status(500).json({ error: 'Reset demo failed' });
   }
-});
+);
 
 /**
  * GET /api/admin/suppliers
@@ -598,8 +606,7 @@ router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtect
       if (idx < 0) {
         return res.status(404).json({ error: 'Not found' });
       }
-      all.splice(idx, 1);
-      await dbUnified.write('suppliers', all);
+      await dbUnified.deleteOne('suppliers', req.params.id);
       await auditLog({
         action: AUDIT_ACTIONS.SUPPLIER_DELETED || 'supplier_deleted',
         userId: req.user.id,
@@ -625,9 +632,9 @@ router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfP
       if (i < 0) {
         return res.status(404).json({ error: 'Not found' });
       }
-      all[i].approved = !!(req.body && req.body.approved);
-      await dbUnified.write('suppliers', all);
-      res.json({ ok: true, supplier: all[i] });
+      const approved = !!(req.body && req.body.approved);
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: { approved } });
+      res.json({ ok: true, supplier: { ...all[i], approved } });
     } catch (error) {
       logger.error('Error approving supplier:', error);
       res.status(500).json({ error: 'Failed to approve supplier' });
@@ -686,19 +693,18 @@ router.post(
       // Optionally mirror Pro flag to the owning user, if present.
       try {
         if (s.ownerUserId) {
-          const users = await dbUnified.read('users');
-          const u = users.find(u => u.id === s.ownerUserId);
-          if (u) {
-            u.isPro = !!s.isPro;
-            await dbUnified.write('users', users);
-          }
+          await dbUnified.updateOne('users', { id: s.ownerUserId }, { $set: { isPro: !!s.isPro } });
         }
       } catch (_e) {
         // ignore errors from user store
       }
 
       all[i] = s;
-      await dbUnified.write('suppliers', all);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: req.params.id },
+        { $set: { isPro: s.isPro, proExpiresAt: s.proExpiresAt } }
+      );
 
       const active = supplierIsProActiveFn ? await supplierIsProActiveFn(s) : s.isPro;
       res.json({
@@ -765,8 +771,10 @@ router.post(
 
       let insertedCount = 0;
       let updatedCount = 0;
+      const now = new Date().toISOString();
 
       // Process each demo supplier (idempotent upsert)
+      const upsertOps = [];
       for (const demoSupplier of demoSuppliers) {
         if (!demoSupplier.id) {
           logger.warn('Skipping supplier without ID:', demoSupplier);
@@ -775,26 +783,29 @@ router.post(
 
         const existingIndex = existingById.get(demoSupplier.id);
         if (existingIndex !== undefined) {
-          // Update existing supplier
-          existingSuppliers[existingIndex] = {
-            ...existingSuppliers[existingIndex],
-            ...demoSupplier,
-            updatedAt: new Date().toISOString(),
-          };
+          upsertOps.push(
+            dbUnified.updateOne(
+              'suppliers',
+              { id: demoSupplier.id },
+              {
+                $set: { ...demoSupplier, updatedAt: now },
+              }
+            )
+          );
           updatedCount++;
         } else {
-          // Insert new supplier
-          existingSuppliers.push({
-            ...demoSupplier,
-            createdAt: demoSupplier.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
+          upsertOps.push(
+            dbUnified.insertOne('suppliers', {
+              ...demoSupplier,
+              createdAt: demoSupplier.createdAt || now,
+              updatedAt: now,
+            })
+          );
           insertedCount++;
         }
       }
 
-      // Write back to database
-      await dbUnified.write('suppliers', existingSuppliers);
+      await Promise.all(upsertOps);
 
       // Create audit log using DATA_EXPORT action as it's the closest match for data import
       auditLog({
@@ -907,8 +918,7 @@ router.post('/packages', authRequired, roleRequired('admin'), csrfProtection, as
       versionHistory: [],
     };
 
-    packages.push(newPackage);
-    await dbUnified.write('packages', packages);
+    await dbUnified.insertOne('packages', newPackage);
 
     // Create audit log
     auditLog({
@@ -936,15 +946,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const all = read('packages');
-    const i = all.findIndex(p => p.id === req.params.id);
-    if (i < 0) {
+  async (req, res) => {
+    const pkg = await dbUnified.findOne('packages', { id: req.params.id });
+    if (!pkg) {
       return res.status(404).json({ error: 'Not found' });
     }
-    all[i].approved = !!(req.body && req.body.approved);
-    write('packages', all);
-    res.json({ ok: true, package: all[i] });
+    const approved = !!(req.body && req.body.approved);
+    await dbUnified.updateOne('packages', { id: req.params.id }, { $set: { approved } });
+    res.json({ ok: true, package: { ...pkg, approved } });
   }
 );
 
@@ -957,15 +966,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const all = read('packages');
-    const i = all.findIndex(p => p.id === req.params.id);
-    if (i < 0) {
+  async (req, res) => {
+    const pkg = await dbUnified.findOne('packages', { id: req.params.id });
+    if (!pkg) {
       return res.status(404).json({ error: 'Not found' });
     }
-    all[i].featured = !!(req.body && req.body.featured);
-    write('packages', all);
-    res.json({ ok: true, package: all[i] });
+    const featured = !!(req.body && req.body.featured);
+    await dbUnified.updateOne('packages', { id: req.params.id }, { $set: { featured } });
+    res.json({ ok: true, package: { ...pkg, featured } });
   }
 );
 
@@ -996,20 +1004,22 @@ router.post(
       }
 
       const packages = await dbUnified.read('packages');
-      let updatedCount = 0;
-
-      packageIds.forEach(packageId => {
-        const index = packages.findIndex(p => p.id === packageId);
-        if (index >= 0) {
-          packages[index].approved = !!approved;
-          packages[index].updatedAt = new Date().toISOString();
-          packages[index].approvedBy = req.user.id;
-          updatedCount++;
-        }
-      });
+      const now = new Date().toISOString();
+      const toUpdate = packageIds.filter(id => packages.some(p => p.id === id));
+      const updatedCount = toUpdate.length;
 
       if (updatedCount > 0) {
-        await dbUnified.write('packages', packages);
+        await Promise.all(
+          toUpdate.map(id =>
+            dbUnified.updateOne(
+              'packages',
+              { id },
+              {
+                $set: { approved: !!approved, updatedAt: now, approvedBy: req.user.id },
+              }
+            )
+          )
+        );
       }
 
       // Create audit log
@@ -1055,20 +1065,22 @@ router.post(
       }
 
       const packages = await dbUnified.read('packages');
-      let updatedCount = 0;
-
-      packageIds.forEach(packageId => {
-        const index = packages.findIndex(p => p.id === packageId);
-        if (index >= 0) {
-          packages[index].featured = !!featured;
-          packages[index].updatedAt = new Date().toISOString();
-          packages[index].featuredBy = req.user.id;
-          updatedCount++;
-        }
-      });
+      const now = new Date().toISOString();
+      const toUpdate = packageIds.filter(id => packages.some(p => p.id === id));
+      const updatedCount = toUpdate.length;
 
       if (updatedCount > 0) {
-        await dbUnified.write('packages', packages);
+        await Promise.all(
+          toUpdate.map(id =>
+            dbUnified.updateOne(
+              'packages',
+              { id },
+              {
+                $set: { featured: !!featured, updatedAt: now, featuredBy: req.user.id },
+              }
+            )
+          )
+        );
       }
 
       // Create audit log
@@ -1123,13 +1135,11 @@ router.post(
 
       const packages = await dbUnified.read('packages');
       const initialCount = packages.length;
-
-      // Filter out packages to delete
-      const remainingPackages = packages.filter(p => !packageIds.includes(p.id));
-      const deletedCount = initialCount - remainingPackages.length;
+      const toDelete = packageIds.filter(id => packages.some(p => p.id === id));
+      const deletedCount = toDelete.length;
 
       if (deletedCount > 0) {
-        await dbUnified.write('packages', remainingPackages);
+        await Promise.all(toDelete.map(id => dbUnified.deleteOne('packages', id)));
       }
 
       // Create audit log
@@ -1170,15 +1180,16 @@ router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), csrf
         return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
       const all = await dbUnified.read('suppliers');
-      let count = 0;
-      all.forEach(s => {
-        if (supplierIds.includes(s.id)) {
-          s.approved = approved;
-          s.approvedAt = approved ? new Date().toISOString() : null;
-          count++;
-        }
-      });
-      await dbUnified.write('suppliers', all);
+      const now = new Date().toISOString();
+      const toUpdate = supplierIds.filter(id => all.some(s => s.id === id));
+      const count = toUpdate.length;
+      await Promise.all(
+        toUpdate.map(id =>
+          dbUnified.updateOne('suppliers', { id }, {
+            $set: { approved, approvedAt: approved ? now : null },
+          })
+        )
+      );
       await auditLog({
         action: AUDIT_ACTIONS.SUPPLIER_APPROVED,
         userId: req.user.id,
@@ -1204,15 +1215,16 @@ router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), csrfP
         return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
       const all = await dbUnified.read('suppliers');
-      let count = 0;
-      all.forEach(s => {
-        if (supplierIds.includes(s.id)) {
-          s.approved = false;
-          s.rejectedAt = new Date().toISOString();
-          count++;
-        }
-      });
-      await dbUnified.write('suppliers', all);
+      const now = new Date().toISOString();
+      const toUpdate = supplierIds.filter(id => all.some(s => s.id === id));
+      const count = toUpdate.length;
+      await Promise.all(
+        toUpdate.map(id =>
+          dbUnified.updateOne('suppliers', { id }, {
+            $set: { approved: false, rejectedAt: now },
+          })
+        )
+      );
       await auditLog({
         action: AUDIT_ACTIONS.SUPPLIER_REJECTED,
         userId: req.user.id,
@@ -1237,16 +1249,16 @@ router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), csrfP
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
         return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
-      let all = await dbUnified.read('suppliers');
+      const all = await dbUnified.read('suppliers');
       const before = all.length;
-      all = all.filter(s => !supplierIds.includes(s.id));
-      await dbUnified.write('suppliers', all);
+      const toDelete = supplierIds.filter(id => all.some(s => s.id === id));
+      await Promise.all(toDelete.map(id => dbUnified.deleteOne('suppliers', id)));
       await auditLog({
         action: AUDIT_ACTIONS.SUPPLIER_DELETED,
         userId: req.user.id,
-        meta: { count: before - all.length },
+        meta: { count: toDelete.length },
       });
-      res.json({ success: true, deleted: before - all.length });
+      res.json({ success: true, deleted: toDelete.length });
     } catch (error) {
       logger.error('Bulk delete suppliers error:', error);
       res.status(500).json({ error: 'Failed to bulk delete suppliers' });
@@ -1273,14 +1285,22 @@ router.post(
       }
       const all = await dbUnified.read('users');
       let count = 0;
-      all.forEach(u => {
-        if (userIds.includes(u.id)) {
-          u.verified = true;
-          u.verifiedAt = new Date().toISOString();
+      const now = new Date().toISOString();
+      const verifyPromises = userIds.map(userId => {
+        const user = all.find(u => u.id === userId);
+        if (user) {
           count++;
+          return dbUnified.updateOne(
+            'users',
+            { id: userId },
+            {
+              $set: { verified: true, verifiedAt: now },
+            }
+          );
         }
+        return Promise.resolve();
       });
-      await dbUnified.write('users', all);
+      await Promise.all(verifyPromises);
       await auditLog({
         action: AUDIT_ACTIONS.BULK_USERS_VERIFIED,
         userId: req.user.id,
@@ -1317,15 +1337,24 @@ router.post(
       const suspendUntil = duration ? new Date(Date.now() + parseDuration(duration)) : null;
       const all = await dbUnified.read('users');
       let count = 0;
-      all.forEach(u => {
-        if (filteredIds.includes(u.id) && u.id !== req.user.id) {
-          u.suspended = true;
-          u.suspendedAt = new Date().toISOString();
-          u.suspendedUntil = suspendUntil ? suspendUntil.toISOString() : null;
+      const suspendedAt = new Date().toISOString();
+      const suspendPromises = filteredIds
+        .filter(id => id !== req.user.id && all.find(u => u.id === id))
+        .map(userId => {
           count++;
-        }
-      });
-      await dbUnified.write('users', all);
+          return dbUnified.updateOne(
+            'users',
+            { id: userId },
+            {
+              $set: {
+                suspended: true,
+                suspendedAt,
+                suspendedUntil: suspendUntil ? suspendUntil.toISOString() : null,
+              },
+            }
+          );
+        });
+      await Promise.all(suspendPromises);
       await auditLog({
         action: AUDIT_ACTIONS.BULK_USERS_SUSPENDED,
         userId: req.user.id,
@@ -1455,8 +1484,17 @@ router.post(
       photo.approvedAt = now;
       photo.approvedBy = req.user.id;
 
-      photos[photoIndex] = photo;
-      await dbUnified.write('photos', photos);
+      await dbUnified.updateOne(
+        'photos',
+        { id: photo.id },
+        {
+          $set: {
+            status: photo.status,
+            approvedAt: photo.approvedAt,
+            approvedBy: photo.approvedBy,
+          },
+        }
+      );
 
       // Add photo to supplier's photos array if not already there
       const suppliers = await dbUnified.read('suppliers');
@@ -1468,7 +1506,11 @@ router.post(
         }
         if (!suppliers[supplierIndex].photos.includes(photo.url)) {
           suppliers[supplierIndex].photos.push(photo.url);
-          await dbUnified.write('suppliers', suppliers);
+          await dbUnified.updateOne(
+            'suppliers',
+            { id: suppliers[supplierIndex].id },
+            { $set: { photos: suppliers[supplierIndex].photos } }
+          );
         }
       }
 
@@ -1520,7 +1562,18 @@ router.post(
       photo.rejectionReason = reason || 'No reason provided';
 
       photos[photoIndex] = photo;
-      await dbUnified.write('photos', photos);
+      await dbUnified.updateOne(
+        'photos',
+        { id: photo.id },
+        {
+          $set: {
+            status: photo.status,
+            rejectedAt: photo.rejectedAt,
+            rejectedBy: photo.rejectedBy,
+            rejectionReason: photo.rejectionReason,
+          },
+        }
+      );
 
       // Create audit log
       auditLog({
@@ -1583,31 +1636,39 @@ router.post(
         failed: [],
       };
 
+      const photoUpdates = [];
+      const supplierPhotoUpdates = new Map(); // supplierId -> new photos array
+
       for (const photoId of photoIds) {
         try {
-          const photoIndex = photos.findIndex(p => p.id === photoId);
+          const photo = photos.find(p => p.id === photoId);
 
-          if (photoIndex === -1) {
+          if (!photo) {
             results.failed.push({ photoId, error: 'Photo not found' });
             continue;
           }
 
-          const photo = photos[photoIndex];
-
           if (action === 'approve') {
-            photo.status = 'approved';
-            photo.approvedAt = now;
-            photo.approvedBy = req.user.id;
+            photoUpdates.push(
+              dbUnified.updateOne(
+                'photos',
+                { id: photoId },
+                {
+                  $set: { status: 'approved', approvedAt: now, approvedBy: req.user.id },
+                }
+              )
+            );
 
-            // Add to supplier's photos array
-            const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
-            if (supplierIndex !== -1) {
-              if (!suppliers[supplierIndex].photos) {
-                suppliers[supplierIndex].photos = [];
+            // Collect supplier photo-array updates
+            const supplier = suppliers.find(s => s.id === photo.supplierId);
+            if (supplier) {
+              const existing = supplierPhotoUpdates.get(photo.supplierId) || [
+                ...(supplier.photos || []),
+              ];
+              if (!existing.includes(photo.url)) {
+                existing.push(photo.url);
               }
-              if (!suppliers[supplierIndex].photos.includes(photo.url)) {
-                suppliers[supplierIndex].photos.push(photo.url);
-              }
+              supplierPhotoUpdates.set(photo.supplierId, existing);
             }
 
             auditLog({
@@ -1615,36 +1676,57 @@ router.post(
               adminEmail: req.user.email,
               action: AUDIT_ACTIONS.CONTENT_APPROVED,
               targetType: 'photo',
-              targetId: photo.id,
+              targetId: photoId,
               details: { supplierId: photo.supplierId, batch: true },
             });
           } else {
-            photo.status = 'rejected';
-            photo.rejectedAt = now;
-            photo.rejectedBy = req.user.id;
-            photo.rejectionReason = reason || 'Batch rejection';
+            photoUpdates.push(
+              dbUnified.updateOne(
+                'photos',
+                { id: photoId },
+                {
+                  $set: {
+                    status: 'rejected',
+                    rejectedAt: now,
+                    rejectedBy: req.user.id,
+                    rejectionReason: reason || 'Batch rejection',
+                  },
+                }
+              )
+            );
 
             auditLog({
               adminId: req.user.id,
               adminEmail: req.user.email,
               action: AUDIT_ACTIONS.CONTENT_REJECTED,
               targetType: 'photo',
-              targetId: photo.id,
-              details: { supplierId: photo.supplierId, reason: photo.rejectionReason, batch: true },
+              targetId: photoId,
+              details: {
+                supplierId: photo.supplierId,
+                reason: reason || 'Batch rejection',
+                batch: true,
+              },
             });
           }
 
-          photos[photoIndex] = photo;
           results.success.push(photoId);
         } catch (error) {
           results.failed.push({ photoId, error: error.message });
         }
       }
 
-      // Save all changes
-      await dbUnified.write('photos', photos);
+      // Persist all photo updates atomically
+      await Promise.all(photoUpdates);
       if (action === 'approve') {
-        await dbUnified.write('suppliers', suppliers);
+        await Promise.all(
+          [...supplierPhotoUpdates.entries()].map(([supplierId, updatedPhotos]) =>
+            dbUnified.updateOne(
+              'suppliers',
+              { id: supplierId },
+              { $set: { photos: updatedPhotos } }
+            )
+          )
+        );
       }
 
       res.json({
@@ -1715,7 +1797,8 @@ router.post(
         budget: ['affordable', 'budget', 'value'],
       };
 
-      suppliers.forEach((supplier, index) => {
+      const tagUpdates = [];
+      suppliers.forEach(supplier => {
         // Skip unapproved suppliers - only tag suppliers that are live on the platform
         if (!supplier.approved) {
           return;
@@ -1762,12 +1845,15 @@ router.post(
 
         // Only update supplier if we generated at least one tag
         if (tags.size > 0) {
-          suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags per supplier
+          const supplierTags = Array.from(tags).slice(0, 10); // Limit to 10 tags per supplier
+          tagUpdates.push(
+            dbUnified.updateOne('suppliers', { id: supplier.id }, { $set: { tags: supplierTags } })
+          );
           taggedCount++;
         }
       });
 
-      await dbUnified.write('suppliers', suppliers);
+      await Promise.all(tagUpdates);
 
       // Create audit log for tracking when tags were generated
       auditLog({
@@ -1956,31 +2042,37 @@ router.get('/content/homepage', authRequired, roleRequired('admin'), (req, res) 
  * PUT /api/admin/content/homepage
  * Update homepage hero content
  */
-router.put('/content/homepage', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { title, subtitle, ctaText } = req.body;
+router.put(
+  '/content/homepage',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { title, subtitle, ctaText } = req.body;
 
-  const content = read('content') || {};
-  content.homepage = {
-    title: title || 'Plan Your Perfect Event',
-    subtitle: subtitle || 'Discover amazing suppliers and packages for your special day',
-    ctaText: ctaText || 'Start Planning',
-    updatedAt: new Date().toISOString(),
-    updatedBy: req.user.email,
-  };
+    const content = (await dbUnified.read('content')) || {};
+    content.homepage = {
+      title: title || 'Plan Your Perfect Event',
+      subtitle: subtitle || 'Discover amazing suppliers and packages for your special day',
+      ctaText: ctaText || 'Start Planning',
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user.email,
+    };
 
-  write('content', content);
+    await dbUnified.write('content', content);
 
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'CONTENT_UPDATED',
-    targetType: 'homepage',
-    targetId: null,
-    details: { title, subtitle, ctaText },
-  });
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'CONTENT_UPDATED',
+      targetType: 'homepage',
+      targetId: null,
+      details: { title, subtitle, ctaText },
+    });
 
-  res.json({ success: true, content: content.homepage });
-});
+    res.json({ success: true, content: content.homepage });
+  }
+);
 
 /**
  * POST /api/admin/homepage/hero-image
@@ -2049,14 +2141,14 @@ router.post(
       }
 
       // Save to homepage settings
-      const content = read('content') || {};
+      const content = (await dbUnified.read('content')) || {};
       if (!content.homepage) {
         content.homepage = {};
       }
       content.homepage.heroImage = imageUrl;
       content.homepage.heroImageUpdatedAt = new Date().toISOString();
       content.homepage.heroImageUpdatedBy = req.user.email;
-      write('content', content);
+      await dbUnified.write('content', content);
 
       // Audit log
       auditLog({
@@ -2102,14 +2194,14 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { message, type, active } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    const content = read('content') || {};
+    const content = (await dbUnified.read('content')) || {};
     if (!content.announcements) {
       content.announcements = [];
     }
@@ -2124,7 +2216,7 @@ router.post(
     };
 
     content.announcements.push(announcement);
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,
@@ -2164,10 +2256,10 @@ router.put(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
+  async (req, res) => {
     const { message, type, active } = req.body;
 
-    const content = read('content') || {};
+    const content = (await dbUnified.read('content')) || {};
     if (!content.announcements) {
       return res.status(404).json({ error: 'Announcement not found' });
     }
@@ -2186,7 +2278,7 @@ router.put(
       updatedBy: req.user.email,
     };
 
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,
@@ -2210,8 +2302,8 @@ router.delete(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const content = read('content') || {};
+  async (req, res) => {
+    const content = (await dbUnified.read('content')) || {};
     if (!content.announcements) {
       return res.status(404).json({ error: 'Announcement not found' });
     }
@@ -2222,7 +2314,7 @@ router.delete(
     }
 
     const deleted = content.announcements.splice(announcementIndex, 1)[0];
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,
@@ -2251,41 +2343,47 @@ router.get('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
  * POST /api/admin/content/faqs
  * Create a new FAQ
  */
-router.post('/content/faqs', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { question, answer, category } = req.body;
+router.post(
+  '/content/faqs',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { question, answer, category } = req.body;
 
-  if (!question || !answer) {
-    return res.status(400).json({ error: 'Question and answer are required' });
+    if (!question || !answer) {
+      return res.status(400).json({ error: 'Question and answer are required' });
+    }
+
+    const content = (await dbUnified.read('content')) || {};
+    if (!content.faqs) {
+      content.faqs = [];
+    }
+
+    const faq = {
+      id: generateUniqueId('faq'),
+      question,
+      answer,
+      category: category || 'General',
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.email,
+    };
+
+    content.faqs.push(faq);
+    await dbUnified.write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'FAQ_CREATED',
+      targetType: 'faq',
+      targetId: faq.id,
+      details: { question, category },
+    });
+
+    res.json({ success: true, faq });
   }
-
-  const content = read('content') || {};
-  if (!content.faqs) {
-    content.faqs = [];
-  }
-
-  const faq = {
-    id: generateUniqueId('faq'),
-    question,
-    answer,
-    category: category || 'General',
-    createdAt: new Date().toISOString(),
-    createdBy: req.user.email,
-  };
-
-  content.faqs.push(faq);
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'FAQ_CREATED',
-    targetType: 'faq',
-    targetId: faq.id,
-    details: { question, category },
-  });
-
-  res.json({ success: true, faq });
-});
+);
 
 /**
  * GET /api/admin/content/faqs/:id
@@ -2307,41 +2405,47 @@ router.get('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) 
  * PUT /api/admin/content/faqs/:id
  * Update a FAQ
  */
-router.put('/content/faqs/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { question, answer, category } = req.body;
+router.put(
+  '/content/faqs/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { question, answer, category } = req.body;
 
-  const content = read('content') || {};
-  if (!content.faqs) {
-    return res.status(404).json({ error: 'FAQ not found' });
+    const content = (await dbUnified.read('content')) || {};
+    if (!content.faqs) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
+    if (faqIndex === -1) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    content.faqs[faqIndex] = {
+      ...content.faqs[faqIndex],
+      question: question || content.faqs[faqIndex].question,
+      answer: answer || content.faqs[faqIndex].answer,
+      category: category || content.faqs[faqIndex].category,
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user.email,
+    };
+
+    await dbUnified.write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'FAQ_UPDATED',
+      targetType: 'faq',
+      targetId: req.params.id,
+      details: { question, category },
+    });
+
+    res.json({ success: true, faq: content.faqs[faqIndex] });
   }
-
-  const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
-  if (faqIndex === -1) {
-    return res.status(404).json({ error: 'FAQ not found' });
-  }
-
-  content.faqs[faqIndex] = {
-    ...content.faqs[faqIndex],
-    question: question || content.faqs[faqIndex].question,
-    answer: answer || content.faqs[faqIndex].answer,
-    category: category || content.faqs[faqIndex].category,
-    updatedAt: new Date().toISOString(),
-    updatedBy: req.user.email,
-  };
-
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'FAQ_UPDATED',
-    targetType: 'faq',
-    targetId: req.params.id,
-    details: { question, category },
-  });
-
-  res.json({ success: true, faq: content.faqs[faqIndex] });
-});
+);
 
 /**
  * DELETE /api/admin/content/faqs/:id
@@ -2352,8 +2456,8 @@ router.delete(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  (req, res) => {
-    const content = read('content') || {};
+  async (req, res) => {
+    const content = (await dbUnified.read('content')) || {};
     if (!content.faqs) {
       return res.status(404).json({ error: 'FAQ not found' });
     }
@@ -2364,7 +2468,7 @@ router.delete(
     }
 
     const deleted = content.faqs.splice(faqIndex, 1)[0];
-    write('content', content);
+    await dbUnified.write('content', content);
 
     auditLog({
       adminId: req.user.id,
@@ -2800,7 +2904,7 @@ router.post(
 
       // Remove the custom template, will fall back to default
       delete settings.emailTemplates[req.params.name];
-      await dbUnified.write('settings', settings);
+      await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -2965,7 +3069,19 @@ router.put(
       ticket.updatedBy = req.user.id;
 
       tickets[index] = ticket;
-      await dbUnified.write('tickets', tickets);
+      await dbUnified.updateOne(
+        'tickets',
+        { id: ticket.id },
+        {
+          $set: {
+            status: ticket.status,
+            priority: ticket.priority,
+            assignedTo: ticket.assignedTo,
+            updatedAt: ticket.updatedAt,
+            updatedBy: ticket.updatedBy,
+          },
+        }
+      );
 
       res.json({ ticket });
     } catch (error) {
@@ -3022,8 +3138,14 @@ router.post(
       }
 
       delete ticket.replies;
-      tickets[index] = ticket;
-      await dbUnified.write('tickets', tickets);
+      await dbUnified.updateOne(
+        'tickets',
+        { id: ticket.id },
+        {
+          $set: { responses: ticket.responses, updatedAt: ticket.updatedAt, status: ticket.status },
+          $unset: { replies: '' },
+        }
+      );
 
       res.json({ ticket, reply });
     } catch (error) {
@@ -3272,7 +3394,17 @@ router.post(
       listing.status = approved ? 'active' : 'pending';
       listing.updatedAt = new Date().toISOString();
 
-      await dbUnified.write('marketplace_listings', listings);
+      await dbUnified.updateOne(
+        'marketplace_listings',
+        { id: listing.id },
+        {
+          $set: {
+            approved: listing.approved,
+            status: listing.status,
+            updatedAt: listing.updatedAt,
+          },
+        }
+      );
 
       // Log audit using auditLog function
       await auditLog({
@@ -3316,8 +3448,7 @@ router.delete(
       const deletedImageCount = await photoUpload.deleteMarketplaceImages(req.params.id);
 
       // Remove listing
-      const updatedListings = listings.filter(l => l.id !== req.params.id);
-      await dbUnified.write('marketplace_listings', updatedListings);
+      await dbUnified.deleteOne('marketplace_listings', req.params.id);
 
       // Log audit
       await auditLog({
@@ -3753,7 +3884,7 @@ router.delete(
         });
         settings.collageWidget.updatedAt = new Date().toISOString();
         settings.collageWidget.updatedBy = req.user.email;
-        await dbUnified.write('settings', settings);
+        await dbUnified.writeAndVerify('settings', settings);
       }
 
       auditLog({
@@ -4716,8 +4847,7 @@ router.post(
       // Remove version history from duplicate
       delete duplicatePkg.versionHistory;
 
-      packages.push(duplicatePkg);
-      await dbUnified.write('packages', packages);
+      await dbUnified.insertOne('packages', duplicatePkg);
 
       // Audit log
       await auditLog({

@@ -144,14 +144,16 @@ router.post('/event', writeLimiter, csrfProtection, async (req, res) => {
     const analyticsEvents = (await dbUnified.read('analyticsEvents')) || [];
     analyticsEvents.push(analyticsEvent);
 
-    // Keep only last N events to prevent unbounded growth
+    // Keep only last N events to prevent unbounded growth in local storage
     // Configurable via env var, defaults to 10000
     const maxEvents = parseInt(process.env.MAX_ANALYTICS_EVENTS, 10) || 10000;
     if (analyticsEvents.length > maxEvents) {
+      // Trim the oldest events - in MongoDB this is handled by TTL indexes
       analyticsEvents.splice(0, analyticsEvents.length - maxEvents);
+      await dbUnified.write('analyticsEvents', analyticsEvents);
+    } else {
+      await dbUnified.insertOne('analyticsEvents', analyticsEvent);
     }
-
-    await dbUnified.write('analyticsEvents', analyticsEvents);
 
     // Respond immediately (don't block on write)
     res.json({

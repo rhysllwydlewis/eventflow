@@ -386,10 +386,15 @@ async function grantPermission(userId, permission) {
   // Add permission if not already present
   if (!user.customPermissions.includes(permission)) {
     user.customPermissions.push(permission);
-    user.updatedAt = new Date().toISOString();
+    const updatedAt = new Date().toISOString();
 
-    users[userIndex] = user;
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: userId },
+      {
+        $set: { customPermissions: user.customPermissions, updatedAt },
+      }
+    );
 
     // Clear cache for this user
     permissionCache.clear(userId);
@@ -421,11 +426,16 @@ async function revokePermission(userId, permission) {
 
   // Remove permission if present
   if (Array.isArray(user.customPermissions)) {
-    user.customPermissions = user.customPermissions.filter(p => p !== permission);
-    user.updatedAt = new Date().toISOString();
+    const updatedPermissions = user.customPermissions.filter(p => p !== permission);
+    const updatedAt = new Date().toISOString();
 
-    users[userIndex] = user;
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: userId },
+      {
+        $set: { customPermissions: updatedPermissions, updatedAt },
+      }
+    );
 
     // Clear cache for this user
     permissionCache.clear(userId);

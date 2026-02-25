@@ -50,9 +50,10 @@ async function trackSearch(searchData) {
     // Keep only last 10000 entries to prevent unbounded growth
     if (searchHistory.length > 10000) {
       searchHistory.splice(0, searchHistory.length - 10000);
+      await dbUnified.write('searchHistory', searchHistory);
+    } else {
+      await dbUnified.insertOne('searchHistory', historyEntry);
     }
-
-    await dbUnified.write('searchHistory', searchHistory);
 
     // Update popular searches asynchronously
     updatePopularSearches(searchData.queryText).catch(err =>
@@ -77,9 +78,13 @@ async function trackClick(searchId, resultId, position) {
     const index = searchHistory.findIndex(s => s.id === searchId);
 
     if (index !== -1) {
-      searchHistory[index].resultClicked = resultId;
-      searchHistory[index].clickPosition = position;
-      await dbUnified.write('searchHistory', searchHistory);
+      await dbUnified.updateOne(
+        'searchHistory',
+        { id: searchId },
+        {
+          $set: { resultClicked: resultId, clickPosition: position },
+        }
+      );
     }
   } catch (error) {
     logger.error('Failed to track click:', error);
@@ -102,8 +107,16 @@ async function updatePopularSearches(queryText) {
   let popularEntry = popularSearches.find(p => p.normalizedQuery === normalizedQuery);
 
   if (popularEntry) {
-    popularEntry.searchCount++;
-    popularEntry.lastSearched = new Date().toISOString();
+    await dbUnified.updateOne(
+      'popularSearches',
+      { normalizedQuery },
+      {
+        $set: {
+          searchCount: popularEntry.searchCount + 1,
+          lastSearched: new Date().toISOString(),
+        },
+      }
+    );
   } else {
     popularEntry = {
       id: `popular_${Date.now()}_${crypto.randomUUID()}`,
@@ -116,10 +129,8 @@ async function updatePopularSearches(queryText) {
       lastSearched: new Date().toISOString(),
       trendScore: 0,
     };
-    popularSearches.push(popularEntry);
+    await dbUnified.insertOne('popularSearches', popularEntry);
   }
-
-  await dbUnified.write('popularSearches', popularSearches);
 
   // Clear popular queries cache
   await cache.del('search:popular:queries');

@@ -275,12 +275,9 @@ async function updatePaymentRecord(paymentId, updates) {
     throw new Error('Payment not found');
   }
 
-  Object.assign(payment, updates, {
-    updatedAt: new Date().toISOString(),
-  });
-
-  await dbUnified.write('payments', payments);
-  return payment;
+  const paymentUpdates = { ...updates, updatedAt: new Date().toISOString() };
+  await dbUnified.updateOne('payments', { id: paymentId }, { $set: paymentUpdates });
+  return { ...payment, ...paymentUpdates };
 }
 
 /**

@@ -3,10 +3,11 @@
  * Handles map, filters, search, view toggling, and real listings
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   let allListings = [];
   let currentUser = null;

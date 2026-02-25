@@ -410,9 +410,7 @@ router.post(
         updatedAt: new Date().toISOString(),
       };
 
-      const listings = await dbUnified.read('marketplace_listings');
-      listings.push(listing);
-      await dbUnified.write('marketplace_listings', listings);
+      await dbUnified.insertOne('marketplace_listings', listing);
 
       logger.info('Marketplace listing created', {
         listingId: listing.id,
@@ -528,14 +526,12 @@ router.post(
         return res.status(200).json({ ok: true, message: 'Listing already saved' });
       }
 
-      savedItems.push({
+      await dbUnified.insertOne('marketplace_saved_items', {
         id: uid('mkt_saved'),
         userId: req.user.id,
         listingId,
         savedAt: new Date().toISOString(),
       });
-
-      await dbUnified.write('marketplace_saved_items', savedItems);
 
       res.status(201).json({ ok: true, message: 'Listing saved' });
     } catch (error) {
@@ -557,15 +553,15 @@ router.delete(
       const { listingId } = req.params;
       const savedItems = await dbUnified.read('marketplace_saved_items');
 
-      const filtered = savedItems.filter(
-        item => !(item.userId === req.user.id && item.listingId === listingId)
+      const savedItem = savedItems.find(
+        item => item.userId === req.user.id && item.listingId === listingId
       );
 
-      if (filtered.length === savedItems.length) {
+      if (!savedItem) {
         return res.status(404).json({ error: 'Saved listing not found' });
       }
 
-      await dbUnified.write('marketplace_saved_items', filtered);
+      await dbUnified.deleteOne('marketplace_saved_items', savedItem.id);
       res.json({ ok: true, message: 'Listing unsaved' });
     } catch (error) {
       logger.error('Error removing saved marketplace listing:', error);
@@ -639,7 +635,22 @@ router.put(
 
       listing.updatedAt = new Date().toISOString();
 
-      await dbUnified.write('marketplace_listings', listings);
+      await dbUnified.updateOne(
+        'marketplace_listings',
+        { id: listing.id },
+        {
+          $set: {
+            title: listing.title,
+            description: listing.description,
+            price: listing.price,
+            category: listing.category,
+            condition: listing.condition,
+            location: listing.location,
+            status: listing.status,
+            updatedAt: listing.updatedAt,
+          },
+        }
+      );
       res.json({ ok: true, listing });
     } catch (error) {
       logger.error('Error updating marketplace listing:', error);
@@ -657,7 +668,7 @@ router.delete(
   applyCsrfProtection,
   async (req, res) => {
     try {
-      let listings = await dbUnified.read('marketplace_listings');
+      const listings = await dbUnified.read('marketplace_listings');
       const listing = listings.find(l => l.id === req.params.id);
 
       if (!listing) {
@@ -677,8 +688,7 @@ router.delete(
         deletedImageCount,
       });
 
-      listings = listings.filter(l => l.id !== req.params.id);
-      await dbUnified.write('marketplace_listings', listings);
+      await dbUnified.deleteOne('marketplace_listings', req.params.id);
 
       res.json({ ok: true, deletedImageCount });
     } catch (error) {

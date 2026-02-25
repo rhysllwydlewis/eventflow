@@ -61,12 +61,11 @@ function initializeDependencies(deps) {
  */
 async function updateLastLogin(userId) {
   try {
-    const allUsers = await dbUnified.read('users');
-    const idx = allUsers.findIndex(u => u.id === userId);
-    if (idx !== -1) {
-      allUsers[idx].lastLoginAt = new Date().toISOString();
-      await dbUnified.write('users', allUsers);
-    }
+    await dbUnified.updateOne(
+      'users',
+      { id: userId },
+      { $set: { lastLoginAt: new Date().toISOString() } }
+    );
   } catch (e) {
     logger.error('Failed to update lastLoginAt', e);
   }
@@ -303,7 +302,7 @@ router.post(
       lastName: String(userLastName).trim().slice(0, 40),
       email: String(email).toLowerCase(),
       role: isOwner ? 'admin' : roleDecision.role, // Owner gets admin immediately
-      passwordHash: bcrypt.hashSync(password, 10),
+      passwordHash: await bcrypt.hash(password, 10),
       location: String(location).trim().slice(0, 100),
       postcode: postcode ? String(postcode).trim().slice(0, 10) : undefined,
       company: company ? String(company).trim().slice(0, 100) : undefined,
@@ -352,8 +351,7 @@ router.post(
     }
 
     // Only save user after email is successfully sent
-    users.push(user);
-    await dbUnified.write('users', users);
+    await dbUnified.insertOne('users', user);
 
     // Update last login timestamp (non-blocking)
     await updateLastLogin(user.id);
@@ -472,7 +470,7 @@ router.post('/login', authLimiter, async (req, res) => {
   // Try to compare password
   let passwordMatches = false;
   try {
-    passwordMatches = bcrypt.compareSync(password, user.passwordHash);
+    passwordMatches = await bcrypt.compare(password, user.passwordHash);
     logger.debug('[LOGIN] Password check complete', { match: passwordMatches });
   } catch (error) {
     logger.error('[LOGIN] Password comparison error:', error.message);
@@ -660,9 +658,13 @@ router.post('/forgot', authLimiter, async (req, res) => {
 
     // Save token with expiration (1 hour)
     const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    users[idx].resetToken = resetToken;
-    users[idx].resetTokenExpiresAt = expires;
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: { resetToken: resetToken, resetTokenExpiresAt: expires },
+      }
+    );
     logger.debug('[PASSWORD RESET] Token saved', { expires });
 
     // Send password reset email
@@ -741,18 +743,26 @@ router.get('/verify', async (req, res) => {
     }
 
     // Mark user as verified and clear token
-    users[idx].verified = true;
-    delete users[idx].verificationToken;
-    delete users[idx].verificationTokenExpiresAt;
+    const verifyUpdates = {
+      verified: true,
+      verifiedAt: new Date().toISOString(),
+    };
 
     // Check if this user should be auto-promoted to admin (domain-based)
     if (domainAdmin.shouldUpgradeToAdminOnVerification(user.email)) {
-      const previousRole = users[idx].role;
-      users[idx].role = 'admin';
+      const previousRole = user.role;
+      verifyUpdates.role = 'admin';
       logger.info('User auto-promoted to admin (admin domain verified)', { previousRole });
     }
 
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: verifyUpdates,
+        $unset: { verificationToken: '', verificationTokenExpiresAt: '' },
+      }
+    );
     logger.info('User verified successfully via JWT');
 
     // Send welcome email (non-blocking)
@@ -802,18 +812,26 @@ router.get('/verify', async (req, res) => {
   }
 
   // Mark user as verified and clear token
-  legacyUsers[legacyIdx].verified = true;
-  delete legacyUsers[legacyIdx].verificationToken;
-  delete legacyUsers[legacyIdx].verificationTokenExpiresAt;
+  const legacyVerifyUpdates = {
+    verified: true,
+    verifiedAt: new Date().toISOString(),
+  };
 
   // Check if this user should be auto-promoted to admin (domain-based)
   if (domainAdmin.shouldUpgradeToAdminOnVerification(legacyUser.email)) {
-    const previousRole = legacyUsers[legacyIdx].role;
-    legacyUsers[legacyIdx].role = 'admin';
+    const previousRole = legacyUser.role;
+    legacyVerifyUpdates.role = 'admin';
     logger.info('User auto-promoted to admin (admin domain verified)', { previousRole });
   }
 
-  await dbUnified.write('users', legacyUsers);
+  await dbUnified.updateOne(
+    'users',
+    { id: legacyUser.id },
+    {
+      $set: legacyVerifyUpdates,
+      $unset: { verificationToken: '', verificationTokenExpiresAt: '' },
+    }
+  );
   logger.info('User verified successfully (legacy)');
 
   // Send welcome email after successful verification (non-blocking)
@@ -875,10 +893,14 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
     }
 
     // Mark user as verified
-    users[idx].verified = true;
-    delete users[idx].verificationToken;
-    delete users[idx].verificationTokenExpiresAt;
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: { verified: true, verifiedAt: new Date().toISOString() },
+        $unset: { verificationToken: '', verificationTokenExpiresAt: '' },
+      }
+    );
 
     logger.info('User verified successfully via POST');
 
@@ -937,10 +959,14 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
     }
 
     // Verify user
-    users[idx].verified = true;
-    delete users[idx].verificationToken;
-    delete users[idx].verificationTokenExpiresAt;
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: { verified: true, verifiedAt: new Date().toISOString() },
+        $unset: { verificationToken: '', verificationTokenExpiresAt: '' },
+      }
+    );
 
     logger.info('User verified via legacy token');
 
@@ -1047,15 +1073,21 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     logger.info('[PASSWORD RESET VERIFY] Resetting password');
 
     // Hash new password
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update user
-    users[userIdx].passwordHash = hashedPassword;
-    users[userIdx].passwordResetRequired = false;
-    users[userIdx].passwordChangedAt = new Date().toISOString();
-    delete users[userIdx].resetToken;
-    delete users[userIdx].resetTokenExpiresAt;
-    await dbUnified.write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: {
+          passwordHash: hashedPassword,
+          passwordResetRequired: false,
+          passwordChangedAt: new Date().toISOString(),
+        },
+        $unset: { resetToken: '', resetTokenExpiresAt: '' },
+      }
+    );
 
     logger.info('[PASSWORD RESET VERIFY] Password updated successfully');
 
@@ -1156,31 +1188,35 @@ router.get('/me', async (req, res) => {
 router.put('/preferences', authRequired, csrfProtection, async (req, res) => {
   const { notify_account, notify_marketing } = req.body || {};
 
-  const users = await dbUnified.read('users');
-  const idx = users.findIndex(u => u.id === req.user.id);
-
-  if (idx === -1) {
-    return res.status(404).json({ error: 'User not found' });
-  }
+  const prefUpdates = {};
 
   // Update preferences if provided
   if (typeof notify_account === 'boolean') {
-    users[idx].notify_account = notify_account;
-    users[idx].notify = notify_account; // Update deprecated field for backward compatibility
+    prefUpdates.notify_account = notify_account;
+    prefUpdates.notify = notify_account; // Update deprecated field for backward compatibility
   }
 
   if (typeof notify_marketing === 'boolean') {
-    users[idx].notify_marketing = notify_marketing;
-    users[idx].marketingOptIn = notify_marketing; // Update deprecated field for backward compatibility
+    prefUpdates.notify_marketing = notify_marketing;
+    prefUpdates.marketingOptIn = notify_marketing; // Update deprecated field for backward compatibility
   }
 
-  await dbUnified.write('users', users);
+  if (Object.keys(prefUpdates).length > 0) {
+    const updated = await dbUnified.updateOne('users', { id: req.user.id }, { $set: prefUpdates });
+    if (!updated) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+  }
+
+  // Read back to get the current values for the response
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === req.user.id) || {};
 
   res.json({
     ok: true,
     preferences: {
-      notify_account: users[idx].notify_account !== false,
-      notify_marketing: users[idx].notify_marketing === true,
+      notify_account: user.notify_account !== false,
+      notify_marketing: user.notify_marketing === true,
     },
   });
 });
@@ -1208,9 +1244,9 @@ router.get('/unsubscribe', async (req, res) => {
   }
 
   const users = await dbUnified.read('users');
-  const idx = users.findIndex(u => u.email.toLowerCase() === String(email).toLowerCase());
+  const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
 
-  if (idx === -1) {
+  if (!user) {
     // Don't reveal if email exists - return success anyway
     return res.json({
       ok: true,
@@ -1219,9 +1255,13 @@ router.get('/unsubscribe', async (req, res) => {
   }
 
   // Disable marketing emails
-  users[idx].notify_marketing = false;
-  users[idx].marketingOptIn = false; // Update deprecated field
-  await dbUnified.write('users', users);
+  await dbUnified.updateOne(
+    'users',
+    { id: user.id },
+    {
+      $set: { notify_marketing: false, marketingOptIn: false },
+    }
+  );
 
   res.json({
     ok: true,
@@ -1294,9 +1334,16 @@ router.post('/resend-verification', resendEmailLimiter, async (req, res) => {
   }
 
   // Only update token after email is successfully sent
-  users[idx].verificationToken = verificationToken;
-  users[idx].verificationTokenExpiresAt = tokenExpiresAt;
-  await dbUnified.write('users', users);
+  await dbUnified.updateOne(
+    'users',
+    { id: user.id },
+    {
+      $set: {
+        verificationToken: verificationToken,
+        verificationTokenExpiresAt: tokenExpiresAt,
+      },
+    }
+  );
 
   res.json({
     ok: true,
@@ -1332,6 +1379,9 @@ router.put('/profile', authRequired, csrfProtection, async (req, res) => {
   const user = users[idx];
 
   // Check if email is being changed and if it's already taken
+  const profileUpdates = {};
+  const emailOriginal = user.email;
+
   if (email && email !== user.email) {
     const emailExists = users.some(u => u.email === email && u.id !== user.id);
     if (emailExists) {
@@ -1339,73 +1389,82 @@ router.put('/profile', authRequired, csrfProtection, async (req, res) => {
     }
 
     // Email changed - mark as unverified and send new verification email
-    user.email = email;
-    user.verified = false;
-    user.verificationToken = tokenUtils.generateVerificationToken(user, { expiresInHours: 24 });
-    user.verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    profileUpdates.email = email;
+    profileUpdates.verified = false;
+    profileUpdates.verificationToken = tokenUtils.generateVerificationToken(
+      { ...user, email },
+      { expiresInHours: 24 }
+    );
+    profileUpdates.verificationTokenExpiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000
+    ).toISOString();
 
     // Send verification email asynchronously
-    postmark.sendVerificationEmail(user, user.verificationToken).catch(err => {
-      logger.error('Failed to send verification email:', err);
-    });
+    postmark
+      .sendVerificationEmail({ ...user, email }, profileUpdates.verificationToken)
+      .catch(err => {
+        logger.error('Failed to send verification email:', err);
+      });
   }
 
   // Update allowed fields
   if (name !== undefined) {
-    user.name = name;
+    profileUpdates.name = name;
   }
   if (firstName !== undefined) {
-    user.firstName = firstName;
+    profileUpdates.firstName = firstName;
   }
   if (lastName !== undefined) {
-    user.lastName = lastName;
+    profileUpdates.lastName = lastName;
   }
   if (phone !== undefined) {
-    user.phone = phone;
+    profileUpdates.phone = phone;
   }
   if (location !== undefined) {
-    user.location = location;
+    profileUpdates.location = location;
   }
   if (postcode !== undefined) {
-    user.postcode = postcode;
+    profileUpdates.postcode = postcode;
   }
   if (company !== undefined) {
-    user.company = company;
+    profileUpdates.company = company;
   }
   if (jobTitle !== undefined) {
-    user.jobTitle = jobTitle;
+    profileUpdates.jobTitle = jobTitle;
   }
   if (website !== undefined) {
-    user.website = website;
+    profileUpdates.website = website;
   }
 
-  user.updatedAt = new Date().toISOString();
+  profileUpdates.updatedAt = new Date().toISOString();
 
-  users[idx] = user;
-  await dbUnified.write('users', users);
+  await dbUnified.updateOne('users', { id: req.user.id }, { $set: profileUpdates });
+
+  // Build response from merged data
+  const updatedUser = { ...user, ...profileUpdates };
 
   // Return updated user info
   res.json({
     ok: true,
     message:
-      email && email !== req.user.email
+      email && email !== emailOriginal
         ? 'Profile updated. Please check your new email address to verify it.'
         : 'Profile updated successfully',
     user: {
-      id: user.id,
-      name: user.name,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      location: user.location,
-      postcode: user.postcode,
-      company: user.company,
-      jobTitle: user.jobTitle,
-      website: user.website,
-      avatarUrl: user.avatarUrl,
-      verified: user.verified,
+      id: updatedUser.id,
+      name: updatedUser.name,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      role: updatedUser.role,
+      location: updatedUser.location,
+      postcode: updatedUser.postcode,
+      company: updatedUser.company,
+      jobTitle: updatedUser.jobTitle,
+      website: updatedUser.website,
+      avatarUrl: updatedUser.avatarUrl,
+      verified: updatedUser.verified,
     },
   });
 });

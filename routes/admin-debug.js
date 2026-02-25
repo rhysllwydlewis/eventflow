@@ -10,6 +10,7 @@ const express = require('express');
 const logger = require('../utils/logger');
 const bcrypt = require('bcryptjs');
 const { read, write } = require('../store');
+const dbUnified = require('../db-unified');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const { auditLog } = require('../middleware/audit');
@@ -92,20 +93,25 @@ router.post(
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    const users = read('users');
-    const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
+    const users = await dbUnified.read('users');
+    const foundUser = users.find(
+      u => (u.email || '').toLowerCase() === String(email).toLowerCase()
+    );
 
-    if (idx === -1) {
+    if (!foundUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     try {
       // Hash the new password
-      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Update user
-      users[idx].passwordHash = hashedPassword;
-      write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id: foundUser.id },
+        { $set: { passwordHash: hashedPassword } }
+      );
 
       // Audit log
       await auditLog({
@@ -113,7 +119,7 @@ router.post(
         adminEmail: req.user.email,
         action: 'fix_password',
         targetType: 'user',
-        targetId: users[idx].id,
+        targetId: foundUser.id,
         details: { email: email },
         ipAddress: req.ip,
         userAgent: req.get('user-agent'),
@@ -126,9 +132,9 @@ router.post(
         message: `Password updated for ${email}. User can now log in.`,
         email: email,
         user: {
-          id: users[idx].id,
-          email: users[idx].email,
-          name: users[idx].name,
+          id: foundUser.id,
+          email: foundUser.email,
+          name: foundUser.name,
         },
       });
     } catch (error) {
@@ -156,24 +162,28 @@ router.post(
       return res.status(400).json({ error: 'email required' });
     }
 
-    const users = read('users');
-    const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
+    const users = await dbUnified.read('users');
+    const user = users.find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
-    if (idx === -1) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    users[idx].verified = true;
-    delete users[idx].verificationToken;
-    delete users[idx].verificationTokenExpiresAt;
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: { verified: true },
+        $unset: { verificationToken: '', verificationTokenExpiresAt: '' },
+      }
+    );
 
     await auditLog({
       adminId: req.user.id,
       adminEmail: req.user.email,
       action: 'verify_user',
       targetType: 'user',
-      targetId: users[idx].id,
+      targetId: user.id,
       details: { email: email },
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
@@ -185,8 +195,8 @@ router.post(
       ok: true,
       message: `User ${email} is now verified`,
       user: {
-        id: users[idx].id,
-        email: users[idx].email,
+        id: user.id,
+        email: user.email,
         verified: true,
       },
     });
@@ -270,7 +280,7 @@ router.post(
   roleRequired('admin'),
   csrfProtection,
   express.json(),
-  (req, res) => {
+  async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -310,7 +320,7 @@ router.post(
     } else {
       // Test password
       try {
-        const matches = bcrypt.compareSync(password, user.passwordHash);
+        const matches = await bcrypt.compare(password, user.passwordHash);
         diagnostics.passwordMatches = matches;
 
         if (!matches) {

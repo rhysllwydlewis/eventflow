@@ -19,6 +19,9 @@ function buildDeps() {
       return [];
     }),
     write: jest.fn(async () => {}),
+    updateOne: jest.fn().mockResolvedValue(true),
+    insertOne: jest.fn().mockResolvedValue(true),
+    deleteOne: jest.fn().mockResolvedValue(true),
   };
 
   const upload = {

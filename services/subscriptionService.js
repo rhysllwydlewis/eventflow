@@ -16,20 +16,7 @@ async function persistUserSubscriptionState(userId, updates) {
     updatedAt: nowIso,
   };
 
-  if (typeof dbUnified.updateOne === 'function') {
-    await dbUnified.updateOne('users', { id: userId }, { $set: normalizedUpdates });
-  }
-
-  const users = await dbUnified.read('users');
-  const idx = users.findIndex(user => user.id === userId);
-
-  if (idx >= 0) {
-    users[idx] = {
-      ...users[idx],
-      ...normalizedUpdates,
-    };
-    await dbUnified.write('users', users);
-  }
+  await dbUnified.updateOne('users', { id: userId }, { $set: normalizedUpdates });
 }
 
 /**
@@ -131,7 +118,13 @@ async function updateSubscription(subscriptionId, updates) {
     updatedAt: new Date().toISOString(),
   });
 
-  await dbUnified.write('subscriptions', subscriptions);
+  await dbUnified.updateOne(
+    'subscriptions',
+    { id: subscriptionId },
+    {
+      $set: { ...updates, updatedAt: new Date().toISOString() },
+    }
+  );
 
   // Update user isPro status and subscriptionTier if plan changed
   if (updates.plan) {

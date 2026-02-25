@@ -113,7 +113,7 @@ class SupplierService {
     };
 
     suppliers.push(supplier);
-    await this.db.write('suppliers', suppliers);
+    await this.db.insertOne('suppliers', supplier);
 
     logger.info(`Supplier created: ${supplier.id} by user ${userId}`);
 
@@ -175,14 +175,11 @@ class SupplierService {
    * @returns {Promise<Object>} - Updated supplier
    */
   async updateSupplier(id, updates, userId, userRole) {
-    const suppliers = await this.db.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === id);
+    const supplier = await this.db.findOne('suppliers', { id });
 
-    if (supplierIndex === -1) {
+    if (!supplier) {
       throw new NotFoundError('Supplier not found');
     }
-
-    const supplier = suppliers[supplierIndex];
 
     // Authorization check
     if (userRole !== 'admin' && supplier.ownerUserId !== userId) {
@@ -236,20 +233,18 @@ class SupplierService {
     }
 
     // Apply updates
+    const setFields = { updatedAt: new Date().toISOString() };
     allowedFields.forEach(field => {
       if (updates[field] !== undefined) {
-        supplier[field] = updates[field];
+        setFields[field] = updates[field];
       }
     });
 
-    supplier.updatedAt = new Date().toISOString();
-
-    suppliers[supplierIndex] = supplier;
-    await this.db.write('suppliers', suppliers);
+    await this.db.updateOne('suppliers', { id }, { $set: setFields });
 
     logger.info(`Supplier updated: ${id} by user ${userId}`);
 
-    return supplier;
+    return { ...supplier, ...setFields };
   }
 
   /**
@@ -260,8 +255,7 @@ class SupplierService {
    * @returns {Promise<void>}
    */
   async deleteSupplier(id, userId, userRole) {
-    const suppliers = await this.db.read('suppliers');
-    const supplier = suppliers.find(s => s.id === id);
+    const supplier = await this.db.findOne('suppliers', { id });
 
     if (!supplier) {
       throw new NotFoundError('Supplier not found');
@@ -273,8 +267,7 @@ class SupplierService {
     }
 
     // Remove supplier
-    const filtered = suppliers.filter(s => s.id !== id);
-    await this.db.write('suppliers', filtered);
+    await this.db.deleteOne('suppliers', id);
 
     logger.info(`Supplier deleted: ${id} by user ${userId}`);
   }
@@ -380,24 +373,22 @@ class SupplierService {
    * @returns {Promise<Object>} - Updated supplier
    */
   async updateProStatus(id, isPro, expiresAt = null) {
-    const suppliers = await this.db.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === id);
+    const supplier = await this.db.findOne('suppliers', { id });
 
-    if (supplierIndex === -1) {
+    if (!supplier) {
       throw new NotFoundError('Supplier not found');
     }
 
-    const supplier = suppliers[supplierIndex];
-    supplier.isPro = isPro;
-    supplier.proExpiresAt = expiresAt;
-    supplier.updatedAt = new Date().toISOString();
-
-    suppliers[supplierIndex] = supplier;
-    await this.db.write('suppliers', suppliers);
+    const setFields = {
+      isPro,
+      proExpiresAt: expiresAt,
+      updatedAt: new Date().toISOString(),
+    };
+    await this.db.updateOne('suppliers', { id }, { $set: setFields });
 
     logger.info(`Supplier Pro status updated: ${id} - isPro: ${isPro}`);
 
-    return supplier;
+    return { ...supplier, ...setFields };
   }
 
   /**

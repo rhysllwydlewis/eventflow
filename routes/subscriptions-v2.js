@@ -745,12 +745,14 @@ router.post(
       const stripeInvoice = await paymentService.retryInvoicePayment(invoice.stripeInvoiceId);
 
       // Update invoice status
-      invoice.status = stripeInvoice.status === 'paid' ? 'paid' : invoice.status;
-      invoice.updatedAt = new Date().toISOString();
+      const invoiceUpdates = {
+        status: stripeInvoice.status === 'paid' ? 'paid' : invoice.status,
+        updatedAt: new Date().toISOString(),
+      };
       if (stripeInvoice.status === 'paid') {
-        invoice.paidAt = new Date().toISOString();
+        invoiceUpdates.paidAt = new Date().toISOString();
       }
-      await dbUnified.write('invoices', invoices);
+      await dbUnified.updateOne('invoices', { id: invoice.id }, { $set: invoiceUpdates });
 
       res.json({
         success: true,

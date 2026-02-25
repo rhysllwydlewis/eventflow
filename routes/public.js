@@ -195,7 +195,11 @@ router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
       // Update existing vote instead of creating duplicate
       faqVotes[existingVoteIndex].helpful = helpful;
       faqVotes[existingVoteIndex].updatedAt = new Date().toISOString();
-      await dbUnified.write('faqVotes', faqVotes);
+      await dbUnified.updateOne(
+        'faqVotes',
+        { id: faqVotes[existingVoteIndex].id },
+        { $set: { helpful, updatedAt: faqVotes[existingVoteIndex].updatedAt } }
+      );
       return res.json({ success: true, message: 'Thank you for your feedback!' });
     }
 
@@ -210,8 +214,7 @@ router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
       ipAddress: req.ip || req.headers['x-forwarded-for'] || 'unknown',
     };
 
-    faqVotes.push(vote);
-    await dbUnified.write('faqVotes', faqVotes);
+    await dbUnified.insertOne('faqVotes', vote);
 
     res.json({ success: true, message: 'Thank you for your feedback!' });
   } catch (error) {

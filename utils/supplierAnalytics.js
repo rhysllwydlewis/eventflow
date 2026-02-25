@@ -53,7 +53,7 @@ async function trackEvent(eventData) {
 
     events.push(event);
 
-    await dbUnified.write('events', events);
+    await dbUnified.insertOne('events', event);
   } catch (error) {
     logger.error('Failed to track supplier event:', error);
     // Don't throw - tracking should not break the main flow

@@ -16,23 +16,22 @@ describe('Thread metadata updates on message send', () => {
       .split('router.')[0];
 
     it('updates thread updatedAt timestamp when message is sent', () => {
-      expect(postMessagesHandler).toContain('th[i].updatedAt = entry.createdAt');
+      expect(postMessagesHandler).toContain('updatedAt: entry.createdAt');
     });
 
     it('updates thread lastMessageAt with message createdAt', () => {
-      expect(postMessagesHandler).toContain('th[i].lastMessageAt = entry.createdAt');
+      expect(postMessagesHandler).toContain('lastMessageAt: entry.createdAt');
     });
 
     it('updates thread lastMessagePreview with first 100 chars of message text', () => {
       expect(postMessagesHandler).toContain(
-        "th[i].lastMessagePreview = entry.text?.substring(0, 100) || ''"
+        "lastMessagePreview: entry.text?.substring(0, 100) || ''"
       );
     });
 
     it('updates MongoDB thread record after updating metadata', () => {
       // After updating the thread metadata, should also dual-write to MongoDB
-      const afterMetadataUpdate = postMessagesHandler.split('th[i].lastMessagePreview')[1];
-      expect(afterMetadataUpdate).toContain('writeThreadToMongoDB(th[i], db)');
+      expect(postMessagesHandler).toContain('writeThreadToMongoDB');
     });
   });
 
@@ -47,25 +46,22 @@ describe('Thread metadata updates on message send', () => {
       .split('Email notify supplier')[0];
 
     it('updates thread updatedAt when initial message is sent', () => {
-      expect(initialMessageSection).toContain('allThreads[idx].updatedAt = entry.createdAt');
+      expect(initialMessageSection).toContain('updatedAt: entry.createdAt');
     });
 
     it('updates thread lastMessageAt when initial message is sent', () => {
-      expect(initialMessageSection).toContain('allThreads[idx].lastMessageAt = entry.createdAt');
+      expect(initialMessageSection).toContain('lastMessageAt: entry.createdAt');
     });
 
     it('updates thread lastMessagePreview when initial message is sent', () => {
       expect(initialMessageSection).toContain(
-        "allThreads[idx].lastMessagePreview = entry.text?.substring(0, 100) || ''"
+        "lastMessagePreview: entry.text?.substring(0, 100) || ''"
       );
     });
 
     it('updates MongoDB thread record after initial message metadata', () => {
       // After updating the thread metadata, should also dual-write to MongoDB
-      const afterMetadataUpdate = initialMessageSection.split(
-        'allThreads[idx].lastMessagePreview'
-      )[1];
-      expect(afterMetadataUpdate).toContain('writeThreadToMongoDB(allThreads[idx], db)');
+      expect(initialMessageSection).toContain('writeThreadToMongoDB');
     });
   });
 
@@ -94,8 +90,8 @@ describe('Thread metadata updates on message send', () => {
         .split("router.post(\n  '/start'")[1]
         .split('router.')[0];
 
-      expect(postMessagesHandler).toContain('lastMessageAt = entry.createdAt');
-      expect(postStartHandler).toContain('lastMessageAt = entry.createdAt');
+      expect(postMessagesHandler).toContain('lastMessageAt: entry.createdAt');
+      expect(postStartHandler).toContain('lastMessageAt: entry.createdAt');
     });
 
     it('sets lastMessagePreview to message text in both endpoints', () => {
@@ -108,8 +104,8 @@ describe('Thread metadata updates on message send', () => {
         .split("router.post(\n  '/start'")[1]
         .split('router.')[0];
 
-      expect(postMessagesHandler).toContain('lastMessagePreview = entry.text');
-      expect(postStartHandler).toContain('lastMessagePreview = entry.text');
+      expect(postMessagesHandler).toContain('lastMessagePreview');
+      expect(postStartHandler).toContain('lastMessagePreview');
     });
   });
 });

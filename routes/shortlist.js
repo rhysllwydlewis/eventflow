@@ -131,11 +131,12 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
     if (!userShortlist) {
       // Create new shortlist for user
       userShortlist = {
+        id: `shortlist_${req.user.id}`,
         userId: req.user.id,
         items: [],
         updatedAt: new Date().toISOString(),
       };
-      shortlists.push(userShortlist);
+      await dbUnified.insertOne('shortlists', userShortlist);
     }
 
     // Check if item already exists
@@ -151,10 +152,14 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
     }
 
     // Add item
-    userShortlist.items.push(item);
-    userShortlist.updatedAt = new Date().toISOString();
-
-    await dbUnified.write('shortlists', shortlists);
+    const updatedItems = [...userShortlist.items, item];
+    await dbUnified.updateOne(
+      'shortlists',
+      { userId: req.user.id },
+      {
+        $set: { items: updatedItems, updatedAt: new Date().toISOString() },
+      }
+    );
 
     res.json({
       success: true,
@@ -198,9 +203,13 @@ router.delete('/:type/:id', authRequired, csrfProtection, async (req, res) => {
     }
 
     userShortlist.items.splice(itemIndex, 1);
-    userShortlist.updatedAt = new Date().toISOString();
-
-    await dbUnified.write('shortlists', shortlists);
+    await dbUnified.updateOne(
+      'shortlists',
+      { userId: req.user.id },
+      {
+        $set: { items: userShortlist.items, updatedAt: new Date().toISOString() },
+      }
+    );
 
     res.json({
       success: true,
@@ -231,10 +240,13 @@ router.delete('/', authRequired, csrfProtection, async (req, res) => {
       });
     }
 
-    userShortlist.items = [];
-    userShortlist.updatedAt = new Date().toISOString();
-
-    await dbUnified.write('shortlists', shortlists);
+    await dbUnified.updateOne(
+      'shortlists',
+      { userId: req.user.id },
+      {
+        $set: { items: [], updatedAt: new Date().toISOString() },
+      }
+    );
 
     res.json({
       success: true,

@@ -4,7 +4,7 @@
  */
 
 const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const CACHE_VERSION = 'eventflow-v18.4.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;

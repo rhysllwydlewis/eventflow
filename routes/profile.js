@@ -77,34 +77,35 @@ router.put('/', authRequired, csrfProtection, async (req, res) => {
   }
 
   const user = users[idx];
+  const profileUpdates = {};
 
   // Validate required fields
   if (firstName !== undefined) {
     if (!firstName || !String(firstName).trim()) {
       return res.status(400).json({ error: 'First name is required' });
     }
-    user.firstName = String(firstName).trim().slice(0, 40);
+    profileUpdates.firstName = String(firstName).trim().slice(0, 40);
   }
 
   if (lastName !== undefined) {
     if (!lastName || !String(lastName).trim()) {
       return res.status(400).json({ error: 'Last name is required' });
     }
-    user.lastName = String(lastName).trim().slice(0, 40);
+    profileUpdates.lastName = String(lastName).trim().slice(0, 40);
   }
 
   // Update full name if first or last name changed
   if (firstName !== undefined || lastName !== undefined) {
-    const newFirstName = firstName !== undefined ? user.firstName : user.firstName || '';
-    const newLastName = lastName !== undefined ? user.lastName : user.lastName || '';
-    user.name = `${newFirstName} ${newLastName}`.trim().slice(0, 80);
+    const newFirstName = profileUpdates.firstName ?? user.firstName ?? '';
+    const newLastName = profileUpdates.lastName ?? user.lastName ?? '';
+    profileUpdates.name = `${newFirstName} ${newLastName}`.trim().slice(0, 80);
   }
 
   if (location !== undefined) {
     if (!location || !String(location).trim()) {
       return res.status(400).json({ error: 'Location is required' });
     }
-    user.location = String(location).trim().slice(0, 100);
+    profileUpdates.location = String(location).trim().slice(0, 100);
   }
 
   // Role-specific validation
@@ -112,18 +113,18 @@ router.put('/', authRequired, csrfProtection, async (req, res) => {
     if (!company || !String(company).trim()) {
       return res.status(400).json({ error: 'Company name is required for suppliers' });
     }
-    user.company = String(company).trim().slice(0, 100);
+    profileUpdates.company = String(company).trim().slice(0, 100);
   } else if (company !== undefined) {
-    user.company = company ? String(company).trim().slice(0, 100) : undefined;
+    profileUpdates.company = company ? String(company).trim().slice(0, 100) : undefined;
   }
 
   // Optional fields
   if (postcode !== undefined) {
-    user.postcode = postcode ? String(postcode).trim().slice(0, 10) : undefined;
+    profileUpdates.postcode = postcode ? String(postcode).trim().slice(0, 10) : undefined;
   }
 
   if (jobTitle !== undefined) {
-    user.jobTitle = jobTitle ? String(jobTitle).trim().slice(0, 100) : undefined;
+    profileUpdates.jobTitle = jobTitle ? String(jobTitle).trim().slice(0, 100) : undefined;
   }
 
   // Sanitize and validate URLs
@@ -143,7 +144,7 @@ router.put('/', authRequired, csrfProtection, async (req, res) => {
 
   if (website !== undefined) {
     try {
-      user.website = sanitizeUrl(website);
+      profileUpdates.website = sanitizeUrl(website);
     } catch (error) {
       return res.status(400).json({ error: 'Invalid website URL' });
     }
@@ -151,7 +152,7 @@ router.put('/', authRequired, csrfProtection, async (req, res) => {
 
   if (socials !== undefined) {
     try {
-      user.socials = {
+      profileUpdates.socials = {
         instagram: sanitizeUrl(socials.instagram),
         facebook: sanitizeUrl(socials.facebook),
         twitter: sanitizeUrl(socials.twitter),
@@ -162,26 +163,28 @@ router.put('/', authRequired, csrfProtection, async (req, res) => {
     }
   }
 
-  user.updatedAt = new Date().toISOString();
-  await dbUnified.write('users', users);
+  profileUpdates.updatedAt = new Date().toISOString();
+  await dbUnified.updateOne('users', { id: req.user.id }, { $set: profileUpdates });
 
+  // Build the response from merged data
+  const updated = { ...user, ...profileUpdates };
   res.json({
     ok: true,
     profile: {
-      id: user.id,
-      name: user.name,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-      location: user.location,
-      postcode: user.postcode,
-      company: user.company,
-      jobTitle: user.jobTitle,
-      website: user.website,
-      socials: user.socials || {},
-      avatarUrl: user.avatarUrl,
-      badges: user.badges || [],
+      id: updated.id,
+      name: updated.name,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      email: updated.email,
+      role: updated.role,
+      location: updated.location,
+      postcode: updated.postcode,
+      company: updated.company,
+      jobTitle: updated.jobTitle,
+      website: updated.website,
+      socials: updated.socials || {},
+      avatarUrl: updated.avatarUrl,
+      badges: updated.badges || [],
     },
   });
 });
@@ -224,21 +227,20 @@ router.post('/avatar', authRequired, csrfProtection, (req, res) => {
       );
 
       // Update user avatar URL (use optimized version which is square 400x400)
-      const users = await dbUnified.read('users');
-      const idx = users.findIndex(u => u.id === req.user.id);
-
-      if (idx === -1) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      // Store avatar URL
-      users[idx].avatarUrl = images.optimized;
-      users[idx].updatedAt = new Date().toISOString();
-      await dbUnified.write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id: req.user.id },
+        {
+          $set: {
+            avatarUrl: images.optimized,
+            updatedAt: new Date().toISOString(),
+          },
+        }
+      );
 
       res.json({
         ok: true,
-        avatarUrl: users[idx].avatarUrl,
+        avatarUrl: images.optimized,
       });
     } catch (processError) {
       logger.error('Avatar processing error:', processError);
@@ -266,28 +268,33 @@ router.delete('/avatar', authRequired, csrfProtection, async (req, res) => {
   }
 
   const users = await dbUnified.read('users');
-  const idx = users.findIndex(u => u.id === req.user.id);
+  const user = users.find(u => u.id === req.user.id);
 
-  if (idx === -1) {
+  if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
 
-  if (!users[idx].avatarUrl) {
+  if (!user.avatarUrl) {
     return res.status(404).json({ error: 'No avatar to delete' });
   }
 
   // Delete avatar using centralized photo deletion
   try {
-    await photoUpload.deleteImage(users[idx].avatarUrl);
+    await photoUpload.deleteImage(user.avatarUrl);
   } catch (deleteErr) {
     logger.error('Failed to delete avatar file:', deleteErr);
     // Continue anyway to clean up database record
   }
 
   // Remove avatar URL from user
-  delete users[idx].avatarUrl;
-  users[idx].updatedAt = new Date().toISOString();
-  await dbUnified.write('users', users);
+  await dbUnified.updateOne(
+    'users',
+    { id: req.user.id },
+    {
+      $set: { updatedAt: new Date().toISOString() },
+      $unset: { avatarUrl: '' },
+    }
+  );
 
   res.json({ ok: true });
 });

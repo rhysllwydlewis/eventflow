@@ -50,8 +50,11 @@ router.get('/', authRequired, async (req, res) => {
     // Generate referral code if user doesn't have one
     if (!user.referralCode) {
       user.referralCode = generateReferralCode(userId);
-      users[userIndex] = user;
-      await dbUnified.write('users', users);
+      await dbUnified.updateOne(
+        'users',
+        { id: userId },
+        { $set: { referralCode: user.referralCode } }
+      );
     }
 
     const referralCode = user.referralCode;
@@ -127,8 +130,7 @@ router.post('/track', csrfProtection, async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
-    referrals.push(newReferral);
-    await dbUnified.write('referrals', referrals);
+    await dbUnified.insertOne('referrals', newReferral);
 
     res.json({ success: true, message: 'Referral tracked successfully' });
   } catch (error) {
@@ -153,11 +155,14 @@ router.patch('/:id/activate', authRequired, csrfProtection, async (req, res) => 
       return res.status(404).json({ error: 'Referral not found' });
     }
 
-    referrals[referralIndex].status = 'active';
-    referrals[referralIndex].activatedAt = new Date().toISOString();
-    referrals[referralIndex].updatedAt = new Date().toISOString();
-
-    await dbUnified.write('referrals', referrals);
+    const activatedAt = new Date().toISOString();
+    await dbUnified.updateOne(
+      'referrals',
+      { id },
+      {
+        $set: { status: 'active', activatedAt, updatedAt: activatedAt },
+      }
+    );
 
     res.json({ success: true, message: 'Referral activated' });
   } catch (error) {

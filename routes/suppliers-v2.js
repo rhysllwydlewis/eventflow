@@ -169,11 +169,9 @@ router.post(
     if (!url) {
       return res.status(400).json({ error: 'Invalid image' });
     }
-    if (!s.photosGallery) {
-      s.photosGallery = [];
-    }
-    s.photosGallery.push({ url, approved: false, uploadedAt: Date.now() });
-    await dbUnified.write('suppliers', suppliers);
+    const photosGallery = s.photosGallery || [];
+    photosGallery.push({ url, approved: false, uploadedAt: Date.now() });
+    await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: { photosGallery } });
     res.json({ ok: true, url });
   }
 );
@@ -215,10 +213,13 @@ router.delete('/:id/photos/:photoId', applyAuthRequired, applyCsrfProtection, as
 
     // Remove photo
     const removedPhoto = supplier.photosGallery.splice(photoIndex, 1)[0];
-    supplier.updatedAt = new Date().toISOString();
-
-    suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
+    await dbUnified.updateOne(
+      'suppliers',
+      { id },
+      {
+        $set: { photosGallery: supplier.photosGallery, updatedAt: new Date().toISOString() },
+      }
+    );
 
     // Optionally delete file from filesystem
     if (removedPhoto.url && removedPhoto.url.startsWith('/uploads/')) {

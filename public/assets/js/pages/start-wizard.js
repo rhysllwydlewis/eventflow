@@ -3,10 +3,11 @@
  * Multi-step planning wizard implementation
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Available categories for wizard steps (in order)
   const CATEGORIES = [

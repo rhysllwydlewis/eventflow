@@ -108,7 +108,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
     };
 
     savedItems.push(newSavedItem);
-    await dbUnified.write('savedItems', savedItems);
+    await dbUnified.insertOne('savedItems', newSavedItem);
 
     res.status(201).json({
       success: true,
@@ -156,8 +156,8 @@ router.delete('/by-item', authRequired, csrfProtection, async (req, res) => {
     }
 
     // Remove the item
-    const removedItem = savedItems.splice(itemIndex, 1)[0];
-    await dbUnified.write('savedItems', savedItems);
+    const removedItem = savedItems[itemIndex];
+    await dbUnified.deleteOne('savedItems', removedItem.id);
 
     res.json({
       success: true,
@@ -189,8 +189,8 @@ router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
       return res.status(404).json({ error: 'Saved item not found' });
     }
 
-    savedItems.splice(itemIndex, 1);
-    await dbUnified.write('savedItems', savedItems);
+    const removedById = savedItems[itemIndex];
+    await dbUnified.deleteOne('savedItems', removedById.id);
 
     res.json({
       success: true,

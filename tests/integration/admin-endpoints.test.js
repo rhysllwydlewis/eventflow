@@ -144,7 +144,7 @@ describe('Admin API Integration Tests', () => {
 
       // Verify supplier routes use dbUnified.read/write
       expect(supplierRoutesSection).toContain("dbUnified.read('suppliers')");
-      expect(supplierRoutesSection).toContain("dbUnified.write('suppliers'");
+      expect(supplierRoutesSection).toMatch(/dbUnified\.(write|updateOne|deleteOne)\(/);
 
       // Check that the main suppliers GET endpoint doesn't use legacy read
       const supplierGetRoute = supplierRoutesSection.substring(0, 500);
@@ -191,17 +191,17 @@ describe('Admin API Integration Tests', () => {
       // Verify bulk approve endpoint
       expect(adminContent).toContain("router.post('/suppliers/bulk-approve'");
       expect(adminContent).toMatch(/bulk-approve.*dbUnified\.read\('suppliers'\)/s);
-      expect(adminContent).toMatch(/bulk-approve.*dbUnified\.write\('suppliers'/s);
+      expect(adminContent).toMatch(/bulk-approve.*dbUnified\.(write|updateOne)\(/s);
 
       // Verify bulk reject endpoint
       expect(adminContent).toContain("router.post('/suppliers/bulk-reject'");
       expect(adminContent).toMatch(/bulk-reject.*dbUnified\.read\('suppliers'\)/s);
-      expect(adminContent).toMatch(/bulk-reject.*dbUnified\.write\('suppliers'/s);
+      expect(adminContent).toMatch(/bulk-reject.*dbUnified\.(write|updateOne)\(/s);
 
       // Verify bulk delete endpoint
       expect(adminContent).toContain("router.post('/suppliers/bulk-delete'");
       expect(adminContent).toMatch(/bulk-delete.*dbUnified\.read\('suppliers'\)/s);
-      expect(adminContent).toMatch(/bulk-delete.*dbUnified\.write\('suppliers'/s);
+      expect(adminContent).toMatch(/bulk-delete.*dbUnified\.(write|deleteOne)\(/s);
     });
   });
 

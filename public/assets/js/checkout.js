@@ -3,10 +3,11 @@
  * Handles plan selection and Stripe checkout session creation
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Stripe instance (will be initialized after loading config)
   let stripe = null;

@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const { ValidationError, AuthenticationError, ConflictError } = require('../errors');
 const { read, write, uid } = require('../store');
+const dbUnified = require('../db-unified');
 const { passwordOk } = require('../middleware/validation');
 const postmark = require('../utils/postmark');
 const tokenUtils = require('../utils/token');
@@ -72,7 +73,7 @@ class AuthService {
     }
 
     // Check for existing user
-    const users = read('users');
+    const users = await dbUnified.read('users');
     if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
       throw new ConflictError('Email already registered');
     }
@@ -113,7 +114,7 @@ class AuthService {
       lastName: String(userLastName).trim().slice(0, 40),
       email: String(email).toLowerCase(),
       role: roleFinal,
-      passwordHash: bcrypt.hashSync(password, 10),
+      passwordHash: await bcrypt.hash(password, 10),
       location: String(location).trim().slice(0, 100),
       postcode: postcode ? String(postcode).trim().slice(0, 10) : undefined,
       company: company ? String(company).trim().slice(0, 100) : undefined,
@@ -147,8 +148,7 @@ class AuthService {
     }
 
     // Save user
-    users.push(user);
-    write('users', users);
+    await dbUnified.insertOne('users', user);
 
     // Update last login timestamp
     this._updateLastLogin(user.id);
@@ -173,14 +173,14 @@ class AuthService {
       throw new ValidationError('Email and password are required');
     }
 
-    const users = read('users');
+    const users = await dbUnified.read('users');
     const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
 
     if (!user) {
       throw new AuthenticationError('Invalid credentials');
     }
 
-    const isPasswordValid = bcrypt.compareSync(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       throw new AuthenticationError('Invalid credentials');
     }
@@ -206,7 +206,7 @@ class AuthService {
       throw new ValidationError('Invalid email');
     }
 
-    const users = read('users');
+    const users = await dbUnified.read('users');
     const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
 
     if (!user) {
@@ -220,10 +220,16 @@ class AuthService {
       expiresInHours: 1,
     });
 
-    user.resetToken = resetToken;
-    user.resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: {
+          resetToken,
+          resetTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        },
+      }
+    );
 
     // Send password reset email
     try {
@@ -257,8 +263,7 @@ class AuthService {
       throw new AuthenticationError('Invalid or expired token');
     }
 
-    const users = read('users');
-    const user = users.find(u => u.id === decoded.id);
+    const user = await dbUnified.findOne('users', { id: decoded.id });
 
     if (!user) {
       throw new AuthenticationError('Invalid token');
@@ -274,11 +279,17 @@ class AuthService {
     }
 
     // Update password
-    user.passwordHash = bcrypt.hashSync(newPassword, 10);
-    user.resetToken = null;
-    user.resetTokenExpiresAt = null;
-
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: {
+          passwordHash: await bcrypt.hash(newPassword, 10),
+          resetToken: null,
+          resetTokenExpiresAt: null,
+        },
+      }
+    );
 
     logger.info(`Password reset successful for user ${user.id}`);
   }
@@ -301,8 +312,7 @@ class AuthService {
       throw new AuthenticationError('Invalid or expired token');
     }
 
-    const users = read('users');
-    const user = users.find(u => u.id === decoded.id);
+    const user = await dbUnified.findOne('users', { id: decoded.id });
 
     if (!user) {
       throw new AuthenticationError('Invalid token');
@@ -317,11 +327,17 @@ class AuthService {
     }
 
     // Mark as verified
-    user.verified = true;
-    user.verificationToken = null;
-    user.verificationTokenExpiresAt = null;
-
-    write('users', users);
+    await dbUnified.updateOne(
+      'users',
+      { id: user.id },
+      {
+        $set: {
+          verified: true,
+          verificationToken: null,
+          verificationTokenExpiresAt: null,
+        },
+      }
+    );
 
     logger.info(`Email verified for user ${user.id}`);
 
@@ -379,16 +395,9 @@ class AuthService {
    * @private
    */
   _updateLastLogin(userId) {
-    try {
-      const allUsers = read('users');
-      const idx = allUsers.findIndex(u => u.id === userId);
-      if (idx !== -1) {
-        allUsers[idx].lastLoginAt = new Date().toISOString();
-        write('users', allUsers);
-      }
-    } catch (e) {
-      logger.error('Failed to update lastLoginAt', e);
-    }
+    dbUnified
+      .updateOne('users', { id: userId }, { $set: { lastLoginAt: new Date().toISOString() } })
+      .catch(e => logger.error('Failed to update lastLoginAt', e));
   }
 
   /**

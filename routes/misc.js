@@ -254,14 +254,12 @@ router.get('/me/settings', applyAuthRequired, async (req, res) => {
 
 router.post('/me/settings', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
-    const users = await dbUnified.read('users');
-    const i = users.findIndex(u => u.id === req.user.id);
-    if (i < 0) {
+    const notify = !!(req.body && req.body.notify);
+    const updated = await dbUnified.updateOne('users', { id: req.user.id }, { $set: { notify } });
+    if (!updated) {
       return res.status(404).json({ error: 'Not found' });
     }
-    users[i].notify = !!(req.body && req.body.notify);
-    await dbUnified.write('users', users);
-    res.json({ ok: true, notify: users[i].notify });
+    res.json({ ok: true, notify });
   } catch (error) {
     logger.error('Error updating user settings:', error);
     return res.status(500).json({ error: 'Internal server error' });

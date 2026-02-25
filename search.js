@@ -337,12 +337,13 @@ async function saveSearchHistory(userId, query) {
 
   searchHistory.push(historyEntry);
 
-  // Keep only last 1000 entries
+  // Trim to last 1000 entries to prevent unbounded growth
   if (searchHistory.length > 1000) {
     searchHistory.splice(0, searchHistory.length - 1000);
+    await dbUnified.write('searchHistory', searchHistory);
+  } else {
+    await dbUnified.insertOne('searchHistory', historyEntry);
   }
-
-  await dbUnified.write('searchHistory', searchHistory);
 }
 
 /**

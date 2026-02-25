@@ -1,6 +1,6 @@
 /**
  * Supplier Dashboard Photo Gallery Management
- * Handles drag-and-drop photo uploads to Firebase Storage
+ * Handles drag-and-drop photo uploads via the EventFlow REST API
  */
 
 const isDevelopment =

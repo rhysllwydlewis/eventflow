@@ -436,7 +436,7 @@ router.post(
           : null,
       };
       threads.push(thread);
-      await dbUnified.write('threads', threads);
+      await dbUnified.insertOne('threads', thread);
 
       // Dual-write to MongoDB for v2 API compatibility
       const db = getMongoDb(req);
@@ -464,23 +464,32 @@ router.post(
       }
 
       msgs.push(entry);
-      await dbUnified.write('messages', msgs);
+      await dbUnified.insertOne('messages', entry);
 
       // Dual-write message to MongoDB for v2 API compatibility
       const db = getMongoDb(req);
       await writeMessageToMongoDB(entry, db);
 
       // Update thread timestamp and message preview
-      const allThreads = await dbUnified.read('threads');
-      const idx = allThreads.findIndex(t => t.id === thread.id);
-      if (idx >= 0) {
-        allThreads[idx].updatedAt = entry.createdAt;
-        allThreads[idx].lastMessageAt = entry.createdAt;
-        allThreads[idx].lastMessagePreview = entry.text?.substring(0, 100) || '';
-        await dbUnified.write('threads', allThreads);
+      if (thread) {
+        await dbUnified.updateOne(
+          'threads',
+          { id: thread.id },
+          {
+            $set: {
+              updatedAt: entry.createdAt,
+              lastMessageAt: entry.createdAt,
+              lastMessagePreview: entry.text?.substring(0, 100) || '',
+            },
+          }
+        );
 
         // Also update MongoDB for v2 API compatibility
-        await writeThreadToMongoDB(allThreads[idx], db);
+        const allThreads = await dbUnified.read('threads');
+        const updatedThread = allThreads.find(t => t.id === thread.id);
+        if (updatedThread) {
+          await writeThreadToMongoDB(updatedThread, db);
+        }
       }
     }
 
@@ -650,23 +659,25 @@ router.post(
       createdAt: new Date().toISOString(),
     };
     msgs.push(entry);
-    await dbUnified.write('messages', msgs);
+    await dbUnified.insertOne('messages', entry);
 
     // Dual-write message to MongoDB for v2 API compatibility
     const db = getMongoDb(req);
     await writeMessageToMongoDB(entry, db);
 
     // Update thread timestamp and message preview
-    const th = await dbUnified.read('threads');
-    const i = th.findIndex(x => x.id === t.id);
-    if (i >= 0) {
-      th[i].updatedAt = entry.createdAt;
-      th[i].lastMessageAt = entry.createdAt;
-      th[i].lastMessagePreview = entry.text?.substring(0, 100) || '';
-      await dbUnified.write('threads', th);
+    const threadUpdates = {
+      updatedAt: entry.createdAt,
+      lastMessageAt: entry.createdAt,
+      lastMessagePreview: entry.text?.substring(0, 100) || '',
+    };
+    await dbUnified.updateOne('threads', { id: t.id }, { $set: threadUpdates });
 
-      // Also update MongoDB for v2 API compatibility
-      await writeThreadToMongoDB(th[i], db);
+    // Also update MongoDB for v2 API compatibility
+    const th = await dbUnified.read('threads');
+    const updatedT = th.find(x => x.id === t.id);
+    if (updatedT) {
+      await writeThreadToMongoDB({ ...updatedT, ...threadUpdates }, db);
     }
 
     // Email notify other party (safe IIFE)

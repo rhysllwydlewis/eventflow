@@ -5,11 +5,7 @@
  * Phase 5: Converted to ES module — imports verification-badges directly
  */
 
-import {
-  renderVerificationBadges,
-  renderVerificationSection,
-  renderTierIcon,
-} from '/assets/js/utils/verification-badges.js';
+import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verification-badges.js';
 
 (function () {
   'use strict';

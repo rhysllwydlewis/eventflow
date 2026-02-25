@@ -79,6 +79,24 @@ describe('Complete Subscription Flow Integration', () => {
       }
     });
 
+    dbUnified.updateOne.mockImplementation(async (collection, filter, update) => {
+      if (update.$set) {
+        const mockMap = {
+          users: mockUsers,
+          subscriptions: mockSubscriptions,
+          payments: mockPayments,
+          invoices: mockInvoices,
+        };
+        const arr = mockMap[collection];
+        if (arr) {
+          const idx = arr.findIndex(item => Object.keys(filter).every(k => item[k] === filter[k]));
+          if (idx >= 0) {
+            arr[idx] = { ...arr[idx], ...update.$set };
+          }
+        }
+      }
+    });
+
     jest.clearAllMocks();
   });
 

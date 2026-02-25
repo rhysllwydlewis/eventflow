@@ -299,13 +299,11 @@ router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res)
       updatedAt: now,
     };
 
-    threads.push(newThread);
-    await dbUnified.write('threads', threads);
+    await dbUnified.insertOne('threads', newThread);
 
     // Create initial message if provided
     let initialMessage = null;
     if (sanitizedMessage) {
-      const messages = await dbUnified.read('messages');
       initialMessage = {
         id: uid(),
         threadId: newThread.id,
@@ -320,8 +318,7 @@ router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res)
         createdAt: now,
         updatedAt: now,
       };
-      messages.push(initialMessage);
-      await dbUnified.write('messages', messages);
+      await dbUnified.insertOne('messages', initialMessage);
 
       // Send email notification to supplier
       setImmediate(async () => {
@@ -483,26 +480,30 @@ router.post(
         updatedAt: now,
       };
 
-      messages.push(newMessage);
-      await dbUnified.write('messages', messages);
+      await dbUnified.insertOne('messages', newMessage);
 
       // Update thread if not a draft
       if (!isDraft) {
-        thread.lastMessageAt = now;
-        thread.lastMessagePreview = sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
-        thread.lastMessageText = sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
-        thread.lastMessageSenderId = req.user.id;
-        thread.updatedAt = now;
-
-        // Increment unread count for the recipient
+        const recipientId = userRole === 'customer' ? thread.supplierId : thread.customerId;
         if (!thread.unreadCount) {
           thread.unreadCount = {};
         }
-        const recipientId = userRole === 'customer' ? thread.supplierId : thread.customerId;
         thread.unreadCount[recipientId] = (thread.unreadCount[recipientId] || 0) + 1;
 
-        threads[threadIndex] = thread;
-        await dbUnified.write('threads', threads);
+        await dbUnified.updateOne(
+          'threads',
+          { id: thread.id },
+          {
+            $set: {
+              lastMessageAt: now,
+              lastMessagePreview: sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH),
+              lastMessageText: sanitizedText.substring(0, MESSAGE_PREVIEW_MAX_LENGTH),
+              lastMessageSenderId: req.user.id,
+              updatedAt: now,
+              unreadCount: thread.unreadCount,
+            },
+          }
+        );
 
         // Track analytics event
         const supplierAnalytics = require('../utils/supplierAnalytics');
@@ -638,13 +639,6 @@ router.put('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, re
       const threadIndex = threads.findIndex(t => t.id === message.threadId);
       if (threadIndex !== -1) {
         const thread = threads[threadIndex];
-        thread.lastMessageAt = now;
-        thread.lastMessagePreview = message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
-        thread.lastMessageText = message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
-        thread.lastMessageSenderId = req.user.id;
-        thread.updatedAt = now;
-
-        // Increment unread count for the recipient
         if (!thread.unreadCount) {
           thread.unreadCount = {};
         }
@@ -652,14 +646,36 @@ router.put('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, re
         const recipientId = userRole === 'customer' ? thread.supplierId : thread.customerId;
         thread.unreadCount[recipientId] = (thread.unreadCount[recipientId] || 0) + 1;
 
-        threads[threadIndex] = thread;
-        await dbUnified.write('threads', threads);
+        await dbUnified.updateOne(
+          'threads',
+          { id: thread.id },
+          {
+            $set: {
+              lastMessageAt: now,
+              lastMessagePreview: message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH),
+              lastMessageText: message.text.substring(0, MESSAGE_PREVIEW_MAX_LENGTH),
+              lastMessageSenderId: req.user.id,
+              updatedAt: now,
+              unreadCount: thread.unreadCount,
+            },
+          }
+        );
       }
     }
 
     message.updatedAt = now;
-    messages[messageIndex] = message;
-    await dbUnified.write('messages', messages);
+    await dbUnified.updateOne(
+      'messages',
+      { id: message.id },
+      {
+        $set: {
+          text: message.text,
+          isDraft: message.isDraft,
+          sentAt: message.sentAt,
+          updatedAt: now,
+        },
+      }
+    );
 
     res.json({ message });
   } catch (error) {
@@ -701,7 +717,7 @@ router.post(
       const messages = await dbUnified.read('messages');
       let updatedCount = 0;
 
-      messages.forEach(message => {
+      for (const message of messages) {
         if (message.threadId === threadId && !message.isDraft) {
           if (!message.readBy) {
             message.readBy = [];
@@ -709,19 +725,23 @@ router.post(
           if (!message.readBy.includes(userId)) {
             message.readBy.push(userId);
             updatedCount++;
+            await dbUnified.updateOne(
+              'messages',
+              { id: message.id },
+              { $set: { readBy: message.readBy } }
+            );
           }
         }
-      });
-
-      if (updatedCount > 0) {
-        await dbUnified.write('messages', messages);
       }
 
       // Reset unread count for this user
       if (thread.unreadCount && thread.unreadCount[userId]) {
         thread.unreadCount[userId] = 0;
-        threads[threadIndex] = thread;
-        await dbUnified.write('threads', threads);
+        await dbUnified.updateOne(
+          'threads',
+          { id: thread.id },
+          { $set: { unreadCount: thread.unreadCount } }
+        );
       }
 
       res.json({ success: true, markedRead: updatedCount });
@@ -766,8 +786,11 @@ router.post(
         thread.unreadCount = {};
       }
       thread.unreadCount[userId] = 1;
-      threads[threadIndex] = thread;
-      await dbUnified.write('threads', threads);
+      await dbUnified.updateOne(
+        'threads',
+        { id: thread.id },
+        { $set: { unreadCount: thread.unreadCount } }
+      );
 
       res.json({ success: true });
     } catch (error) {
@@ -855,8 +878,7 @@ router.delete('/:messageId', applyAuthRequired, applyCsrfProtection, async (req,
       return res.status(400).json({ error: 'Only draft messages can be deleted' });
     }
 
-    messages.splice(messageIndex, 1);
-    await dbUnified.write('messages', messages);
+    await dbUnified.deleteOne('messages', message.id);
 
     res.json({ success: true });
   } catch (error) {
@@ -910,8 +932,11 @@ router.post('/:messageId/reactions', applyAuthRequired, applyCsrfProtection, asy
       });
     }
 
-    messages[messageIndex] = message;
-    await dbUnified.write('messages', messages);
+    await dbUnified.updateOne(
+      'messages',
+      { id: message.id },
+      { $set: { reactions: message.reactions } }
+    );
 
     res.json({ reactions: message.reactions });
   } catch (error) {
@@ -950,8 +975,11 @@ router.post(
 
       thread.status = 'archived';
       thread.updatedAt = new Date().toISOString();
-      threads[threadIndex] = thread;
-      await dbUnified.write('threads', threads);
+      await dbUnified.updateOne(
+        'threads',
+        { id: thread.id },
+        { $set: { status: 'archived', updatedAt: thread.updatedAt } }
+      );
 
       res.json({ success: true, thread });
     } catch (error) {
@@ -991,8 +1019,11 @@ router.post(
 
       thread.status = 'open';
       thread.updatedAt = new Date().toISOString();
-      threads[threadIndex] = thread;
-      await dbUnified.write('threads', threads);
+      await dbUnified.updateOne(
+        'threads',
+        { id: thread.id },
+        { $set: { status: 'open', updatedAt: thread.updatedAt } }
+      );
 
       res.json({ success: true, thread });
     } catch (error) {
@@ -1213,25 +1244,29 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
       updatedAt: now,
     };
 
-    messages.push(newMessage);
-    await dbUnified.write('messages', messages);
+    await dbUnified.insertOne('messages', newMessage);
 
     // Update thread
-    thread.lastMessageAt = now;
-    thread.lastMessagePreview = message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
-    thread.lastMessageText = message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH);
-    thread.lastMessageSenderId = userId;
-    thread.updatedAt = now;
-
-    // Update unread count for recipient
     if (!thread.unreadCount) {
       thread.unreadCount = {};
     }
     const recipientId = userRole === 'customer' ? thread.supplierId : thread.customerId;
     thread.unreadCount[recipientId] = (thread.unreadCount[recipientId] || 0) + 1;
 
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
+    await dbUnified.updateOne(
+      'threads',
+      { id: thread.id },
+      {
+        $set: {
+          lastMessageAt: now,
+          lastMessagePreview: message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH),
+          lastMessageText: message.trim().substring(0, MESSAGE_PREVIEW_MAX_LENGTH),
+          lastMessageSenderId: userId,
+          updatedAt: now,
+          unreadCount: thread.unreadCount,
+        },
+      }
+    );
 
     // Audit log
     auditLog({
@@ -1274,29 +1309,24 @@ router.post('/:conversationId/read', applyAuthRequired, applyCsrfProtection, asy
     }
     thread.unreadCount[userId] = 0;
 
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
+    await dbUnified.updateOne(
+      'threads',
+      { id: thread.id },
+      { $set: { unreadCount: thread.unreadCount } }
+    );
 
     // Also update readBy array for all messages in this thread
     const messages = await dbUnified.read('messages');
-    let updated = false;
-    messages.forEach(m => {
-      if (
-        m.threadId === conversationId &&
-        m.readBy &&
-        Array.isArray(m.readBy) &&
-        !m.readBy.includes(userId)
-      ) {
-        m.readBy.push(userId);
-        updated = true;
-      } else if (m.threadId === conversationId && !m.readBy) {
-        m.readBy = [userId];
-        updated = true;
+    for (const m of messages) {
+      if (m.threadId === conversationId) {
+        if (m.readBy && Array.isArray(m.readBy) && !m.readBy.includes(userId)) {
+          m.readBy.push(userId);
+          await dbUnified.updateOne('messages', { id: m.id }, { $set: { readBy: m.readBy } });
+        } else if (!m.readBy) {
+          m.readBy = [userId];
+          await dbUnified.updateOne('messages', { id: m.id }, { $set: { readBy: m.readBy } });
+        }
       }
-    });
-
-    if (updated) {
-      await dbUnified.write('messages', messages);
     }
 
     res.json({ success: true });

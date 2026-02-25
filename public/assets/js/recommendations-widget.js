@@ -3,10 +3,11 @@
  * Display recommended suppliers based on user preferences
  */
 
-const isDevelopment =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 (function () {
   'use strict';
+
+  const isDevelopment =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   /**
    * Escape HTML special characters to prevent XSS.
