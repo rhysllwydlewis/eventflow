@@ -112,14 +112,13 @@ router.post('/plan', applyAuthRequired, applyCsrfProtection, async (req, res) =>
     }
     const all = await dbUnified.read('plans');
     if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) {
-      all.push({
+      await dbUnified.insertOne('plans', {
         id: uid('pln'),
         userId: req.user.id,
         supplierId,
         createdAt: new Date().toISOString(),
       });
     }
-    await dbUnified.write('plans', all);
     res.json({ ok: true });
   } catch (error) {
     logger.error('Error saving plan:', error);
@@ -132,10 +131,7 @@ router.delete('/plan/:supplierId', applyAuthRequired, applyCsrfProtection, async
     if (req.user.role !== 'customer') {
       return res.status(403).json({ error: 'Customers only' });
     }
-    const all = (await dbUnified.read('plans')).filter(
-      p => !(p.userId === req.user.id && p.supplierId === req.params.supplierId)
-    );
-    await dbUnified.write('plans', all);
+    await dbUnified.deleteOne('plans', { userId: req.user.id, supplierId: req.params.supplierId });
     res.json({ ok: true });
   } catch (error) {
     logger.error('Error deleting plan:', error);
@@ -165,18 +161,21 @@ router.post('/notes', applyAuthRequired, applyCsrfProtection, async (req, res) =
     }
     const all = await dbUnified.read('notes');
     const i = all.findIndex(x => x.userId === req.user.id);
+    const noteText = String((req.body && req.body.text) || '');
     if (i >= 0) {
-      all[i].text = String((req.body && req.body.text) || '');
-      all[i].updatedAt = new Date().toISOString();
+      await dbUnified.updateOne(
+        'notes',
+        { userId: req.user.id },
+        { $set: { text: noteText, updatedAt: new Date().toISOString() } }
+      );
     } else {
-      all.push({
+      await dbUnified.insertOne('notes', {
         id: uid('nte'),
         userId: req.user.id,
-        text: String((req.body && req.body.text) || ''),
+        text: noteText,
         createdAt: new Date().toISOString(),
       });
     }
-    await dbUnified.write('notes', all);
     res.json({ ok: true });
   } catch (error) {
     logger.error('Error saving notes:', error);
@@ -200,11 +199,11 @@ router.post(
     let p = plans.find(x => x.userId === req.userId);
     if (!p) {
       p = { id: uid('pln'), userId: req.userId, plan };
-      plans.push(p);
+      await dbUnified.insertOne('plans', p);
     } else {
       p.plan = plan;
+      await dbUnified.updateOne('plans', { userId: req.userId }, { $set: { plan } });
     }
-    await dbUnified.write('plans', plans);
     res.json({ ok: true, plan: p });
   }
 );
@@ -238,8 +237,6 @@ router.post('/plans/guest', applyCsrfProtection, async (req, res) => {
       return res.status(400).json({ error: 'Event type is required' });
     }
 
-    const plans = await dbUnified.read('plans');
-
     // Generate a secure token for guest plan claiming
     const token = uid('gst'); // guest token
 
@@ -259,8 +256,7 @@ router.post('/plans/guest', applyCsrfProtection, async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
-    plans.push(newPlan);
-    await dbUnified.write('plans', plans);
+    await dbUnified.insertOne('plans', newPlan);
 
     res.json({
       ok: true,
@@ -310,12 +306,17 @@ router.post(
       }
 
       // Attach plan to user
+      const claimedAt = new Date().toISOString();
       plans[planIndex].userId = req.user.id;
       plans[planIndex].isGuestPlan = false;
-      plans[planIndex].claimedAt = new Date().toISOString();
+      plans[planIndex].claimedAt = claimedAt;
       // Keep guestToken for audit trail but plan is now claimed
 
-      await dbUnified.write('plans', plans);
+      await dbUnified.updateOne(
+        'plans',
+        { id: plans[planIndex].id },
+        { $set: { userId: req.user.id, isGuestPlan: false, claimedAt } }
+      );
 
       res.json({
         ok: true,

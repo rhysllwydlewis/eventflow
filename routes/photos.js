@@ -416,7 +416,11 @@ router.post(
         listing.images = existingImages.concat(uploadedUrls).slice(0, 5);
         listing.updatedAt = new Date().toISOString();
 
-        await dbUnified.write('marketplace_listings', listings);
+        await dbUnified.updateOne(
+          'marketplace_listings',
+          { id: listing.id },
+          { $set: { images: listing.images, updatedAt: listing.updatedAt } }
+        );
 
         logger.info('Marketplace images uploaded', {
           listingId: normalizedId,
@@ -477,7 +481,11 @@ router.post(
         }
         supplier.photosGallery.push(photoRecord);
 
-        await dbUnified.write('suppliers', suppliers);
+        await dbUnified.updateOne(
+          'suppliers',
+          { id: supplier.id },
+          { $set: { photosGallery: supplier.photosGallery } }
+        );
 
         return res.json({
           success: true,
@@ -506,7 +514,7 @@ router.post(
         }
         pkg.gallery.push(photoRecord);
 
-        await dbUnified.write('packages', packages);
+        await dbUnified.updateOne('packages', { id: pkg.id }, { $set: { gallery: pkg.gallery } });
 
         return res.json({
           success: true,
@@ -758,7 +766,11 @@ router.post(
         listing.images = existingImages.concat(uploadedUrls).slice(0, 5);
         listing.updatedAt = new Date().toISOString();
 
-        await dbUnified.write('marketplace_listings', listings);
+        await dbUnified.updateOne(
+          'marketplace_listings',
+          { id: listing.id },
+          { $set: { images: listing.images, updatedAt: listing.updatedAt } }
+        );
 
         logger.info('Marketplace images uploaded (batch)', {
           listingId: normalizedId,
@@ -790,7 +802,11 @@ router.post(
         }
         supplier.photosGallery.push(...uploadedPhotos);
 
-        await dbUnified.write('suppliers', suppliers);
+        await dbUnified.updateOne(
+          'suppliers',
+          { id: supplier.id },
+          { $set: { photosGallery: supplier.photosGallery } }
+        );
       } else if (type === 'package') {
         const packages = await dbUnified.read('packages');
         const pkg = packages.find(p => p.id === normalizedId);
@@ -811,7 +827,7 @@ router.post(
         }
         pkg.gallery.push(...uploadedPhotos);
 
-        await dbUnified.write('packages', packages);
+        await dbUnified.updateOne('packages', { id: pkg.id }, { $set: { gallery: pkg.gallery } });
       } else {
         return res.status(400).json({ error: 'Invalid type' });
       }
@@ -878,7 +894,11 @@ router.delete('/photos/delete', applyAuthRequired, applyCsrfProtection, async (r
 
       if (supplier.photosGallery) {
         supplier.photosGallery = supplier.photosGallery.filter(p => p.url !== decodedUrl);
-        await dbUnified.write('suppliers', suppliers);
+        await dbUnified.updateOne(
+          'suppliers',
+          { id: supplier.id },
+          { $set: { photosGallery: supplier.photosGallery } }
+        );
 
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
@@ -900,7 +920,7 @@ router.delete('/photos/delete', applyAuthRequired, applyCsrfProtection, async (r
 
       if (pkg.gallery) {
         pkg.gallery = pkg.gallery.filter(p => p.url !== decodedUrl);
-        await dbUnified.write('packages', packages);
+        await dbUnified.updateOne('packages', { id: pkg.id }, { $set: { gallery: pkg.gallery } });
 
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
@@ -946,7 +966,11 @@ router.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await dbUnified.write('suppliers', suppliers);
+            await dbUnified.updateOne(
+              'suppliers',
+              { id: supplier.id },
+              { $set: { photosGallery: supplier.photosGallery } }
+            );
           }
         }
       } else if (type === 'package') {
@@ -963,7 +987,11 @@ router.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await dbUnified.write('packages', packages);
+            await dbUnified.updateOne(
+              'packages',
+              { id: pkg.id },
+              { $set: { gallery: pkg.gallery } }
+            );
           }
         }
       }
@@ -1300,8 +1328,11 @@ router.post(
     photo.approvedAt = now;
     photo.approvedBy = req.user.id;
 
-    photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
+    await dbUnified.updateOne(
+      'photos',
+      { id: photo.id },
+      { $set: { status: photo.status, approvedAt: photo.approvedAt, approvedBy: photo.approvedBy } }
+    );
 
     // Add photo to supplier's photos array if not already there
     const suppliers = await dbUnified.read('suppliers');
@@ -1313,7 +1344,11 @@ router.post(
       }
       if (!suppliers[supplierIndex].photos.includes(photo.url)) {
         suppliers[supplierIndex].photos.push(photo.url);
-        await dbUnified.write('suppliers', suppliers);
+        await dbUnified.updateOne(
+          'suppliers',
+          { id: suppliers[supplierIndex].id },
+          { $set: { photos: suppliers[supplierIndex].photos } }
+        );
       }
     }
 
@@ -1349,8 +1384,18 @@ router.post(
     photo.rejectedBy = req.user.id;
     photo.rejectionReason = reason || 'No reason provided';
 
-    photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
+    await dbUnified.updateOne(
+      'photos',
+      { id: photo.id },
+      {
+        $set: {
+          status: photo.status,
+          rejectedAt: photo.rejectedAt,
+          rejectedBy: photo.rejectedBy,
+          rejectionReason: photo.rejectionReason,
+        },
+      }
+    );
 
     res.json({ success: true, message: 'Photo rejected successfully', photo });
   }

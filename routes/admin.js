@@ -598,8 +598,7 @@ router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtect
       if (idx < 0) {
         return res.status(404).json({ error: 'Not found' });
       }
-      all.splice(idx, 1);
-      await dbUnified.write('suppliers', all);
+      await dbUnified.deleteOne('suppliers', req.params.id);
       await auditLog({
         action: AUDIT_ACTIONS.SUPPLIER_DELETED || 'supplier_deleted',
         userId: req.user.id,
@@ -625,9 +624,9 @@ router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfP
       if (i < 0) {
         return res.status(404).json({ error: 'Not found' });
       }
-      all[i].approved = !!(req.body && req.body.approved);
-      await dbUnified.write('suppliers', all);
-      res.json({ ok: true, supplier: all[i] });
+      const approved = !!(req.body && req.body.approved);
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: { approved } });
+      res.json({ ok: true, supplier: { ...all[i], approved } });
     } catch (error) {
       logger.error('Error approving supplier:', error);
       res.status(500).json({ error: 'Failed to approve supplier' });
@@ -693,7 +692,11 @@ router.post(
       }
 
       all[i] = s;
-      await dbUnified.write('suppliers', all);
+      await dbUnified.updateOne(
+        'suppliers',
+        { id: req.params.id },
+        { $set: { isPro: s.isPro, proExpiresAt: s.proExpiresAt } }
+      );
 
       const active = supplierIsProActiveFn ? await supplierIsProActiveFn(s) : s.isPro;
       res.json({
@@ -902,8 +905,7 @@ router.post('/packages', authRequired, roleRequired('admin'), csrfProtection, as
       versionHistory: [],
     };
 
-    packages.push(newPackage);
-    await dbUnified.write('packages', packages);
+    await dbUnified.insertOne('packages', newPackage);
 
     // Create audit log
     auditLog({
@@ -1467,8 +1469,17 @@ router.post(
       photo.approvedAt = now;
       photo.approvedBy = req.user.id;
 
-      photos[photoIndex] = photo;
-      await dbUnified.write('photos', photos);
+      await dbUnified.updateOne(
+        'photos',
+        { id: photo.id },
+        {
+          $set: {
+            status: photo.status,
+            approvedAt: photo.approvedAt,
+            approvedBy: photo.approvedBy,
+          },
+        }
+      );
 
       // Add photo to supplier's photos array if not already there
       const suppliers = await dbUnified.read('suppliers');
@@ -1480,7 +1491,11 @@ router.post(
         }
         if (!suppliers[supplierIndex].photos.includes(photo.url)) {
           suppliers[supplierIndex].photos.push(photo.url);
-          await dbUnified.write('suppliers', suppliers);
+          await dbUnified.updateOne(
+            'suppliers',
+            { id: suppliers[supplierIndex].id },
+            { $set: { photos: suppliers[supplierIndex].photos } }
+          );
         }
       }
 
@@ -1532,7 +1547,18 @@ router.post(
       photo.rejectionReason = reason || 'No reason provided';
 
       photos[photoIndex] = photo;
-      await dbUnified.write('photos', photos);
+      await dbUnified.updateOne(
+        'photos',
+        { id: photo.id },
+        {
+          $set: {
+            status: photo.status,
+            rejectedAt: photo.rejectedAt,
+            rejectedBy: photo.rejectedBy,
+            rejectionReason: photo.rejectionReason,
+          },
+        }
+      );
 
       // Create audit log
       auditLog({
@@ -2977,7 +3003,19 @@ router.put(
       ticket.updatedBy = req.user.id;
 
       tickets[index] = ticket;
-      await dbUnified.write('tickets', tickets);
+      await dbUnified.updateOne(
+        'tickets',
+        { id: ticket.id },
+        {
+          $set: {
+            status: ticket.status,
+            priority: ticket.priority,
+            assignedTo: ticket.assignedTo,
+            updatedAt: ticket.updatedAt,
+            updatedBy: ticket.updatedBy,
+          },
+        }
+      );
 
       res.json({ ticket });
     } catch (error) {
@@ -3034,8 +3072,14 @@ router.post(
       }
 
       delete ticket.replies;
-      tickets[index] = ticket;
-      await dbUnified.write('tickets', tickets);
+      await dbUnified.updateOne(
+        'tickets',
+        { id: ticket.id },
+        {
+          $set: { responses: ticket.responses, updatedAt: ticket.updatedAt, status: ticket.status },
+          $unset: { replies: '' },
+        }
+      );
 
       res.json({ ticket, reply });
     } catch (error) {
@@ -3284,7 +3328,17 @@ router.post(
       listing.status = approved ? 'active' : 'pending';
       listing.updatedAt = new Date().toISOString();
 
-      await dbUnified.write('marketplace_listings', listings);
+      await dbUnified.updateOne(
+        'marketplace_listings',
+        { id: listing.id },
+        {
+          $set: {
+            approved: listing.approved,
+            status: listing.status,
+            updatedAt: listing.updatedAt,
+          },
+        }
+      );
 
       // Log audit using auditLog function
       await auditLog({
@@ -3328,8 +3382,7 @@ router.delete(
       const deletedImageCount = await photoUpload.deleteMarketplaceImages(req.params.id);
 
       // Remove listing
-      const updatedListings = listings.filter(l => l.id !== req.params.id);
-      await dbUnified.write('marketplace_listings', updatedListings);
+      await dbUnified.deleteOne('marketplace_listings', req.params.id);
 
       // Log audit
       await auditLog({
@@ -4728,8 +4781,7 @@ router.post(
       // Remove version history from duplicate
       delete duplicatePkg.versionHistory;
 
-      packages.push(duplicatePkg);
-      await dbUnified.write('packages', packages);
+      await dbUnified.insertOne('packages', duplicatePkg);
 
       // Audit log
       await auditLog({

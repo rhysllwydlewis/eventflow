@@ -144,9 +144,7 @@ router.post(
         updatedAt: now,
       };
 
-      const badges = await dbUnified.read('badges');
-      badges.push(newBadge);
-      await dbUnified.write('badges', badges);
+      await dbUnified.insertOne('badges', newBadge);
 
       res.status(201).json({ badge: newBadge });
     } catch (error) {
@@ -220,15 +218,19 @@ router.put(
         return res.status(404).json({ error: 'Badge not found' });
       }
 
-      badges[badgeIndex] = {
+      const updatedBadge = {
         ...badges[badgeIndex],
         ...updates,
         id, // Preserve ID
         updatedAt: new Date().toISOString(),
       };
 
-      await dbUnified.write('badges', badges);
-      res.json({ badge: badges[badgeIndex] });
+      await dbUnified.updateOne(
+        'badges',
+        { id },
+        { $set: { ...updates, updatedAt: updatedBadge.updatedAt } }
+      );
+      res.json({ badge: updatedBadge });
     } catch (error) {
       logger.error('Error updating badge:', error);
       res.status(500).json({ error: 'Failed to update badge' });
@@ -250,13 +252,13 @@ router.delete(
       const { id } = req.params;
 
       const badges = await dbUnified.read('badges');
-      const filtered = badges.filter(b => b.id !== id);
+      const badgeExists = badges.some(b => b.id === id);
 
-      if (filtered.length === badges.length) {
+      if (!badgeExists) {
         return res.status(404).json({ error: 'Badge not found' });
       }
 
-      await dbUnified.write('badges', filtered);
+      await dbUnified.deleteOne('badges', id);
       res.json({ success: true });
     } catch (error) {
       logger.error('Error deleting badge:', error);
@@ -372,7 +374,11 @@ router.post(
       // Update category with new hero image URL
       categories[categoryIndex].heroImage = imageData.optimized || imageData.large;
 
-      await dbUnified.write('categories', categories);
+      await dbUnified.updateOne(
+        'categories',
+        { id: categoryId },
+        { $set: { heroImage: categories[categoryIndex].heroImage } }
+      );
 
       logger.info(`Category hero image uploaded successfully for category ${categoryId}`);
 
@@ -464,7 +470,7 @@ router.delete(
       // Remove the hero image URL
       delete categories[categoryIndex].heroImage;
 
-      await dbUnified.write('categories', categories);
+      await dbUnified.updateOne('categories', { id: categoryId }, { $unset: { heroImage: '' } });
 
       // Optionally delete the old image file if it exists
       if (oldImageUrl && typeof oldImageUrl === 'string' && oldImageUrl.trim() !== '') {
@@ -524,8 +530,7 @@ router.post(
         visible: visible !== false,
       };
 
-      categories.push(newCategory);
-      await dbUnified.write('categories', categories);
+      await dbUnified.insertOne('categories', newCategory);
 
       res.json({
         ok: true,
@@ -617,34 +622,36 @@ router.put(
         }
       }
 
-      // Update fields
+      // Build update fields
+      const catUpdates = {};
       if (name !== undefined) {
-        categories[categoryIndex].name = name;
+        catUpdates.name = name;
       }
       if (slug !== undefined) {
-        categories[categoryIndex].slug = slug;
+        catUpdates.slug = slug;
       }
       if (description !== undefined) {
-        categories[categoryIndex].description = description;
+        catUpdates.description = description;
       }
       if (icon !== undefined) {
-        categories[categoryIndex].icon = icon;
+        catUpdates.icon = icon;
       }
       if (heroImage !== undefined) {
-        categories[categoryIndex].heroImage = heroImage;
+        catUpdates.heroImage = heroImage;
       }
       if (pexelsAttribution !== undefined) {
-        categories[categoryIndex].pexelsAttribution = pexelsAttribution;
+        catUpdates.pexelsAttribution = pexelsAttribution;
       }
       if (visible !== undefined) {
-        categories[categoryIndex].visible = visible;
+        catUpdates.visible = visible;
       }
 
-      await dbUnified.write('categories', categories);
+      await dbUnified.updateOne('categories', { id: categoryId }, { $set: catUpdates });
 
+      const updatedCategory = { ...categories[categoryIndex], ...catUpdates };
       res.json({
         ok: true,
-        category: categories[categoryIndex],
+        category: updatedCategory,
       });
     } catch (error) {
       logger.error('Error updating category:', error);
@@ -673,9 +680,8 @@ router.delete(
       }
 
       const deletedCategory = categories[categoryIndex];
-      categories.splice(categoryIndex, 1);
 
-      await dbUnified.write('categories', categories);
+      await dbUnified.deleteOne('categories', categoryId);
 
       res.json({
         ok: true,
@@ -713,13 +719,11 @@ router.put(
         return res.status(404).json({ error: 'Category not found' });
       }
 
-      categories[categoryIndex].visible = visible;
-
-      await dbUnified.write('categories', categories);
+      await dbUnified.updateOne('categories', { id: categoryId }, { $set: { visible } });
 
       res.json({
         ok: true,
-        category: categories[categoryIndex],
+        category: { ...categories[categoryIndex], visible },
       });
     } catch (error) {
       logger.error('Error toggling category visibility:', error);
