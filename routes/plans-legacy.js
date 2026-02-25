@@ -9,6 +9,7 @@ const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
+const { writeLimiter } = require('../middleware/rateLimits');
 
 // These will be injected by server.js during route mounting
 let dbUnified;
@@ -70,6 +71,10 @@ function applyCsrfProtection(req, res, next) {
   return csrfProtection(req, res, next);
 }
 
+function applyWriteLimiter(req, res, next) {
+  return writeLimiter(req, res, next);
+}
+
 /**
  * Middleware: Verify plan ownership
  */
@@ -90,7 +95,7 @@ function deprecationWarning(req, res, next) {
   next();
 }
 
-router.get('/plan', deprecationWarning, applyAuthRequired, async (req, res) => {
+router.get('/plan', deprecationWarning, applyWriteLimiter, applyAuthRequired, async (req, res) => {
   try {
     if (req.user.role !== 'customer') {
       return res.status(403).json({ error: 'Customers only' });
@@ -108,6 +113,7 @@ router.get('/plan', deprecationWarning, applyAuthRequired, async (req, res) => {
 router.post(
   '/plan',
   deprecationWarning,
+  applyWriteLimiter,
   applyAuthRequired,
   applyCsrfProtection,
   async (req, res) => {
@@ -143,6 +149,7 @@ router.post(
 router.delete(
   '/plan/:supplierId',
   deprecationWarning,
+  applyWriteLimiter,
   applyAuthRequired,
   applyCsrfProtection,
   async (req, res) => {
@@ -232,19 +239,26 @@ router.post(
   }
 );
 
-router.get('/me/plan', deprecationWarning, applyAuthRequired, planOwnerOnly, async (req, res) => {
-  try {
-    const plans = await dbUnified.read('plans');
-    const p = plans.find(x => x.userId === req.userId);
-    if (!p) {
-      return res.json({ ok: true, plan: null });
+router.get(
+  '/me/plan',
+  deprecationWarning,
+  applyWriteLimiter,
+  applyAuthRequired,
+  planOwnerOnly,
+  async (req, res) => {
+    try {
+      const plans = await dbUnified.read('plans');
+      const p = plans.find(x => x.userId === req.userId);
+      if (!p) {
+        return res.json({ ok: true, plan: null });
+      }
+      res.json({ ok: true, plan: p.plan });
+    } catch (error) {
+      logger.error('Error reading saved plan:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    res.json({ ok: true, plan: p.plan });
-  } catch (error) {
-    logger.error('Error reading saved plan:', error);
-    return res.status(500).json({ error: 'Internal server error' });
   }
-});
+);
 
 // ---------- Guest Plan Creation ----------
 
@@ -253,7 +267,7 @@ router.get('/me/plan', deprecationWarning, applyAuthRequired, planOwnerOnly, asy
  * POST /api/plans/guest
  * Returns: { ok: true, plan: {...}, token: 'secret-token' }
  */
-router.post('/plans/guest', applyCsrfProtection, async (req, res) => {
+router.post('/plans/guest', applyWriteLimiter, applyCsrfProtection, async (req, res) => {
   try {
     const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
 

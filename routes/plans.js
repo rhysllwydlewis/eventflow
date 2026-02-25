@@ -16,6 +16,17 @@ const { uid } = require('../store');
 const router = express.Router();
 
 /**
+ * Strip HTML tags from a string by removing all angle brackets.
+ * This is a server-side defence for text-only fields (names, locations, notes).
+ * Strips both '<' and '>' so that split/nested patterns cannot survive.
+ * @param {string} str - Raw input
+ * @returns {string} Sanitized string
+ */
+function stripHtml(str) {
+  return String(str).replace(/[<>]/g, '');
+}
+
+/**
  * GET /api/me/plans
  * Get all plans for the current user
  */
@@ -109,18 +120,8 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
 
     // Input sanitization (Bug 3.2)
     const sanitizedGuests = guests ? Math.max(0, Math.min(10000, parseInt(guests, 10) || 0)) : null;
-    const sanitizedBudget = budget
-      ? String(budget)
-          .trim()
-          .replace(/<[^>]*>/g, '')
-          .slice(0, 100)
-      : null;
-    const sanitizedNotes = notes
-      ? String(notes)
-          .trim()
-          .replace(/<[^>]*>/g, '')
-          .slice(0, 2000)
-      : null;
+    const sanitizedBudget = budget ? stripHtml(String(budget).trim()).slice(0, 100) : null;
+    const sanitizedNotes = notes ? stripHtml(String(notes).trim()).slice(0, 2000) : null;
     const sanitizedPackages = Array.isArray(packages)
       ? packages
           .slice(0, 20)
@@ -141,22 +142,12 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
     const newPlan = {
       id: uid('plan'),
       userId,
-      name: resolvedName.replace(/<[^>]*>/g, '').slice(0, 200),
-      eventName: eventName
-        ? String(eventName)
-            .trim()
-            .replace(/<[^>]*>/g, '')
-            .slice(0, 200)
-        : null,
+      name: stripHtml(resolvedName).slice(0, 200),
+      eventName: eventName ? stripHtml(String(eventName).trim()).slice(0, 200) : null,
       eventType: eventType ? String(eventType).trim().slice(0, 100) : null,
       eventDate: resolvedDate,
       date: resolvedDate, // legacy field support
-      location: location
-        ? String(location)
-            .trim()
-            .replace(/<[^>]*>/g, '')
-            .slice(0, 200)
-        : null,
+      location: location ? stripHtml(String(location).trim()).slice(0, 200) : null,
       guests: sanitizedGuests,
       budget: sanitizedBudget,
       notes: sanitizedNotes,
