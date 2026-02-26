@@ -69,6 +69,8 @@ router.get('/:id', authRequired, async (req, res) => {
 const MAX_PLANS_PER_USER = 3;
 // Maximum packages per plan
 const MAX_PACKAGES_PER_PLAN = 20;
+// Maximum guests per event (sanity cap)
+const MAX_GUESTS_PER_PLAN = 10000;
 
 router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
@@ -111,7 +113,9 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
     }
 
     // Input sanitization (Bug 3.2)
-    const sanitizedGuests = guests ? Math.max(0, Math.min(10000, parseInt(guests, 10) || 0)) : null;
+    const sanitizedGuests = guests
+      ? Math.max(0, Math.min(MAX_GUESTS_PER_PLAN, parseInt(guests, 10) || 0))
+      : null;
     const sanitizedBudget = budget ? stripHtml(String(budget).trim()).slice(0, 100) : null;
     const sanitizedNotes = notes ? stripHtml(String(notes).trim()).slice(0, 2000) : null;
     const sanitizedPackages = Array.isArray(packages)
@@ -203,7 +207,9 @@ router.patch('/:id', authRequired, csrfProtection, writeLimiter, async (req, res
       planUpdates.location = location ? stripHtml(String(location).trim()).slice(0, 200) : null;
     }
     if (guests !== undefined) {
-      planUpdates.guests = guests ? Math.max(0, Math.min(10000, parseInt(guests, 10) || 0)) : null;
+      planUpdates.guests = guests
+        ? Math.max(0, Math.min(MAX_GUESTS_PER_PLAN, parseInt(guests, 10) || 0))
+        : null;
     }
     if (budget !== undefined) {
       planUpdates.budget = budget ? stripHtml(String(budget).trim()).slice(0, 100) : null;

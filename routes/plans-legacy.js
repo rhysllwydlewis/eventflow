@@ -22,6 +22,7 @@ let uid;
 // Field limits — mirror routes/plans.js for consistency
 const MAX_NOTES_LENGTH = 2000;
 const MAX_PACKAGES_PER_PLAN = 20;
+const MAX_GUESTS_PER_PLAN = 10000;
 
 /**
  * Initialize dependencies from server.js
@@ -287,7 +288,9 @@ router.post('/plans/guest', applyWriteLimiter, applyCsrfProtection, async (req, 
     const token = uid('gst'); // guest token
 
     // Sanitize inputs — mirrors POST /api/me/plans sanitization
-    const sanitizedGuests = guests ? Math.max(0, Math.min(10000, parseInt(guests, 10) || 0)) : null;
+    const sanitizedGuests = guests
+      ? Math.max(0, Math.min(MAX_GUESTS_PER_PLAN, parseInt(guests, 10) || 0))
+      : null;
     let resolvedDate = date || null;
     if (resolvedDate) {
       const dateObj = new Date(resolvedDate);
