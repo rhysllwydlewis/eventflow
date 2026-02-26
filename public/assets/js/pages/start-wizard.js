@@ -379,7 +379,7 @@
   /**
    * Load event type images from Pexels CDN
    */
-  async function loadEventTypeImages() {
+  function loadEventTypeImages() {
     const images = {
       wedding: document.getElementById('wedding-image'),
       corporate: document.getElementById('corporate-image'),
@@ -1207,6 +1207,15 @@
             })
             .catch(err => {
               console.error('Failed to save restored plan:', err);
+              // Clean up pending plan so it isn't retried indefinitely
+              localStorage.removeItem('eventflow_wizard_pending');
+              localStorage.removeItem('eventflow_wizard_timestamp');
+              if (window.showNotification) {
+                window.showNotification(
+                  err.message || 'Your plan could not be saved. Please try again from the wizard.',
+                  'error'
+                );
+              }
             });
         } else if (retriesLeft > 0) {
           // AuthStateManager not yet ready — retry after short delay

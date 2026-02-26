@@ -187,6 +187,7 @@ describe('WizardState', () => {
       expect(exported.location).toBe('London');
       expect(exported.date).toBe('2024-07-10');
       expect(exported.guests).toBe(150);
+      expect(exported.notes).toBe('Please contact us first');
       expect(exported.packages).toEqual(['pkg1', 'pkg2']);
     });
 
