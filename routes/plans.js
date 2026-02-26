@@ -67,6 +67,8 @@ router.get('/:id', authRequired, async (req, res) => {
 
 // Maximum plans allowed per user (free tier)
 const MAX_PLANS_PER_USER = 3;
+// Maximum packages per plan
+const MAX_PACKAGES_PER_PLAN = 20;
 
 router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
@@ -114,7 +116,7 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
     const sanitizedNotes = notes ? stripHtml(String(notes).trim()).slice(0, 2000) : null;
     const sanitizedPackages = Array.isArray(packages)
       ? packages
-          .slice(0, 20)
+          .slice(0, MAX_PACKAGES_PER_PLAN)
           .map(p => String(p).trim())
           .filter(Boolean)
       : [];

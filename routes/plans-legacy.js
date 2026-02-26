@@ -19,6 +19,10 @@ let csrfProtection;
 let roleRequired;
 let uid;
 
+// Field limits — mirror routes/plans.js for consistency
+const MAX_NOTES_LENGTH = 2000;
+const MAX_PACKAGES_PER_PLAN = 20;
+
 /**
  * Initialize dependencies from server.js
  * @param {Object} deps - Dependencies object
@@ -192,7 +196,10 @@ router.post('/notes', applyAuthRequired, applyCsrfProtection, async (req, res) =
     }
     const all = await dbUnified.read('notes');
     const i = all.findIndex(x => x.userId === req.user.id);
-    const noteText = String((req.body && req.body.text) || '');
+    const noteText = stripHtml(String((req.body && req.body.text) || '').trim()).slice(
+      0,
+      MAX_NOTES_LENGTH
+    );
     if (i >= 0) {
       await dbUnified.updateOne(
         'notes',
@@ -290,7 +297,7 @@ router.post('/plans/guest', applyWriteLimiter, applyCsrfProtection, async (req, 
     }
     const sanitizedPackages = Array.isArray(packages)
       ? packages
-          .slice(0, 20)
+          .slice(0, MAX_PACKAGES_PER_PLAN)
           .map(p => String(p).trim())
           .filter(Boolean)
       : [];
