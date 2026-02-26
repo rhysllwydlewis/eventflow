@@ -299,6 +299,7 @@
    */
   function canProceedFromStep(stepIndex) {
     if (stepIndex === 0) {
+      // 0 = EVENT_TYPE step (mirrors STEP_CONFIG.EVENT_TYPE in start-wizard.js)
       // Event type must be selected
       const state = window.WizardState?.getState();
       return !!(state && state.eventType);

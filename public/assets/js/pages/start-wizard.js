@@ -420,7 +420,7 @@
     return `
       <div class="wizard-card">
         <h2>Let's start with the basics</h2>
-        <p class="small">Tell us about your ${state.eventType || 'event'}. Don't worry, you can skip any field you're not sure about yet.</p>
+        <p class="small">Tell us about your ${escapeHtml(state.eventType || 'event')}. Don't worry, you can skip any field you're not sure about yet.</p>
         
         <div class="form-row">
           <label for="wizard-event-name">What's your event called? <span class="small">(optional)</span></label>
@@ -531,7 +531,7 @@
             ${state.date ? `<p><strong>Date:</strong> ${formatDate(state.date)}</p>` : ''}
             ${state.guests ? `<p><strong>Guests:</strong> ${state.guests}</p>` : ''}
             ${state.budget ? `<p><strong>Budget:</strong> ${escapeHtml(state.budget)}</p>` : ''}
-            <a href="#" class="wizard-review-edit" data-step="1">✏️ Edit details</a>
+            <a href="#" class="wizard-review-edit" data-step="${STEP_CONFIG.EVENT_BASICS}">✏️ Edit details</a>
           </div>
 
           <div class="wizard-review-section">
@@ -563,7 +563,7 @@
       <div class="wizard-card wizard-success">
         <span class="wizard-success-icon">🎉</span>
         <h2>Congratulations!</h2>
-        <p class="wizard-success-message">Your event plan has been created successfully. You're all set to start organizing your ${state.eventType || 'event'}!</p>
+        <p class="wizard-success-message">Your event plan has been created successfully. You're all set to start organizing your ${escapeHtml(state.eventType || 'event')}!</p>
         
         <div class="wizard-success-summary">
           <h3>What's Next?</h3>
