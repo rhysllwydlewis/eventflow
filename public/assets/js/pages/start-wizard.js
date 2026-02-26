@@ -8,10 +8,10 @@
 
   // Available categories for wizard steps (in order)
   const CATEGORIES = [
-    { key: 'venues', name: 'Venues', icon: '🏛️', step: 3 },
-    { key: 'photography', name: 'Photography', icon: '📸', step: 4 },
-    { key: 'catering', name: 'Catering', icon: '🍽️', step: 5 },
-    { key: 'flowers', name: 'Flowers & Décor', icon: '💐', step: 6 },
+    { key: 'venues', name: 'Venues', icon: '🏛️' },
+    { key: 'photography', name: 'Photography', icon: '📸' },
+    { key: 'catering', name: 'Catering', icon: '🍽️' },
+    { key: 'flowers', name: 'Flowers & Décor', icon: '💐' },
   ];
 
   const WIZARD_DATA_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -300,16 +300,8 @@
     const totalSteps = STEP_CONFIG.TOTAL_VISIBLE; // Excludes welcome and success
     const progressPercent = Math.round(((stepIndex + 1) / totalSteps) * 100);
 
-    // Step titles
-    const stepTitles = [
-      'Event Type',
-      'Event Basics',
-      'Venues',
-      'Photography',
-      'Catering',
-      'Flowers & Décor',
-      'Review',
-    ];
+    // Derive step titles from CATEGORIES so they stay in sync automatically
+    const stepTitles = ['Event Type', 'Event Basics', ...CATEGORIES.map(c => c.name), 'Review'];
 
     const currentTitle = stepTitles[stepIndex] || 'Planning';
 
