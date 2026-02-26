@@ -839,7 +839,7 @@
 
       html += `
         <div class="wizard-package-card ${isSelected ? 'selected' : ''}" 
-             data-package-id="${escapeHtml(String(pkg.id))}" data-category="${categoryKey}">
+             data-package-id="${escapeHtml(String(pkg.id))}" data-category="${escapeHtml(categoryKey)}">
           ${pkg.image ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}">` : ''}
           <h4>${escapeHtml(pkg.title)}</h4>
           ${distanceInfo}

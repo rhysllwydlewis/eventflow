@@ -10,16 +10,7 @@ const logger = require('../utils/logger');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
 const { writeLimiter } = require('../middleware/rateLimits');
-
-/**
- * Strip HTML tags by removing all angle brackets.
- * Mirrors the sanitization in routes/plans.js.
- * @param {string} str
- * @returns {string}
- */
-function stripHtml(str) {
-  return String(str).replace(/[<>]/g, '');
-}
+const { stripHtml } = require('../utils/helpers');
 
 // These will be injected by server.js during route mounting
 let dbUnified;

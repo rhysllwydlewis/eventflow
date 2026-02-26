@@ -12,19 +12,9 @@ const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
+const { stripHtml } = require('../utils/helpers');
 
 const router = express.Router();
-
-/**
- * Strip HTML tags from a string by removing all angle brackets.
- * This is a server-side defence for text-only fields (names, locations, notes).
- * Strips both '<' and '>' so that split/nested patterns cannot survive.
- * @param {string} str - Raw input
- * @returns {string} Sanitized string
- */
-function stripHtml(str) {
-  return String(str).replace(/[<>]/g, '');
-}
 
 /**
  * GET /api/me/plans
@@ -349,7 +339,8 @@ router.get('/:id/export', authRequired, async (req, res) => {
       doc.text(`Number of Guests: ${plan.guests}`, 100, doc.y + 20);
     }
     if (plan.budget) {
-      doc.text(`Budget: £${plan.budget.toLocaleString()}`, 100, doc.y + 20);
+      // budget is stored as a display string (e.g. "£1,000–£3,000"); use it directly
+      doc.text(`Budget: ${plan.budget}`, 100, doc.y + 20);
     }
 
     doc.moveDown(2);
@@ -481,12 +472,12 @@ router.post('/:planId/budget', authRequired, csrfProtection, writeLimiter, async
     // Validate and sanitize budget items
     const sanitizedItems = budgetItems.map(item => ({
       id: item.id || uid('budget'),
-      category: item.category ? String(item.category).trim().slice(0, 100) : '',
-      item: item.item ? String(item.item).trim().slice(0, 200) : '',
+      category: item.category ? stripHtml(String(item.category).trim()).slice(0, 100) : '',
+      item: item.item ? stripHtml(String(item.item).trim()).slice(0, 200) : '',
       estimated: item.estimated ? Math.max(0, parseFloat(item.estimated) || 0) : 0,
       actual: item.actual ? Math.max(0, parseFloat(item.actual) || 0) : 0,
       paid: item.paid ? Math.max(0, parseFloat(item.paid) || 0) : 0,
-      notes: item.notes ? String(item.notes).trim().slice(0, 500) : '',
+      notes: item.notes ? stripHtml(String(item.notes).trim()).slice(0, 500) : '',
       updatedAt: now,
     }));
 
