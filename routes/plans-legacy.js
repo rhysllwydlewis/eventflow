@@ -11,6 +11,16 @@ const router = express.Router();
 const PDFDocument = require('pdfkit');
 const { writeLimiter } = require('../middleware/rateLimits');
 
+/**
+ * Strip HTML tags by removing all angle brackets.
+ * Mirrors the sanitization in routes/plans.js.
+ * @param {string} str
+ * @returns {string}
+ */
+function stripHtml(str) {
+  return String(str).replace(/[<>]/g, '');
+}
+
 // These will be injected by server.js during route mounting
 let dbUnified;
 let authRequired;
@@ -278,17 +288,33 @@ router.post('/plans/guest', applyWriteLimiter, applyCsrfProtection, async (req, 
     // Generate a secure token for guest plan claiming
     const token = uid('gst'); // guest token
 
+    // Sanitize inputs — mirrors POST /api/me/plans sanitization
+    const sanitizedGuests = guests ? Math.max(0, Math.min(10000, parseInt(guests, 10) || 0)) : null;
+    let resolvedDate = date || null;
+    if (resolvedDate) {
+      const dateObj = new Date(resolvedDate);
+      if (isNaN(dateObj.getTime())) {
+        resolvedDate = null;
+      }
+    }
+    const sanitizedPackages = Array.isArray(packages)
+      ? packages
+          .slice(0, 20)
+          .map(p => String(p).trim())
+          .filter(Boolean)
+      : [];
+
     const newPlan = {
       id: uid('pln'),
       userId: null, // No user yet
       guestToken: token,
-      eventType,
-      eventName: eventName || '',
-      location: location || '',
-      date: date || '',
-      guests: guests || null,
-      budget: budget || '',
-      packages: packages || [],
+      eventType: stripHtml(String(eventType).trim()).slice(0, 100),
+      eventName: eventName ? stripHtml(String(eventName).trim()).slice(0, 200) : '',
+      location: location ? stripHtml(String(location).trim()).slice(0, 200) : '',
+      date: resolvedDate,
+      guests: sanitizedGuests,
+      budget: budget ? stripHtml(String(budget).trim()).slice(0, 100) : '',
+      packages: sanitizedPackages,
       isGuestPlan: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

@@ -199,6 +199,24 @@ describe('Plan API Endpoints', () => {
 
       expect(res.body.error).toBeTruthy();
     });
+
+    it('should sanitize HTML from eventType and eventName in guest plan', async () => {
+      const res = await request(app)
+        .post('/api/plans/guest')
+        .send({
+          eventType: '<script>Wedding</script>',
+          eventName: '<b>My Wedding</b>',
+          location: '<a href="x">London</a>',
+          guests: 99999,
+          budget: '£1,000–£3,000',
+        })
+        .expect(200);
+
+      expect(res.body.plan.eventType).not.toMatch(/<|>/);
+      expect(res.body.plan.eventName).not.toMatch(/<|>/);
+      expect(res.body.plan.location).not.toMatch(/<|>/);
+      expect(res.body.plan.guests).toBe(10000);
+    });
   });
 
   describe('PATCH /api/me/plans/:id', () => {

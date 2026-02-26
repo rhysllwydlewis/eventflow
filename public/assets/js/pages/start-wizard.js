@@ -834,13 +834,13 @@
       const isSelected = pkg.id === selectedId;
       const distanceInfo =
         pkg.distance !== undefined && pkg.distance !== null && typeof pkg.distance === 'number'
-          ? `<p class="small" style="color: #0369a1; font-weight: 500;">📍 ${pkg.distance.toFixed(1)} miles away</p>`
+          ? `<p class="small wizard-package-distance">📍 ${pkg.distance.toFixed(1)} miles away</p>`
           : '';
 
       html += `
         <div class="wizard-package-card ${isSelected ? 'selected' : ''}" 
-             data-package-id="${pkg.id}" data-category="${categoryKey}">
-          ${pkg.image ? `<img src="${pkg.image}" alt="${escapeHtml(pkg.title)}">` : ''}
+             data-package-id="${escapeHtml(String(pkg.id))}" data-category="${categoryKey}">
+          ${pkg.image ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}">` : ''}
           <h4>${escapeHtml(pkg.title)}</h4>
           ${distanceInfo}
           <p class="small">${escapeHtml(pkg.price_display || pkg.price || 'Contact for pricing')}</p>
