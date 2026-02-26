@@ -188,27 +188,36 @@ router.patch('/:id', authRequired, csrfProtection, writeLimiter, async (req, res
       return res.status(404).json({ error: 'Plan not found' });
     }
 
-    const { name, eventType, eventDate, location, guests, budget, timeline, checklist } = req.body;
+    const { name, eventType, eventDate, location, guests, budget, notes, timeline, checklist } =
+      req.body;
     const planUpdates = {};
 
-    // Update fields if provided
+    // Update fields if provided — mirror POST sanitization rules
     if (name !== undefined) {
-      planUpdates.name = String(name).trim().slice(0, 200);
+      planUpdates.name = stripHtml(String(name).trim()).slice(0, 200);
     }
     if (eventType !== undefined) {
-      planUpdates.eventType = eventType ? String(eventType).trim().slice(0, 100) : null;
+      planUpdates.eventType = eventType ? stripHtml(String(eventType).trim()).slice(0, 100) : null;
     }
     if (eventDate !== undefined) {
-      planUpdates.eventDate = eventDate || null;
+      if (eventDate) {
+        const dateObj = new Date(eventDate);
+        planUpdates.eventDate = isNaN(dateObj.getTime()) ? null : eventDate;
+      } else {
+        planUpdates.eventDate = null;
+      }
     }
     if (location !== undefined) {
-      planUpdates.location = location ? String(location).trim().slice(0, 200) : null;
+      planUpdates.location = location ? stripHtml(String(location).trim()).slice(0, 200) : null;
     }
     if (guests !== undefined) {
-      planUpdates.guests = guests ? Math.max(0, parseInt(guests, 10) || 0) : null;
+      planUpdates.guests = guests ? Math.max(0, Math.min(10000, parseInt(guests, 10) || 0)) : null;
     }
     if (budget !== undefined) {
-      planUpdates.budget = budget ? Math.max(0, parseFloat(budget) || 0) : null;
+      planUpdates.budget = budget ? stripHtml(String(budget).trim()).slice(0, 100) : null;
+    }
+    if (notes !== undefined) {
+      planUpdates.notes = notes ? stripHtml(String(notes).trim()).slice(0, 2000) : null;
     }
     if (timeline !== undefined) {
       planUpdates.timeline = Array.isArray(timeline) ? timeline : [];

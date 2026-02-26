@@ -12,6 +12,9 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET =
   process.env.JWT_SECRET || 'test-secret-key-for-testing-only-minimum-32-characters-long';
 
+// Pre-hash once at module level so individual tests don't bear the hashing cost
+const TEST_PASSWORD_HASH = bcrypt.hashSync('Test123!@#', 10);
+
 describe('Plan API Endpoints', () => {
   let authToken;
   let userId;
@@ -29,7 +32,7 @@ describe('Plan API Endpoints', () => {
       lastName: 'User',
       email: userEmail,
       role: 'customer',
-      passwordHash: bcrypt.hashSync('Test123!@#', 10),
+      passwordHash: TEST_PASSWORD_HASH,
       location: 'Test Location',
       verified: true, // Pre-verified for testing
       createdAt: new Date().toISOString(),
@@ -135,7 +138,7 @@ describe('Plan API Endpoints', () => {
         lastName: 'NoPlans',
         email: newUserEmail,
         role: 'customer',
-        passwordHash: bcrypt.hashSync('Test123!@#', 10),
+        passwordHash: TEST_PASSWORD_HASH,
         location: 'Test Location',
         verified: true,
         createdAt: new Date().toISOString(),
@@ -198,6 +201,138 @@ describe('Plan API Endpoints', () => {
     });
   });
 
+  describe('PATCH /api/me/plans/:id', () => {
+    let planId;
+
+    beforeEach(async () => {
+      const res = await request(app)
+        .post('/api/me/plans')
+        .set('Cookie', `token=${authToken}`)
+        .send({
+          eventType: 'Wedding',
+          eventName: 'Patch Test Plan',
+          location: 'London',
+          guests: 50,
+          budget: '£5,000–£10,000',
+          notes: 'Original notes',
+        });
+      planId = res.body.plan.id;
+    });
+
+    afterEach(async () => {
+      const plans = await dbUnified.read('plans');
+      await dbUnified.write(
+        'plans',
+        plans.filter(p => p.id !== planId)
+      );
+    });
+
+    it('should update an existing plan', async () => {
+      const res = await request(app)
+        .patch(`/api/me/plans/${planId}`)
+        .set('Cookie', `token=${authToken}`)
+        .send({ location: 'Manchester', guests: 100 })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.plan.location).toBe('Manchester');
+      expect(res.body.plan.guests).toBe(100);
+    });
+
+    it('should strip HTML from name and location on PATCH', async () => {
+      const res = await request(app)
+        .patch(`/api/me/plans/${planId}`)
+        .set('Cookie', `token=${authToken}`)
+        .send({ name: '<script>alert(1)</script>My Plan', location: '<b>London</b>' })
+        .expect(200);
+
+      expect(res.body.plan.name).not.toMatch(/<|>/);
+      expect(res.body.plan.location).not.toMatch(/<|>/);
+    });
+
+    it('should cap guests at 10000 on PATCH', async () => {
+      const res = await request(app)
+        .patch(`/api/me/plans/${planId}`)
+        .set('Cookie', `token=${authToken}`)
+        .send({ guests: 99999 })
+        .expect(200);
+
+      expect(res.body.plan.guests).toBe(10000);
+    });
+
+    it('should update notes field', async () => {
+      const res = await request(app)
+        .patch(`/api/me/plans/${planId}`)
+        .set('Cookie', `token=${authToken}`)
+        .send({ notes: 'Updated notes' })
+        .expect(200);
+
+      expect(res.body.plan.notes).toBe('Updated notes');
+    });
+
+    it('should store budget as a string not a number', async () => {
+      const res = await request(app)
+        .patch(`/api/me/plans/${planId}`)
+        .set('Cookie', `token=${authToken}`)
+        .send({ budget: '£10,000–£20,000' })
+        .expect(200);
+
+      expect(typeof res.body.plan.budget).toBe('string');
+      expect(res.body.plan.budget).toBe('£10,000–£20,000');
+    });
+
+    it('should discard invalid eventDate on PATCH', async () => {
+      const res = await request(app)
+        .patch(`/api/me/plans/${planId}`)
+        .set('Cookie', `token=${authToken}`)
+        .send({ eventDate: 'not-a-date' })
+        .expect(200);
+
+      expect(res.body.plan.eventDate).toBeNull();
+    });
+
+    it('should require authentication', async () => {
+      await request(app).patch(`/api/me/plans/${planId}`).send({ location: 'Leeds' }).expect(401);
+    });
+
+    it("should return 404 for another user's plan", async () => {
+      const otherUserId = uid('usr');
+      const otherEmail = `test-other-${Date.now()}@example.com`;
+      const otherUser = {
+        id: otherUserId,
+        name: 'Other User',
+        firstName: 'Other',
+        lastName: 'User',
+        email: otherEmail,
+        role: 'customer',
+        passwordHash: TEST_PASSWORD_HASH,
+        verified: true,
+        createdAt: new Date().toISOString(),
+      };
+      const users = await dbUnified.read('users');
+      users.push(otherUser);
+      await dbUnified.write('users', users);
+
+      const otherToken = jwt.sign(
+        { id: otherUserId, email: otherEmail, role: 'customer' },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      await request(app)
+        .patch(`/api/me/plans/${planId}`)
+        .set('Cookie', `token=${otherToken}`)
+        .send({ location: 'Edinburgh' })
+        .expect(404);
+
+      // Clean up other user
+      await dbUnified.write(
+        'users',
+        (await dbUnified.read('users')).filter(u => u.id !== otherUserId)
+      );
+    });
+  });
+
   describe('POST /api/me/plans/claim', () => {
     let guestToken;
     let guestPlanId;
@@ -226,7 +361,7 @@ describe('Plan API Endpoints', () => {
         lastName: 'Claim',
         email: claimUserEmail,
         role: 'customer',
-        passwordHash: bcrypt.hashSync('Test123!@#', 10),
+        passwordHash: TEST_PASSWORD_HASH,
         location: 'Test Location',
         verified: true,
         createdAt: new Date().toISOString(),

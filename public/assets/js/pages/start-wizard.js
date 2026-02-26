@@ -502,9 +502,9 @@
         </div>
 
         <div class="wizard-actions">
-          <button class="cta secondary wizard-back">Back</button>
-          <button class="cta wizard-next">Continue</button>
-          <button class="wizard-skip">Skip for now</button>
+          <button class="cta secondary wizard-back" type="button">Back</button>
+          <button class="cta wizard-next" type="button">Continue</button>
+          <button class="wizard-skip" type="button">Skip for now</button>
         </div>
       </div>
     `;
