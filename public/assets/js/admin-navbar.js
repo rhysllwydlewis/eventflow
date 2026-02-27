@@ -167,8 +167,10 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (data) {
         const user = data.user || data;
-        const name = user.name || user.displayName || user.email || 'Admin';
-        const initial = name.charAt(0).toUpperCase();
+        const fullName = user.name || user.displayName || '';
+        // For email-only accounts, use the part before '@'
+        const displayName = fullName || (user.email ? user.email.split('@')[0] : 'Admin');
+        const initial = displayName.charAt(0).toUpperCase();
 
         const avatarEl = document.querySelector('.admin-user-avatar');
         if (avatarEl) {
@@ -177,7 +179,7 @@
 
         const labelEl = document.querySelector('.admin-user-btn > span');
         if (labelEl) {
-          labelEl.textContent = name.split(' ')[0];
+          labelEl.textContent = displayName.split(' ')[0];
         }
       })
       .catch(function () {

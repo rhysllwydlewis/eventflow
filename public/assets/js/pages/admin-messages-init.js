@@ -80,7 +80,7 @@
     var params = new URLSearchParams({ limit: PAGE_SIZE, skip: currentSkip });
     if (currentSearch) params.set('search', currentSearch);
     if (currentStatus) params.set('status', currentStatus);
-    fetch('/api/v4/messenger/admin/conversations?' + params.toString(), { credentials: 'same-origin' })
+    fetch('/api/v4/messenger/admin/conversations?' + params.toString(), { credentials: 'include' })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (data) {
         currentTotal = data.total || 0;

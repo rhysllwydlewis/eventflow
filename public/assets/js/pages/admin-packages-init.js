@@ -499,13 +499,13 @@
 
       // If user uploaded a file, upload it after creating/updating the package
       if (currentImageFile) {
-        // Use cached CSRF token
-        if (!csrfToken) {
+        // Ensure CSRF token is available for the multipart upload
+        if (!window.__CSRF_TOKEN__) {
           const csrfResponse = await fetch('/api/v1/csrf-token', {
             credentials: 'include',
           });
           const csrfData = await csrfResponse.json();
-          csrfToken = csrfData.csrfToken;
+          window.__CSRF_TOKEN__ = csrfData.csrfToken;
         }
 
         let packageId = id;
@@ -524,7 +524,7 @@
         const uploadResponse = await fetch(`/api/v1/admin/packages/${packageId}/image`, {
           method: 'POST',
           headers: {
-            'X-CSRF-Token': csrfToken,
+            'X-CSRF-Token': window.__CSRF_TOKEN__,
           },
           credentials: 'include',
           body: formData,
