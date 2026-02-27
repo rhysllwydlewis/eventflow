@@ -208,6 +208,7 @@
 
     switch (stepIndex) {
       case 0: {
+        // EVENT_TYPE step
         // Event type
         const typeResult = validateField('eventType', data.eventType);
         if (!typeResult.valid) {
@@ -217,7 +218,7 @@
         break;
       }
 
-      case 1: // Location and details
+      case 1: // EVENT_BASICS step
         // Location is optional, but validate if provided
         if (data.location) {
           const locationResult = validateField('location', data.location);
@@ -285,16 +286,9 @@
       applyValidationUI(field, result);
     });
 
-    // Clear validation on focus (optional)
+    // Clear validation on focus
     field.addEventListener('focus', () => {
-      // Optional: Clear error state on focus to give user a fresh start
-      // Uncomment if desired:
-      // const formRow = field.closest('.form-row');
-      // if (formRow) {
-      //   formRow.classList.remove('error');
-      //   const errorMsg = formRow.querySelector('.error-message');
-      //   if (errorMsg) errorMsg.remove();
-      // }
+      // Validation state is preserved on focus to avoid confusing disappearing errors
     });
   }
 
@@ -305,6 +299,7 @@
    */
   function canProceedFromStep(stepIndex) {
     if (stepIndex === 0) {
+      // 0 = EVENT_TYPE step (mirrors STEP_CONFIG.EVENT_TYPE in start-wizard.js)
       // Event type must be selected
       const state = window.WizardState?.getState();
       return !!(state && state.eventType);

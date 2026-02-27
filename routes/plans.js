@@ -12,6 +12,7 @@ const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
+const { stripHtml } = require('../utils/helpers');
 
 const router = express.Router();
 
@@ -61,8 +62,16 @@ router.get('/:id', authRequired, async (req, res) => {
 /**
  * POST /api/me/plans
  * Create a new plan
- * Body: { name, eventType, eventDate, location, guests, budget, timeline, checklist }
+ * Body: { name, eventType, eventDate, location, guests, budget, notes, packages, timeline, checklist }
  */
+
+// Maximum plans allowed per user (free tier)
+const MAX_PLANS_PER_USER = 3;
+// Maximum packages per plan
+const MAX_PACKAGES_PER_PLAN = 20;
+// Maximum guests per event (sanity cap)
+const MAX_GUESTS_PER_PLAN = 10000;
+
 router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -75,6 +84,7 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
       location,
       guests,
       budget,
+      notes,
       packages,
       timeline,
       checklist,
@@ -92,26 +102,58 @@ router.post('/', authRequired, csrfProtection, writeLimiter, async (req, res) =>
       return res.status(400).json({ error: 'Plan name or event type is required' });
     }
 
+    // Plan creation limit per user (Bug 3.3 — free tier cap)
+    const plans = await dbUnified.read('plans');
+    const userPlanCount = plans.filter(p => p.userId === userId).length;
+    if (userPlanCount >= MAX_PLANS_PER_USER) {
+      return res.status(403).json({
+        error: 'Plan limit reached',
+        message: `You have reached the maximum of ${MAX_PLANS_PER_USER} plans. Please delete an existing plan to create a new one.`,
+      });
+    }
+
+    // Input sanitization (Bug 3.2)
+    const sanitizedGuests = guests
+      ? Math.max(0, Math.min(MAX_GUESTS_PER_PLAN, parseInt(guests, 10) || 0))
+      : null;
+    const sanitizedBudget = budget ? stripHtml(String(budget).trim()).slice(0, 100) : null;
+    const sanitizedNotes = notes ? stripHtml(String(notes).trim()).slice(0, 2000) : null;
+    const sanitizedPackages = Array.isArray(packages)
+      ? packages
+          .slice(0, MAX_PACKAGES_PER_PLAN)
+          .map(p => String(p).trim())
+          .filter(Boolean)
+      : [];
+
+    // Validate date if provided (discard unparseable values; past dates are allowed for re-scheduling)
+    let resolvedDate = eventDate || date || null;
+    if (resolvedDate) {
+      const dateObj = new Date(resolvedDate);
+      if (isNaN(dateObj.getTime())) {
+        resolvedDate = null; // Discard invalid dates
+      }
+    }
+
     const now = new Date().toISOString();
     const newPlan = {
       id: uid('plan'),
       userId,
-      name: resolvedName.slice(0, 200),
-      eventName: eventName ? String(eventName).trim().slice(0, 200) : null,
+      name: stripHtml(resolvedName).slice(0, 200),
+      eventName: eventName ? stripHtml(String(eventName).trim()).slice(0, 200) : null,
       eventType: eventType ? String(eventType).trim().slice(0, 100) : null,
-      eventDate: eventDate || date || null,
-      date: date || eventDate || null, // legacy field support
-      location: location ? String(location).trim().slice(0, 200) : null,
-      guests: guests ? Math.max(0, parseInt(guests, 10) || 0) : null,
-      budget,
-      packages: Array.isArray(packages) ? packages : [],
+      eventDate: resolvedDate,
+      date: resolvedDate, // legacy field support
+      location: location ? stripHtml(String(location).trim()).slice(0, 200) : null,
+      guests: sanitizedGuests,
+      budget: sanitizedBudget,
+      notes: sanitizedNotes,
+      packages: sanitizedPackages,
       timeline: Array.isArray(timeline) ? timeline : [],
       checklist: Array.isArray(checklist) ? checklist : [],
       createdAt: now,
       updatedAt: now,
     };
 
-    const plans = await dbUnified.read('plans');
     await dbUnified.insertOne('plans', newPlan);
 
     // Return both modern and legacy success flags for compatibility.
@@ -142,27 +184,38 @@ router.patch('/:id', authRequired, csrfProtection, writeLimiter, async (req, res
       return res.status(404).json({ error: 'Plan not found' });
     }
 
-    const { name, eventType, eventDate, location, guests, budget, timeline, checklist } = req.body;
+    const { name, eventType, eventDate, location, guests, budget, notes, timeline, checklist } =
+      req.body;
     const planUpdates = {};
 
-    // Update fields if provided
+    // Update fields if provided — mirror POST sanitization rules
     if (name !== undefined) {
-      planUpdates.name = String(name).trim().slice(0, 200);
+      planUpdates.name = stripHtml(String(name).trim()).slice(0, 200);
     }
     if (eventType !== undefined) {
-      planUpdates.eventType = eventType ? String(eventType).trim().slice(0, 100) : null;
+      planUpdates.eventType = eventType ? stripHtml(String(eventType).trim()).slice(0, 100) : null;
     }
     if (eventDate !== undefined) {
-      planUpdates.eventDate = eventDate || null;
+      if (eventDate) {
+        const dateObj = new Date(eventDate);
+        planUpdates.eventDate = isNaN(dateObj.getTime()) ? null : eventDate;
+      } else {
+        planUpdates.eventDate = null;
+      }
     }
     if (location !== undefined) {
-      planUpdates.location = location ? String(location).trim().slice(0, 200) : null;
+      planUpdates.location = location ? stripHtml(String(location).trim()).slice(0, 200) : null;
     }
     if (guests !== undefined) {
-      planUpdates.guests = guests ? Math.max(0, parseInt(guests, 10) || 0) : null;
+      planUpdates.guests = guests
+        ? Math.max(0, Math.min(MAX_GUESTS_PER_PLAN, parseInt(guests, 10) || 0))
+        : null;
     }
     if (budget !== undefined) {
-      planUpdates.budget = budget ? Math.max(0, parseFloat(budget) || 0) : null;
+      planUpdates.budget = budget ? stripHtml(String(budget).trim()).slice(0, 100) : null;
+    }
+    if (notes !== undefined) {
+      planUpdates.notes = notes ? stripHtml(String(notes).trim()).slice(0, 2000) : null;
     }
     if (timeline !== undefined) {
       planUpdates.timeline = Array.isArray(timeline) ? timeline : [];
@@ -294,7 +347,8 @@ router.get('/:id/export', authRequired, async (req, res) => {
       doc.text(`Number of Guests: ${plan.guests}`, 100, doc.y + 20);
     }
     if (plan.budget) {
-      doc.text(`Budget: £${plan.budget.toLocaleString()}`, 100, doc.y + 20);
+      // budget is stored as a display string (e.g. "£1,000–£3,000"); use it directly
+      doc.text(`Budget: ${plan.budget}`, 100, doc.y + 20);
     }
 
     doc.moveDown(2);
@@ -426,12 +480,12 @@ router.post('/:planId/budget', authRequired, csrfProtection, writeLimiter, async
     // Validate and sanitize budget items
     const sanitizedItems = budgetItems.map(item => ({
       id: item.id || uid('budget'),
-      category: item.category ? String(item.category).trim().slice(0, 100) : '',
-      item: item.item ? String(item.item).trim().slice(0, 200) : '',
+      category: item.category ? stripHtml(String(item.category).trim()).slice(0, 100) : '',
+      item: item.item ? stripHtml(String(item.item).trim()).slice(0, 200) : '',
       estimated: item.estimated ? Math.max(0, parseFloat(item.estimated) || 0) : 0,
       actual: item.actual ? Math.max(0, parseFloat(item.actual) || 0) : 0,
       paid: item.paid ? Math.max(0, parseFloat(item.paid) || 0) : 0,
-      notes: item.notes ? String(item.notes).trim().slice(0, 500) : '',
+      notes: item.notes ? stripHtml(String(item.notes).trim()).slice(0, 500) : '',
       updatedAt: now,
     }));
 
