@@ -10,6 +10,12 @@ const { Server } = require('socket.io');
 const logger = require('./utils/logger');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const { PresenceService } = require('./services/presenceService');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const jwt = require('jsonwebtoken');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const { getBaseUrl } = require('./utils/config');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const { userIdFromCookie } = require('./utils/wsAuth');
 
 // Shared symbol for preventing duplicate Socket.IO servers across v1 and v2
 // This prevents the "server.handleUpgrade() was called more than once" error
@@ -49,7 +55,7 @@ class WebSocketServerV2 {
 
     this.io = new Server(httpServer, {
       cors: {
-        origin: process.env.BASE_URL || 'http://localhost:3000',
+        origin: getBaseUrl(),
         methods: ['GET', 'POST'],
         credentials: true,
       },
@@ -90,6 +96,20 @@ class WebSocketServerV2 {
   }
 
   init() {
+    // Handshake middleware: pre-authenticate sockets from the HTTP-only JWT cookie.
+    // This runs before 'connection' fires so socket.userId is already set for cookie-auth users.
+    // Connections are never rejected here — unauthenticated sockets may still connect but
+    // will fail on any protected event handler.
+    this.io.use((socket, next) => {
+      const cookieHeader = socket.handshake.headers.cookie;
+      const userId = userIdFromCookie(cookieHeader);
+      if (userId) {
+        socket.userId = userId;
+        logger.debug('WebSocket pre-authenticated via cookie', { socketId: socket.id, userId });
+      }
+      next();
+    });
+
     this.io.on('connection', socket => {
       logger.debug('WebSocket connected', { socketId: socket.id });
 
@@ -133,17 +153,6 @@ class WebSocketServerV2 {
 
       socket.on('presence:sync', async data => {
         await this.handlePresenceSync(socket, data);
-      });
-
-      // Join/leave rooms
-      socket.on('join', room => {
-        socket.join(room);
-        logger.debug('Socket joined room', { socketId: socket.id, room });
-      });
-
-      socket.on('leave', room => {
-        socket.leave(room);
-        logger.debug('Socket left room', { socketId: socket.id, room });
       });
 
       // Messenger v4 event handlers
@@ -270,15 +279,44 @@ class WebSocketServerV2 {
 
   /**
    * Handle user authentication
+   *
+   * Supports two flows:
+   *   1. Cookie-first (default): socket was pre-authenticated via the HTTP-only JWT cookie
+   *      at handshake time; `auth` event just confirms and completes the setup.
+   *   2. Token-based: caller sends `{ token }` for environments where cookies are unavailable.
    */
   async handleAuth(socket, data) {
     try {
-      if (!data || !data.userId) {
-        socket.emit('auth:error', { error: 'Missing userId' });
-        return;
-      }
+      let userId = socket.userId; // may already be set by the io.use() cookie middleware
 
-      const { userId } = data;
+      if (!userId) {
+        // Fallback: explicit token provided in the auth payload
+        if (!data || !data.token) {
+          socket.emit('auth:error', { error: 'Missing token' });
+          return;
+        }
+        try {
+          const JWT_SECRET = process.env.JWT_SECRET;
+          if (!JWT_SECRET) {
+            logger.error(
+              'JWT_SECRET environment variable is not set - WebSocket auth cannot proceed'
+            );
+            socket.emit('auth:error', { error: 'Server configuration error' });
+            return;
+          }
+          const decoded = jwt.verify(data.token, JWT_SECRET);
+          // Field fallback: `id` is the standard field for this app (routes/auth.js);
+          // `userId` is a legacy alias; `sub` follows RFC 7519 for forward compatibility.
+          userId = decoded.id || decoded.userId || decoded.sub;
+          if (!userId) {
+            socket.emit('auth:error', { error: 'Invalid token: missing user ID' });
+            return;
+          }
+        } catch (err) {
+          socket.emit('auth:error', { error: 'Invalid or expired token' });
+          return;
+        }
+      }
 
       // Store user-socket mapping
       socket.userId = userId;
@@ -636,14 +674,21 @@ class WebSocketServerV2 {
 
   /**
    * Broadcast presence update
+   * Emits only to authenticated users' personal rooms rather than all connected sockets
    */
   broadcastPresenceUpdate(userId, state) {
     try {
-      this.io.emit('presence:changed', {
-        userId,
-        state,
-        timestamp: new Date(),
-      });
+      // Emit to each authenticated user's room, excluding the user whose state changed
+      // (users don't need to be notified of their own presence changes)
+      for (const onlineUserId of this.userSockets.keys()) {
+        if (onlineUserId !== userId) {
+          this.io.to(`user:${onlineUserId}`).emit('presence:changed', {
+            userId,
+            state,
+            timestamp: new Date(),
+          });
+        }
+      }
     } catch (error) {
       logger.error('Broadcast presence error', { error: error.message });
     }
@@ -752,6 +797,18 @@ class WebSocketServerV2 {
         event,
         error: error.message,
       });
+    }
+  }
+
+  /**
+   * Emit event to a specific room
+   */
+  emitToRoom(room, event, data) {
+    try {
+      this.io.to(room).emit(event, data);
+      logger.debug('Event emitted to room', { room, event });
+    } catch (error) {
+      logger.error('Emit to room error', { room, event, error: error.message });
     }
   }
 

@@ -7,6 +7,14 @@
 
 const logger = require('../utils/logger');
 const postmark = require('../utils/postmark');
+const { getBaseUrl } = require('../utils/config');
+const {
+  COLLECTION: MQ_COLLECTION,
+  QUEUE_STATUS,
+  MAX_RETRIES,
+  createQueueEntry,
+  calculateNextRetry,
+} = require('../models/MessageQueue');
 
 // Notification types
 const NOTIFICATION_TYPES = {
@@ -29,7 +37,11 @@ const DEFAULT_PREFERENCES = {
   [CHANNELS.IN_APP]: true,
   [CHANNELS.EMAIL]: true,
   [CHANNELS.PUSH]: false,
+  sound: true,
 };
+
+// Default queue processor interval in milliseconds (configurable via QUEUE_PROCESSOR_INTERVAL_MS)
+const DEFAULT_QUEUE_PROCESSOR_INTERVAL_MS = 30000;
 
 class NotificationService {
   constructor(db, wsServer = null) {
@@ -37,7 +49,126 @@ class NotificationService {
     this.wsServer = wsServer;
     this.notificationsCollection = db.collection('notifications');
     this.preferencesCollection = db.collection('notification_preferences');
+    this.messageQueueCollection = db.collection(MQ_COLLECTION);
     this.queue = []; // In-memory queue for failed deliveries
+
+    // Start persistent queue processor
+    this._startQueueProcessor();
+  }
+
+  /**
+   * Start the background queue processor for MessageQueue retries
+   */
+  _startQueueProcessor() {
+    const intervalMs = parseInt(
+      process.env.QUEUE_PROCESSOR_INTERVAL_MS || String(DEFAULT_QUEUE_PROCESSOR_INTERVAL_MS),
+      10
+    );
+    const processorInterval = setInterval(() => {
+      this._processMessageQueue().catch(err => {
+        logger.error('Queue processor error', { error: err.message });
+      });
+    }, intervalMs);
+    // Allow process to exit even if this timer is still active
+    if (processorInterval.unref) {
+      processorInterval.unref();
+    }
+  }
+
+  /**
+   * Process pending items from the persistent MessageQueue
+   */
+  async _processMessageQueue() {
+    try {
+      const now = new Date();
+      const pendingItems = await this.messageQueueCollection
+        .find({
+          status: QUEUE_STATUS.PENDING,
+          nextRetry: { $lte: now },
+        })
+        .toArray();
+
+      if (pendingItems.length === 0) {
+        return;
+      }
+
+      logger.info('Processing persistent message queue', { count: pendingItems.length });
+
+      for (const item of pendingItems) {
+        try {
+          // Mark as sending
+          await this.messageQueueCollection.updateOne(
+            { _id: item._id },
+            { $set: { status: QUEUE_STATUS.SENDING, lastAttempt: new Date() } }
+          );
+
+          const { userId, notification, channel } = item.message;
+
+          if (channel === CHANNELS.IN_APP) {
+            await this.deliverInApp(userId, notification, true);
+          } else if (channel === CHANNELS.EMAIL) {
+            await this.deliverEmail(userId, notification, true);
+          } else if (channel === CHANNELS.PUSH) {
+            await this.deliverPush(userId, notification, true);
+          }
+
+          // Mark as sent on success
+          await this.messageQueueCollection.updateOne(
+            { _id: item._id },
+            { $set: { status: QUEUE_STATUS.SENT } }
+          );
+        } catch (err) {
+          const newRetryCount = (item.retryCount || 0) + 1;
+          if (newRetryCount >= MAX_RETRIES) {
+            await this.messageQueueCollection.updateOne(
+              { _id: item._id },
+              {
+                $set: {
+                  status: QUEUE_STATUS.FAILED,
+                  retryCount: newRetryCount,
+                  error: err.message,
+                },
+              }
+            );
+          } else {
+            await this.messageQueueCollection.updateOne(
+              { _id: item._id },
+              {
+                $set: {
+                  status: QUEUE_STATUS.PENDING,
+                  retryCount: newRetryCount,
+                  nextRetry: calculateNextRetry(newRetryCount),
+                  error: err.message,
+                },
+              }
+            );
+          }
+        }
+      }
+    } catch (err) {
+      logger.error('Error processing message queue', { error: err.message });
+    }
+  }
+
+  /**
+   * Persist a failed delivery to the MessageQueue for retry
+   */
+  async _persistToQueue(userId, notification, channel) {
+    try {
+      const entry = createQueueEntry({
+        userId,
+        message: { userId, notification, channel },
+        metadata: { channel },
+      });
+      await this.messageQueueCollection.insertOne(entry);
+    } catch (err) {
+      logger.error(
+        'CRITICAL: Failed to persist to message queue - using in-memory fallback (delivery may be lost on restart)',
+        { userId, channel, error: err.message }
+      );
+      // Fall back to in-memory queue
+      this.queue.push({ userId, notification, channel });
+    }
   }
 
   /**
@@ -115,8 +246,11 @@ class NotificationService {
 
   /**
    * Deliver notification via WebSocket (in-app)
+   * @param {string} userId
+   * @param {Object} notification
+   * @param {boolean} [skipRetryQueue=false] - When true, re-throws on error instead of queuing (used by queue processor to avoid duplicates)
    */
-  async deliverInApp(userId, notification) {
+  async deliverInApp(userId, notification, skipRetryQueue = false) {
     try {
       if (!this.wsServer) {
         logger.warn('WebSocket server not available for in-app notification');
@@ -138,15 +272,21 @@ class NotificationService {
         userId,
         error: error.message,
       });
-      // Queue for retry
-      this.queue.push({ userId, notification, channel: CHANNELS.IN_APP });
+      if (skipRetryQueue) {
+        throw error;
+      }
+      // Persist for retry
+      await this._persistToQueue(userId, notification, CHANNELS.IN_APP);
     }
   }
 
   /**
    * Deliver notification via email
+   * @param {string} userId
+   * @param {Object} notification
+   * @param {boolean} [skipRetryQueue=false] - When true, re-throws on error instead of queuing (used by queue processor to avoid duplicates)
    */
-  async deliverEmail(userId, notification) {
+  async deliverEmail(userId, notification, skipRetryQueue = false) {
     try {
       // Get user email from database
       const usersDb = await this.db.collection('users').findOne({ id: userId });
@@ -167,9 +307,10 @@ class NotificationService {
           name: userName,
           title: notification.title,
           message: notification.message,
-          actionUrl: notification.data.url || process.env.BASE_URL,
-          actionText: notification.data.actionText || 'View Details',
+          actionUrl: notification.data?.url || getBaseUrl(),
+          actionText: notification.data?.actionText || 'View Details',
         },
+        from: postmark.FROM_SUPPORT,
       });
 
       logger.debug('Email notification delivered', { userId, email });
@@ -178,8 +319,11 @@ class NotificationService {
         userId,
         error: error.message,
       });
-      // Queue for retry
-      this.queue.push({ userId, notification, channel: CHANNELS.EMAIL });
+      if (skipRetryQueue) {
+        throw error;
+      }
+      // Persist for retry
+      await this._persistToQueue(userId, notification, CHANNELS.EMAIL);
     }
   }
 
@@ -191,14 +335,23 @@ class NotificationService {
    * 1. Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable (JSON string)
    * 2. Store user device tokens in user_devices collection
    * 3. Configure FCM in Firebase Console
+   *
+   * @param {string} userId
+   * @param {Object} notification
+   * @param {boolean} [skipRetryQueue=false] - When true, re-throws on error instead of queuing (used by queue processor to avoid duplicates)
    */
-  async deliverPush(userId, notification) {
+  async deliverPush(userId, notification, skipRetryQueue = false) {
     try {
       // Check if push notifications are configured
       if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        logger.debug('Push notifications not configured (FIREBASE_SERVICE_ACCOUNT_KEY not set)', {
-          userId,
-        });
+        // TODO: Implement Firebase Cloud Messaging by setting FIREBASE_SERVICE_ACCOUNT_KEY.
+        // See deliverPush() JSDoc for prerequisites.
+        logger.warn(
+          'Push notification attempted but FIREBASE_SERVICE_ACCOUNT_KEY is not set - delivery skipped',
+          {
+            userId,
+          }
+        );
         return;
       }
 
@@ -280,6 +433,11 @@ class NotificationService {
         userId,
         error: error.message,
       });
+      if (skipRetryQueue) {
+        throw error;
+      }
+      // Persist for retry
+      await this._persistToQueue(userId, notification, CHANNELS.PUSH);
     }
   }
 

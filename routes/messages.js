@@ -343,6 +343,7 @@ router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res)
                 sanitizedMessage,
                 process.env.BASE_URL
               ),
+              from: postmark.FROM_NOREPLY,
             });
           }
         } catch (emailError) {
@@ -559,8 +560,6 @@ router.post(
             }
 
             if (recipientEmail && recipientName) {
-              // Import sendMail function (this should be available in the context)
-              const postmark = require('../utils/postmark');
               await postmark.sendMail({
                 to: recipientEmail,
                 subject: `New message from ${senderName} - EventFlow`,
@@ -576,6 +575,7 @@ router.post(
                   sanitizedText,
                   process.env.BASE_URL
                 ),
+                from: postmark.FROM_NOREPLY,
               });
             }
           } catch (emailError) {

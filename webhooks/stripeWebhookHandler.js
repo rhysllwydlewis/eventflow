@@ -10,6 +10,38 @@ const subscriptionService = require('../services/subscriptionService');
 const paymentService = require('../services/paymentService');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
+const postmark = require('../utils/postmark');
+
+/**
+ * Format an internal plan tier key into a human-readable display name.
+ * @param {string} tier - Internal tier key ('free' | 'basic' | 'pro' | 'pro_plus' | 'enterprise')
+ * @returns {string} Display name, e.g. 'Pro Plus'
+ */
+function formatPlanName(tier) {
+  const names = {
+    free: 'Free',
+    basic: 'Basic',
+    pro: 'Pro',
+    pro_plus: 'Pro Plus',
+    enterprise: 'Enterprise',
+  };
+  return names[tier] || tier || 'Unknown';
+}
+
+/**
+ * HTML feature list items per plan tier, used in the subscription-activated email.
+ * Each value is a set of <li> fragments for the {{features}} template slot.
+ */
+const PLAN_EMAIL_FEATURES = {
+  free: '<li>Basic messaging</li><li>Standard listing</li>',
+  basic: '<li>Messaging</li><li>Basic analytics</li><li>Verified badge</li>',
+  pro: '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li><li>Priority support</li>',
+  pro_plus:
+    '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li>' +
+    '<li>Priority support</li><li>Custom branding</li><li>Homepage carousel</li>',
+  enterprise:
+    '<li>All Pro Plus features</li><li>API access</li><li>Dedicated account manager</li><li>Custom integrations</li>',
+};
 
 /**
  * Resolve a Stripe plan name string to an internal tier key.
@@ -197,15 +229,43 @@ async function handleInvoicePaymentFailed(invoice) {
       `Payment failed for user ${user.email}: Invoice ${invoice.id}, Amount: ${invoice.amount_due / 100} ${invoice.currency.toUpperCase()}`
     );
 
-    // TODO: Send payment failed email when email service is available
-    // await emailService.sendPaymentFailedNotification({
-    //   userId: subscription.userId,
-    //   email: user.email,
-    //   invoiceId: invoice.id,
-    //   amount: invoice.amount_due / 100,
-    //   currency: invoice.currency,
-    //   attemptCount: invoiceRecord?.attemptCount || 1,
-    // });
+    // Send payment failed email using the subscription-payment-failed template
+    try {
+      const gracePeriodEnd = invoice.next_payment_attempt
+        ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+
+      await postmark.sendMail({
+        to: user.email,
+        subject: 'Action Required: Your EventFlow Payment Failed',
+        template: 'subscription-payment-failed',
+        templateData: {
+          name: user.name || 'there',
+          planName: formatPlanName(subscription.plan),
+          amount: (invoice.amount_due / 100).toFixed(2),
+          attemptDate: new Date().toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
+          gracePeriodEnd,
+        },
+        from: postmark.FROM_BILLING,
+        tags: ['payment-failed', 'transactional'],
+        messageStream: 'outbound',
+      });
+      logger.info(`Payment failed email sent to ${user.email}`);
+    } catch (emailErr) {
+      logger.error('Failed to send payment failed email:', emailErr.message);
+    }
   }
 
   // Handle dunning
@@ -254,6 +314,57 @@ async function handleSubscriptionCreated(stripeSubscription) {
     stripeCustomerId: stripeSubscription.customer,
     trialEnd,
   });
+
+  // Send subscription activated email
+  try {
+    const users = await dbUnified.read('users');
+    const user = users.find(u => u.id === payment.userId);
+    if (user) {
+      const item = stripeSubscription.items?.data?.[0];
+      const unitAmount = item?.price?.unit_amount ?? 0;
+      const billingInterval = item?.price?.recurring?.interval ?? 'month';
+      const amount = (unitAmount / 100).toFixed(2);
+
+      const trialDaysCount = trialEnd
+        ? Math.round((trialEnd - new Date()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      const renewalDate = trialEnd
+        ? trialEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : stripeSubscription.current_period_end
+          ? new Date(stripeSubscription.current_period_end * 1000).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })
+          : 'N/A';
+
+      const status = trialEnd ? 'Trial' : 'Active';
+      const features = PLAN_EMAIL_FEATURES[plan] || PLAN_EMAIL_FEATURES.free;
+
+      await postmark.sendMail({
+        to: user.email,
+        subject: `Welcome to EventFlow ${formatPlanName(plan)}! Your subscription is active`,
+        template: 'subscription-activated',
+        templateData: {
+          name: user.name || 'there',
+          planName: formatPlanName(plan),
+          status,
+          trialDays: trialDaysCount > 0 ? String(trialDaysCount) : '0',
+          renewalDate,
+          amount,
+          billingCycle: billingInterval,
+          features,
+        },
+        from: postmark.FROM_BILLING,
+        tags: ['subscription-activated', 'transactional'],
+        messageStream: 'outbound',
+      });
+      logger.info(`Subscription activated email sent to ${user.email}`);
+    }
+  } catch (emailErr) {
+    logger.error('Failed to send subscription activated email:', emailErr.message);
+  }
 }
 
 /**
@@ -331,14 +442,48 @@ async function handleSubscriptionTrialWillEnd(stripeSubscription) {
     `Trial ending soon for user ${user.email}: ${daysRemaining} days remaining (ends ${trialEndDate.toISOString()})`
   );
 
-  // TODO: Send email reminder when email service is available
-  // await emailService.sendTrialEndingReminder({
-  //   userId: subscription.userId,
-  //   email: user.email,
-  //   trialEndDate,
-  //   daysRemaining,
-  //   plan: subscription.plan,
-  // });
+  // Send trial ending reminder email using the subscription-trial-ending template
+  try {
+    // Calculate total trial days from subscription record if available
+    const trialStart = subscription.trialStart ? new Date(subscription.trialStart) : null;
+    const trialDays =
+      trialStart && trialEndDate > trialStart
+        ? Math.round((trialEndDate - trialStart) / (1000 * 60 * 60 * 24))
+        : 14; // Default to 14-day trial if not recorded
+
+    // Determine billing amount and cycle from Stripe subscription items
+    const item = stripeSubscription.items?.data?.[0];
+    const unitAmount = item?.price?.unit_amount ?? 0;
+    const billingInterval = item?.price?.recurring?.interval ?? 'month';
+    const amount = (unitAmount / 100).toFixed(2);
+
+    const formattedTrialEnd = trialEndDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    await postmark.sendMail({
+      to: user.email,
+      subject: `Your EventFlow trial ends in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`,
+      template: 'subscription-trial-ending',
+      templateData: {
+        name: user.name || 'there',
+        planName: formatPlanName(subscription.plan),
+        trialDays: String(trialDays),
+        daysLeft: String(daysRemaining),
+        trialEndDate: formattedTrialEnd,
+        amount,
+        billingCycle: billingInterval,
+      },
+      from: postmark.FROM_BILLING,
+      tags: ['trial-ending', 'transactional'],
+      messageStream: 'outbound',
+    });
+    logger.info(`Trial ending email sent to ${user.email}`);
+  } catch (emailErr) {
+    logger.error('Failed to send trial ending email:', emailErr.message);
+  }
 
   // Update subscription metadata to track notification sent
   await subscriptionService.updateSubscription(subscription.id, {
@@ -381,6 +526,112 @@ async function handleSubscriptionDeleted(stripeSubscription) {
         $set: { proExpiresAt: null, updatedAt: new Date().toISOString() },
       }
     );
+
+    // Send subscription cancelled email
+    try {
+      const endDate = subscription.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : new Date().toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+
+      await postmark.sendMail({
+        to: user.email,
+        subject: `Your EventFlow ${formatPlanName(subscription.plan)} subscription has been cancelled`,
+        template: 'subscription-cancelled',
+        templateData: {
+          name: user.name || 'there',
+          planName: formatPlanName(subscription.plan),
+          endDate,
+        },
+        from: postmark.FROM_BILLING,
+        tags: ['subscription-cancelled', 'transactional'],
+        messageStream: 'outbound',
+      });
+      logger.info(`Subscription cancelled email sent to ${user.email}`);
+    } catch (emailErr) {
+      logger.error('Failed to send subscription cancelled email:', emailErr.message);
+    }
+  }
+}
+
+/**
+ * Handle invoice.upcoming event
+ * Sent by Stripe 7 days before the next invoice is finalized
+ * @param {Object} invoice - Stripe upcoming invoice object
+ */
+async function handleInvoiceUpcoming(invoice) {
+  logger.info('Processing invoice.upcoming:', invoice.id || '(draft)');
+
+  const subscription = await subscriptionService.getSubscriptionByStripeId(invoice.subscription);
+
+  if (!subscription) {
+    logger.warn('Subscription not found for upcoming invoice:', invoice.subscription);
+    return;
+  }
+
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === subscription.userId);
+
+  if (!user) {
+    logger.warn('User not found for subscription:', subscription.userId);
+    return;
+  }
+
+  // Calculate days until renewal
+  const renewalTimestamp = invoice.next_payment_attempt || invoice.period_end;
+  if (!renewalTimestamp) {
+    logger.warn('No renewal date on upcoming invoice, skipping reminder');
+    return;
+  }
+
+  const renewalDate = new Date(renewalTimestamp * 1000);
+  const now = new Date();
+  const daysUntilRenewal = Math.ceil((renewalDate - now) / (1000 * 60 * 60 * 24));
+
+  const formattedRenewalDate = renewalDate.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const autoRenew = subscription.cancelAtPeriodEnd ? 'Disabled' : 'Enabled';
+  const renewalMessage = subscription.cancelAtPeriodEnd
+    ? 'Your subscription is set to cancel at the end of the current period. Reactivate to keep your premium access.'
+    : `Your ${formatPlanName(subscription.plan)} subscription will automatically renew on ${formattedRenewalDate}.`;
+
+  const ctaText = subscription.cancelAtPeriodEnd
+    ? 'Reactivate Subscription'
+    : 'Manage Subscription';
+
+  try {
+    await postmark.sendMail({
+      to: user.email,
+      subject: `Your EventFlow subscription renews in ${daysUntilRenewal} day${daysUntilRenewal !== 1 ? 's' : ''}`,
+      template: 'subscription-renewal-reminder',
+      templateData: {
+        name: user.name || 'there',
+        planName: formatPlanName(subscription.plan),
+        daysUntilRenewal: String(daysUntilRenewal),
+        renewalDate: formattedRenewalDate,
+        amount: (invoice.amount_due / 100).toFixed(2),
+        autoRenew,
+        renewalMessage,
+        ctaText,
+      },
+      from: postmark.FROM_BILLING,
+      tags: ['renewal-reminder', 'transactional'],
+      messageStream: 'outbound',
+    });
+    logger.info(`Renewal reminder email sent to ${user.email}`);
+  } catch (emailErr) {
+    logger.error('Failed to send renewal reminder email:', emailErr.message);
   }
 }
 
@@ -457,6 +708,9 @@ async function processWebhookEvent(event) {
       case 'invoice.payment_failed':
         await handleInvoicePaymentFailed(event.data.object);
         break;
+      case 'invoice.upcoming':
+        await handleInvoiceUpcoming(event.data.object);
+        break;
 
       // Subscription events
       case 'customer.subscription.created':
@@ -494,9 +748,11 @@ async function processWebhookEvent(event) {
 
 module.exports = {
   processWebhookEvent,
+  formatPlanName,
   handleInvoiceCreated,
   handleInvoicePaymentSucceeded,
   handleInvoicePaymentFailed,
+  handleInvoiceUpcoming,
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
   handleSubscriptionDeleted,

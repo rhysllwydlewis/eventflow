@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const { writeLimiter, uploadLimiter } = require('../middleware/rateLimits');
 const MessengerService = require('../services/messenger.service');
 const { createDeprecationMiddleware } = require('../middleware/legacyMessaging');
+const { getBaseUrl } = require('../utils/config');
 
 const router = express.Router();
 
@@ -284,7 +285,7 @@ router.post(
         try {
           const recipient = await db.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.notify_account !== false) {
-            const conversationLink = `${process.env.APP_BASE_URL || 'http://localhost:3000'}/messenger/?conversation=${result.conversation._id}`;
+            const conversationLink = `${getBaseUrl()}/messenger/?conversation=${result.conversation._id}`;
             await postmark.sendNotificationEmail(
               recipient,
               `New message from ${req.user.name || 'a user'}`,
@@ -556,35 +557,38 @@ router.post(
         });
       }
 
-      // Send email notification to other participants if offline
+      // Send email notification to other participants in the background (fire-and-forget)
       if (postmark) {
-        try {
-          const conversation = await (
-            await getMessengerService()
-          ).getConversation(conversationId, userId);
-          const recipients = conversation.participants.filter(p => p.userId !== userId);
+        (async () => {
+          try {
+            const conversation = await (
+              await getMessengerService()
+            ).getConversation(conversationId, userId);
+            const recipients = conversation.participants.filter(p => p.userId !== userId);
 
-          for (const recipient of recipients) {
-            const user = await db.collection('users').findOne({ id: recipient.userId });
-            if (user && user.notify_account !== false && !recipient.isMuted) {
-              const messageLink = `${process.env.APP_BASE_URL || 'http://localhost:3000'}/messenger/?conversation=${conversationId}`;
-              await postmark.sendNotificationEmail(
-                user,
-                `New message from ${req.user.name || 'a user'}`,
-                sanitizedContent.substring(0, 200),
-                {
-                  templateData: {
-                    ctaText: 'View Message',
-                    ctaLink: messageLink,
-                  },
+            await Promise.allSettled(
+              recipients.map(async recipient => {
+                const user = await db.collection('users').findOne({ id: recipient.userId });
+                if (user && user.notify_account !== false && !recipient.isMuted) {
+                  const messageLink = `${getBaseUrl()}/messenger/?conversation=${conversationId}`;
+                  return postmark.sendNotificationEmail(
+                    user,
+                    `New message from ${req.user.name || 'a user'}`,
+                    sanitizedContent.substring(0, 200),
+                    {
+                      templateData: {
+                        ctaText: 'View Message',
+                        ctaLink: messageLink,
+                      },
+                    }
+                  );
                 }
-              );
-            }
+              })
+            );
+          } catch (emailError) {
+            logger.error('Failed to send message email notification:', emailError);
           }
-        } catch (emailError) {
-          logger.error('Failed to send message email notification:', emailError);
-          // Don't fail the request
-        }
+        })();
       }
 
       res.status(201).json({

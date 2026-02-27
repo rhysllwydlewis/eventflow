@@ -26,7 +26,7 @@ describe('WebSocket Server v2 Integration', () => {
 
     it('should configure CORS properly', () => {
       expect(websocketContent).toContain('cors');
-      expect(websocketContent).toMatch(/origin.*BASE_URL/);
+      expect(websocketContent).toMatch(/origin.*BASE_URL|getBaseUrl/);
     });
 
     it('should configure connection timeouts', () => {

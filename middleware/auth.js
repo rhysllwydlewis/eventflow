@@ -121,31 +121,12 @@ function getUserFromCookie(req) {
 async function authRequired(req, res, next) {
   const u = getUserFromCookie(req);
   if (!u) {
-    // Log 401 for debugging (use logger if available, otherwise console)
-    const logger =
-      typeof require !== 'undefined'
-        ? (function () {
-            try {
-              return require('../utils/logger');
-            } catch (e) {
-              return null;
-            }
-          })()
-        : null;
-
-    if (logger) {
-      logger.warn('Authentication required but no valid user found', {
-        path: req.path,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-      });
-    } else {
-      logger.warn('Auth required - 401:', {
-        path: req.path,
-        method: req.method,
-      });
-    }
+    logger.warn('Authentication required but no valid user found', {
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
 
     return res.status(401).json({
       error: 'Unauthenticated',

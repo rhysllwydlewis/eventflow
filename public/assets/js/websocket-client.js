@@ -145,6 +145,10 @@
         this.userId = data.userId;
       });
 
+      this.socket.on('auth:error', data => {
+        console.error('WebSocket auth error:', data.error);
+      });
+
       this.socket.on('notification', notification => {
         console.log('Notification received:', notification);
 

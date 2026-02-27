@@ -9,6 +9,7 @@ const express = require('express');
 const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
@@ -61,7 +62,7 @@ router.get('/', authRequired, async (req, res) => {
  * Add an item to saved
  * Body: { itemType: 'supplier' | 'package', itemId }
  */
-router.post('/', authRequired, csrfProtection, async (req, res) => {
+router.post('/', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { itemType, itemId } = req.body;
@@ -126,7 +127,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
  * This allows frontend to unsave without first fetching all saved items
  * Query params: itemType (supplier|package), itemId
  */
-router.delete('/by-item', authRequired, csrfProtection, async (req, res) => {
+router.delete('/by-item', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { itemType, itemId } = req.query;
@@ -177,7 +178,7 @@ router.delete('/by-item', authRequired, csrfProtection, async (req, res) => {
  * DELETE /api/me/saved/:id
  * Remove an item from saved (by internal saved item ID)
  */
-router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
+router.delete('/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;

@@ -8,12 +8,20 @@
 /**
  * Rate limiter cache
  * Key: userId, Value: { count, resetAt }
+ *
+ * NOTE: This is an in-memory store and does NOT work correctly in clustered/multi-process
+ * environments. Each process maintains its own independent counters, so rate limits can
+ * be exceeded across processes.
+ * TODO: Replace with a Redis-backed counter (using the optional ioredis client already
+ * loaded in websocket-server-v2.js) to support clustered deployments.
  */
 const rateLimitCache = new Map();
 
 /**
  * Recent messages cache for duplicate detection
  * Key: userId, Value: [{ content, timestamp }]
+ *
+ * NOTE: Same in-memory clustering limitation as rateLimitCache above.
  */
 const recentMessagesCache = new Map();
 

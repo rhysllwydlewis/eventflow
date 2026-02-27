@@ -9,6 +9,7 @@ const express = require('express');
 const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 const crypto = require('crypto');
@@ -93,7 +94,7 @@ router.get('/', authRequired, async (req, res) => {
  * Track a referral when a new user signs up
  * Body: { referralCode, newUserId }
  */
-router.post('/track', csrfProtection, async (req, res) => {
+router.post('/track', writeLimiter, csrfProtection, async (req, res) => {
   try {
     const { referralCode, newUserId } = req.body;
 
@@ -145,7 +146,7 @@ router.post('/track', csrfProtection, async (req, res) => {
  * Mark a referral as active when the referred user completes onboarding
  * Admin or system use
  */
-router.patch('/:id/activate', authRequired, csrfProtection, async (req, res) => {
+router.patch('/:id/activate', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const referrals = await dbUnified.read('referrals');

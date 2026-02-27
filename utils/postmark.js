@@ -4,7 +4,12 @@
  *
  * Environment Variables Required:
  * - POSTMARK_API_KEY: Your Postmark Server API key
- * - POSTMARK_FROM: Sender email address (must be verified in Postmark - use admin@event-flow.co.uk)
+ * - POSTMARK_FROM: Default sender email address (must be verified in Postmark - use noreply@event-flow.co.uk)
+ * - POSTMARK_FROM_BILLING: Billing emails sender (billing@event-flow.co.uk)
+ * - POSTMARK_FROM_SUPPORT: Support emails sender (support@event-flow.co.uk)
+ * - POSTMARK_FROM_HELLO: Welcome/friendly emails sender (hello@event-flow.co.uk)
+ * - POSTMARK_FROM_INFO: Newsletter/info emails sender (info@event-flow.co.uk)
+ * - POSTMARK_FROM_ADMIN: Admin/system emails sender (admin@event-flow.co.uk)
  * - BASE_URL or APP_BASE_URL: Application base URL for email links
  *
  * TEMPLATE USAGE:
@@ -45,9 +50,18 @@ let POSTMARK_ENABLED = false;
 
 // Configuration - POSTMARK_API_KEY and POSTMARK_FROM are required
 const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY;
-const POSTMARK_FROM = process.env.POSTMARK_FROM || 'noreply@localhost';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 const UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET;
+
+// Named sender addresses per email category.
+// Each can be overridden via a specific env var; all fall back to POSTMARK_FROM.
+const POSTMARK_FROM = process.env.POSTMARK_FROM || 'noreply@event-flow.co.uk';
+const FROM_NOREPLY = process.env.POSTMARK_FROM_NOREPLY || 'noreply@event-flow.co.uk';
+const FROM_HELLO = process.env.POSTMARK_FROM_HELLO || 'hello@event-flow.co.uk';
+const FROM_BILLING = process.env.POSTMARK_FROM_BILLING || 'billing@event-flow.co.uk';
+const FROM_SUPPORT = process.env.POSTMARK_FROM_SUPPORT || 'support@event-flow.co.uk';
+const FROM_INFO = process.env.POSTMARK_FROM_INFO || 'info@event-flow.co.uk';
+const FROM_ADMIN = process.env.POSTMARK_FROM_ADMIN || 'admin@event-flow.co.uk';
 
 /**
  * Initialize Postmark client
@@ -156,7 +170,10 @@ function loadEmailTemplate(templateName, data = {}) {
     Object.keys(data).forEach(key => {
       const regex = new RegExp(`{{${key}}}`, 'g');
       // Don't escape if the value contains HTML tags (for message content)
-      const value = key === 'message' || key === 'html' ? data[key] : escapeHtml(data[key]);
+      const value =
+        key === 'message' || key === 'html' || key === 'features'
+          ? data[key]
+          : escapeHtml(data[key]);
       html = html.replace(regex, value || '');
     });
 
@@ -165,6 +182,9 @@ function loadEmailTemplate(templateName, data = {}) {
 
     // Add base URL
     html = html.replace(/{{baseUrl}}/g, APP_BASE_URL);
+
+    // Clear any remaining unresolved template placeholders
+    html = html.replace(/\{\{[^}]+\}\}/g, '');
 
     return html;
   } catch (err) {
@@ -375,6 +395,7 @@ async function sendVerificationEmail(user, verificationToken) {
       name: user.name || 'there',
       verificationLink: verificationLink,
     },
+    from: FROM_NOREPLY,
     tags: ['verification', 'transactional'],
     messageStream: 'outbound',
   });
@@ -400,6 +421,7 @@ async function sendPasswordResetEmail(user, resetToken) {
       name: user.name || 'there',
       resetLink: resetLink,
     },
+    from: FROM_NOREPLY,
     tags: ['password-reset', 'transactional'],
     messageStream: 'password-reset', // Use dedicated password-reset stream
   });
@@ -421,6 +443,7 @@ async function sendWelcomeEmail(user) {
     templateData: {
       name: user.name || 'there',
     },
+    from: FROM_HELLO,
     tags: ['welcome', 'transactional'],
     messageStream: 'outbound',
   });
@@ -443,6 +466,7 @@ async function sendPasswordResetConfirmation(user) {
       name: user.name || 'there',
       resetTime: new Date().toLocaleString(),
     },
+    from: FROM_NOREPLY,
     tags: ['password-reset-confirmation', 'transactional'],
     messageStream: 'outbound',
   });
@@ -488,6 +512,7 @@ async function sendMarketingEmail(user, subject, message, options = {}) {
     subject: subject,
     template: options.template || 'marketing',
     templateData: templateData,
+    from: FROM_INFO,
     tags: ['marketing'],
     messageStream: options.messageStream || 'broadcasts',
     ...options,
@@ -513,6 +538,7 @@ async function sendNotificationEmail(user, subject, message, options = {}) {
     name: user.name || 'there',
     title: subject,
     message: message,
+    preferencesLink: `${APP_BASE_URL}/settings/notifications`,
     ...(options.templateData || {}),
   };
 
@@ -521,6 +547,7 @@ async function sendNotificationEmail(user, subject, message, options = {}) {
     subject: subject,
     template: options.template || 'notification',
     templateData: templateData,
+    from: FROM_SUPPORT,
     tags: ['notification', 'transactional'],
     messageStream: 'outbound',
     ...options,
@@ -557,6 +584,15 @@ module.exports = {
   sendWelcomeEmail,
   sendMarketingEmail,
   sendNotificationEmail,
+
+  // Named sender address constants
+  // Use these when calling sendMail() directly to ensure the correct from address
+  FROM_NOREPLY,
+  FROM_HELLO,
+  FROM_BILLING,
+  FROM_SUPPORT,
+  FROM_INFO,
+  FROM_ADMIN,
 
   // Status and utility functions
   isPostmarkEnabled,
