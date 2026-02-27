@@ -146,7 +146,7 @@ router.post('/', writeLimiter, authRequired, csrfProtection, async (req, res) =>
     );
 
     if (existingIndex !== -1) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         error: 'Item already in shortlist',
       });

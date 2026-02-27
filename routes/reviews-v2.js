@@ -236,6 +236,7 @@ router.post('/:id/helpful', writeLimiter, authRequired, csrfProtection, async (r
  */
 router.post(
   '/:id/response',
+  writeLimiter,
   authRequired,
   reviewModeration.canRespondToReview,
   csrfProtection,
@@ -282,6 +283,7 @@ router.post(
  */
 router.put(
   '/:id/response',
+  writeLimiter,
   authRequired,
   reviewModeration.canRespondToReview,
   csrfProtection,
@@ -534,6 +536,7 @@ router.get(
  */
 router.post(
   '/:id/dispute',
+  writeLimiter,
   authRequired,
   reviewModeration.canFileDispute,
   csrfProtection,

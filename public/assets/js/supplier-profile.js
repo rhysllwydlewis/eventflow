@@ -345,7 +345,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
             }
             btnSave.setAttribute('aria-pressed', 'true');
             btnSave.title = 'Saved to shortlist';
-          } else if (response.status === 400 && data.error === 'Item already in shortlist') {
+          } else if (response.status === 409 && data.error === 'Item already in shortlist') {
             if (window.EventFlowNotifications) {
               window.EventFlowNotifications.info('Already in your shortlist');
             }
