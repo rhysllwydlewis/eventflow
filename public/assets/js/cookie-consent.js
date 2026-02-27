@@ -465,12 +465,22 @@
 
   // ─── Init ──────────────────────────────────────────────────────────────────
 
+  function bindPrefsButtons() {
+    document.querySelectorAll('[data-cookie-prefs]').forEach(btn => {
+      btn.addEventListener('click', openPreferences);
+    });
+  }
+
   function init() {
     try {
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', showCookieBanner);
+        document.addEventListener('DOMContentLoaded', () => {
+          showCookieBanner();
+          bindPrefsButtons();
+        });
       } else {
         showCookieBanner();
+        bindPrefsButtons();
       }
     } catch (e) {
       console.warn('CookieConsent: failed to initialise', e);

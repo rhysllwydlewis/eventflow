@@ -25,17 +25,17 @@ test.describe('SEO Canonicals', () => {
   ];
 
   const articlePages = [
-    'wedding-venue-selection-guide.html',
-    'wedding-catering-trends-2024.html',
-    'perfect-wedding-day-timeline-guide.html',
-    'event-photography-complete-guide.html',
-    'event-budget-management-guide.html',
-    'sustainable-event-planning-guide.html',
-    'corporate-event-planning-guide.html',
-    'birthday-party-planning-guide.html',
-  ].map(article => ({
-    path: `/articles/${article}`,
-    canonical: `https://event-flow.co.uk/articles/${article}`,
+    'wedding-venue-selection-guide',
+    'wedding-catering-trends-2024',
+    'perfect-wedding-day-timeline-guide',
+    'event-photography-complete-guide',
+    'event-budget-management-guide',
+    'sustainable-event-planning-guide',
+    'corporate-event-planning-guide',
+    'birthday-party-planning-guide',
+  ].map(slug => ({
+    path: `/articles/${slug}`,
+    canonical: `https://event-flow.co.uk/articles/${slug}`,
   }));
 
   const allPages = [...publicPages, ...articlePages];
