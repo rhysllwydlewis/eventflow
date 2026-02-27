@@ -23,8 +23,23 @@ class DarkModeToggle {
 
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      if (!localStorage.getItem('theme')) {
+      try {
+        if (!localStorage.getItem('theme')) {
+          this.setTheme(e.matches ? 'dark' : 'light');
+        }
+      } catch (err) {
         this.setTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+
+    // React to consent changes: clear localStorage theme when functional consent withdrawn
+    window.addEventListener('cookieConsentChanged', e => {
+      if (e.detail && !e.detail.functional) {
+        try {
+          localStorage.removeItem('theme');
+        } catch (err) {
+          /* ignore */
+        }
       }
     });
 
@@ -34,7 +49,16 @@ class DarkModeToggle {
 
   setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+
+    // Only persist to localStorage when functional cookies are consented
+    try {
+      const consent = window.CookieConsent && window.CookieConsent.getConsent();
+      if (consent && consent.functional) {
+        localStorage.setItem('theme', theme);
+      }
+    } catch (e) {
+      // localStorage may be unavailable; proceed silently
+    }
 
     // Update button icon if it exists
     const button = document.querySelector('.dark-mode-toggle');
