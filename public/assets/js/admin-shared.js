@@ -922,11 +922,13 @@ const AdminShared = (function () {
       return Promise.resolve();
     }
     return fetch('/partials/admin-navbar.html')
-      .then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
-      .then(function (html) {
+      .then(r => {
+        return r.ok ? r.text() : Promise.reject(r.status);
+      })
+      .then(html => {
         placeholder.outerHTML = html;
       })
-      .catch(function (err) {
+      .catch(err => {
         console.warn('[AdminShared] Could not load navbar partial:', err);
       });
   }
@@ -1780,9 +1782,29 @@ const AdminShared = (function () {
     loadBadgeCounts();
     initKeyboardShortcuts();
     initSidebarToggle();
+    populateVersionLabel();
 
     // Refresh badge counts every 60 seconds
     setInterval(loadBadgeCounts, 60000);
+  }
+
+  // Populate the #ef-version-label span in the page footer
+  async function populateVersionLabel() {
+    const label = document.getElementById('ef-version-label');
+    if (!label) {
+      return;
+    }
+    try {
+      const r = await fetch('/api/v1/meta', { credentials: 'include' });
+      if (!r.ok) {
+        label.textContent = 'unknown';
+        return;
+      }
+      const data = await r.json();
+      label.textContent = data && data.version ? data.version : 'dev';
+    } catch (_err) {
+      label.textContent = 'offline';
+    }
   }
 
   // Public API
