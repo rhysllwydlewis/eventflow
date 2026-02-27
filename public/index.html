@@ -815,27 +815,12 @@
             <!-- Featured Guide Cards -->
             <div class="ef-card ef-card--hover">
               <div class="ef-card__content">
-                <h3 class="ef-card__title">Wedding Planning 101</h3>
+                <h3 class="ef-card__title">Event Budget Management</h3>
                 <p class="ef-card__text">
-                  Your complete guide to planning the perfect wedding, from setting a budget to choosing suppliers.
+                  Learn how to create a realistic event budget and allocate funds across suppliers and services.
                 </p>
               </div>
-              <a href="/blog" class="ef-card__link" aria-label="Read wedding planning guide">
-                <span>Read Guide</span>
-                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-              </a>
-            </div>
-            <div class="ef-card ef-card--hover">
-              <div class="ef-card__content">
-                <h3 class="ef-card__title">Budgeting Tips</h3>
-                <p class="ef-card__text">
-                  Learn how to create a realistic event budget and stick to it without compromising on quality.
-                </p>
-              </div>
-              <a href="/blog" class="ef-card__link" aria-label="Read budgeting tips guide">
+              <a href="/articles/event-budget-management-guide" class="ef-card__link" aria-label="Read event budget management guide">
                 <span>Read Guide</span>
                 <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -850,7 +835,22 @@
                   Essential tips for selecting the perfect venue that fits your style, budget, and guest count.
                 </p>
               </div>
-              <a href="/blog" class="ef-card__link" aria-label="Read venue selection guide">
+              <a href="/articles/wedding-venue-selection-guide" class="ef-card__link" aria-label="Read venue selection guide">
+                <span>Read Guide</span>
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+            </div>
+            <div class="ef-card ef-card--hover">
+              <div class="ef-card__content">
+                <h3 class="ef-card__title">Marketplace Guide</h3>
+                <p class="ef-card__text">
+                  Buy and sell event items safely on the EventFlow Marketplace — a step-by-step guide for buyers and sellers.
+                </p>
+              </div>
+              <a href="/articles/marketplace-guide" class="ef-card__link" aria-label="Read marketplace guide">
                 <span>Read Guide</span>
                 <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -1013,7 +1013,7 @@
               <li><a href="/privacy">Privacy Policy</a></li>
               <li><a href="/terms">Terms of Service</a></li>
               <li><a href="/contact">Contact</a></li>
-              <li><button type="button" onclick="window.CookieConsent && window.CookieConsent.openPreferences()" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Cookie preferences</button></li>
+              <li><button type="button" id="ef-cookie-prefs-btn" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Cookie preferences</button></li>
             </ul>
           </div>
         </div>
@@ -1128,7 +1128,7 @@
             title: 'EventFlow — Plan your event the simple way',
             description:
               'Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.',
-            keywords: ['event planning', 'wedding planning', 'suppliers', 'venues', 'catering'],
+            keywords: ['event planning', 'suppliers', 'venues', 'catering', 'corporate events', 'birthday parties'],
             canonical: '/',
             type: 'website',
           });

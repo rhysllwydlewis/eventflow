@@ -121,6 +121,24 @@ canonicalPages.forEach(page => {
   });
 });
 
+// Article pages — serve clean URLs and redirect .html to canonical
+app.get('/articles/:slug', (req, res, next) => {
+  const slug = req.params.slug;
+  // Validate slug: only lowercase alphanumerics and hyphens — prevents path traversal
+  if (!/^[a-z0-9-]+$/i.test(slug)) {
+    return next();
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'articles', `${slug}.html`), err => {
+    if (err) {
+      next();
+    }
+  });
+});
+app.get('/articles/:slug.html', (req, res) => {
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(301, `/articles/${req.params.slug}${qs}`);
+});
+
 // Serve static files from public directory
 app.use(express.static(PUBLIC_DIR));
 

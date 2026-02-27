@@ -274,6 +274,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Attach error handlers for hero collage media (CSP-safe replacement for inline onerror)
   initCollageErrorHandlers();
 
+  // Cookie preferences button (CSP-safe replacement for inline onclick)
+  const cookiePrefBtn = document.getElementById('ef-cookie-prefs-btn');
+  if (cookiePrefBtn) {
+    cookiePrefBtn.addEventListener('click', () => {
+      if (window.CookieConsent) {
+        window.CookieConsent.openPreferences();
+      }
+    });
+  }
+
   // Add parallax effect to collage
   initParallaxCollage();
 
@@ -3199,7 +3209,7 @@ async function fetchMarketplacePreview() {
               Date.now() - new Date(listing?.createdAt || 0).getTime() < 1000 * 60 * 60 * 24 * 14;
             return `
           <a href="${listingUrl}" class="card card-hover" style="text-decoration: none; color: inherit; display: block; overflow: hidden;">
-            <img src="${escape(listingImage)}" alt="${escape(listing.title)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;" loading="lazy" onerror="this.src='/assets/images/collage-venue.jpg'" />
+            <img src="${escape(listingImage)}" alt="${escape(listing.title)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;" loading="lazy" data-fallback-src="/assets/images/collage-venue.jpg" />
             <div style="padding: 1rem;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0.5rem;">
                 <h3 style="margin: 0; font-size: 1.1rem;">${escape(listing.title || 'Marketplace listing')}</h3>
@@ -3218,6 +3228,14 @@ async function fetchMarketplacePreview() {
           .join('')}
       </div>
     `;
+
+    // Attach error handlers for marketplace preview images (CSP-safe, no inline onerror)
+    container.querySelectorAll('img[data-fallback-src]').forEach(img => {
+      img.addEventListener('error', function handler() {
+        img.removeEventListener('error', handler);
+        img.src = img.dataset.fallbackSrc;
+      });
+    });
   } catch (error) {
     // Issue 5 Fix: Use error boundary for errors
     if (isDevelopmentEnvironment()) {

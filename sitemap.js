@@ -76,15 +76,15 @@ async function generateSitemap(baseUrl) {
 
     // Dynamic pages - Articles
     const articles = [
-      'wedding-venue-selection-guide.html',
-      'wedding-catering-trends-2024.html',
-      'perfect-wedding-day-timeline-guide.html',
-      'event-photography-complete-guide.html',
-      'event-budget-management-guide.html',
-      'sustainable-event-planning-guide.html',
-      'corporate-event-planning-guide.html',
-      'birthday-party-planning-guide.html',
-      'marketplace-guide.html',
+      'wedding-venue-selection-guide',
+      'wedding-catering-trends-2024',
+      'perfect-wedding-day-timeline-guide',
+      'event-photography-complete-guide',
+      'event-budget-management-guide',
+      'sustainable-event-planning-guide',
+      'corporate-event-planning-guide',
+      'birthday-party-planning-guide',
+      'marketplace-guide',
     ];
 
     articles.forEach(article => {

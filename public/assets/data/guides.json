@@ -1,7 +1,7 @@
 [
   {
     "title": "How to Choose the Perfect Wedding Venue",
-    "href": "/blog.html?guide=wedding-venue",
+    "href": "/articles/wedding-venue-selection-guide",
     "category": "Venues",
     "readingMins": 8,
     "published": "2024-12-15",
@@ -9,7 +9,7 @@
   },
   {
     "title": "Budget Planning for Your Event",
-    "href": "/blog.html?guide=budget-planning",
+    "href": "/articles/event-budget-management-guide",
     "category": "Planning",
     "readingMins": 6,
     "published": "2025-01-02",
@@ -17,7 +17,7 @@
   },
   {
     "title": "Working with Event Suppliers: A Guide",
-    "href": "/blog.html?guide=supplier-guide",
+    "href": "/blog",
     "category": "Suppliers",
     "readingMins": 5,
     "published": "2024-11-20",
@@ -25,7 +25,7 @@
   },
   {
     "title": "EventFlow Marketplace: Complete Guide for Buyers & Sellers",
-    "href": "/articles/marketplace-guide.html",
+    "href": "/articles/marketplace-guide",
     "category": "Marketplace",
     "readingMins": 12,
     "published": "2026-01-28",
@@ -33,7 +33,7 @@
   },
   {
     "title": "Timeline: Planning Your Event Step-by-Step",
-    "href": "/blog.html?guide=event-timeline",
+    "href": "/articles/perfect-wedding-day-timeline-guide",
     "category": "Planning",
     "readingMins": 7,
     "published": "2024-10-30",

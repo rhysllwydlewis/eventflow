@@ -5,18 +5,19 @@ User-agent: *
 Allow: /
 
 # Prioritize important pages
-Allow: /index.html
-Allow: /blog.html
+Allow: /blog
 Allow: /articles/
-Allow: /suppliers.html
-Allow: /pricing.html
-Allow: /start.html
+Allow: /suppliers
+Allow: /pricing
+Allow: /start
 
 # Prevent crawling of admin and auth pages
-Disallow: /admin*.html
-Disallow: /auth.html
-Disallow: /settings.html
-Disallow: /dashboard*.html
+Disallow: /admin
+Disallow: /auth
+Disallow: /settings
+Disallow: /dashboard
+Disallow: /dashboard-customer
+Disallow: /dashboard-supplier
 Disallow: /api/
 Disallow: /uploads/
 Disallow: /*.json$

@@ -489,6 +489,24 @@ canonicalPages.forEach(page => {
   // The canonical URL without .html is handled by template middleware + static files
 });
 
+// Article pages — serve clean URLs and redirect .html to canonical
+app.get('/articles/:slug', (req, res, next) => {
+  const slug = req.params.slug;
+  // Validate slug: only lowercase alphanumerics and hyphens — prevents path traversal
+  if (!/^[a-z0-9-]+$/i.test(slug)) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'public', 'articles', `${slug}.html`), err => {
+    if (err) {
+      next();
+    }
+  });
+});
+app.get('/articles/:slug.html', (req, res) => {
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(301, `/articles/${req.params.slug}${qs}`);
+});
+
 // Block test/dev pages in production
 if (process.env.NODE_ENV === 'production') {
   const testPages = [
