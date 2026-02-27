@@ -21,10 +21,42 @@
 const logger = require('./utils/logger.js');
 
 const { Server } = require('socket.io');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const jwt = require('jsonwebtoken');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const cookie = require('cookie');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const { getBaseUrl } = require('./utils/config');
 
 // Shared symbol for preventing duplicate Socket.IO servers across v1 and v2
 // This prevents the "server.handleUpgrade() was called more than once" error
 const WS_SERVER_INITIALIZED = Symbol.for('eventflow.wsServerInitialized');
+
+/**
+ * Extract and verify a JWT from a cookie string (best-effort, no throw).
+ * @param {string} cookieHeader - Raw Cookie header value
+ * @returns {string|null} Verified userId, or null if absent/invalid
+ */
+function userIdFromCookie(cookieHeader) {
+  try {
+    if (!cookieHeader) {
+      return null;
+    }
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      return null;
+    }
+    const cookies = cookie.parse(cookieHeader);
+    const token = cookies.token;
+    if (!token) {
+      return null;
+    }
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded.userId || decoded.id || decoded.sub || null;
+  } catch (_) {
+    return null;
+  }
+}
 
 class WebSocketServer {
   constructor(httpServer) {
@@ -42,7 +74,7 @@ class WebSocketServer {
 
     this.io = new Server(httpServer, {
       cors: {
-        origin: process.env.BASE_URL || 'http://localhost:3000',
+        origin: getBaseUrl(),
         methods: ['GET', 'POST'],
         credentials: true,
       },
@@ -64,6 +96,17 @@ class WebSocketServer {
   }
 
   init() {
+    // Handshake middleware: pre-authenticate sockets from the HTTP-only JWT cookie.
+    this.io.use((socket, next) => {
+      const cookieHeader = socket.handshake.headers.cookie;
+      const userId = userIdFromCookie(cookieHeader);
+      if (userId) {
+        socket.userId = userId;
+        logger.debug(`WebSocket v1 pre-authenticated via cookie: ${socket.id}`);
+      }
+      next();
+    });
+
     this.io.on('connection', socket => {
       logger.info(`WebSocket connected: ${socket.id}`);
 
@@ -73,20 +116,47 @@ class WebSocketServer {
       });
 
       // Handle user authentication
+      // Supports cookie-first flow (socket.userId already set) and explicit token flow.
       socket.on('auth', data => {
-        if (data && data.userId) {
-          socket.userId = data.userId;
+        let userId = socket.userId; // may already be set by cookie middleware
 
-          if (!this.userSockets.has(data.userId)) {
-            this.userSockets.set(data.userId, new Set());
+        if (!userId) {
+          if (!data || !data.token) {
+            socket.emit('auth:error', { error: 'Missing token' });
+            return;
           }
-          this.userSockets.get(data.userId).add(socket.id);
-
-          socket.join(`user:${data.userId}`);
-          socket.emit('auth:success', { userId: data.userId });
-
-          logger.info(`User ${data.userId} authenticated on socket ${socket.id}`);
+          try {
+            const JWT_SECRET = process.env.JWT_SECRET;
+            if (!JWT_SECRET) {
+              logger.error(
+                'JWT_SECRET environment variable is not set - WebSocket v1 auth cannot proceed'
+              );
+              socket.emit('auth:error', { error: 'Server configuration error' });
+              return;
+            }
+            const decoded = jwt.verify(data.token, JWT_SECRET);
+            userId = decoded.userId || decoded.id || decoded.sub;
+            if (!userId) {
+              socket.emit('auth:error', { error: 'Invalid token: missing user ID' });
+              return;
+            }
+          } catch (err) {
+            socket.emit('auth:error', { error: 'Invalid or expired token' });
+            return;
+          }
         }
+
+        socket.userId = userId;
+
+        if (!this.userSockets.has(userId)) {
+          this.userSockets.set(userId, new Set());
+        }
+        this.userSockets.get(userId).add(socket.id);
+
+        socket.join(`user:${userId}`);
+        socket.emit('auth:success', { userId });
+
+        logger.info(`User ${userId} authenticated on socket ${socket.id}`);
       });
 
       // Handle joining rooms (for suppliers, events, etc.)

@@ -10,6 +10,23 @@ const subscriptionService = require('../services/subscriptionService');
 const paymentService = require('../services/paymentService');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
+const postmark = require('../utils/postmark');
+
+/**
+ * Format an internal plan tier key into a human-readable display name.
+ * @param {string} tier - Internal tier key ('free' | 'basic' | 'pro' | 'pro_plus' | 'enterprise')
+ * @returns {string} Display name, e.g. 'Pro Plus'
+ */
+function formatPlanName(tier) {
+  const names = {
+    free: 'Free',
+    basic: 'Basic',
+    pro: 'Pro',
+    pro_plus: 'Pro Plus',
+    enterprise: 'Enterprise',
+  };
+  return names[tier] || tier || 'Unknown';
+}
 
 /**
  * Resolve a Stripe plan name string to an internal tier key.
@@ -197,15 +214,42 @@ async function handleInvoicePaymentFailed(invoice) {
       `Payment failed for user ${user.email}: Invoice ${invoice.id}, Amount: ${invoice.amount_due / 100} ${invoice.currency.toUpperCase()}`
     );
 
-    // TODO: Send payment failed email when email service is available
-    // await emailService.sendPaymentFailedNotification({
-    //   userId: subscription.userId,
-    //   email: user.email,
-    //   invoiceId: invoice.id,
-    //   amount: invoice.amount_due / 100,
-    //   currency: invoice.currency,
-    //   attemptCount: invoiceRecord?.attemptCount || 1,
-    // });
+    // Send payment failed email using the subscription-payment-failed template
+    try {
+      const gracePeriodEnd = invoice.next_payment_attempt
+        ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+
+      await postmark.sendMail({
+        to: user.email,
+        subject: 'Action Required: Your EventFlow Payment Failed',
+        template: 'subscription-payment-failed',
+        templateData: {
+          name: user.name || 'there',
+          planName: formatPlanName(subscription.plan),
+          amount: (invoice.amount_due / 100).toFixed(2),
+          attemptDate: new Date().toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
+          gracePeriodEnd,
+        },
+        tags: ['payment-failed', 'transactional'],
+        messageStream: 'outbound',
+      });
+      logger.info(`Payment failed email sent to ${user.email}`);
+    } catch (emailErr) {
+      logger.error('Failed to send payment failed email:', emailErr.message);
+    }
   }
 
   // Handle dunning
@@ -331,14 +375,47 @@ async function handleSubscriptionTrialWillEnd(stripeSubscription) {
     `Trial ending soon for user ${user.email}: ${daysRemaining} days remaining (ends ${trialEndDate.toISOString()})`
   );
 
-  // TODO: Send email reminder when email service is available
-  // await emailService.sendTrialEndingReminder({
-  //   userId: subscription.userId,
-  //   email: user.email,
-  //   trialEndDate,
-  //   daysRemaining,
-  //   plan: subscription.plan,
-  // });
+  // Send trial ending reminder email using the subscription-trial-ending template
+  try {
+    // Calculate total trial days from subscription record if available
+    const trialStart = subscription.trialStart ? new Date(subscription.trialStart) : null;
+    const trialDays =
+      trialStart && trialEndDate > trialStart
+        ? Math.round((trialEndDate - trialStart) / (1000 * 60 * 60 * 24))
+        : 14; // Default to 14-day trial if not recorded
+
+    // Determine billing amount and cycle from Stripe subscription items
+    const item = stripeSubscription.items?.data?.[0];
+    const unitAmount = item?.price?.unit_amount ?? 0;
+    const billingInterval = item?.price?.recurring?.interval ?? 'month';
+    const amount = (unitAmount / 100).toFixed(2);
+
+    const formattedTrialEnd = trialEndDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    await postmark.sendMail({
+      to: user.email,
+      subject: `Your EventFlow trial ends in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`,
+      template: 'subscription-trial-ending',
+      templateData: {
+        name: user.name || 'there',
+        planName: formatPlanName(subscription.plan),
+        trialDays: String(trialDays),
+        daysLeft: String(daysRemaining),
+        trialEndDate: formattedTrialEnd,
+        amount,
+        billingCycle: billingInterval,
+      },
+      tags: ['trial-ending', 'transactional'],
+      messageStream: 'outbound',
+    });
+    logger.info(`Trial ending email sent to ${user.email}`);
+  } catch (emailErr) {
+    logger.error('Failed to send trial ending email:', emailErr.message);
+  }
 
   // Update subscription metadata to track notification sent
   await subscriptionService.updateSubscription(subscription.id, {
@@ -494,6 +571,7 @@ async function processWebhookEvent(event) {
 
 module.exports = {
   processWebhookEvent,
+  formatPlanName,
   handleInvoiceCreated,
   handleInvoicePaymentSucceeded,
   handleInvoicePaymentFailed,

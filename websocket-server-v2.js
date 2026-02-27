@@ -13,11 +13,39 @@ const { PresenceService } = require('./services/presenceService');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const jwt = require('jsonwebtoken');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const cookie = require('cookie');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const { getBaseUrl } = require('./utils/config');
 
 // Shared symbol for preventing duplicate Socket.IO servers across v1 and v2
 // This prevents the "server.handleUpgrade() was called more than once" error
 const WS_SERVER_INITIALIZED = Symbol.for('eventflow.wsServerInitialized');
+
+/**
+ * Extract and verify a JWT from a cookie string (best-effort, no throw).
+ * @param {string} cookieHeader - Raw Cookie header value
+ * @returns {string|null} Verified userId, or null if absent/invalid
+ */
+function userIdFromCookie(cookieHeader) {
+  try {
+    if (!cookieHeader) {
+      return null;
+    }
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      return null;
+    }
+    const cookies = cookie.parse(cookieHeader);
+    const token = cookies.token;
+    if (!token) {
+      return null;
+    }
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded.userId || decoded.id || decoded.sub || null;
+  } catch (_) {
+    return null;
+  }
+}
 
 // Try to load Redis adapter for clustering (optional)
 let RedisAdapter;
@@ -94,6 +122,20 @@ class WebSocketServerV2 {
   }
 
   init() {
+    // Handshake middleware: pre-authenticate sockets from the HTTP-only JWT cookie.
+    // This runs before 'connection' fires so socket.userId is already set for cookie-auth users.
+    // Connections are never rejected here — unauthenticated sockets may still connect but
+    // will fail on any protected event handler.
+    this.io.use((socket, next) => {
+      const cookieHeader = socket.handshake.headers.cookie;
+      const userId = userIdFromCookie(cookieHeader);
+      if (userId) {
+        socket.userId = userId;
+        logger.debug('WebSocket pre-authenticated via cookie', { socketId: socket.id, userId });
+      }
+      next();
+    });
+
     this.io.on('connection', socket => {
       logger.debug('WebSocket connected', { socketId: socket.id });
 
@@ -263,33 +305,41 @@ class WebSocketServerV2 {
 
   /**
    * Handle user authentication
+   *
+   * Supports two flows:
+   *   1. Cookie-first (default): socket was pre-authenticated via the HTTP-only JWT cookie
+   *      at handshake time; `auth` event just confirms and completes the setup.
+   *   2. Token-based: caller sends `{ token }` for environments where cookies are unavailable.
    */
   async handleAuth(socket, data) {
     try {
-      if (!data || !data.token) {
-        socket.emit('auth:error', { error: 'Missing token' });
-        return;
-      }
+      let userId = socket.userId; // may already be set by the io.use() cookie middleware
 
-      let userId;
-      try {
-        const JWT_SECRET = process.env.JWT_SECRET;
-        if (!JWT_SECRET) {
-          logger.error(
-            'JWT_SECRET environment variable is not set - WebSocket auth cannot proceed'
-          );
-          socket.emit('auth:error', { error: 'Server configuration error' });
+      if (!userId) {
+        // Fallback: explicit token provided in the auth payload
+        if (!data || !data.token) {
+          socket.emit('auth:error', { error: 'Missing token' });
           return;
         }
-        const decoded = jwt.verify(data.token, JWT_SECRET);
-        userId = decoded.userId || decoded.id || decoded.sub;
-        if (!userId) {
-          socket.emit('auth:error', { error: 'Invalid token: missing user ID' });
+        try {
+          const JWT_SECRET = process.env.JWT_SECRET;
+          if (!JWT_SECRET) {
+            logger.error(
+              'JWT_SECRET environment variable is not set - WebSocket auth cannot proceed'
+            );
+            socket.emit('auth:error', { error: 'Server configuration error' });
+            return;
+          }
+          const decoded = jwt.verify(data.token, JWT_SECRET);
+          userId = decoded.userId || decoded.id || decoded.sub;
+          if (!userId) {
+            socket.emit('auth:error', { error: 'Invalid token: missing user ID' });
+            return;
+          }
+        } catch (err) {
+          socket.emit('auth:error', { error: 'Invalid or expired token' });
           return;
         }
-      } catch (err) {
-        socket.emit('auth:error', { error: 'Invalid or expired token' });
-        return;
       }
 
       // Store user-socket mapping
