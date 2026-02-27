@@ -271,6 +271,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize newsletter form
   initNewsletterForm();
 
+  // Attach error handlers for hero collage media (CSP-safe replacement for inline onerror)
+  initCollageErrorHandlers();
+
   // Add parallax effect to collage
   initParallaxCollage();
 
@@ -3014,7 +3017,7 @@ function hideStatsSection() {
  */
 function updateStatsUI(stats) {
   // Update stat counters with real data
-  const statItems = document.querySelectorAll('.stat-item');
+  const statItems = document.querySelectorAll('.ef-stat');
   if (statItems.length >= 4) {
     // Update counters with real data
     const counters = [
@@ -3025,7 +3028,7 @@ function updateStatsUI(stats) {
     ];
 
     statItems.forEach((item, index) => {
-      const counterEl = item.querySelector('.stat-number');
+      const counterEl = item.querySelector('.ef-stat__number');
       if (counterEl && counters[index]) {
         counterEl.setAttribute('data-counter', counters[index].value);
         counterEl.setAttribute('data-suffix', counters[index].suffix);
@@ -3531,6 +3534,40 @@ function initNewsletterForm() {
       setTimeout(() => {
         errorDiv.remove();
       }, 3000);
+    }
+  });
+}
+
+/**
+ * Attach error event handlers to hero collage media elements.
+ * CSP-safe replacement for inline onerror attributes.
+ */
+function initCollageErrorHandlers() {
+  const video = document.getElementById('hero-pexels-video');
+  if (video) {
+    video.addEventListener('error', () => {
+      video.style.display = 'none';
+      if (video.nextElementSibling) {
+        video.nextElementSibling.style.display = 'block';
+      }
+    });
+  }
+
+  const collageImages = [
+    { id: 'collage-venues', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+    { id: 'collage-catering', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    { id: 'collage-entertainment', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+    { id: 'collage-photography', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  ];
+
+  collageImages.forEach(({ id, gradient }) => {
+    const img = document.getElementById(id);
+    if (img) {
+      img.addEventListener('error', () => {
+        img.style.background = gradient;
+        img.style.minHeight = '200px';
+        img.src = '';
+      });
     }
   });
 }

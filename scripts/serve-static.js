@@ -105,6 +105,8 @@ const canonicalPages = [
   'notifications',
   'guests',
   'messages',
+  'category',
+  'package',
 ];
 
 canonicalPages.forEach(page => {

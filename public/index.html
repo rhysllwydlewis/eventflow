@@ -523,8 +523,7 @@
                 <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
                 <video id="hero-pexels-video" muted loop playsinline preload="metadata"
                        poster="/assets/images/hero-video-poster.jpg"
-                       width="800" height="450"
-                       onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='block');">
+                       width="800" height="450">
                   <source src="" type="video/mp4" id="hero-video-source">
                   Your browser does not support the video tag.
                 </video>
@@ -532,11 +531,10 @@
               </div>
               
               <!-- Row 2: Venues + Catering -->
-              <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
+              <a href="/category?slug=venues" class="hero-collage-card" data-category="venues">
                 <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" 
                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                     sizes="(max-width: 768px) 48vw, 25vw">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🏛️</span>
                   Venues
@@ -544,11 +542,10 @@
                 <span class="hero-collage-credit" id="credit-venues"></span>
               </a>
               
-              <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
+              <a href="/category?slug=catering" class="hero-collage-card" data-category="catering">
                 <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering"
                      width="400" height="300" loading="eager" fetchpriority="auto" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                     sizes="(max-width: 768px) 48vw, 25vw">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🍽️</span>
                   Catering
@@ -557,11 +554,10 @@
               </a>
               
               <!-- Row 3: Entertainment + Photography -->
-              <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
+              <a href="/category?slug=entertainment" class="hero-collage-card" data-category="entertainment">
                 <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment"
                      width="400" height="300" loading="eager" fetchpriority="auto" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                     sizes="(max-width: 768px) 48vw, 25vw">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🎤</span>
                   Entertainment
@@ -569,11 +565,10 @@
                 <span class="hero-collage-credit" id="credit-entertainment"></span>
               </a>
               
-              <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
+              <a href="/category?slug=photography" class="hero-collage-card" data-category="photography">
                 <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography"
                      width="400" height="300" loading="eager" fetchpriority="auto" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                     sizes="(max-width: 768px) 48vw, 25vw">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">📸</span>
                   Photography
@@ -637,7 +632,7 @@
         </div>
       </section>
 
-      <section class="ef-section ef-section--gradient" aria-label="EventFlow statistics" aria-live="polite">
+      <section id="stats-section" class="ef-section ef-section--gradient" aria-label="EventFlow statistics" aria-live="polite">
         <div class="container">
           <div class="ef-stats-grid">
             <div class="ef-stat" data-reveal>
@@ -903,11 +898,11 @@
           <div class="ef-section__header ef-section__header--center">
             <span class="ef-badge ef-badge--primary" style="margin-bottom: var(--ef-space-4, 16px);">FOR SUPPLIERS</span>
             <h2 class="ef-section__title" style="color: var(--ef-primary, #0B8073);">
-              Are you a wedding or event supplier?
+              Are you an event supplier?
             </h2>
             <p class="ef-section__subtitle" style="max-width: 700px; margin: 0 auto;">
-              Join EventFlow and connect with couples planning their perfect day. Get discovered by
-              customers actively looking for services like yours, with no commission on bookings.
+              Join EventFlow and connect with customers planning their next event. Get discovered by
+              people actively looking for services like yours, with no commission on bookings.
             </p>
           </div>
 
@@ -986,7 +981,7 @@
               <strong>EventFlow</strong>
             </div>
             <p class="ef-footer-tagline">Event planning made simple.</p>
-            <p class="ef-footer-copyright">&copy; 2025 EventFlow. All rights reserved.</p>
+            <p class="ef-footer-copyright">&copy; 2025&ndash;2026 EventFlow. All rights reserved.</p>
           </div>
 
           <!-- Column 2: Platform -->
