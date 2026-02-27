@@ -911,6 +911,26 @@ const AdminShared = (function () {
     });
   }
 
+  /**
+   * Load the shared admin navbar partial into a placeholder element.
+   * Usage: place <div id="admin-navbar"></div> in the page body and call
+   * AdminShared.loadNavbar() (or it is called automatically during init).
+   */
+  function loadNavbar() {
+    const placeholder = document.getElementById('admin-navbar');
+    if (!placeholder) {
+      return Promise.resolve();
+    }
+    return fetch('/partials/admin-navbar.html')
+      .then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
+      .then(function (html) {
+        placeholder.outerHTML = html;
+      })
+      .catch(function (err) {
+        console.warn('[AdminShared] Could not load navbar partial:', err);
+      });
+  }
+
   // Initialize sidebar toggle for mobile
   function initSidebarToggle() {
     const toggle = document.getElementById('sidebarToggle');
@@ -1021,6 +1041,8 @@ const AdminShared = (function () {
     if (!container) {
       container = document.createElement('div');
       container.className = 'toast-container';
+      container.setAttribute('aria-live', 'polite');
+      container.setAttribute('aria-atomic', 'false');
       document.body.appendChild(container);
     }
 
@@ -1802,6 +1824,7 @@ const AdminShared = (function () {
     loadBadgeCounts,
     // Navigation
     highlightActivePage,
+    loadNavbar,
     // Helpers
     generateId,
     debounce,

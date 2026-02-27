@@ -1,6 +1,7 @@
 (function () {
-  // Constants - Will be dynamically loaded from backend for security
-  const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Default, will be updated from backend
+  // Owner email used as a secondary admin check alongside the role check below.
+  // Server-side admin enforcement is the primary security control; this is a convenience guard only.
+  const OWNER_EMAIL = 'admin@event-flow.co.uk';
 
   // Helper to check if email is owner (case-insensitive)
   function isOwnerEmail(email) {
@@ -120,6 +121,8 @@
       });
   }
   let allUsers = [];
+  let allSuppliers = [];
+  let allPackages = [];
 
   function renderUsersTable(list) {
     const el = document.getElementById('users');
@@ -465,6 +468,20 @@
       featuredPackagesEl.textContent = counts.featuredPackages || 0;
     }
 
+    // Revenue: no revenue endpoint yet — show N/A
+    const totalRevenueEl = document.getElementById('totalRevenueCount');
+    if (totalRevenueEl) {
+      totalRevenueEl.textContent = 'N/A';
+    }
+
+    // Change indicators — cleared until real trend data is available
+    ['totalUsersChange', 'totalPackagesChange', 'totalSuppliersChange', 'totalRevenueChange'].forEach(id => {
+      const el2 = document.getElementById(id);
+      if (el2) {
+        el2.textContent = '—';
+      }
+    });
+
     el.innerHTML =
       `<div class="card">` +
       `<p><b>Total Users:</b> ${counts.usersTotal || 0}</p>` +
@@ -506,14 +523,6 @@
         }
 
         return Promise.all([
-          api('/api/admin/suppliers').catch(err => {
-            console.warn('Failed to load suppliers:', err.message);
-            return { items: [] };
-          }),
-          api('/api/admin/packages').catch(err => {
-            console.warn('Failed to load packages:', err.message);
-            return { items: [] };
-          }),
           api('/api/admin/users').catch(err => {
             console.warn('Failed to load users:', err.message);
             return { items: [] };
@@ -531,16 +540,15 @@
             return { reviews: [] };
           }),
         ]).then(results => {
-          const suppliersResp = results[0] || {};
-          const packagesResp = results[1] || {};
-          const usersResp = results[2] || {};
-          const metricsResp = results[3] || {};
-          const photosResp = results[4] || {};
-          const reviewsResp = results[5] || {};
+          const usersResp = results[0] || {};
+          const metricsResp = results[1] || {};
+          const photosResp = results[2] || {};
+          const reviewsResp = results[3] || {};
 
           allUsers = usersResp.items || [];
-          renderSuppliersTable(suppliersResp);
-          renderPackagesTable(packagesResp);
+          // Reset supplier/package caches so edits refetch fresh data after a reload
+          allSuppliers = [];
+          allPackages = [];
           applyUserFilters();
           renderAnalytics(metricsResp);
 
@@ -1251,10 +1259,16 @@
   };
 
   window.editSupplier = function (id) {
-    // Find supplier in current data
-    api('/api/admin/suppliers')
+    // Use cached suppliers if available, otherwise fetch and cache
+    const fetchSuppliers = allSuppliers.length
+      ? Promise.resolve({ items: allSuppliers })
+      : api('/api/admin/suppliers').then(resp => {
+          allSuppliers = (resp && resp.items) || [];
+          return resp;
+        });
+    fetchSuppliers
       .then(resp => {
-        const suppliers = (resp && resp.items) || [];
+        const suppliers = (resp && resp.items) || allSuppliers;
         const supplier = suppliers.find(s => {
           return s.id === id;
         });
@@ -1424,10 +1438,16 @@
   };
 
   window.editPackage = function (id) {
-    // Fetch package data
-    api('/api/admin/packages')
+    // Use cached packages if available, otherwise fetch and cache
+    const fetchPackages = allPackages.length
+      ? Promise.resolve({ items: allPackages })
+      : api('/api/admin/packages').then(resp => {
+          allPackages = (resp && resp.items) || [];
+          return resp;
+        });
+    fetchPackages
       .then(resp => {
-        const packages = (resp && resp.items) || [];
+        const packages = (resp && resp.items) || allPackages;
         const pkg = packages.find(p => {
           return p.id === id;
         });
@@ -1876,35 +1896,39 @@
           return;
         }
 
-        // HTML sanitization helper
-        function escapeHtml(unsafe) {
-          if (!unsafe) {
-            return '';
-          }
-          return String(unsafe)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-        }
-
         const modal = document.createElement('div');
-        modal.style.cssText =
-          'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10000;overflow:auto;padding:20px;';
-        modal.className = 'review-modal';
+        modal.className = 'review-modal-overlay review-modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-label', 'Pending Reviews');
         modal.innerHTML =
-          `<div style="background:#111;max-width:800px;margin:auto;padding:20px;border-radius:8px;">` +
+          `<div class="review-modal-container">` +
           `<h2>Pending Reviews (${reviews.length})</h2>` +
           `<div id="review-list"></div>` +
           `<button data-action="closeReviewModal">Close</button>` +
           `</div>`;
         document.body.appendChild(modal);
 
+        // Close on backdrop click
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) {
+            modal.remove();
+          }
+        });
+
+        // Close on Escape key
+        function onKeyDown(e) {
+          if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', onKeyDown);
+          }
+        }
+        document.addEventListener('keydown', onKeyDown);
+
         const list = modal.querySelector('#review-list');
         reviews.forEach(r => {
           const item = document.createElement('div');
-          item.style.cssText = 'background:#1a1a1a;padding:15px;margin:10px 0;border-radius:6px;';
+          item.className = 'review-modal-item';
           item.innerHTML =
             `<p><b>Rating:</b> ${escapeHtml(String(r.rating || 0))} stars</p>` +
             `<p><b>Comment:</b> ${escapeHtml(r.comment || '')}</p>` +

@@ -26,7 +26,7 @@
 <body class="has-admin-navbar admin">
 
 <!-- Modern Top Navbar -->
-<nav class="admin-top-navbar">
+<nav class="admin-top-navbar" aria-label="Admin navigation">
   <div class="admin-navbar-content">
     <!-- Brand -->
     <div class="admin-navbar-brand">
@@ -105,7 +105,7 @@
       </div>
 
       <!-- Refresh Button -->
-      <button class="navbar-icon-btn" id="navRefreshBtn" title="Refresh data">
+      <button class="navbar-icon-btn" id="navRefreshBtn" title="Refresh data" aria-label="Refresh data">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
         </svg>
@@ -113,23 +113,23 @@
 
       <!-- User Dropdown -->
       <div class="admin-user-dropdown">
-        <button class="admin-user-btn" id="adminUserBtn">
+        <button class="admin-user-btn" id="adminUserBtn" aria-haspopup="true" aria-expanded="false">
           <div class="admin-user-avatar">A</div>
           <span>Admin</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
-        <div class="admin-dropdown-menu" id="adminDropdownMenu">
-          <a href="/admin-settings.html" class="admin-dropdown-item">
+        <div class="admin-dropdown-menu" id="adminDropdownMenu" role="menu">
+          <a href="/admin-settings.html" class="admin-dropdown-item" role="menuitem">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M12 1v6m0 6v6m4.22-13.22l-4.24 4.24m0 5.96l-4.24 4.24M23 12h-6m-6 0H1m18.78 4.22l-4.24-4.24m-5.96 0l-4.24 4.24"></path>
             </svg>
             Settings
           </a>
-          <div class="admin-dropdown-divider"></div>
-          <button class="admin-dropdown-item" id="adminLogoutBtn">
+          <div class="admin-dropdown-divider" role="separator"></div>
+          <button class="admin-dropdown-item" id="adminLogoutBtn" role="menuitem">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>
@@ -154,8 +154,8 @@
         <p class="dashboard-subtitle">Welcome back! Here's what's happening today.</p>
       </div>
       <div class="header-actions">
-        <div id="status" class="status-badge">Loading…</div>
-        <button id="refreshBtn" class="btn-icon" title="Refresh data">
+        <div id="status" class="status-badge" aria-live="polite">Loading…</div>
+        <button id="refreshBtn" class="btn-icon" title="Refresh data" aria-label="Refresh data">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M23 4v6h-6"></path>
             <path d="M1 20v-6h6"></path>
@@ -179,7 +179,7 @@
       <div class="stat-content">
         <div class="stat-label">Total Users</div>
         <div class="stat-value" id="totalUsersCount">—</div>
-        <div class="stat-change positive">↑ 12% from last month</div>
+        <div class="stat-change" id="totalUsersChange">—</div>
       </div>
     </div>
 
@@ -193,7 +193,7 @@
       <div class="stat-content">
         <div class="stat-label">Active Packages</div>
         <div class="stat-value" id="totalPackagesCount">—</div>
-        <div class="stat-change positive">↑ 5 new this week</div>
+        <div class="stat-change" id="totalPackagesChange">—</div>
       </div>
     </div>
 
@@ -207,7 +207,7 @@
       <div class="stat-content">
         <div class="stat-label">Suppliers</div>
         <div class="stat-value" id="totalSuppliersCount">—</div>
-        <div class="stat-change neutral">3 pending verification</div>
+        <div class="stat-change" id="totalSuppliersChange">—</div>
       </div>
     </div>
 
@@ -219,8 +219,8 @@
       </div>
       <div class="stat-content">
         <div class="stat-label">Revenue</div>
-        <div class="stat-value">£24.5K</div>
-        <div class="stat-change positive">↑ 18% from last month</div>
+        <div class="stat-value" id="totalRevenueCount">—</div>
+        <div class="stat-change" id="totalRevenueChange">—</div>
       </div>
     </div>
   </div>
@@ -396,7 +396,7 @@
       </div>
     </div>
     <div class="table-wrapper">
-      <table id="msgModerationTable" style="width:100%;border-collapse:collapse">
+      <table id="msgModerationTable" aria-label="Message Moderation" style="width:100%;border-collapse:collapse">
         <thead>
           <tr>
             <th style="text-align:left;padding:0.5rem 0.75rem">Participants</th>
@@ -433,7 +433,7 @@
       </div>
     </div>
     <div class="table-wrapper">
-      <table id="users"></table>
+      <table id="users" aria-label="Users"></table>
     </div>
   </div>
 
@@ -452,126 +452,7 @@
   <script src="/assets/js/utils/sentry-browser-init.js" defer></script>
   <script src="/assets/js/pages/admin-init.js?v=18.1.1" defer></script>
   <script src="/assets/js/admin-features.js?v=18.1.1" defer></script>
-
-  <script>
-  // Message Moderation panel
-  (function () {
-    'use strict';
-
-    var PAGE_SIZE = 20;
-    var currentSkip = 0;
-    var currentTotal = 0;
-    var currentSearch = '';
-    var currentStatus = '';
-
-    function escapeHtml(str) {
-      if (str == null) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    function formatDate(iso) {
-      if (!iso) return '—';
-      try {
-        return new Date(iso).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
-      } catch (_) { return iso; }
-    }
-
-    function contextChips(conv) {
-      var chips = [];
-      var ctx = conv.context || {};
-      if (ctx.type) chips.push('<span class="mod-badge" style="font-size:0.7rem;padding:0.1rem 0.4rem">' + escapeHtml(ctx.type) + '</span>');
-      if (ctx.packageId) chips.push('<span class="mod-badge" style="font-size:0.7rem;padding:0.1rem 0.4rem;background:rgba(99,102,241,.15)">pkg</span>');
-      if (ctx.supplierId) chips.push('<span class="mod-badge" style="font-size:0.7rem;padding:0.1rem 0.4rem;background:rgba(16,185,129,.15)">supplier</span>');
-      return chips.join(' ');
-    }
-
-    function participantNames(conv) {
-      var parts = conv.participants || [];
-      return parts.map(function (p) { return escapeHtml(p.displayName || p.businessName || p.userId || '?'); }).join(', ') || '—';
-    }
-
-    function unreadTotal(conv) {
-      var parts = conv.participants || [];
-      return parts.reduce(function (sum, p) { return sum + (p.unreadCount || 0); }, 0);
-    }
-
-    function renderTable(conversations) {
-      var tbody = document.getElementById('msgModerationBody');
-      if (!tbody) return;
-      if (!conversations || conversations.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:1rem;text-align:center;opacity:0.6">No conversations found.</td></tr>';
-        return;
-      }
-      var rows = conversations.map(function (conv) {
-        var id = escapeHtml(conv._id || '');
-        var unread = unreadTotal(conv);
-        return '<tr style="border-top:1px solid rgba(0,0,0,.07)">' +
-          '<td style="padding:0.5rem 0.75rem;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + participantNames(conv) + '</td>' +
-          '<td style="padding:0.5rem 0.75rem">' + (contextChips(conv) || '—') + '</td>' +
-          '<td style="padding:0.5rem 0.75rem;font-size:0.85rem;opacity:0.8">' + formatDate(conv.updatedAt || conv.lastMessage && conv.lastMessage.sentAt) + '</td>' +
-          '<td style="padding:0.5rem 0.75rem;text-align:center">' + (unread > 0 ? '<span class="mod-badge" style="background:rgba(239,68,68,.15);color:#dc2626">' + unread + '</span>' : '—') + '</td>' +
-          '<td style="padding:0.5rem 0.75rem;text-align:center"><a href="/messenger/?conversation=' + id + '" class="btn-sm" style="text-decoration:none" target="_blank">Open</a></td>' +
-          '</tr>';
-      });
-      tbody.innerHTML = rows.join('');
-    }
-
-    function updatePager() {
-      var info = document.getElementById('msgModerationPageInfo');
-      var prev = document.getElementById('msgModerationPrev');
-      var next = document.getElementById('msgModerationNext');
-      if (!info) return;
-      var page = Math.floor(currentSkip / PAGE_SIZE) + 1;
-      var totalPages = Math.ceil(currentTotal / PAGE_SIZE) || 1;
-      info.textContent = 'Page ' + page + ' of ' + totalPages + ' (' + currentTotal + ' total)';
-      prev.disabled = currentSkip === 0;
-      next.disabled = currentSkip + PAGE_SIZE >= currentTotal;
-    }
-
-    function loadConversations() {
-      var params = new URLSearchParams({ limit: PAGE_SIZE, skip: currentSkip });
-      if (currentSearch) params.set('search', currentSearch);
-      if (currentStatus) params.set('status', currentStatus);
-      fetch('/api/v4/messenger/admin/conversations?' + params.toString(), { credentials: 'same-origin' })
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-        .then(function (data) {
-          currentTotal = data.total || 0;
-          renderTable(data.conversations || []);
-          updatePager();
-        })
-        .catch(function (err) {
-          var tbody = document.getElementById('msgModerationBody');
-          if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding:1rem;text-align:center;color:#dc2626">Failed to load conversations (error: ' + escapeHtml(String(err)) + ')</td></tr>';
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      var searchInput = document.getElementById('msgModerationSearch');
-      var statusSelect = document.getElementById('msgModerationStatus');
-      var searchBtn = document.getElementById('msgModerationSearchBtn');
-      var prevBtn = document.getElementById('msgModerationPrev');
-      var nextBtn = document.getElementById('msgModerationNext');
-
-      function doSearch() {
-        currentSearch = searchInput ? searchInput.value.trim() : '';
-        currentStatus = statusSelect ? statusSelect.value : '';
-        currentSkip = 0;
-        loadConversations();
-      }
-
-      if (searchBtn) searchBtn.addEventListener('click', doSearch);
-      if (searchInput) searchInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(); });
-      if (prevBtn) prevBtn.addEventListener('click', function () { if (currentSkip >= PAGE_SIZE) { currentSkip -= PAGE_SIZE; loadConversations(); } });
-      if (nextBtn) nextBtn.addEventListener('click', function () { if (currentSkip + PAGE_SIZE < currentTotal) { currentSkip += PAGE_SIZE; loadConversations(); } });
-
-      loadConversations();
-    });
-  })();
-  </script>
+  <script src="/assets/js/pages/admin-messages-init.js?v=18.1.1" defer></script>
 </div>
 </main>
 

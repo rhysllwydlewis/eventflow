@@ -341,3 +341,32 @@ select:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
+
+
+/* Review moderation modal */
+.review-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  overflow: auto;
+  padding: 20px;
+}
+
+.review-modal-container {
+  background: var(--color-surface, #18181b);
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.review-modal-item {
+  background: var(--color-surface-raised, #27272a);
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 6px;
+}

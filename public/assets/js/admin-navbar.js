@@ -19,6 +19,7 @@
     initDatabaseStatus();
     highlightActivePage();
     initBadgeCounts();
+    updateNavbarUser();
   }
 
   /**
@@ -156,6 +157,32 @@
         link.classList.remove('active');
       }
     });
+  }
+
+  /**
+   * Populate navbar user avatar and display name from the current session
+   */
+  function updateNavbarUser() {
+    fetch('/api/v1/auth/me', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (data) {
+        const user = data.user || data;
+        const name = user.name || user.displayName || user.email || 'Admin';
+        const initial = name.charAt(0).toUpperCase();
+
+        const avatarEl = document.querySelector('.admin-user-avatar');
+        if (avatarEl) {
+          avatarEl.textContent = initial;
+        }
+
+        const labelEl = document.querySelector('.admin-user-btn > span');
+        if (labelEl) {
+          labelEl.textContent = name.split(' ')[0];
+        }
+      })
+      .catch(function () {
+        // Session not available — leave the default "A" / "Admin" labels
+      });
   }
 
   /**
