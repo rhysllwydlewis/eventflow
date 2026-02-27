@@ -703,7 +703,7 @@
   };
 
   window.disableUser = function (id) {
-    api(`/api/admin/users/${id}/disable`, 'POST', { disabled: true })
+    api(`/api/admin/users/${id}/suspend`, 'POST', { suspended: true, reason: 'Disabled by admin' })
       .then(loadAll)
       .catch(err => {
         console.error('disableUser failed', err);

@@ -123,3 +123,30 @@ describe('Admin content init frontend fixes', () => {
     expect(contentInitContent).not.toContain("'/api/admin/packages/${id}', 'PUT'");
   });
 });
+
+describe('Admin user disable endpoint', () => {
+  let adminUserMgmtContent;
+  let adminInitContent;
+
+  beforeAll(() => {
+    const fs = require('fs');
+    const path = require('path');
+    adminUserMgmtContent = fs.readFileSync(
+      path.join(__dirname, '../../routes/admin-user-management.js'),
+      'utf8'
+    );
+    adminInitContent = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/pages/admin-init.js'),
+      'utf8'
+    );
+  });
+
+  it('should have POST /users/:id/disable backward-compat endpoint in admin-user-management.js', () => {
+    expect(adminUserMgmtContent).toContain("'/users/:id/disable'");
+  });
+
+  it('disableUser in admin-init.js should call /suspend not /disable', () => {
+    expect(adminInitContent).toContain('/suspend');
+    expect(adminInitContent).not.toContain('/api/admin/users/${id}/disable');
+  });
+});
