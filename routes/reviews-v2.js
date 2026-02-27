@@ -396,6 +396,7 @@ router.get(
  */
 router.post(
   '/:id/moderation/approve',
+  writeLimiter,
   authRequired,
   reviewModeration.canModerateReviews,
   csrfProtection,
@@ -431,6 +432,7 @@ router.post(
  */
 router.post(
   '/:id/moderation/reject',
+  writeLimiter,
   authRequired,
   reviewModeration.canModerateReviews,
   csrfProtection,
@@ -468,6 +470,7 @@ router.post(
  */
 router.post(
   '/:id/moderation/request-changes',
+  writeLimiter,
   authRequired,
   reviewModeration.canModerateReviews,
   csrfProtection,
@@ -604,6 +607,7 @@ router.get('/disputes', authRequired, reviewModeration.canModerateReviews, async
  */
 router.post(
   '/:id/dispute/resolve',
+  writeLimiter,
   authRequired,
   reviewModeration.canModerateReviews,
   csrfProtection,
