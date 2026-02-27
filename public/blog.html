@@ -44,6 +44,20 @@
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0">
     <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" />
   <link rel="icon" href="/favicon.svg">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Event Planning Guides | EventFlow UK",
+    "description": "Expert event planning guides, wedding tips, and inspiration from UK event planning professionals.",
+    "url": "https://event-flow.co.uk/blog",
+    "publisher": {
+      "@type": "Organization",
+      "name": "EventFlow",
+      "url": "https://event-flow.co.uk"
+    }
+  }
+  </script>
 </head>
 <body>
 <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
@@ -171,8 +185,9 @@
         <!-- Filter buttons will be loaded here -->
       </div>
       
-      <div id="blog-articles" class="articles-grid">
-        <!-- Articles will be loaded here -->
+      <div id="blog-articles" class="articles-grid" aria-live="polite">
+        <p class="blog-loading-placeholder" aria-hidden="true" style="grid-column:1/-1;text-align:center;color:#667085;padding:2rem 0;">Loading guides…</p>
+        <noscript><p style="grid-column:1/-1;text-align:center;padding:2rem 0;">JavaScript is required to view the guides. Please enable JavaScript in your browser.</p></noscript>
       </div>
     </div>
   </section>
@@ -253,7 +268,7 @@
       <a href="/credits">Credits</a> ·
       <a href="/contact">Contact</a> ·
       <a href="/legal">Legal Hub</a> ·
-      <button type="button" onclick="window.CookieConsent && window.CookieConsent.openPreferences()" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Cookie preferences</button>
+      <button type="button" data-cookie-prefs style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Cookie preferences</button>
     </div>
   </div>
 </footer>
@@ -277,35 +292,35 @@
     // Sample articles - in production, these would come from a CMS or API
     const articles = [
       {
-        title: 'The Ultimate Wedding Venue Selection Guide 2024',
+        title: 'The Ultimate Wedding Venue Selection Guide 2026',
         excerpt: 'Discover how to choose the perfect wedding venue with our comprehensive guide. Expert tips on location, capacity, budget, and must-have amenities for your dream wedding.',
         image: '/assets/images/hero-venue.jpg',
         tags: ['venues', 'wedding', 'planning'],
-        link: '/articles/wedding-venue-selection-guide.html',
+        link: '/articles/wedding-venue-selection-guide',
         affiliate: false
       },
       {
-        title: "Wedding Catering Trends 2024: What's Hot in Event Food & Beverage",
+        title: "Wedding Catering Trends 2026: What's Hot in Event Food & Beverage",
         excerpt: "Explore the latest food and beverage trends that will make your event menu stand out. From sustainable sourcing to interactive food stations, discover what's making waves in event catering.",
         image: '/assets/images/collage-catering.jpg',
         tags: ['catering', 'wedding', 'trends'],
-        link: '/articles/wedding-catering-trends-2024.html',
+        link: '/articles/wedding-catering-trends-2024',
         affiliate: true
       },
       {
         title: 'Complete Guide to Event Photography: Tips for Perfect Memories',
         excerpt: 'Master event photography with our comprehensive guide. Learn expert tips on capturing special moments, working with photographers, and creating lasting memories of your event.',
-        image: 'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=800',
+        image: '/assets/images/collage-photography.jpg',
         tags: ['photography', 'tips', 'wedding'],
-        link: '/articles/event-photography-complete-guide.html',
+        link: '/articles/event-photography-complete-guide',
         affiliate: false
       },
       {
-        title: 'Perfect Wedding Day Timeline: Hour-by-Hour Planning Guide 2025',
+        title: 'Perfect Wedding Day Timeline: Hour-by-Hour Planning Guide 2026',
         excerpt: 'Create the perfect wedding day timeline with our comprehensive hour-by-hour guide. Expert tips on scheduling, timing, and coordinating every moment for a stress-free celebration.',
-        image: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=800',
+        image: '/assets/images/collage-venue.jpg',
         tags: ['planning', 'wedding', 'tips'],
-        link: '/articles/perfect-wedding-day-timeline-guide.html',
+        link: '/articles/perfect-wedding-day-timeline-guide',
         affiliate: false
       },
       {
@@ -313,7 +328,7 @@
         excerpt: 'Plan eco-friendly events with our comprehensive sustainability guide. Discover how to reduce waste, choose green vendors, and create memorable events while protecting the environment.',
         image: '/assets/images/hero-planning.jpg',
         tags: ['planning', 'sustainability', 'tips'],
-        link: '/articles/sustainable-event-planning-guide.html',
+        link: '/articles/sustainable-event-planning-guide',
         affiliate: false
       },
       {
@@ -321,7 +336,7 @@
         excerpt: 'Master event budgeting with expert strategies for tracking expenses, negotiating with vendors, and maximizing value while staying on budget.',
         image: '/assets/images/collage-venue.jpg',
         tags: ['planning', 'budget', 'tips'],
-        link: '/articles/event-budget-management-guide.html',
+        link: '/articles/event-budget-management-guide',
         affiliate: false
       },
       {
@@ -329,7 +344,7 @@
         excerpt: 'Plan successful corporate events from conferences to team building. Expert tips on venue selection, catering, technology, and creating engaging professional experiences.',
         image: '/assets/images/collage-entertainment.jpg',
         tags: ['corporate', 'planning', 'venues'],
-        link: '/articles/corporate-event-planning-guide.html',
+        link: '/articles/corporate-event-planning-guide',
         affiliate: false
       },
       {
@@ -337,10 +352,14 @@
         excerpt: 'Create unforgettable birthday celebrations with our comprehensive planning guide. Tips for themes, venues, entertainment, and catering for children and adults.',
         image: '/assets/images/hero-venue.jpg',
         tags: ['parties', 'planning', 'venues'],
-        link: '/articles/birthday-party-planning-guide.html',
+        link: '/articles/birthday-party-planning-guide',
         affiliate: false
       }
     ];
+
+    // Remove loading placeholder before rendering articles
+    const loadingPlaceholder = container.querySelector('.blog-loading-placeholder');
+    if (loadingPlaceholder) loadingPlaceholder.remove();
 
     articles.forEach(article => {
       const card = document.createElement('article');
