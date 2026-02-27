@@ -471,16 +471,24 @@
     });
   }
 
+  function bindRevokeButtons() {
+    document.querySelectorAll('[data-cookie-revoke]').forEach(btn => {
+      btn.addEventListener('click', revokeConsent);
+    });
+  }
+
   function init() {
     try {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
           showCookieBanner();
           bindPrefsButtons();
+          bindRevokeButtons();
         });
       } else {
         showCookieBanner();
         bindPrefsButtons();
+        bindRevokeButtons();
       }
     } catch (e) {
       console.warn('CookieConsent: failed to initialise', e);
