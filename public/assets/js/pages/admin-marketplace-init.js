@@ -217,7 +217,10 @@
     try {
       const res = await fetch(`/api/marketplace/listings/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
         credentials: 'include',
         body: JSON.stringify({ status: 'sold' }),
       });
@@ -407,29 +410,12 @@
 
   // Show toast notification
   function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: ${type === 'error' ? '#dc2626' : '#16a34a'};
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 14px;
-      z-index: 10000;
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    AdminShared.showToast(message, type);
   }
 
   // Escape HTML
   function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return AdminShared.escapeHtml(text);
   }
 
   // Toggle selection

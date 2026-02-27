@@ -1,23 +1,15 @@
 (async function () {
-  let csrfToken = '';
   let currentConfig = {};
 
-  // Fetch CSRF token
-  async function fetchCsrfToken() {
-    try {
-      const response = await fetch('/api/v1/csrf-token', { credentials: 'include' });
-      const data = await response.json();
-      csrfToken = data.token;
-    } catch (error) {
-      console.error('Failed to fetch CSRF token:', error);
-    }
+  // Use CSRF token from AdminShared
+  function getCSRFToken() {
+    return window.__CSRF_TOKEN__ || '';
   }
 
   // Load content dates
   async function loadContentDates() {
     try {
-      const response = await fetch('/api/admin/content-dates', { credentials: 'include' });
-      const data = await response.json();
+      const data = await AdminShared.api('/api/admin/content-dates');
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to load content dates');
@@ -100,8 +92,7 @@
   // Load article dates
   async function loadArticleDates() {
     try {
-      const response = await fetch('/api/admin/content-dates/articles', { credentials: 'include' });
-      const data = await response.json();
+      const data = await AdminShared.api('/api/admin/content-dates/articles');
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to load article dates');
@@ -156,7 +147,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'CSRF-Token': csrfToken,
+          'X-CSRF-Token': getCSRFToken(),
         },
         credentials: 'include',
         body: JSON.stringify({ lastUpdated, effectiveDate }),
@@ -192,7 +183,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'CSRF-Token': csrfToken,
+          'X-CSRF-Token': getCSRFToken(),
         },
         credentials: 'include',
       });
@@ -223,7 +214,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'CSRF-Token': csrfToken,
+          'X-CSRF-Token': getCSRFToken(),
         },
         credentials: 'include',
         body: JSON.stringify({ enabled }),
@@ -258,7 +249,6 @@
   }
 
   // Initialize
-  await fetchCsrfToken();
   await loadContentDates();
   await loadArticleDates();
 })();

@@ -33,15 +33,7 @@
 
   // HTML sanitization helper
   function escapeHtml(unsafe) {
-    if (!unsafe) {
-      return '';
-    }
-    return String(unsafe)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    return AdminShared.escapeHtml(unsafe);
   }
 
   async function loadPhotos() {
@@ -344,11 +336,7 @@
   }
 
   function formatDate(timestamp) {
-    if (!timestamp) {
-      return 'Unknown';
-    }
-    const date = new Date(timestamp);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+    return AdminShared.formatDate(timestamp);
   }
 
   // Load photos on page load

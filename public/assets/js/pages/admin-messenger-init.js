@@ -8,12 +8,7 @@
   let totalConversations = 0;
 
   function escapeHtml(s) {
-    if (typeof s !== 'string') {
-      return '';
-    }
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
+    return AdminShared.escapeHtml(s);
   }
 
   function formatDate(ts) {
