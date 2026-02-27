@@ -8,6 +8,7 @@
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const logger = require('../utils/logger');
 
@@ -35,7 +36,7 @@ router.get('/', authRequired, async (req, res) => {
  * POST /api/me/settings
  * Update user notification settings
  */
-router.post('/', authRequired, csrfProtection, async (req, res) => {
+router.post('/', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const notify = !!(req.body && req.body.notify);
     const updated = await dbUnified.updateOne('users', { id: req.user.id }, { $set: { notify } });

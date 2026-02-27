@@ -12,13 +12,14 @@ const router = express.Router();
 const dbUnified = require('../db-unified');
 const { getUserFromCookie } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const validator = require('validator');
 
 /**
  * POST /api/quote-requests
  * Create a new quote request
  */
-router.post('/', csrfProtection, async (req, res) => {
+router.post('/', writeLimiter, csrfProtection, async (req, res) => {
   try {
     const { name, email, phone, eventType, eventDate, location, budget, notes, suppliers } =
       req.body;

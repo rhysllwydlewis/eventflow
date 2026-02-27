@@ -9,6 +9,7 @@ const express = require('express');
 const logger = require('../utils/logger');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
@@ -69,6 +70,7 @@ router.get('/:planId/guests', authRequired, verifyPlanOwnership, async (req, res
  */
 router.post(
   '/:planId/guests',
+  writeLimiter,
   authRequired,
   csrfProtection,
   verifyPlanOwnership,
@@ -129,6 +131,7 @@ router.post(
  */
 router.patch(
   '/:planId/guests/:id',
+  writeLimiter,
   authRequired,
   csrfProtection,
   verifyPlanOwnership,
@@ -203,6 +206,7 @@ router.patch(
  */
 router.delete(
   '/:planId/guests/:id',
+  writeLimiter,
   authRequired,
   csrfProtection,
   verifyPlanOwnership,
