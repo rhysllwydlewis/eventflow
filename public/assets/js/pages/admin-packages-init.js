@@ -5,73 +5,18 @@
   let allSuppliers = [];
   let currentImageFile = null;
   let currentImageUrl = null;
-  let csrfToken = null;
   let currentFilter = 'all'; // Track current filter state
 
   // Configuration
   const PLACEHOLDER_IMAGE = '/assets/images/placeholders/package-event.svg';
 
-  // Fetch CSRF token on page load
-  fetch('/api/v1/csrf-token', {
-    credentials: 'include',
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data && data.csrfToken) {
-        window.__CSRF_TOKEN__ = data.csrfToken;
-        csrfToken = data.csrfToken;
-      }
-    })
-    .catch(err => console.warn('Could not fetch CSRF token:', err));
-
+  // Use the shared api() wrapper from AdminShared
   function api(url, method, body) {
-    const opts = {
-      method: method || 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    };
-
-    // Add CSRF token for state-changing requests
-    if (method && ['POST', 'PUT', 'DELETE'].includes(method.toUpperCase())) {
-      if (window.__CSRF_TOKEN__) {
-        opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
-      }
-    }
-
-    if (body) {
-      opts.body = JSON.stringify(body);
-    }
-    return fetch(url, opts).then(r => {
-      const contentType = r.headers.get('content-type');
-      const isJson = contentType && contentType.includes('application/json');
-
-      if (isJson) {
-        return r.json().then(data => {
-          if (!r.ok) {
-            const err = data && data.error ? data.error : `Request failed with ${r.status}`;
-            throw new Error(err);
-          }
-          return data;
-        });
-      } else {
-        return r.text().then(text => {
-          if (!r.ok) {
-            throw new Error(text || `Request failed with ${r.status}`);
-          }
-          try {
-            return JSON.parse(text);
-          } catch (e) {
-            return { message: text };
-          }
-        });
-      }
-    });
+    return window.AdminShared.api(url, method || 'GET', body || null);
   }
 
   function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text || '';
-    return div.innerHTML;
+    return window.AdminShared ? window.AdminShared.escapeHtml(text) : String(text || '');
   }
 
   async function loadPackages() {
@@ -554,13 +499,13 @@
 
       // If user uploaded a file, upload it after creating/updating the package
       if (currentImageFile) {
-        // Use cached CSRF token
-        if (!csrfToken) {
+        // Ensure CSRF token is available for the multipart upload
+        if (!window.__CSRF_TOKEN__) {
           const csrfResponse = await fetch('/api/v1/csrf-token', {
             credentials: 'include',
           });
           const csrfData = await csrfResponse.json();
-          csrfToken = csrfData.csrfToken;
+          window.__CSRF_TOKEN__ = csrfData.csrfToken;
         }
 
         let packageId = id;
@@ -579,7 +524,7 @@
         const uploadResponse = await fetch(`/api/v1/admin/packages/${packageId}/image`, {
           method: 'POST',
           headers: {
-            'X-CSRF-Token': csrfToken,
+            'X-CSRF-Token': window.__CSRF_TOKEN__,
           },
           credentials: 'include',
           body: formData,

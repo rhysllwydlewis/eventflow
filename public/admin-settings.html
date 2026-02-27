@@ -19,7 +19,7 @@
 <script src="/assets/js/components.js?v=18.1.1" defer></script>
 <script src="/assets/js/admin-navbar.js?v=18.1.1" defer></script>
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.1.1"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.1.1">
-  <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
+  <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.1">
 <style>
   /* Feature flags status styles */
   .feature-flags-status {
@@ -587,119 +587,8 @@
 </footer>
 
 <script src="/assets/js/admin-shared.js?v=18.1.1"></script>
-<script src="/assets/js/pages/admin-settings-init.js?v=18.1.1"></script>
-<script>
-  // Backup & Restore functionality
-  document.getElementById('createBackupBtn')?.addEventListener('click', async () => {
-    if (!await AdminShared.showConfirmModal({ title: 'Create Backup', message: 'Create a full database backup? This may take a moment.', confirmText: 'Create' })) return;
-    
-    try {
-      const response = await fetch('/api/admin/backup/create', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || ''
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        AdminShared.showToast(`Backup created successfully: ${data.filename}`, 'success');
-        // Refresh backup list if visible
-        if (document.getElementById('backupsListContainer').style.display !== 'none') {
-          document.getElementById('listBackupsBtn').click();
-        }
-      } else {
-        const error = await response.json();
-        AdminShared.showToast('Failed to create backup: ' + (error.error || 'Unknown error'), 'error');
-      }
-    } catch (error) {
-      console.error('Backup error:', error);
-      AdminShared.showToast('Failed to create backup', 'error');
-    }
-  });
+<script src="/assets/js/pages/admin-settings-init.js?v=18.1.1" defer></script>
 
-  document.getElementById('listBackupsBtn')?.addEventListener('click', async () => {
-    const container = document.getElementById('backupsListContainer');
-    const list = document.getElementById('backupsList');
-    
-    try {
-      const response = await fetch('/api/admin/backup/list', {
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (!data.backups || data.backups.length === 0) {
-          list.innerHTML = '<p class="small">No backups found</p>';
-        } else {
-          let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
-          data.backups.forEach(backup => {
-            html += `
-              <div style="padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <strong>${backup.filename}</strong>
-                  <div class="small" style="color: #6b7280;">
-                    ${new Date(backup.createdAt).toLocaleString()} • ${(backup.size / 1024).toFixed(2)} KB
-                  </div>
-                </div>
-                <button class="btn btn-sm btn-secondary restore-backup-btn" data-filename="${backup.filename}">
-                  Restore
-                </button>
-              </div>
-            `;
-          });
-          html += '</div>';
-          list.innerHTML = html;
-          
-          // Add restore handlers
-          list.querySelectorAll('.restore-backup-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-              const filename = e.target.getAttribute('data-filename');
-              if (!await AdminShared.showConfirmModal({
-                title: 'Restore Backup',
-                message: `Restore from backup "${filename}"? This will overwrite current data!`,
-                confirmText: 'Restore',
-              })) return;
-              
-              try {
-                const restoreResponse = await fetch('/api/admin/backup/restore', {
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': window.__CSRF_TOKEN__ || ''
-                  },
-                  body: JSON.stringify({ filename })
-                });
-                
-                if (restoreResponse.ok) {
-                  AdminShared.showToast('Backup restored successfully', 'success');
-                  window.location.reload();
-                } else {
-                  const error = await restoreResponse.json();
-                  AdminShared.showToast('Failed to restore: ' + (error.error || 'Unknown error'), 'error');
-                }
-              } catch (error) {
-                console.error('Restore error:', error);
-                AdminShared.showToast('Failed to restore backup', 'error');
-              }
-            });
-          });
-        }
-        
-        container.style.display = 'block';
-      } else {
-        AdminShared.showToast('Failed to load backups', 'error');
-      }
-    } catch (error) {
-      console.error('List backups error:', error);
-      AdminShared.showToast('Failed to load backups', 'error');
-    }
-  });
-</script>
 <script src="/assets/js/cookie-consent.js" defer></script>
 </body>
 </html>

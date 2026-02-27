@@ -19,6 +19,7 @@
     initDatabaseStatus();
     highlightActivePage();
     initBadgeCounts();
+    updateNavbarUser();
   }
 
   /**
@@ -156,6 +157,34 @@
         link.classList.remove('active');
       }
     });
+  }
+
+  /**
+   * Populate navbar user avatar and display name from the current session
+   */
+  function updateNavbarUser() {
+    fetch('/api/v1/auth/me', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (data) {
+        const user = data.user || data;
+        const fullName = user.name || user.displayName || '';
+        // For email-only accounts, use the part before '@'
+        const displayName = fullName || (user.email ? user.email.split('@')[0] : 'Admin');
+        const initial = displayName.charAt(0).toUpperCase();
+
+        const avatarEl = document.querySelector('.admin-user-avatar');
+        if (avatarEl) {
+          avatarEl.textContent = initial;
+        }
+
+        const labelEl = document.querySelector('.admin-user-btn > span');
+        if (labelEl) {
+          labelEl.textContent = displayName.split(' ')[0];
+        }
+      })
+      .catch(function () {
+        // Session not available — leave the default "A" / "Admin" labels
+      });
   }
 
   /**

@@ -129,26 +129,48 @@ describe('Admin Audit Endpoints Consolidation', () => {
   });
 
   describe('Audit Frontend', () => {
-    it('should use canonical audit-logs endpoint in admin-audit.html', () => {
+    it('should use canonical audit-logs endpoint in admin-audit.html or admin-audit-init.js', () => {
       const auditHtmlContent = fs.readFileSync(
         path.join(__dirname, '../../public/admin-audit.html'),
         'utf8'
       );
+
+      // The JS may be in the HTML inline or in the extracted init file
+      const auditInitPath = path.join(
+        __dirname,
+        '../../public/assets/js/pages/admin-audit-init.js'
+      );
+      const auditInitContent = fs.existsSync(auditInitPath)
+        ? fs.readFileSync(auditInitPath, 'utf8')
+        : '';
+
+      const combined = auditHtmlContent + auditInitContent;
 
       // Verify it uses audit-logs endpoint
-      expect(auditHtmlContent).toContain('/api/admin/audit-logs');
+      expect(combined).toContain('/api/admin/audit-logs');
       // Verify it expects logs response format
-      expect(auditHtmlContent).toContain('data.logs');
+      expect(combined).toContain('data.logs');
     });
 
-    it('should use AdminShared.api() in admin-audit.html', () => {
+    it('should use AdminShared.api() in admin-audit.html or admin-audit-init.js', () => {
       const auditHtmlContent = fs.readFileSync(
         path.join(__dirname, '../../public/admin-audit.html'),
         'utf8'
       );
 
+      // The JS may be in the HTML inline or in the extracted init file
+      const auditInitPath = path.join(
+        __dirname,
+        '../../public/assets/js/pages/admin-audit-init.js'
+      );
+      const auditInitContent = fs.existsSync(auditInitPath)
+        ? fs.readFileSync(auditInitPath, 'utf8')
+        : '';
+
+      const combined = auditHtmlContent + auditInitContent;
+
       // Verify it uses AdminShared.api
-      expect(auditHtmlContent).toContain('AdminShared.api');
+      expect(combined).toContain('AdminShared.api');
     });
   });
 

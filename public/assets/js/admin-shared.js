@@ -911,6 +911,28 @@ const AdminShared = (function () {
     });
   }
 
+  /**
+   * Load the shared admin navbar partial into a placeholder element.
+   * Usage: place <div id="admin-navbar"></div> in the page body and call
+   * AdminShared.loadNavbar() (or it is called automatically during init).
+   */
+  function loadNavbar() {
+    const placeholder = document.getElementById('admin-navbar');
+    if (!placeholder) {
+      return Promise.resolve();
+    }
+    return fetch('/partials/admin-navbar.html')
+      .then(r => {
+        return r.ok ? r.text() : Promise.reject(r.status);
+      })
+      .then(html => {
+        placeholder.outerHTML = html;
+      })
+      .catch(err => {
+        console.warn('[AdminShared] Could not load navbar partial:', err);
+      });
+  }
+
   // Initialize sidebar toggle for mobile
   function initSidebarToggle() {
     const toggle = document.getElementById('sidebarToggle');
@@ -1021,6 +1043,8 @@ const AdminShared = (function () {
     if (!container) {
       container = document.createElement('div');
       container.className = 'toast-container';
+      container.setAttribute('aria-live', 'polite');
+      container.setAttribute('aria-atomic', 'false');
       document.body.appendChild(container);
     }
 
@@ -1758,9 +1782,29 @@ const AdminShared = (function () {
     loadBadgeCounts();
     initKeyboardShortcuts();
     initSidebarToggle();
+    populateVersionLabel();
 
     // Refresh badge counts every 60 seconds
     setInterval(loadBadgeCounts, 60000);
+  }
+
+  // Populate the #ef-version-label span in the page footer
+  async function populateVersionLabel() {
+    const label = document.getElementById('ef-version-label');
+    if (!label) {
+      return;
+    }
+    try {
+      const r = await fetch('/api/v1/meta', { credentials: 'include' });
+      if (!r.ok) {
+        label.textContent = 'unknown';
+        return;
+      }
+      const data = await r.json();
+      label.textContent = data && data.version ? data.version : 'dev';
+    } catch (_err) {
+      label.textContent = 'offline';
+    }
   }
 
   // Public API
@@ -1802,6 +1846,7 @@ const AdminShared = (function () {
     loadBadgeCounts,
     // Navigation
     highlightActivePage,
+    loadNavbar,
     // Helpers
     generateId,
     debounce,

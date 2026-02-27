@@ -21,6 +21,7 @@
     '/admin.html': 'admin',
     '/admin-audit.html': 'admin',
     '/admin-content.html': 'admin',
+    '/admin-content-dates.html': 'admin',
     '/admin-homepage.html': 'admin',
     '/admin-marketplace.html': 'admin',
     '/admin-packages.html': 'admin',

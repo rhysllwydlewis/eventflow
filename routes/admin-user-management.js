@@ -2935,4 +2935,45 @@ router.get('/users/segments', authRequired, roleRequired('admin'), async (req, r
   }
 });
 
+/**
+ * POST /api/admin/users/:id/disable
+ * Backward-compatibility alias for suspend.
+ * Sets suspended=true with reason "Disabled by admin".
+ */
+router.post(
+  '/users/:id/disable',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const user = await dbUnified.findOne('users', { id: req.params.id });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const now = new Date().toISOString();
+    await dbUnified.updateOne(
+      'users',
+      { id: req.params.id },
+      {
+        $set: {
+          suspended: true,
+          suspendedAt: now,
+          suspendedBy: req.user.id,
+          suspendedReason: req.body.reason || 'Disabled by admin',
+          updatedAt: now,
+        },
+      }
+    );
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'USER_SUSPENDED',
+      targetType: 'user',
+      targetId: req.params.id,
+      details: { userEmail: user.email, reason: 'Disabled by admin' },
+    });
+    res.json({ success: true, message: 'User disabled', user: { ...user, suspended: true } });
+  }
+);
+
 module.exports = router;

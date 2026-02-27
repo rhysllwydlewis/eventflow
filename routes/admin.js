@@ -643,6 +643,48 @@ router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfP
 );
 
 /**
+ * POST /api/admin/suppliers/:id/reject
+ * Reject a supplier (sets approved=false and records reason)
+ */
+router.post(
+  '/suppliers/:id/reject',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const all = await dbUnified.read('suppliers');
+      const i = all.findIndex(s => s.id === req.params.id);
+      if (i < 0) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      const { reason } = req.body || {};
+      const now = new Date().toISOString();
+      const rejectedFields = {
+        approved: false,
+        rejected: true,
+        rejectedAt: now,
+        rejectedReason: reason || '',
+      };
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: rejectedFields });
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'supplier_rejected',
+        targetType: 'supplier',
+        targetId: req.params.id,
+        details: { reason: reason || '' },
+        ipAddress: req.ip,
+      });
+      res.json({ ok: true, supplier: { ...all[i], ...rejectedFields } });
+    } catch (error) {
+      logger.error('Error rejecting supplier:', error);
+      res.status(500).json({ error: 'Failed to reject supplier' });
+    }
+  }
+);
+
+/**
  * POST /api/admin/suppliers/:id/pro
  * Manage supplier Pro subscription
  */
@@ -840,10 +882,23 @@ router.post(
 
 /**
  * GET /api/admin/packages
- * List all packages for admin moderation
+ * List all packages for admin moderation (optionally filtered by supplierId and/or featured)
  */
-router.get('/packages', authRequired, roleRequired('admin'), (_req, res) => {
-  res.json({ items: read('packages') });
+router.get('/packages', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    let items = await dbUnified.read('packages');
+    const { supplierId, featured } = req.query;
+    if (supplierId) {
+      items = items.filter(pkg => pkg.supplierId === supplierId || pkg.supplier_id === supplierId);
+    }
+    if (featured === 'true') {
+      items = items.filter(pkg => pkg.featured === true);
+    }
+    res.json({ items });
+  } catch (error) {
+    logger.error('Error reading packages:', error);
+    res.status(500).json({ error: 'Failed to load packages' });
+  }
 });
 
 /**
@@ -2028,14 +2083,19 @@ router.get('/dashboard/counts', authRequired, roleRequired('admin'), async (req,
  * GET /api/admin/content/homepage
  * Get homepage hero content
  */
-router.get('/content/homepage', authRequired, roleRequired('admin'), (req, res) => {
-  const content = read('content') || {};
-  const homepage = content.homepage || {
-    title: 'Plan Your Perfect Event',
-    subtitle: 'Discover amazing suppliers and packages for your special day',
-    ctaText: 'Start Planning',
-  };
-  res.json(homepage);
+router.get('/content/homepage', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const content = (await dbUnified.read('content')) || {};
+    const homepage = content.homepage || {
+      title: 'Plan Your Perfect Event',
+      subtitle: 'Discover amazing suppliers and packages for your special day',
+      ctaText: 'Start Planning',
+    };
+    res.json(homepage);
+  } catch (error) {
+    logger.error('Error reading content/homepage:', error);
+    res.status(500).json({ error: 'Failed to load homepage content' });
+  }
 });
 
 /**
@@ -2179,10 +2239,15 @@ router.post(
  * GET /api/admin/content/announcements
  * Get all announcements
  */
-router.get('/content/announcements', authRequired, roleRequired('admin'), (req, res) => {
-  const content = read('content') || {};
-  const announcements = content.announcements || [];
-  res.json(announcements);
+router.get('/content/announcements', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const content = (await dbUnified.read('content')) || {};
+    const announcements = content.announcements || [];
+    res.json(announcements);
+  } catch (error) {
+    logger.error('Error reading content/announcements:', error);
+    res.status(500).json({ error: 'Failed to load announcements' });
+  }
 });
 
 /**
@@ -2235,16 +2300,21 @@ router.post(
  * GET /api/admin/content/announcements/:id
  * Get a specific announcement
  */
-router.get('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
-  const content = read('content') || {};
-  const announcements = content.announcements || [];
-  const announcement = announcements.find(a => a.id === req.params.id);
+router.get('/content/announcements/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const content = (await dbUnified.read('content')) || {};
+    const announcements = content.announcements || [];
+    const announcement = announcements.find(a => a.id === req.params.id);
 
-  if (!announcement) {
-    return res.status(404).json({ error: 'Announcement not found' });
+    if (!announcement) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    res.json(announcement);
+  } catch (error) {
+    logger.error('Error reading announcement:', error);
+    res.status(500).json({ error: 'Failed to load announcement' });
   }
-
-  res.json(announcement);
 });
 
 /**
@@ -2333,10 +2403,15 @@ router.delete(
  * GET /api/admin/content/faqs
  * Get all FAQs
  */
-router.get('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
-  const content = read('content') || {};
-  const faqs = content.faqs || [];
-  res.json(faqs);
+router.get('/content/faqs', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const content = (await dbUnified.read('content')) || {};
+    const faqs = content.faqs || [];
+    res.json(faqs);
+  } catch (error) {
+    logger.error('Error reading content/faqs:', error);
+    res.status(500).json({ error: 'Failed to load FAQs' });
+  }
 });
 
 /**
@@ -2389,16 +2464,21 @@ router.post(
  * GET /api/admin/content/faqs/:id
  * Get a specific FAQ
  */
-router.get('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
-  const content = read('content') || {};
-  const faqs = content.faqs || [];
-  const faq = faqs.find(f => f.id === req.params.id);
+router.get('/content/faqs/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const content = (await dbUnified.read('content')) || {};
+    const faqs = content.faqs || [];
+    const faq = faqs.find(f => f.id === req.params.id);
 
-  if (!faq) {
-    return res.status(404).json({ error: 'FAQ not found' });
+    if (!faq) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    res.json(faq);
+  } catch (error) {
+    logger.error('Error reading FAQ:', error);
+    res.status(500).json({ error: 'Failed to load FAQ' });
   }
-
-  res.json(faq);
 });
 
 /**
@@ -3161,15 +3241,20 @@ router.post(
  * GET /api/admin/payments
  * List all payments for admin analytics
  */
-router.get('/payments', authRequired, roleRequired('admin'), (_req, res) => {
-  const payments = read('payments');
-  // Sort by createdAt descending (newest first)
-  payments.sort((a, b) => {
-    const dateA = new Date(a.createdAt || 0);
-    const dateB = new Date(b.createdAt || 0);
-    return dateB - dateA;
-  });
-  res.json({ items: payments });
+router.get('/payments', authRequired, roleRequired('admin'), async (_req, res) => {
+  try {
+    const payments = await dbUnified.read('payments');
+    // Sort by createdAt descending (newest first)
+    payments.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0);
+      const dateB = new Date(b.createdAt || 0);
+      return dateB - dateA;
+    });
+    res.json({ items: payments });
+  } catch (error) {
+    logger.error('Error reading payments:', error);
+    res.status(500).json({ error: 'Failed to load payments' });
+  }
 });
 
 /**

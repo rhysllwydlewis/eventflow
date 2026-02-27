@@ -24,16 +24,15 @@ const router = express.Router();
  * Debug endpoint to inspect user record without exposing password
  * Admin only - for diagnosing auth issues
  */
-router.get('/user', authRequired, roleRequired('admin'), (req, res) => {
+router.get('/user', authRequired, roleRequired('admin'), async (req, res) => {
   const { email } = req.query;
 
   if (!email) {
     return res.status(400).json({ error: 'email query parameter required' });
   }
 
-  const user = read('users').find(
-    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-  );
+  const users = await dbUnified.read('users');
+  const user = users.find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -225,9 +224,8 @@ router.post(
       logger.info(`🧪 Testing email send to: ${email}`);
 
       // Find user
-      const user = read('users').find(
-        u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-      );
+      const users = await dbUnified.read('users');
+      const user = users.find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -289,9 +287,8 @@ router.post(
 
     logger.info(`[LOGIN TEST] Testing login for: ${email}`);
 
-    const user = read('users').find(
-      u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-    );
+    const allUsers = await dbUnified.read('users');
+    const user = allUsers.find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
     const diagnostics = {
       email: email,
@@ -352,7 +349,7 @@ router.post(
   roleRequired('admin'),
   csrfProtection,
   async (req, res) => {
-    const users = read('users');
+    const users = await dbUnified.read('users');
 
     const audit = {
       totalUsers: users.length,

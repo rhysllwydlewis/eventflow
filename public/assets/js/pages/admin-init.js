@@ -1,6 +1,7 @@
 (function () {
-  // Constants - Will be dynamically loaded from backend for security
-  const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Default, will be updated from backend
+  // Owner email used as a secondary admin check alongside the role check below.
+  // Server-side admin enforcement is the primary security control; this is a convenience guard only.
+  const OWNER_EMAIL = 'admin@event-flow.co.uk';
 
   // Helper to check if email is owner (case-insensitive)
   function isOwnerEmail(email) {
@@ -120,6 +121,8 @@
       });
   }
   let allUsers = [];
+  let allSuppliers = [];
+  let allPackages = [];
 
   function renderUsersTable(list) {
     const el = document.getElementById('users');
@@ -223,149 +226,6 @@
     renderUsersTable(list);
   }
 
-  function renderSuppliersTable(resp) {
-    const el = document.getElementById('suppliers');
-    if (!el) {
-      return;
-    }
-
-    let rows =
-      '<tr><th><input type="checkbox" id="selectAllSuppliers" title="Select all"></th><th>Name</th><th>Email</th><th>Approved</th><th>Pro plan</th><th>Score</th><th>Tags</th><th>Actions</th></tr>';
-    const items = (resp && resp.items) || [];
-
-    if (!items.length) {
-      el.innerHTML = '<tr><td colspan="8">No suppliers yet.</td></tr>';
-      return;
-    }
-
-    items.forEach(s => {
-      let plan;
-      // Check new subscription format first, then fall back to legacy isPro
-      if (s.subscription && s.subscription.tier && s.subscription.tier !== 'free') {
-        const tierName = s.subscription.tier === 'pro_plus' ? 'Pro+' : 'Pro';
-        if (s.subscription.endDate) {
-          try {
-            const d = new Date(s.subscription.endDate);
-            plan = `${tierName} until ${d.toLocaleDateString()}`;
-          } catch (_e) {
-            plan = `${tierName} (active)`;
-          }
-        } else {
-          plan = `${tierName} (active)`;
-        }
-      } else if (s.isPro) {
-        // Legacy format for backwards compatibility
-        if (s.proExpiresAt) {
-          try {
-            const d = new Date(s.proExpiresAt);
-            plan = `Pro until ${d.toLocaleDateString()}`;
-          } catch (_e) {
-            plan = 'Pro (active)';
-          }
-        } else {
-          plan = 'Pro (active)';
-        }
-      } else {
-        plan = 'None';
-      }
-      const score = typeof s.healthScore === 'number' ? s.healthScore.toFixed(0) : '—';
-      const tags = (s.tags || []).join(', ');
-
-      const selectTierId = `pro-tier-${s.id}`;
-      const selectDurationId = `pro-duration-${s.id}`;
-      const actions =
-        `<div style="display:flex;gap:4px;flex-wrap:wrap;flex-direction:column;">` +
-        `<div style="display:flex;gap:4px;">` +
-        `<button data-action="viewSupplier" data-id="${s.id}" style="background:#3b82f6;border-color:#2563eb;" onclick="window.location.href='/admin-supplier-detail.html?id=${s.id}'">View Profile</button>` +
-        `<button data-action="editSupplier" data-id="${s.id}">Edit</button>` +
-        `<button data-action="approveSup" data-id="${s.id}">Approve</button>` +
-        `<button data-action="rejectSup" data-id="${s.id}">Reject</button>` +
-        `<button data-action="deleteSupplier" data-id="${s.id}">Delete</button>` +
-        `</div>` +
-        `<div class="small" style="margin-top:4px;">` +
-        `Subscription: ` +
-        `<select id="${selectTierId}">` +
-        `<option value="pro">Pro</option>` +
-        `<option value="pro_plus">Pro+</option>` +
-        `</select> ` +
-        `<select id="${selectDurationId}">` +
-        `<option value="">Duration…</option>` +
-        `<option value="7">7 days</option>` +
-        `<option value="14">14 days</option>` +
-        `<option value="30">30 days</option>` +
-        `<option value="90">90 days</option>` +
-        `<option value="365">1 year</option>` +
-        `</select>` +
-        `<button data-action="setProPlan" data-id="${s.id}" data-param="grant">Grant</button>` +
-        `<button data-action="setProPlan" data-id="${s.id}" data-param="cancel">Remove</button>` +
-        `</div>` +
-        `</div>`;
-
-      // Make name clickable - link to public supplier profile
-      const nameLink = `<a href="/supplier.html?id=${s.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(s.name)}</a>`;
-      const emailLink = s.email
-        ? `<a href="mailto:${s.email}" style="color:#6b7280;text-decoration:none;">${escapeHtml(s.email)}</a>`
-        : '—';
-
-      rows += `<tr><td><input type="checkbox" class="supplier-checkbox" data-id="${s.id}"></td><td>${nameLink}</td><td>${emailLink}</td><td>${s.approved ? '<span style="color:#10b981;font-weight:600;">✓ Yes</span>' : '<span style="color:#ef4444;">✗ No</span>'}</td><td>${plan}</td><td>${
-        score
-      }</td><td>${tags || '<span style="color:#9ca3af;">None</span>'}</td><td>${actions}</td></tr>`;
-    });
-
-    el.innerHTML = rows;
-  }
-
-  function renderPackagesTable(resp) {
-    const el = document.getElementById('packages');
-    if (!el) {
-      return;
-    }
-
-    let rows =
-      '<tr><th><input type="checkbox" id="selectAllPackages" title="Select all"></th><th>Title</th><th>Supplier</th><th>Price</th><th>Approved</th><th>Featured</th><th>Actions</th></tr>';
-    const items = (resp && resp.items) || [];
-
-    if (!items.length) {
-      el.innerHTML = '<tr><td colspan="7">No packages yet.</td></tr>';
-      return;
-    }
-
-    items.forEach(p => {
-      // Make title clickable to package page
-      const titleLink = `<a href="/package.html?id=${p.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;" target="_blank">${escapeHtml(p.title)}</a>`;
-
-      // Make supplier name clickable to public profile (same window)
-      const supplierLink = p.supplierName
-        ? `<a href="/supplier.html?id=${p.supplierId}" style="color:#6b7280;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(p.supplierName)}</a>`
-        : '—';
-
-      const price = p.price_display || p.price || '—';
-      const approved = p.approved
-        ? '<span style="color:#10b981;font-weight:600;">✓ Yes</span>'
-        : '<span style="color:#ef4444;">✗ No</span>';
-      const featured = p.featured
-        ? '<span style="color:#f59e0b;font-weight:600;">⭐ Yes</span>'
-        : '<span style="color:#9ca3af;">No</span>';
-
-      rows +=
-        `<tr><td><input type="checkbox" class="package-checkbox" data-id="${p.id}"></td><td>${titleLink}</td><td>${supplierLink}</td><td>${escapeHtml(price)}</td><td>${approved}</td>` +
-        `<td>${featured}</td>` +
-        `<td>` +
-        `<div style="display:flex;gap:4px;flex-wrap:wrap;">` +
-        `<button data-action="viewPackage" data-id="${p.id}" style="background:#3b82f6;border-color:#2563eb;">View</button>` +
-        `<button data-action="editPackage" data-id="${p.id}">Edit</button>` +
-        `<button data-action="approvePkg" data-id="${p.id}" data-param="true">Approve</button>` +
-        `<button data-action="approvePkg" data-id="${p.id}" data-param="false">Unapprove</button>` +
-        `<button data-action="featurePkg" data-id="${p.id}" data-param="true">Feature</button>` +
-        `<button data-action="featurePkg" data-id="${p.id}" data-param="false">Unfeature</button>` +
-        `<button data-action="deletePackage" data-id="${p.id}">Delete</button>` +
-        `</div>` +
-        `</td></tr>`;
-    });
-
-    el.innerHTML = rows;
-  }
-
   function renderAnalytics(metrics) {
     const el = document.getElementById('analytics');
     if (!el) {
@@ -465,6 +325,25 @@
       featuredPackagesEl.textContent = counts.featuredPackages || 0;
     }
 
+    // Revenue: no revenue endpoint yet — show N/A
+    const totalRevenueEl = document.getElementById('totalRevenueCount');
+    if (totalRevenueEl) {
+      totalRevenueEl.textContent = 'N/A';
+    }
+
+    // Change indicators — cleared until real trend data is available
+    [
+      'totalUsersChange',
+      'totalPackagesChange',
+      'totalSuppliersChange',
+      'totalRevenueChange',
+    ].forEach(id => {
+      const el2 = document.getElementById(id);
+      if (el2) {
+        el2.textContent = '—';
+      }
+    });
+
     el.innerHTML =
       `<div class="card">` +
       `<p><b>Total Users:</b> ${counts.usersTotal || 0}</p>` +
@@ -506,14 +385,6 @@
         }
 
         return Promise.all([
-          api('/api/admin/suppliers').catch(err => {
-            console.warn('Failed to load suppliers:', err.message);
-            return { items: [] };
-          }),
-          api('/api/admin/packages').catch(err => {
-            console.warn('Failed to load packages:', err.message);
-            return { items: [] };
-          }),
           api('/api/admin/users').catch(err => {
             console.warn('Failed to load users:', err.message);
             return { items: [] };
@@ -531,16 +402,15 @@
             return { reviews: [] };
           }),
         ]).then(results => {
-          const suppliersResp = results[0] || {};
-          const packagesResp = results[1] || {};
-          const usersResp = results[2] || {};
-          const metricsResp = results[3] || {};
-          const photosResp = results[4] || {};
-          const reviewsResp = results[5] || {};
+          const usersResp = results[0] || {};
+          const metricsResp = results[1] || {};
+          const photosResp = results[2] || {};
+          const reviewsResp = results[3] || {};
 
           allUsers = usersResp.items || [];
-          renderSuppliersTable(suppliersResp);
-          renderPackagesTable(packagesResp);
+          // Reset supplier/package caches so edits refetch fresh data after a reload
+          allSuppliers = [];
+          allPackages = [];
           applyUserFilters();
           renderAnalytics(metricsResp);
 
@@ -833,7 +703,7 @@
   };
 
   window.disableUser = function (id) {
-    api(`/api/admin/users/${id}/disable`, 'POST', { disabled: true })
+    api(`/api/admin/users/${id}/suspend`, 'POST', { suspended: true, reason: 'Disabled by admin' })
       .then(loadAll)
       .catch(err => {
         console.error('disableUser failed', err);
@@ -1251,10 +1121,16 @@
   };
 
   window.editSupplier = function (id) {
-    // Find supplier in current data
-    api('/api/admin/suppliers')
+    // Use cached suppliers if available, otherwise fetch and cache
+    const fetchSuppliers = allSuppliers.length
+      ? Promise.resolve({ items: allSuppliers })
+      : api('/api/admin/suppliers').then(resp => {
+          allSuppliers = (resp && resp.items) || [];
+          return resp;
+        });
+    fetchSuppliers
       .then(resp => {
-        const suppliers = (resp && resp.items) || [];
+        const suppliers = (resp && resp.items) || allSuppliers;
         const supplier = suppliers.find(s => {
           return s.id === id;
         });
@@ -1424,10 +1300,16 @@
   };
 
   window.editPackage = function (id) {
-    // Fetch package data
-    api('/api/admin/packages')
+    // Use cached packages if available, otherwise fetch and cache
+    const fetchPackages = allPackages.length
+      ? Promise.resolve({ items: allPackages })
+      : api('/api/admin/packages').then(resp => {
+          allPackages = (resp && resp.items) || [];
+          return resp;
+        });
+    fetchPackages
       .then(resp => {
-        const packages = (resp && resp.items) || [];
+        const packages = (resp && resp.items) || allPackages;
         const pkg = packages.find(p => {
           return p.id === id;
         });
@@ -1876,35 +1758,39 @@
           return;
         }
 
-        // HTML sanitization helper
-        function escapeHtml(unsafe) {
-          if (!unsafe) {
-            return '';
-          }
-          return String(unsafe)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-        }
-
         const modal = document.createElement('div');
-        modal.style.cssText =
-          'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10000;overflow:auto;padding:20px;';
-        modal.className = 'review-modal';
+        modal.className = 'review-modal-overlay review-modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-label', 'Pending Reviews');
         modal.innerHTML =
-          `<div style="background:#111;max-width:800px;margin:auto;padding:20px;border-radius:8px;">` +
+          `<div class="review-modal-container">` +
           `<h2>Pending Reviews (${reviews.length})</h2>` +
           `<div id="review-list"></div>` +
           `<button data-action="closeReviewModal">Close</button>` +
           `</div>`;
         document.body.appendChild(modal);
 
+        // Close on backdrop click
+        modal.addEventListener('click', e => {
+          if (e.target === modal) {
+            modal.remove();
+          }
+        });
+
+        // Close on Escape key
+        function onKeyDown(e) {
+          if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', onKeyDown);
+          }
+        }
+        document.addEventListener('keydown', onKeyDown);
+
         const list = modal.querySelector('#review-list');
         reviews.forEach(r => {
           const item = document.createElement('div');
-          item.style.cssText = 'background:#1a1a1a;padding:15px;margin:10px 0;border-radius:6px;';
+          item.className = 'review-modal-item';
           item.innerHTML =
             `<p><b>Rating:</b> ${escapeHtml(String(r.rating || 0))} stars</p>` +
             `<p><b>Comment:</b> ${escapeHtml(r.comment || '')}</p>` +
