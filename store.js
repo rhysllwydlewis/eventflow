@@ -33,6 +33,7 @@ const files = {
   subscriptions: path.join(DATA_DIR, 'subscriptions.json'),
   referrals: path.join(DATA_DIR, 'referrals.json'),
   quoteRequests: path.join(DATA_DIR, 'quoteRequests.json'),
+  enquiries: path.join(DATA_DIR, 'enquiries.json'),
   analyticsEvents: path.join(DATA_DIR, 'analyticsEvents.json'),
   faqVotes: path.join(DATA_DIR, 'faqVotes.json'),
   invoices: path.join(DATA_DIR, 'invoices.json'),

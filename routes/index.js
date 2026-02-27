@@ -142,6 +142,45 @@ function mountRoutes(app, deps) {
   app.use('/api/v1/payments', paymentsRoutes);
   app.use('/api/payments', paymentsRoutes); // Backward compatibility
 
+  // Billing alias routes (used by app.js supplier upgrade flow)
+  // GET /api/v1/billing/config - returns whether Stripe billing is enabled
+  app.get('/api/v1/billing/config', (_req, res) => {
+    const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_LIVE || '';
+    res.json({ enabled: !!stripeKey });
+  });
+
+  // POST /api/v1/billing/checkout - creates a Stripe checkout session for the default Pro plan
+  app.post('/api/v1/billing/checkout', deps.authRequired, deps.csrfProtection, async (req, res) => {
+    try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        return res.status(503).json({ error: 'Stripe is not configured' });
+      }
+      const stripeLib = require('stripe');
+      const stripe = stripeLib(stripeKey);
+      const priceId = process.env.STRIPE_PRO_PRICE_ID;
+      if (!priceId) {
+        return res.status(503).json({ error: 'Stripe price ID is not configured' });
+      }
+      const paymentService = require('../services/paymentService');
+      const customer = await paymentService.getOrCreateStripeCustomer(req.user);
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${baseUrl}/dashboard-supplier.html?billing=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/pricing.html?checkout=cancelled`,
+        metadata: { userId: req.user.id, planId: 'pro' },
+      });
+      res.json({ url: session.url });
+    } catch (err) {
+      const logger = require('../utils/logger');
+      logger.error('billing/checkout error:', err.message);
+      res.status(500).json({ error: 'Failed to create checkout session' });
+    }
+  });
+
   // Pexels image search routes
   app.use('/api/v1/pexels', pexelsRoutes);
   app.use('/api/pexels', pexelsRoutes); // Backward compatibility
