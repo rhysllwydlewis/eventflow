@@ -15,6 +15,7 @@ const router = express.Router();
 const reviewService = require('../services/reviewService');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const reviewModeration = require('../middleware/reviewModeration');
 
 // Validation constants
@@ -30,7 +31,7 @@ const MIN_DISPUTE_REASON_LENGTH = 20; // Minimum characters for dispute reasons
  * POST /api/v2/reviews/with-verification
  * Body: { supplierId, bookingId, rating, title, text, eventDetails }
  */
-router.post('/with-verification', authRequired, csrfProtection, async (req, res) => {
+router.post('/with-verification', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const { supplierId, bookingId, rating, title, text, eventDetails } = req.body;
 
@@ -107,7 +108,7 @@ router.get('/supplier/:id', async (req, res) => {
  * PUT /api/v2/reviews/:id
  * Body: { title, text, rating }
  */
-router.put('/:id', authRequired, csrfProtection, async (req, res) => {
+router.put('/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, text, rating } = req.body;
@@ -160,7 +161,7 @@ router.put('/:id', authRequired, csrfProtection, async (req, res) => {
  * Delete review (author or admin)
  * DELETE /api/v2/reviews/:id
  */
-router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
+router.delete('/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -197,7 +198,7 @@ router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
  * POST /api/v2/reviews/:id/helpful
  * Body: { helpful: true/false }
  */
-router.post('/:id/helpful', authRequired, csrfProtection, async (req, res) => {
+router.post('/:id/helpful', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { helpful } = req.body;
