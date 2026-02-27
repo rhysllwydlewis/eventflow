@@ -24,39 +24,13 @@ const { Server } = require('socket.io');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const jwt = require('jsonwebtoken');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
-const cookie = require('cookie');
-// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const { getBaseUrl } = require('./utils/config');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const { userIdFromCookie } = require('./utils/wsAuth');
 
 // Shared symbol for preventing duplicate Socket.IO servers across v1 and v2
 // This prevents the "server.handleUpgrade() was called more than once" error
 const WS_SERVER_INITIALIZED = Symbol.for('eventflow.wsServerInitialized');
-
-/**
- * Extract and verify a JWT from a cookie string (best-effort, no throw).
- * @param {string} cookieHeader - Raw Cookie header value
- * @returns {string|null} Verified userId, or null if absent/invalid
- */
-function userIdFromCookie(cookieHeader) {
-  try {
-    if (!cookieHeader) {
-      return null;
-    }
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return null;
-    }
-    const cookies = cookie.parse(cookieHeader);
-    const token = cookies.token;
-    if (!token) {
-      return null;
-    }
-    const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded.userId || decoded.id || decoded.sub || null;
-  } catch (_) {
-    return null;
-  }
-}
 
 class WebSocketServer {
   constructor(httpServer) {
@@ -135,7 +109,9 @@ class WebSocketServer {
               return;
             }
             const decoded = jwt.verify(data.token, JWT_SECRET);
-            userId = decoded.userId || decoded.id || decoded.sub;
+            // Field fallback: `id` is the standard field for this app (routes/auth.js);
+            // `userId` is a legacy alias; `sub` follows RFC 7519 for forward compatibility.
+            userId = decoded.id || decoded.userId || decoded.sub;
             if (!userId) {
               socket.emit('auth:error', { error: 'Invalid token: missing user ID' });
               return;

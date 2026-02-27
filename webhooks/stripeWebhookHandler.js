@@ -29,6 +29,21 @@ function formatPlanName(tier) {
 }
 
 /**
+ * HTML feature list items per plan tier, used in the subscription-activated email.
+ * Each value is a set of <li> fragments for the {{features}} template slot.
+ */
+const PLAN_EMAIL_FEATURES = {
+  free: '<li>Basic messaging</li><li>Standard listing</li>',
+  basic: '<li>Messaging</li><li>Basic analytics</li><li>Verified badge</li>',
+  pro: '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li><li>Priority support</li>',
+  pro_plus:
+    '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li>' +
+    '<li>Priority support</li><li>Custom branding</li><li>Homepage carousel</li>',
+  enterprise:
+    '<li>All Pro Plus features</li><li>API access</li><li>Dedicated account manager</li><li>Custom integrations</li>',
+};
+
+/**
  * Resolve a Stripe plan name string to an internal tier key.
  * Checks pro_plus before pro to avoid false substring matches.
  * @param {string} planName - Raw plan name from Stripe metadata or price nickname
@@ -324,18 +339,7 @@ async function handleSubscriptionCreated(stripeSubscription) {
           : 'N/A';
 
       const status = trialEnd ? 'Trial' : 'Active';
-
-      // Build a simple HTML feature list for the plan
-      const planFeatures = {
-        pro: '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li><li>Priority support</li>',
-        pro_plus:
-          '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li><li>Priority support</li><li>Custom branding</li><li>Homepage carousel</li>',
-        enterprise:
-          '<li>All Pro Plus features</li><li>API access</li><li>Dedicated account manager</li><li>Custom integrations</li>',
-        basic: '<li>Messaging</li><li>Basic analytics</li><li>Verified badge</li>',
-        free: '<li>Basic messaging</li><li>Standard listing</li>',
-      };
-      const features = planFeatures[plan] || planFeatures.free;
+      const features = PLAN_EMAIL_FEATURES[plan] || PLAN_EMAIL_FEATURES.free;
 
       await postmark.sendMail({
         to: user.email,
@@ -554,6 +558,79 @@ async function handleSubscriptionDeleted(stripeSubscription) {
 }
 
 /**
+ * Handle invoice.upcoming event
+ * Sent by Stripe 7 days before the next invoice is finalized
+ * @param {Object} invoice - Stripe upcoming invoice object
+ */
+async function handleInvoiceUpcoming(invoice) {
+  logger.info('Processing invoice.upcoming:', invoice.id || '(draft)');
+
+  const subscription = await subscriptionService.getSubscriptionByStripeId(invoice.subscription);
+
+  if (!subscription) {
+    logger.warn('Subscription not found for upcoming invoice:', invoice.subscription);
+    return;
+  }
+
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === subscription.userId);
+
+  if (!user) {
+    logger.warn('User not found for subscription:', subscription.userId);
+    return;
+  }
+
+  // Calculate days until renewal
+  const renewalTimestamp = invoice.next_payment_attempt || invoice.period_end;
+  if (!renewalTimestamp) {
+    logger.warn('No renewal date on upcoming invoice, skipping reminder');
+    return;
+  }
+
+  const renewalDate = new Date(renewalTimestamp * 1000);
+  const now = new Date();
+  const daysUntilRenewal = Math.ceil((renewalDate - now) / (1000 * 60 * 60 * 24));
+
+  const formattedRenewalDate = renewalDate.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const autoRenew = subscription.cancelAtPeriodEnd ? 'Disabled' : 'Enabled';
+  const renewalMessage = subscription.cancelAtPeriodEnd
+    ? 'Your subscription is set to cancel at the end of the current period. Reactivate to keep your premium access.'
+    : `Your ${formatPlanName(subscription.plan)} subscription will automatically renew on ${formattedRenewalDate}.`;
+
+  const ctaText = subscription.cancelAtPeriodEnd
+    ? 'Reactivate Subscription'
+    : 'Manage Subscription';
+
+  try {
+    await postmark.sendMail({
+      to: user.email,
+      subject: `Your EventFlow subscription renews in ${daysUntilRenewal} day${daysUntilRenewal !== 1 ? 's' : ''}`,
+      template: 'subscription-renewal-reminder',
+      templateData: {
+        name: user.name || 'there',
+        planName: formatPlanName(subscription.plan),
+        daysUntilRenewal: String(daysUntilRenewal),
+        renewalDate: formattedRenewalDate,
+        amount: (invoice.amount_due / 100).toFixed(2),
+        autoRenew,
+        renewalMessage,
+        ctaText,
+      },
+      tags: ['renewal-reminder', 'transactional'],
+      messageStream: 'outbound',
+    });
+    logger.info(`Renewal reminder email sent to ${user.email}`);
+  } catch (emailErr) {
+    logger.error('Failed to send renewal reminder email:', emailErr.message);
+  }
+}
+
+/**
  * Handle payment_intent.succeeded event
  * @param {Object} paymentIntent - Stripe payment intent object
  */
@@ -626,6 +703,9 @@ async function processWebhookEvent(event) {
       case 'invoice.payment_failed':
         await handleInvoicePaymentFailed(event.data.object);
         break;
+      case 'invoice.upcoming':
+        await handleInvoiceUpcoming(event.data.object);
+        break;
 
       // Subscription events
       case 'customer.subscription.created':
@@ -667,6 +747,7 @@ module.exports = {
   handleInvoiceCreated,
   handleInvoicePaymentSucceeded,
   handleInvoicePaymentFailed,
+  handleInvoiceUpcoming,
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
   handleSubscriptionDeleted,
