@@ -271,6 +271,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize newsletter form
   initNewsletterForm();
 
+  // Attach error handlers for hero collage media (CSP-safe replacement for inline onerror)
+  initCollageErrorHandlers();
+
+  // Cookie preferences button (CSP-safe replacement for inline onclick)
+  const cookiePrefBtn = document.getElementById('ef-cookie-prefs-btn');
+  if (cookiePrefBtn) {
+    cookiePrefBtn.addEventListener('click', () => {
+      if (window.CookieConsent) {
+        window.CookieConsent.openPreferences();
+      }
+    });
+  }
+
   // Add parallax effect to collage
   initParallaxCollage();
 
@@ -3014,7 +3027,7 @@ function hideStatsSection() {
  */
 function updateStatsUI(stats) {
   // Update stat counters with real data
-  const statItems = document.querySelectorAll('.stat-item');
+  const statItems = document.querySelectorAll('.ef-stat');
   if (statItems.length >= 4) {
     // Update counters with real data
     const counters = [
@@ -3025,7 +3038,7 @@ function updateStatsUI(stats) {
     ];
 
     statItems.forEach((item, index) => {
-      const counterEl = item.querySelector('.stat-number');
+      const counterEl = item.querySelector('.ef-stat__number');
       if (counterEl && counters[index]) {
         counterEl.setAttribute('data-counter', counters[index].value);
         counterEl.setAttribute('data-suffix', counters[index].suffix);
@@ -3196,7 +3209,7 @@ async function fetchMarketplacePreview() {
               Date.now() - new Date(listing?.createdAt || 0).getTime() < 1000 * 60 * 60 * 24 * 14;
             return `
           <a href="${listingUrl}" class="card card-hover" style="text-decoration: none; color: inherit; display: block; overflow: hidden;">
-            <img src="${escape(listingImage)}" alt="${escape(listing.title)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;" loading="lazy" onerror="this.src='/assets/images/collage-venue.jpg'" />
+            <img src="${escape(listingImage)}" alt="${escape(listing.title)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;" loading="lazy" data-fallback-src="/assets/images/collage-venue.jpg" />
             <div style="padding: 1rem;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0.5rem;">
                 <h3 style="margin: 0; font-size: 1.1rem;">${escape(listing.title || 'Marketplace listing')}</h3>
@@ -3215,6 +3228,14 @@ async function fetchMarketplacePreview() {
           .join('')}
       </div>
     `;
+
+    // Attach error handlers for marketplace preview images (CSP-safe, no inline onerror)
+    container.querySelectorAll('img[data-fallback-src]').forEach(img => {
+      img.addEventListener('error', function handler() {
+        img.removeEventListener('error', handler);
+        img.src = img.dataset.fallbackSrc;
+      });
+    });
   } catch (error) {
     // Issue 5 Fix: Use error boundary for errors
     if (isDevelopmentEnvironment()) {
@@ -3531,6 +3552,40 @@ function initNewsletterForm() {
       setTimeout(() => {
         errorDiv.remove();
       }, 3000);
+    }
+  });
+}
+
+/**
+ * Attach error event handlers to hero collage media elements.
+ * CSP-safe replacement for inline onerror attributes.
+ */
+function initCollageErrorHandlers() {
+  const video = document.getElementById('hero-pexels-video');
+  if (video) {
+    video.addEventListener('error', () => {
+      video.style.display = 'none';
+      if (video.nextElementSibling) {
+        video.nextElementSibling.style.display = 'block';
+      }
+    });
+  }
+
+  const collageImages = [
+    { id: 'collage-venues', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+    { id: 'collage-catering', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    { id: 'collage-entertainment', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+    { id: 'collage-photography', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  ];
+
+  collageImages.forEach(({ id, gradient }) => {
+    const img = document.getElementById(id);
+    if (img) {
+      img.addEventListener('error', () => {
+        img.style.background = gradient;
+        img.style.minHeight = '200px';
+        img.src = '';
+      });
     }
   });
 }
