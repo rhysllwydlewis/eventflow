@@ -23,8 +23,33 @@ class DarkModeToggle {
 
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      if (!localStorage.getItem('theme')) {
+      try {
+        if (!localStorage.getItem('theme')) {
+          this.setTheme(e.matches ? 'dark' : 'light');
+        }
+      } catch (err) {
         this.setTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+
+    // React to consent changes
+    window.addEventListener('cookieConsentChanged', e => {
+      if (!e.detail) {
+        return;
+      }
+      try {
+        if (e.detail.functional) {
+          // Consent granted — persist the current theme
+          const current = document.documentElement.getAttribute('data-theme');
+          if (current) {
+            localStorage.setItem('theme', current);
+          }
+        } else {
+          // Consent withdrawn — clear the saved theme
+          localStorage.removeItem('theme');
+        }
+      } catch (err) {
+        /* ignore */
       }
     });
 
@@ -34,7 +59,16 @@ class DarkModeToggle {
 
   setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+
+    // Only persist to localStorage when functional cookies are consented
+    try {
+      const consent = window.CookieConsent && window.CookieConsent.getConsent();
+      if (consent && consent.functional) {
+        localStorage.setItem('theme', theme);
+      }
+    } catch (e) {
+      // localStorage may be unavailable; proceed silently
+    }
 
     // Update button icon if it exists
     const button = document.querySelector('.dark-mode-toggle');

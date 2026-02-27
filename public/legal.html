@@ -378,28 +378,48 @@
           </div>
           <p>EventFlow uses cookies to provide and improve our services.</p>
           
-          <h3 class="h5">Essential Cookies (Always Active)</h3>
+          <h3 class="h5">Cookie Categories</h3>
+
+          <h4 class="h6" style="margin-top:1rem;">Essential Cookies (Always Active)</h4>
           <ul>
             <li><strong>Authentication Token:</strong> Keeps you logged in (7 days)</li>
             <li><strong>Cookie Consent:</strong> Remembers your cookie preferences (1 year)</li>
           </ul>
-          
-          <h3 class="h5">Optional Cookies (With Your Consent)</h3>
+
+          <h4 class="h6" style="margin-top:1rem;">Functional Cookies (With Your Consent)</h4>
           <ul>
-            <li><strong>Theme Preference:</strong> Remembers dark/light mode</li>
-            <li><strong>UI Settings:</strong> Saves interface preferences</li>
+            <li><strong>Theme Preference:</strong> Remembers dark/light mode (localStorage)</li>
+            <li><strong>UI Settings:</strong> Saves interface preferences such as expanded folders and notification settings (localStorage)</li>
           </ul>
-          
-          <h3 class="h5">Managing Cookies</h3>
-          <p>You control optional cookies through our consent banner that appears on your first visit. You can:</p>
+          <p class="small" style="color:#667085;">If you reject or withdraw functional consent, all functional preferences are removed from your browser immediately.</p>
+
+          <h4 class="h6" style="margin-top:1rem;">Analytics Cookies (With Your Consent)</h4>
           <ul>
-            <li><strong>Accept:</strong> Allow all cookies</li>
-            <li><strong>Reject:</strong> Only essential cookies</li>
+            <li>Currently unused — disabled by default.</li>
+          </ul>
+
+          <h3 class="h5" style="margin-top:1.25rem;">Managing Your Cookie Preferences</h3>
+          <p>You can manage or withdraw your consent at any time — not just on your first visit. Use the button below or the <strong>Cookie preferences</strong> link in the site footer.</p>
+          <p>
+            <button
+              type="button"
+              onclick="window.CookieConsent && window.CookieConsent.openPreferences()"
+              style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 1.2rem;background:#13b6a2;color:#fff;border:none;border-radius:6px;font-size:0.9rem;font-weight:600;cursor:pointer;"
+              aria-label="Open cookie preferences manager"
+            >
+              🍪 Manage cookie preferences
+            </button>
+          </p>
+          <p class="small" style="color:#667085;">You can also <button type="button" onclick="window.CookieConsent && window.CookieConsent.revokeConsent()" style="background:none;border:none;color:#0B8073;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">reset your cookie consent</button> to be prompted again from scratch.</p>
+          <ul>
+            <li><strong>Accept All:</strong> Allow all cookies including functional</li>
+            <li><strong>Reject:</strong> Only essential cookies — functional preferences cleared</li>
+            <li><strong>Manage Preferences:</strong> Choose per category</li>
             <li><strong>Browser Settings:</strong> Control cookies via your browser</li>
           </ul>
-          
+
           <p><strong>Third-Party Cookies:</strong> We do not use third-party tracking or advertising cookies.</p>
-          
+
           <p class="small" style="color:#667085; margin-top: 16px;"><em>This policy complies with UK PECR 2003 and UK GDPR.</em></p>
         </section>
 
@@ -1556,13 +1576,14 @@
       <a href="/credits">Credits</a> ·
       <a href="/contact">Contact</a> ·
       <a href="/legal">Legal Hub</a> ·
-      <a href="/legal#illegal-content" style="color: #DC2626; font-weight: 600;">Report Illegal Content</a>
+      <a href="/legal#illegal-content" style="color: #DC2626; font-weight: 600;">Report Illegal Content</a> ·
+      <button type="button" onclick="window.CookieConsent && window.CookieConsent.openPreferences()" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Cookie preferences</button>
     </div>
   </div>
 </footer>
 
 <script src="/assets/js/components/footer-nav.js" defer></script>
-<script src="/assets/js/cookie-consent.js" defer></script>
+<script src="/assets/js/cookie-consent.js?v=2.0.0" defer></script>
 
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
