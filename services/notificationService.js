@@ -105,11 +105,11 @@ class NotificationService {
           const { userId, notification, channel } = item.message;
 
           if (channel === CHANNELS.IN_APP) {
-            await this.deliverInApp(userId, notification);
+            await this.deliverInApp(userId, notification, true);
           } else if (channel === CHANNELS.EMAIL) {
-            await this.deliverEmail(userId, notification);
+            await this.deliverEmail(userId, notification, true);
           } else if (channel === CHANNELS.PUSH) {
-            await this.deliverPush(userId, notification);
+            await this.deliverPush(userId, notification, true);
           }
 
           // Mark as sent on success
@@ -246,8 +246,11 @@ class NotificationService {
 
   /**
    * Deliver notification via WebSocket (in-app)
+   * @param {string} userId
+   * @param {Object} notification
+   * @param {boolean} [skipRetryQueue=false] - When true, re-throws on error instead of queuing (used by queue processor to avoid duplicates)
    */
-  async deliverInApp(userId, notification) {
+  async deliverInApp(userId, notification, skipRetryQueue = false) {
     try {
       if (!this.wsServer) {
         logger.warn('WebSocket server not available for in-app notification');
@@ -269,6 +272,9 @@ class NotificationService {
         userId,
         error: error.message,
       });
+      if (skipRetryQueue) {
+        throw error;
+      }
       // Persist for retry
       await this._persistToQueue(userId, notification, CHANNELS.IN_APP);
     }
@@ -276,8 +282,11 @@ class NotificationService {
 
   /**
    * Deliver notification via email
+   * @param {string} userId
+   * @param {Object} notification
+   * @param {boolean} [skipRetryQueue=false] - When true, re-throws on error instead of queuing (used by queue processor to avoid duplicates)
    */
-  async deliverEmail(userId, notification) {
+  async deliverEmail(userId, notification, skipRetryQueue = false) {
     try {
       // Get user email from database
       const usersDb = await this.db.collection('users').findOne({ id: userId });
@@ -309,6 +318,9 @@ class NotificationService {
         userId,
         error: error.message,
       });
+      if (skipRetryQueue) {
+        throw error;
+      }
       // Persist for retry
       await this._persistToQueue(userId, notification, CHANNELS.EMAIL);
     }
@@ -322,8 +334,12 @@ class NotificationService {
    * 1. Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable (JSON string)
    * 2. Store user device tokens in user_devices collection
    * 3. Configure FCM in Firebase Console
+   *
+   * @param {string} userId
+   * @param {Object} notification
+   * @param {boolean} [skipRetryQueue=false] - When true, re-throws on error instead of queuing (used by queue processor to avoid duplicates)
    */
-  async deliverPush(userId, notification) {
+  async deliverPush(userId, notification, skipRetryQueue = false) {
     try {
       // Check if push notifications are configured
       if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
@@ -416,6 +432,11 @@ class NotificationService {
         userId,
         error: error.message,
       });
+      if (skipRetryQueue) {
+        throw error;
+      }
+      // Persist for retry
+      await this._persistToQueue(userId, notification, CHANNELS.PUSH);
     }
   }
 
