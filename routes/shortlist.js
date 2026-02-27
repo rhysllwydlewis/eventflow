@@ -11,6 +11,7 @@ const router = express.Router();
 const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimits');
 const validator = require('validator');
 
 /**
@@ -92,7 +93,7 @@ router.get('/', async (req, res) => {
  * POST /api/shortlist
  * Add item to shortlist (auth required)
  */
-router.post('/', authRequired, csrfProtection, async (req, res) => {
+router.post('/', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const { type, id, name, imageUrl, category, location, priceHint, rating } = req.body;
 
@@ -179,7 +180,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
  * DELETE /api/shortlist/:type/:id
  * Remove item from shortlist (auth required)
  */
-router.delete('/:type/:id', authRequired, csrfProtection, async (req, res) => {
+router.delete('/:type/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const { type, id } = req.params;
 
@@ -228,7 +229,7 @@ router.delete('/:type/:id', authRequired, csrfProtection, async (req, res) => {
  * DELETE /api/shortlist
  * Clear entire shortlist (auth required)
  */
-router.delete('/', authRequired, csrfProtection, async (req, res) => {
+router.delete('/', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   try {
     const shortlists = (await dbUnified.read('shortlists')) || [];
     const userShortlist = shortlists.find(s => s.userId === req.user.id);

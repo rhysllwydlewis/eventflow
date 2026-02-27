@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `POST /threads/:threadId/mark-unread` - Mark thread as unread
   - `POST /threads/:threadId/unarchive` - Unarchive archived threads
 - **API Version Configuration**: Created centralized API version constant (`public/assets/js/config/api-version.js`) to prevent future version drift
+- **Subscription Email Notifications**: All 5 subscription lifecycle email templates are now wired up
+  - `invoice.payment_failed` → `subscription-payment-failed` email with amount, grace period, and update-payment CTA
+  - `customer.subscription.trial_will_end` → `subscription-trial-ending` email with days remaining, plan details, and manage-subscription CTA
+  - `customer.subscription.created` → `subscription-activated` email with plan features and dashboard CTA
+  - `customer.subscription.deleted` → `subscription-cancelled` email with access end date and reactivation CTA
+  - `invoice.upcoming` → `subscription-renewal-reminder` email with renewal date, amount, and auto-renew status
+- **WebSocket Cookie-First Authentication**: Both v1 and v2 WebSocket servers now authenticate users from the application's HTTP-only JWT cookie at handshake time via `io.use()` middleware, so existing frontend code sending `{ userId }` in the `auth` event works correctly and securely. A token-based fallback is also supported for non-cookie environments.
+- **Shared `utils/wsAuth.js` Utility**: Extracts the `userIdFromCookie()` helper (used by both WS servers) into a single tested module
+- **Supplier Profile Save-to-Shortlist**: The "Save" button on supplier profile pages now calls `POST /api/shortlist` with full supplier metadata. Handles already-saved (409), unauthenticated (401/403), and error states gracefully.
 
 ### Changed
 
