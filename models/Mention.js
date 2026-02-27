@@ -112,6 +112,26 @@ function parseMentions(content) {
   return [...new Set(usernames)]; // Remove duplicates
 }
 
+/**
+ * Resolve @mention usernames to user IDs
+ * @param {import('mongodb').Db} db - MongoDB database instance
+ * @param {string} content - Message content containing @mentions
+ * @returns {Promise<Array<{username: string, userId: string}>>} Resolved mentions
+ */
+async function resolveMentions(db, content) {
+  const usernames = parseMentions(content);
+  if (usernames.length === 0) {
+    return [];
+  }
+
+  const users = await db
+    .collection('users')
+    .find({ username: { $in: usernames } }, { projection: { _id: 0, id: 1, username: 1 } })
+    .toArray();
+
+  return users.map(u => ({ username: u.username, userId: u.id }));
+}
+
 module.exports = {
   MentionSchema,
   COLLECTION,
@@ -119,4 +139,5 @@ module.exports = {
   validateMention,
   createMention,
   parseMentions,
+  resolveMentions,
 };

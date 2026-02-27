@@ -166,6 +166,9 @@ function loadEmailTemplate(templateName, data = {}) {
     // Add base URL
     html = html.replace(/{{baseUrl}}/g, APP_BASE_URL);
 
+    // Clear any remaining unresolved template placeholders
+    html = html.replace(/\{\{[^}]+\}\}/g, '');
+
     return html;
   } catch (err) {
     logger.error('Error loading email template:', err.message);
@@ -513,6 +516,7 @@ async function sendNotificationEmail(user, subject, message, options = {}) {
     name: user.name || 'there',
     title: subject,
     message: message,
+    preferencesLink: `${APP_BASE_URL}/settings/notifications`,
     ...(options.templateData || {}),
   };
 

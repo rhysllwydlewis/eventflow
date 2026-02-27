@@ -10,6 +10,10 @@ const { Server } = require('socket.io');
 const logger = require('./utils/logger');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const { PresenceService } = require('./services/presenceService');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const jwt = require('jsonwebtoken');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
+const { getBaseUrl } = require('./utils/config');
 
 // Shared symbol for preventing duplicate Socket.IO servers across v1 and v2
 // This prevents the "server.handleUpgrade() was called more than once" error
@@ -49,7 +53,7 @@ class WebSocketServerV2 {
 
     this.io = new Server(httpServer, {
       cors: {
-        origin: process.env.BASE_URL || 'http://localhost:3000',
+        origin: getBaseUrl(),
         methods: ['GET', 'POST'],
         credentials: true,
       },
@@ -133,17 +137,6 @@ class WebSocketServerV2 {
 
       socket.on('presence:sync', async data => {
         await this.handlePresenceSync(socket, data);
-      });
-
-      // Join/leave rooms
-      socket.on('join', room => {
-        socket.join(room);
-        logger.debug('Socket joined room', { socketId: socket.id, room });
-      });
-
-      socket.on('leave', room => {
-        socket.leave(room);
-        logger.debug('Socket left room', { socketId: socket.id, room });
       });
 
       // Messenger v4 event handlers
@@ -273,12 +266,31 @@ class WebSocketServerV2 {
    */
   async handleAuth(socket, data) {
     try {
-      if (!data || !data.userId) {
-        socket.emit('auth:error', { error: 'Missing userId' });
+      if (!data || !data.token) {
+        socket.emit('auth:error', { error: 'Missing token' });
         return;
       }
 
-      const { userId } = data;
+      let userId;
+      try {
+        const JWT_SECRET = process.env.JWT_SECRET;
+        if (!JWT_SECRET) {
+          logger.error(
+            'JWT_SECRET environment variable is not set - WebSocket auth cannot proceed'
+          );
+          socket.emit('auth:error', { error: 'Server configuration error' });
+          return;
+        }
+        const decoded = jwt.verify(data.token, JWT_SECRET);
+        userId = decoded.userId || decoded.id || decoded.sub;
+        if (!userId) {
+          socket.emit('auth:error', { error: 'Invalid token: missing user ID' });
+          return;
+        }
+      } catch (err) {
+        socket.emit('auth:error', { error: 'Invalid or expired token' });
+        return;
+      }
 
       // Store user-socket mapping
       socket.userId = userId;
@@ -636,14 +648,21 @@ class WebSocketServerV2 {
 
   /**
    * Broadcast presence update
+   * Emits only to authenticated users' personal rooms rather than all connected sockets
    */
   broadcastPresenceUpdate(userId, state) {
     try {
-      this.io.emit('presence:changed', {
-        userId,
-        state,
-        timestamp: new Date(),
-      });
+      // Emit to each authenticated user's room, excluding the user whose state changed
+      // (users don't need to be notified of their own presence changes)
+      for (const onlineUserId of this.userSockets.keys()) {
+        if (onlineUserId !== userId) {
+          this.io.to(`user:${onlineUserId}`).emit('presence:changed', {
+            userId,
+            state,
+            timestamp: new Date(),
+          });
+        }
+      }
     } catch (error) {
       logger.error('Broadcast presence error', { error: error.message });
     }
@@ -752,6 +771,18 @@ class WebSocketServerV2 {
         event,
         error: error.message,
       });
+    }
+  }
+
+  /**
+   * Emit event to a specific room
+   */
+  emitToRoom(room, event, data) {
+    try {
+      this.io.to(room).emit(event, data);
+      logger.debug('Event emitted to room', { room, event });
+    } catch (error) {
+      logger.error('Emit to room error', { room, event, error: error.message });
     }
   }
 
