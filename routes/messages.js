@@ -560,8 +560,6 @@ router.post(
             }
 
             if (recipientEmail && recipientName) {
-              // Import sendMail function (this should be available in the context)
-              const postmark = require('../utils/postmark');
               await postmark.sendMail({
                 to: recipientEmail,
                 subject: `New message from ${senderName} - EventFlow`,

@@ -137,6 +137,10 @@
         }
       });
 
+      state.socket.on('auth:error', data => {
+        console.error('WebSocket auth error:', data.error);
+      });
+
       // Listen for real-time notifications
       // v1 WebSocket server emits 'notification'
       state.socket.on('notification', notification => {
