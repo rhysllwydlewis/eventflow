@@ -66,18 +66,17 @@ router.post('/send-verification', resendEmailLimiter, authRequired, async (req, 
     const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
     try {
-      await postmark.sendEmail({
+      await postmark.sendMail({
         to: user.email,
         subject: 'Verify your email address',
-        html: `
-          <h2>Welcome to EventFlow!</h2>
-          <p>Please verify your email address by clicking the link below:</p>
-          <p><a href="${verificationLink}" style="background-color: #0B8073; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Verify Email</a></p>
-          <p>Or copy and paste this link into your browser:</p>
-          <p>${verificationLink}</p>
-          <p>This link will expire in 24 hours.</p>
-          <p>If you didn't create this account, you can safely ignore this email.</p>
-        `,
+        template: 'verification',
+        templateData: {
+          name: user.name || 'there',
+          verificationLink,
+        },
+        from: postmark.FROM_NOREPLY,
+        tags: ['verification', 'transactional'],
+        messageStream: 'outbound',
       });
 
       res.json({

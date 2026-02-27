@@ -343,6 +343,7 @@ router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res)
                 sanitizedMessage,
                 process.env.BASE_URL
               ),
+              from: postmark.FROM_NOREPLY,
             });
           }
         } catch (emailError) {
@@ -576,6 +577,7 @@ router.post(
                   sanitizedText,
                   process.env.BASE_URL
                 ),
+                from: postmark.FROM_NOREPLY,
               });
             }
           } catch (emailError) {

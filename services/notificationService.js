@@ -310,6 +310,7 @@ class NotificationService {
           actionUrl: notification.data?.url || getBaseUrl(),
           actionText: notification.data?.actionText || 'View Details',
         },
+        from: postmark.FROM_SUPPORT,
       });
 
       logger.debug('Email notification delivered', { userId, email });

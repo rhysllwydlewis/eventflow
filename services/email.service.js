@@ -6,6 +6,7 @@
 'use strict';
 
 const emailConfig = require('../config/email');
+const postmark = require('../utils/postmark');
 const logger = require('../utils/logger');
 
 /**
@@ -49,11 +50,13 @@ async function sendVerificationEmail(to, name, verificationLink) {
   return sendEmail({
     to,
     subject: 'Verify your email address',
-    template: 'email-verification',
+    template: 'verification',
     templateData: {
       name,
       verificationLink,
     },
+    from: postmark.FROM_NOREPLY,
+    messageStream: 'outbound',
   });
 }
 
@@ -73,6 +76,7 @@ async function sendPasswordResetEmail(to, name, resetLink) {
       name,
       resetLink,
     },
+    from: postmark.FROM_NOREPLY,
     messageStream: 'password-reset',
   });
 }
@@ -91,6 +95,8 @@ async function sendWelcomeEmail(to, name) {
     templateData: {
       name,
     },
+    from: postmark.FROM_HELLO,
+    messageStream: 'outbound',
   });
 }
 
