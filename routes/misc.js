@@ -284,7 +284,6 @@ router.post('/contact-supplier', applyWriteLimiter, async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    const enquiries = (await dbUnified.read('enquiries')) || [];
     await dbUnified.insertOne('enquiries', enquiry);
 
     logger.info('Supplier enquiry submitted', {

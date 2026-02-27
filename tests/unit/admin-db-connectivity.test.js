@@ -24,15 +24,17 @@ describe('Admin Route Database Connectivity', () => {
   describe('Admin packages endpoint', () => {
     it('should use dbUnified.read for packages (not legacy read())', () => {
       // The packages GET endpoint should use dbUnified
-      const packagesGetSection = adminContent.match(
-        /GET \/api\/admin\/packages[\s\S]*?(?=GET \/api\/admin\/packages\b|router\.post\('\/packages')/
-      );
       expect(adminContent).toContain("dbUnified.read('packages')");
     });
 
     it('should support supplierId filtering in packages endpoint', () => {
       expect(adminContent).toContain('supplierId');
       expect(adminContent).toMatch(/pkg\.supplierId\s*===\s*supplierId/);
+    });
+
+    it('should support featured=true filtering in packages endpoint', () => {
+      expect(adminContent).toContain("featured === 'true'");
+      expect(adminContent).toContain('pkg.featured === true');
     });
   });
 
@@ -77,7 +79,8 @@ describe('Admin Route Database Connectivity', () => {
     });
 
     it('should set approved=false and rejected=true on reject', () => {
-      expect(adminContent).toContain('approved: false, rejected: true');
+      expect(adminContent).toContain('approved: false');
+      expect(adminContent).toContain('rejected: true');
     });
 
     it('should audit log the rejection', () => {
@@ -100,5 +103,23 @@ describe('Admin Route Database Connectivity', () => {
     it('GET /user debug endpoint should be async', () => {
       expect(adminDebugContent).toContain('async (req, res) =>');
     });
+  });
+});
+
+describe('Admin content init frontend fixes', () => {
+  let contentInitContent;
+
+  beforeAll(() => {
+    const fs = require('fs');
+    const path = require('path');
+    contentInitContent = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/pages/admin-content-init.js'),
+      'utf8'
+    );
+  });
+
+  it('should call /packages/:id/feature POST to unfeature a package (not PUT on /packages/:id)', () => {
+    expect(contentInitContent).toContain('/api/admin/packages/${id}/feature');
+    expect(contentInitContent).not.toContain("'/api/admin/packages/${id}', 'PUT'");
   });
 });

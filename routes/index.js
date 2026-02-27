@@ -143,16 +143,19 @@ function mountRoutes(app, deps) {
   app.use('/api/payments', paymentsRoutes); // Backward compatibility
 
   // Billing alias routes (used by app.js supplier upgrade flow)
+  // Shared key resolution: prefer STRIPE_SECRET_KEY, fall back to STRIPE_SECRET_KEY_LIVE
+  const getBillingStripeKey = () =>
+    process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_LIVE || '';
+
   // GET /api/v1/billing/config - returns whether Stripe billing is enabled
   app.get('/api/v1/billing/config', (_req, res) => {
-    const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_LIVE || '';
-    res.json({ enabled: !!stripeKey });
+    res.json({ enabled: !!getBillingStripeKey() });
   });
 
   // POST /api/v1/billing/checkout - creates a Stripe checkout session for the default Pro plan
   app.post('/api/v1/billing/checkout', deps.authRequired, deps.csrfProtection, async (req, res) => {
     try {
-      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      const stripeKey = getBillingStripeKey();
       if (!stripeKey) {
         return res.status(503).json({ error: 'Stripe is not configured' });
       }

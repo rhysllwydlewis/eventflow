@@ -659,18 +659,14 @@ router.post(
         return res.status(404).json({ error: 'Not found' });
       }
       const { reason } = req.body || {};
-      await dbUnified.updateOne(
-        'suppliers',
-        { id: req.params.id },
-        {
-          $set: {
-            approved: false,
-            rejected: true,
-            rejectedAt: new Date().toISOString(),
-            rejectedReason: reason || '',
-          },
-        }
-      );
+      const now = new Date().toISOString();
+      const rejectedFields = {
+        approved: false,
+        rejected: true,
+        rejectedAt: now,
+        rejectedReason: reason || '',
+      };
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: rejectedFields });
       await auditLog({
         adminId: req.user.id,
         adminEmail: req.user.email,
@@ -680,7 +676,7 @@ router.post(
         details: { reason: reason || '' },
         ipAddress: req.ip,
       });
-      res.json({ ok: true, supplier: { ...all[i], approved: false, rejected: true } });
+      res.json({ ok: true, supplier: { ...all[i], ...rejectedFields } });
     } catch (error) {
       logger.error('Error rejecting supplier:', error);
       res.status(500).json({ error: 'Failed to reject supplier' });
@@ -886,14 +882,17 @@ router.post(
 
 /**
  * GET /api/admin/packages
- * List all packages for admin moderation (optionally filtered by supplierId)
+ * List all packages for admin moderation (optionally filtered by supplierId and/or featured)
  */
 router.get('/packages', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     let items = await dbUnified.read('packages');
-    const { supplierId } = req.query;
+    const { supplierId, featured } = req.query;
     if (supplierId) {
       items = items.filter(pkg => pkg.supplierId === supplierId || pkg.supplier_id === supplierId);
+    }
+    if (featured === 'true') {
+      items = items.filter(pkg => pkg.featured === true);
     }
     res.json({ items });
   } catch (error) {

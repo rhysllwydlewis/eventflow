@@ -411,7 +411,7 @@
     }
 
     try {
-      await AdminShared.api(`/api/admin/packages/${id}`, 'PUT', { featured: false });
+      await AdminShared.api(`/api/admin/packages/${id}/feature`, 'POST', { featured: false });
       AdminShared.showToast('Package unfeatured', 'success');
       loadFeaturedPackages();
     } catch (err) {
