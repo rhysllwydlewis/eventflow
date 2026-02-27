@@ -45,6 +45,7 @@
     'eventflow_onboarding_new',
     'ef_notification_sound_enabled',
     'ef_notification_volume',
+    'ef_tour_completed',
   ];
 
   // ─── Cookie helpers ────────────────────────────────────────────────────────
@@ -233,8 +234,11 @@
       return;
     }
 
-    // Remove stale banner if somehow present
-    removeBanner();
+    // Synchronously remove any stale banner before creating a new one
+    const stale = document.getElementById('cookie-consent-banner');
+    if (stale && stale.parentNode) {
+      stale.parentNode.removeChild(stale);
+    }
 
     const banner = document.createElement('div');
     banner.id = 'cookie-consent-banner';
@@ -401,11 +405,13 @@
       const analytics = document.getElementById('cookie-pref-analytics').checked;
       applyConsent({ essential: true, functional, analytics });
       closePreferencesDialog(overlay);
+      removeBanner();
     });
 
     document.getElementById('cookie-prefs-accept-all').addEventListener('click', () => {
       applyConsent({ essential: true, functional: true, analytics: false });
       closePreferencesDialog(overlay);
+      removeBanner();
     });
 
     // Animate in

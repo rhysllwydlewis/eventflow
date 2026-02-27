@@ -32,14 +32,24 @@ class DarkModeToggle {
       }
     });
 
-    // React to consent changes: clear localStorage theme when functional consent withdrawn
+    // React to consent changes
     window.addEventListener('cookieConsentChanged', e => {
-      if (e.detail && !e.detail.functional) {
-        try {
+      if (!e.detail) {
+        return;
+      }
+      try {
+        if (e.detail.functional) {
+          // Consent granted — persist the current theme
+          const current = document.documentElement.getAttribute('data-theme');
+          if (current) {
+            localStorage.setItem('theme', current);
+          }
+        } else {
+          // Consent withdrawn — clear the saved theme
           localStorage.removeItem('theme');
-        } catch (err) {
-          /* ignore */
         }
+      } catch (err) {
+        /* ignore */
       }
     });
 
