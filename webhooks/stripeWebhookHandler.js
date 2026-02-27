@@ -258,6 +258,7 @@ async function handleInvoicePaymentFailed(invoice) {
           }),
           gracePeriodEnd,
         },
+        from: postmark.FROM_BILLING,
         tags: ['payment-failed', 'transactional'],
         messageStream: 'outbound',
       });
@@ -355,6 +356,7 @@ async function handleSubscriptionCreated(stripeSubscription) {
           billingCycle: billingInterval,
           features,
         },
+        from: postmark.FROM_BILLING,
         tags: ['subscription-activated', 'transactional'],
         messageStream: 'outbound',
       });
@@ -474,6 +476,7 @@ async function handleSubscriptionTrialWillEnd(stripeSubscription) {
         amount,
         billingCycle: billingInterval,
       },
+      from: postmark.FROM_BILLING,
       tags: ['trial-ending', 'transactional'],
       messageStream: 'outbound',
     });
@@ -547,6 +550,7 @@ async function handleSubscriptionDeleted(stripeSubscription) {
           planName: formatPlanName(subscription.plan),
           endDate,
         },
+        from: postmark.FROM_BILLING,
         tags: ['subscription-cancelled', 'transactional'],
         messageStream: 'outbound',
       });
@@ -621,6 +625,7 @@ async function handleInvoiceUpcoming(invoice) {
         renewalMessage,
         ctaText,
       },
+      from: postmark.FROM_BILLING,
       tags: ['renewal-reminder', 'transactional'],
       messageStream: 'outbound',
     });

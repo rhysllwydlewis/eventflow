@@ -114,6 +114,7 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
         templateData: {
           confirmLink,
         },
+        from: postmark.FROM_INFO,
         messageStream: 'outbound',
       });
     } catch (emailError) {
@@ -199,6 +200,7 @@ router.get('/confirm', async (req, res) => {
         templateData: {
           email: subscriber.email,
         },
+        from: postmark.FROM_INFO,
         messageStream: 'outbound',
       });
     } catch (emailError) {

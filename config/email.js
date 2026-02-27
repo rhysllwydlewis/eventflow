@@ -24,7 +24,7 @@ function validateEmailConfig() {
       logger.warn('   Emails will be saved to /outbox folder until Postmark is configured.');
     }
     if (!process.env.POSTMARK_FROM) {
-      logger.warn('⚠️  Warning: POSTMARK_FROM not set. Using default: admin@event-flow.co.uk');
+      logger.warn('⚠️  Warning: POSTMARK_FROM not set. Using default: noreply@event-flow.co.uk');
     }
   }
 }
