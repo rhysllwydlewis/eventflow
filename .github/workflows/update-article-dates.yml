@@ -1,0 +1,41 @@
+name: Update Article Dates
+
+on:
+  schedule:
+    # Runs at 00:00 UTC on the 1st of every month
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-dates:
+    name: Update article dates to current month/year
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run date update script
+        run: node scripts/update-article-dates.js
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/articles/ public/assets/data/guides.json public/blog.html
+          if git diff --cached --quiet; then
+            echo "No date changes to commit."
+          else
+            MONTH=$(date +"%B %Y")
+            git commit -m "chore: update article dates to ${MONTH}"
+            git push
+          fi
