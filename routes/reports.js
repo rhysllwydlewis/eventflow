@@ -186,6 +186,7 @@ router.get('/admin/reports', authRequired, roleRequired('admin'), async (req, re
   const paginatedReports = reports.slice(startIndex, endIndex);
 
   res.json({
+    items: paginatedReports, // alias expected by admin-reports-init.js
     reports: paginatedReports,
     pagination: {
       page: pageNum,
