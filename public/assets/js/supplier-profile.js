@@ -316,10 +316,53 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
     const btnSave = document.getElementById('btn-save');
     if (btnSave) {
-      btnSave.onclick = () => {
-        // TODO: Save to favorites
-        if (window.EventFlowNotifications) {
-          window.EventFlowNotifications.info('Save feature coming soon!');
+      btnSave.onclick = async () => {
+        try {
+          const response = await fetch('/api/shortlist', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              type: 'supplier',
+              id: supplier.id,
+              name: supplier.name,
+              imageUrl: supplier.profileImage || supplier.coverImage || null,
+              category: supplier.category || null,
+              location: supplier.location || null,
+              priceHint: supplier.priceHint || supplier.price_display || null,
+              rating: supplier.rating || null,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            if (window.EventFlowNotifications) {
+              window.EventFlowNotifications.success('Saved to your shortlist!');
+            }
+            btnSave.setAttribute('aria-pressed', 'true');
+            btnSave.title = 'Saved to shortlist';
+          } else if (response.status === 400 && data.error === 'Item already in shortlist') {
+            if (window.EventFlowNotifications) {
+              window.EventFlowNotifications.info('Already in your shortlist');
+            }
+          } else if (response.status === 401 || response.status === 403) {
+            if (window.EventFlowNotifications) {
+              window.EventFlowNotifications.info('Please sign in to save suppliers');
+            }
+          } else {
+            if (window.EventFlowNotifications) {
+              window.EventFlowNotifications.error('Could not save — please try again');
+            }
+          }
+        } catch (err) {
+          console.error('Save to shortlist error:', err);
+          if (window.EventFlowNotifications) {
+            window.EventFlowNotifications.error('Could not save — please try again');
+          }
         }
       };
     }

@@ -298,6 +298,67 @@ async function handleSubscriptionCreated(stripeSubscription) {
     stripeCustomerId: stripeSubscription.customer,
     trialEnd,
   });
+
+  // Send subscription activated email
+  try {
+    const users = await dbUnified.read('users');
+    const user = users.find(u => u.id === payment.userId);
+    if (user) {
+      const item = stripeSubscription.items?.data?.[0];
+      const unitAmount = item?.price?.unit_amount ?? 0;
+      const billingInterval = item?.price?.recurring?.interval ?? 'month';
+      const amount = (unitAmount / 100).toFixed(2);
+
+      const trialDaysCount = trialEnd
+        ? Math.round((trialEnd - new Date()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      const renewalDate = trialEnd
+        ? trialEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : stripeSubscription.current_period_end
+          ? new Date(stripeSubscription.current_period_end * 1000).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })
+          : 'N/A';
+
+      const status = trialEnd ? 'Trial' : 'Active';
+
+      // Build a simple HTML feature list for the plan
+      const planFeatures = {
+        pro: '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li><li>Priority support</li>',
+        pro_plus:
+          '<li>Unlimited messaging</li><li>Advanced analytics</li><li>Priority listing</li><li>Priority support</li><li>Custom branding</li><li>Homepage carousel</li>',
+        enterprise:
+          '<li>All Pro Plus features</li><li>API access</li><li>Dedicated account manager</li><li>Custom integrations</li>',
+        basic: '<li>Messaging</li><li>Basic analytics</li><li>Verified badge</li>',
+        free: '<li>Basic messaging</li><li>Standard listing</li>',
+      };
+      const features = planFeatures[plan] || planFeatures.free;
+
+      await postmark.sendMail({
+        to: user.email,
+        subject: `Welcome to EventFlow ${formatPlanName(plan)}! Your subscription is active`,
+        template: 'subscription-activated',
+        templateData: {
+          name: user.name || 'there',
+          planName: formatPlanName(plan),
+          status,
+          trialDays: trialDaysCount > 0 ? String(trialDaysCount) : '0',
+          renewalDate,
+          amount,
+          billingCycle: billingInterval,
+          features,
+        },
+        tags: ['subscription-activated', 'transactional'],
+        messageStream: 'outbound',
+      });
+      logger.info(`Subscription activated email sent to ${user.email}`);
+    }
+  } catch (emailErr) {
+    logger.error('Failed to send subscription activated email:', emailErr.message);
+  }
 }
 
 /**
@@ -458,6 +519,37 @@ async function handleSubscriptionDeleted(stripeSubscription) {
         $set: { proExpiresAt: null, updatedAt: new Date().toISOString() },
       }
     );
+
+    // Send subscription cancelled email
+    try {
+      const endDate = subscription.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : new Date().toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+
+      await postmark.sendMail({
+        to: user.email,
+        subject: `Your EventFlow ${formatPlanName(subscription.plan)} subscription has been cancelled`,
+        template: 'subscription-cancelled',
+        templateData: {
+          name: user.name || 'there',
+          planName: formatPlanName(subscription.plan),
+          endDate,
+        },
+        tags: ['subscription-cancelled', 'transactional'],
+        messageStream: 'outbound',
+      });
+      logger.info(`Subscription cancelled email sent to ${user.email}`);
+    } catch (emailErr) {
+      logger.error('Failed to send subscription cancelled email:', emailErr.message);
+    }
   }
 }
 
