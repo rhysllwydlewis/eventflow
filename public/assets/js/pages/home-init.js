@@ -274,15 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Attach error handlers for hero collage media (CSP-safe replacement for inline onerror)
   initCollageErrorHandlers();
 
-  // Cookie preferences button (CSP-safe replacement for inline onclick)
-  const cookiePrefBtn = document.getElementById('ef-cookie-prefs-btn');
-  if (cookiePrefBtn) {
-    cookiePrefBtn.addEventListener('click', () => {
-      if (window.CookieConsent) {
-        window.CookieConsent.openPreferences();
-      }
-    });
-  }
+  // Cookie preferences button is wired automatically via data-cookie-prefs attribute
+  // by cookie-consent.js's bindPrefsButtons() — no manual handler needed here.
 
   // Add parallax effect to collage
   initParallaxCollage();
