@@ -3929,11 +3929,13 @@ body > .ef-loading-overlay {
   justify-content: center;
   padding: 1rem;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.25s ease-out;
 }
 
 .cookie-prefs-overlay.cookie-prefs-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Panel */
