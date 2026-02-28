@@ -176,6 +176,7 @@
   // ─── Focus trap helper ─────────────────────────────────────────────────────
 
   let _trapHandler = null;
+  let _triggerEl = null;
 
   function trapFocus(el) {
     const focusable = el.querySelectorAll(
@@ -426,9 +427,14 @@
     releaseFocus(el.querySelector('.cookie-prefs-panel'));
     el.classList.remove('cookie-prefs-visible');
     document.body.classList.remove('cookie-prefs-open');
+    const trigger = _triggerEl;
+    _triggerEl = null;
     setTimeout(() => {
       if (el.parentNode) {
         el.parentNode.removeChild(el);
+      }
+      if (trigger && typeof trigger.focus === 'function') {
+        trigger.focus();
       }
     }, 250);
   }
@@ -439,7 +445,12 @@
     return readConsentCookie() !== null;
   }
 
-  function openPreferences() {
+  function openPreferences(e) {
+    const candidate = (e && e.currentTarget) || (e && e.target) || null;
+    _triggerEl =
+      candidate && candidate !== document.body && typeof candidate.focus === 'function'
+        ? candidate
+        : null;
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => openPreferencesDialog());
     } else {
