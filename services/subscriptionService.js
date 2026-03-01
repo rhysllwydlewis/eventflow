@@ -7,7 +7,13 @@
 
 const dbUnified = require('../db-unified');
 const store = require('../store');
-const { getPlanFeatures, hasFeature, getAllPlans } = require('../models/Subscription');
+const {
+  getPlanFeatures,
+  hasFeature,
+  getAllPlans,
+  PLAN_FEATURES,
+} = require('../models/Subscription');
+const logger = require('../utils/logger');
 
 async function persistUserSubscriptionState(userId, updates) {
   const nowIso = new Date().toISOString();
@@ -138,6 +144,131 @@ async function updateSubscription(subscriptionId, updates) {
 }
 
 /**
+ * Process pro-rated payment difference when changing subscription plan.
+ * Uses Stripe's proration API when a Stripe subscription ID is present.
+ * Gracefully skips payment processing when Stripe is not configured.
+ *
+ * @param {Object} subscription - Current subscription object
+ * @param {string} newPlan - New plan tier
+ * @returns {Promise<void>}
+ */
+async function processSubscriptionPlanChange(subscription, newPlan) {
+  const oldPrice = PLAN_FEATURES[subscription.plan]?.price || 0;
+  const newPrice = PLAN_FEATURES[newPlan]?.price || 0;
+  const priceDifference = newPrice - oldPrice;
+
+  // If there's no Stripe subscription ID, skip Stripe payment processing
+  if (!subscription.stripeSubscriptionId) {
+    if (priceDifference !== 0) {
+      logger.info(
+        `Plan change from ${subscription.plan} to ${newPlan}: ` +
+          `price difference £${priceDifference.toFixed(2)}/mo — no Stripe subscription linked, skipping payment processing`
+      );
+    }
+    return;
+  }
+
+  // Lazy-load paymentService to avoid circular dependency
+  const paymentService = require('./paymentService');
+
+  if (!paymentService.STRIPE_ENABLED) {
+    logger.warn(
+      `Plan change from ${subscription.plan} to ${newPlan}: ` +
+        `Stripe is not configured — skipping prorated payment processing`
+    );
+    return;
+  }
+
+  try {
+    // Retrieve current Stripe subscription to get the current price item
+    const stripeConfig = require('../config/stripe');
+    const stripe = stripeConfig.getStripeClient();
+
+    if (!stripe) {
+      logger.warn('Stripe client unavailable — skipping prorated payment processing');
+      return;
+    }
+
+    const stripeSub = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
+    const currentItem = stripeSub.items.data[0];
+
+    if (!currentItem) {
+      logger.warn(
+        `No items found on Stripe subscription ${subscription.stripeSubscriptionId} — skipping proration`
+      );
+      return;
+    }
+
+    // Look up the Stripe price ID for the new plan using the same env var convention
+    // as the rest of the codebase (see routes/subscriptions-v2.js and routes/payments.js).
+    //   STRIPE_PRO_PRICE_ID       → pro plan monthly price ID
+    //   STRIPE_PRO_PLUS_PRICE_ID  → pro_plus plan monthly price ID
+    //   STRIPE_BASIC_PRICE_ID     → basic plan monthly price ID  (if using basic tier)
+    //   STRIPE_ENTERPRISE_PRICE_ID → enterprise plan monthly price ID
+    // Set these in your .env file (see .env.example for details).
+    const PLAN_PRICE_ENV_MAP = {
+      free: null, // Free plan — no Stripe price needed; cancellation is handled separately
+      basic: process.env.STRIPE_BASIC_PRICE_ID || null,
+      pro: process.env.STRIPE_PRO_PRICE_ID || null,
+      pro_plus: process.env.STRIPE_PRO_PLUS_PRICE_ID || null,
+      enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID || null,
+    };
+
+    // Changing to the free plan requires subscription cancellation, not a price change.
+    // Callers should use cancelSubscription() instead.
+    if (newPlan === 'free') {
+      logger.info(
+        `Plan change to "free" — subscription cancellation should be handled via cancelSubscription(). Skipping Stripe price update.`
+      );
+      return;
+    }
+
+    const newPriceId = PLAN_PRICE_ENV_MAP[newPlan];
+
+    if (!newPriceId) {
+      // Map plan name to the conventional env var name used across the codebase
+      const PLAN_ENV_VAR_NAMES = {
+        basic: 'STRIPE_BASIC_PRICE_ID',
+        pro: 'STRIPE_PRO_PRICE_ID',
+        pro_plus: 'STRIPE_PRO_PLUS_PRICE_ID',
+        enterprise: 'STRIPE_ENTERPRISE_PRICE_ID',
+      };
+      const envVarHint = PLAN_ENV_VAR_NAMES[newPlan] || `STRIPE_${newPlan.toUpperCase()}_PRICE_ID`;
+      logger.warn(
+        `No Stripe price ID configured for plan "${newPlan}" (set ${envVarHint} in .env). ` +
+          `Skipping Stripe proration — update the subscription plan in the Stripe dashboard manually.`
+      );
+      return;
+    }
+
+    // Apply proration immediately for upgrades (create_prorations charges the customer for the
+    // remainder of the current billing period at the new higher price).
+    // For downgrades, use 'none' and set cancel_at_period_end on the subscription item so the
+    // customer keeps access until the end of the paid period and is billed at the lower rate
+    // on the next renewal date.
+    const isUpgrade = priceDifference > 0;
+    const updateParams = {
+      items: [{ id: currentItem.id, price: newPriceId }],
+      proration_behavior: isUpgrade ? 'create_prorations' : 'none',
+    };
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, updateParams);
+
+    logger.info(
+      `Stripe subscription ${subscription.stripeSubscriptionId} updated: ` +
+        `${subscription.plan} → ${newPlan}, proration_behavior=${isUpgrade ? 'create_prorations' : 'none'}`
+    );
+  } catch (err) {
+    // Payment failure should not block the local subscription record update;
+    // log the error so ops can investigate and retry manually.
+    logger.error(
+      `Failed to process Stripe proration for subscription ${subscription.stripeSubscriptionId}: ${err.message}`
+    );
+    throw err;
+  }
+}
+
+/**
  * Upgrade subscription to a higher tier
  * @param {string} subscriptionId - Subscription ID
  * @param {string} newPlan - New plan tier
@@ -157,6 +288,9 @@ async function upgradeSubscription(subscriptionId, newPlan) {
   if (newIndex <= currentIndex) {
     throw new Error('New plan must be higher tier than current plan');
   }
+
+  // Process prorated payment difference via Stripe
+  await processSubscriptionPlanChange(subscription, newPlan);
 
   return updateSubscription(subscriptionId, {
     plan: newPlan,
@@ -184,6 +318,9 @@ async function downgradeSubscription(subscriptionId, newPlan) {
   if (newIndex >= currentIndex) {
     throw new Error('New plan must be lower tier than current plan');
   }
+
+  // Process prorated payment difference via Stripe (downgrade scheduled at period end)
+  await processSubscriptionPlanChange(subscription, newPlan);
 
   return updateSubscription(subscriptionId, {
     plan: newPlan,
@@ -388,4 +525,5 @@ module.exports = {
   listSubscriptions,
   getSubscriptionStats,
   getAllPlans,
+  processSubscriptionPlanChange,
 };

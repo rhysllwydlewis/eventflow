@@ -5,6 +5,26 @@ All notable changes to EventFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [18.2.0] - 2026-03-01
+
+### Added
+
+- **Subscription Plan Change Payment Processing**: `upgradeSubscription` and `downgradeSubscription` now calculate and process pro-rated payment differences via Stripe's proration API. Upgrades apply an immediate prorated charge (`create_prorations`); downgrades are scheduled at period end. Graceful fallback when Stripe is not configured or no Stripe price ID is set for the target plan.
+- **Stripe Production Safety Check**: `config/stripe.js` now emits a `warn` log when `STRIPE_SECRET_KEY` starts with `sk_test_` in a production (`NODE_ENV=production`) environment.
+- **WebSocket E2E Tests**: Added `e2e/websocket.spec.js` covering connection establishment, endpoint availability, typing-indicator event format, presence API, messenger UI, and network-interruption resilience.
+- **Unit Tests — Lead Scoring**: `tests/unit/leadScoring.test.js` covering `calculateLeadScore`, `validateEnquiry`, `isDisposableEmail`, `isBusinessEmail`, `isValidUKPostcode`, `isValidPhone`, and `daysBetween`.
+- **Unit Tests — Spam Detection**: `tests/unit/spamDetection.test.js` covering `checkRateLimit`, `checkDuplicate`, `countUrls`, `detectSpamKeywords`, `checkSpam`, and `cleanupCache`.
+- **ImageZoom Component**: New `public/assets/js/components/ImageZoom.js` providing zoom-on-hover (desktop) and pinch-to-zoom (mobile) with `prefers-reduced-motion` support and a static `ImageZoom.applyToGallery()` factory helper.
+- **Budget Allocation Pie Chart**: New `createBudgetPieChart()` exported from `dashboard-widgets.js`, providing a Chart.js pie chart of event spend by category for the customer dashboard.
+- **PWA Install Prompt on More Pages**: Added `pwa-install.js` to `blog.html`, `marketplace.html`, `pricing.html`, `start.html`, `supplier.html`, `for-suppliers.html`, `faq.html`, and `contact.html`.
+- **Verification Guide**: Added `docs/VERIFICATION-GUIDE.md` documenting email and phone verification API endpoints, rate limits, security considerations, and frontend integration.
+- **`test:debug` Script**: Added `npm run test:debug` to `package.json` which runs Jest with `--detectOpenHandles` to help identify async handles keeping the process alive.
+
+### Changed
+
+- **`jest.config.js` `forceExit` Comment**: Updated to document the known open-handle sources (db-unified timers, middleware) and reference `npm run test:debug` for investigation.
+- **Subscription Service Exports**: `processSubscriptionPlanChange` is now exported from `services/subscriptionService.js` for direct use in webhook handlers and admin tools.
+
 ## [Unreleased]
 
 ### Added

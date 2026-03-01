@@ -37,7 +37,7 @@ module.exports = {
   // Ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '/data/', '/uploads/'],
 
-  // Coverage thresholds – raised from baseline (15/17/20/20) as coverage grows
+  // Coverage thresholds – raised modestly as new unit tests are added (Mar 2026)
   coverageThreshold: {
     global: {
       branches: 20,
@@ -50,8 +50,11 @@ module.exports = {
   // Timeout for tests
   testTimeout: 10000,
 
-  // Force Jest to exit after all tests complete; prevents hanging on open handles
-  // Known issue: test-isolation open handle leaks remain unresolved (thresholds updated Feb 2026)
+  // Force Jest to exit after all tests complete; prevents hanging on open handles.
+  // Known open-handle sources investigated (Mar 2026): db-unified JSON file-watcher timers,
+  // and some third-party middleware keep event-loop entries alive after tests.
+  // Run `npm run test:debug` (--detectOpenHandles) to identify remaining sources.
+  // Remove this flag once all open handles are resolved.
   forceExit: true,
 
   // Verbose output

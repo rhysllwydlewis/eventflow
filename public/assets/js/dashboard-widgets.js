@@ -534,10 +534,110 @@ export function createProfileChecklist(completionData, containerId) {
   }, 100);
 }
 
+// ── Chart.js helpers ──────────────────────────────────────────────────────
+
+/**
+ * Load Chart.js library (lazy, from vendor bundle or CDN fallback).
+ * @returns {Promise<void>}
+ */
+async function loadChartJS() {
+  if (window.Chart) {
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '/assets/vendor/chart.umd.js';
+    script.onload = resolve;
+    script.onerror = () => {
+      const cdn = document.createElement('script');
+      cdn.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js';
+      cdn.onload = resolve;
+      cdn.onerror = reject;
+      document.head.appendChild(cdn);
+    };
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * Create a Chart.js budget allocation pie chart showing spending by category.
+ * Falls back gracefully to the existing HTML budget tracker if Chart.js fails to load.
+ *
+ * @param {Object} budgetData - { breakdown: { category: amount } }
+ * @param {string} containerId - ID of the container element
+ * @returns {Promise<Chart|null>}
+ */
+export async function createBudgetPieChart(budgetData, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return null;
+  }
+
+  const { breakdown = {} } = budgetData;
+  const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
+
+  if (entries.length === 0) {
+    container.innerHTML =
+      '<p style="color:#6B7280;text-align:center;padding:1rem;">No budget breakdown data yet.</p>';
+    return null;
+  }
+
+  try {
+    await loadChartJS();
+  } catch (_) {
+    // Chart.js unavailable – degrade gracefully
+    return null;
+  }
+
+  // Reduce motion preference
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', 'Budget allocation by category');
+  container.innerHTML = '';
+  container.appendChild(canvas);
+
+  const colors = [
+    '#00B2A9',
+    '#F59E0B',
+    '#6366F1',
+    '#10B981',
+    '#F43F5E',
+    '#3B82F6',
+    '#8B5CF6',
+    '#EC4899',
+  ];
+
+  const labels = entries.map(([cat]) => cat.charAt(0).toUpperCase() + cat.slice(1));
+  const data = entries.map(([, v]) => v);
+
+  return new window.Chart(canvas, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: colors.slice(0, data.length), borderWidth: 2 }],
+    },
+    options: {
+      responsive: true,
+      animation: { duration: reducedMotion ? 0 : 400 },
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: £${ctx.parsed.toLocaleString()}`,
+          },
+        },
+      },
+    },
+  });
+}
+
 // Export all functions
 export default {
   createStatsGrid,
   createBudgetTracker,
+  createBudgetPieChart,
   createProgressRing,
   createEventsTimeline,
   createProfileChecklist,
