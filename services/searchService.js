@@ -389,7 +389,7 @@ function applyFilters(suppliers, query, userCoords) {
         s.description_short || '',
         s.description_long || '',
         s.category || '',
-        s.location || '',
+        typeof s.location === 'string' ? s.location : '',
         ...(s.amenities || []),
         ...(s.tags || []),
       ]
@@ -409,7 +409,7 @@ function applyFilters(suppliers, query, userCoords) {
   if (query.location) {
     const locationTerm = query.location.toLowerCase();
     results = results.filter(s => {
-      const location = (s.location || '').toLowerCase();
+      const location = typeof s.location === 'string' ? s.location.toLowerCase() : '';
       return location.includes(locationTerm);
     });
   }

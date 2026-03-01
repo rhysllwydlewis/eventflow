@@ -183,7 +183,10 @@ function createEmptyState(filters) {
     filters.location ||
     filters.priceLevel ||
     filters.minRating ||
-    filters.verifiedOnly;
+    filters.verifiedOnly ||
+    filters.eventType ||
+    filters.postcode ||
+    filters.maxDistance;
 
   return `
     <div class="empty-state">

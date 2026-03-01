@@ -5,7 +5,7 @@
 
 /**
  * Read filters from URL parameters
- * @returns {Object} Filter object with category, location, priceLevel, q, eventType, sort, minRating, verifiedOnly, page
+ * @returns {Object} Filter object with category, location, priceLevel, q, eventType, sort, minRating, verifiedOnly, postcode, maxDistance, page
  */
 export function getFiltersFromURL() {
   const params = new URLSearchParams(window.location.search);
