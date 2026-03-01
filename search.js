@@ -221,7 +221,13 @@ async function searchSuppliers(query) {
   const startIndex = (page - 1) * perPage;
   const endIndex = startIndex + perPage;
 
-  const paginatedResults = results.slice(startIndex, endIndex);
+  const paginatedResults = results.slice(startIndex, endIndex).map(s => {
+    if (s._distanceMiles !== undefined) {
+      const { _distanceMiles, ...rest } = s;
+      return { ...rest, distanceMiles: _distanceMiles };
+    }
+    return s;
+  });
 
   return {
     results: paginatedResults,
