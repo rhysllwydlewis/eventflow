@@ -252,4 +252,21 @@
 <!-- Messenger Trigger -->
 <script src="/messenger/js/QuickComposeV4.js" defer></script>
 <script src="/messenger/js/MessengerTrigger.js" defer></script>
+
+<!-- Profile view analytics tracking -->
+<script>
+(function () {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var supplierId = params.get('id');
+    if (supplierId) {
+      fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'profile_view', supplierId: supplierId }),
+      }).catch(function () {});
+    }
+  } catch (e) {}
+})();
+</script>
 </body></html>

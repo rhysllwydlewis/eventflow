@@ -8,6 +8,7 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
+const supplierAnalytics = require('../utils/supplierAnalytics');
 
 // These will be injected by server.js during route mounting
 let dbUnified;
@@ -414,6 +415,8 @@ router.post(
         leadScore: leadScoreResult.rating,
         leadScoreRaw: leadScoreResult.score,
         leadScoreFlags: leadScoreResult.flags,
+        leadScoreBreakdown: leadScoreResult.breakdown,
+        scoredAt: new Date().toISOString(),
         validationFlags: {
           captchaPassed: true,
           emailVerified: req.user.verified || false,
@@ -497,7 +500,7 @@ router.post(
     (async () => {
       try {
         const customer = (await dbUnified.read('users')).find(u => u.id === req.user.id);
-        if (supplier.email && customer && customer.notify !== false) {
+        if (supplier && supplier.email && customer && customer.notify !== false) {
           await sendMail(
             supplier.email,
             'New enquiry on EventFlow',
@@ -508,6 +511,13 @@ router.post(
         // dev-safe
       }
     })();
+
+    // Track enquiry analytics (non-blocking)
+    if (effectiveSupplierId) {
+      supplierAnalytics
+        .trackEnquirySent(effectiveSupplierId, req.user.id, { threadId: thread.id })
+        .catch(err => logger.error('Failed to track enquiry analytics:', err));
+    }
 
     res.json({ ok: true, thread });
   }
