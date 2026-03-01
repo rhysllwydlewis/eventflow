@@ -6,7 +6,7 @@
 
 // Mock spam detection to avoid cross-test cache pollution
 jest.mock('../../services/spamDetection', () => ({
-  checkSpam: jest.fn().mockReturnValue({ isSpam: false, score: 0, reason: null }),
+  checkSpam: jest.fn().mockResolvedValue({ isSpam: false, score: 0, reason: null }),
   cleanupCache: jest.fn(),
 }));
 // Mock content sanitizer - strips HTML tags to prevent XSS

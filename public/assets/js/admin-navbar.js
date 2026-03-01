@@ -164,8 +164,8 @@
    */
   function updateNavbarUser() {
     fetch('/api/v1/auth/me', { credentials: 'include' })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (data) {
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(data => {
         const user = data.user || data;
         const fullName = user.name || user.displayName || '';
         // For email-only accounts, use the part before '@'
@@ -182,7 +182,7 @@
           labelEl.textContent = displayName.split(' ')[0];
         }
       })
-      .catch(function () {
+      .catch(() => {
         // Session not available — leave the default "A" / "Admin" labels
       });
   }

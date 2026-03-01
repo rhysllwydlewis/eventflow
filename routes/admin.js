@@ -10,7 +10,7 @@ const logger = require('../utils/logger');
 const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
-const { read, write, uid } = require('../store');
+const { uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
@@ -1189,7 +1189,6 @@ router.post(
       }
 
       const packages = await dbUnified.read('packages');
-      const initialCount = packages.length;
       const toDelete = packageIds.filter(id => packages.some(p => p.id === id));
       const deletedCount = toDelete.length;
 
@@ -1305,7 +1304,6 @@ router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), csrfP
         return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
       const all = await dbUnified.read('suppliers');
-      const before = all.length;
       const toDelete = supplierIds.filter(id => all.some(s => s.id === id));
       await Promise.all(toDelete.map(id => dbUnified.deleteOne('suppliers', id)));
       await auditLog({

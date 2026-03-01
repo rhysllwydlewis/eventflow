@@ -183,7 +183,8 @@ router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
     try {
       faqVotes = await dbUnified.read('faqVotes');
     } catch (e) {
-      // Collection doesn't exist yet, will be created
+      // Collection doesn't exist yet, will be created on first vote
+      logger.debug('faqVotes collection not yet initialised:', e.message);
     }
 
     // Check for existing vote from this visitor on this FAQ

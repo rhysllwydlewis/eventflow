@@ -5,6 +5,9 @@
 
 'use strict';
 
+const logger = require('../utils/logger');
+const crypto = require('crypto');
+
 /**
  * Rate limiter cache
  * Key: userId, Value: { count, resetAt }
@@ -12,8 +15,7 @@
  * NOTE: This is an in-memory store and does NOT work correctly in clustered/multi-process
  * environments. Each process maintains its own independent counters, so rate limits can
  * be exceeded across processes.
- * TODO: Replace with a Redis-backed counter (using the optional ioredis client already
- * loaded in websocket-server-v2.js) to support clustered deployments.
+ * Used as fallback when Redis is not available.
  */
 const rateLimitCache = new Map();
 
@@ -22,8 +24,37 @@ const rateLimitCache = new Map();
  * Key: userId, Value: [{ content, timestamp }]
  *
  * NOTE: Same in-memory clustering limitation as rateLimitCache above.
+ * Used as fallback when Redis is not available.
  */
 const recentMessagesCache = new Map();
+
+// Redis client — lazily initialised; null if Redis is unavailable
+let redisClient = null;
+let redisInitialised = false;
+
+/**
+ * Attempt to initialise a Redis client using ioredis.
+ * Falls back gracefully to null if ioredis is not installed or REDIS_URL is not set.
+ */
+function initRedis() {
+  if (redisInitialised) { return; }
+  redisInitialised = true;
+
+  const redisUrl = process.env.REDIS_URL || process.env.REDIS_URI;
+  if (!redisUrl) { return; }
+
+  try {
+    // eslint-disable-next-line global-require, node/no-missing-require
+    const Redis = require('ioredis');
+    redisClient = new Redis(redisUrl, { lazyConnect: true, enableOfflineQueue: false });
+    redisClient.on('error', err => {
+      logger.warn('SpamDetection: Redis error, falling back to in-memory:', err.message);
+      redisClient = null;
+    });
+  } catch (_e) {
+    // ioredis not available; silently use in-memory fallback
+  }
+}
 
 /**
  * Get spam keywords from environment
@@ -40,9 +71,31 @@ function getSpamKeywords() {
  * Check if user is rate limited
  * @param {string} userId - User ID
  * @param {number} maxPerMinute - Maximum messages per minute
- * @returns {Object} { limited: boolean, retryAfter: number }
+ * @returns {Promise<Object>} { limited: boolean, retryAfter: number }
  */
-function checkRateLimit(userId, maxPerMinute = 30) {
+async function checkRateLimit(userId, maxPerMinute = 30) {
+  initRedis();
+
+  // Redis-backed atomic rate limiting (INCR + EXPIRE)
+  if (redisClient) {
+    try {
+      const key = `spam:rate:${userId}`;
+      const count = await redisClient.incr(key);
+      if (count === 1) {
+        await redisClient.expire(key, 60);
+      }
+      if (count > maxPerMinute) {
+        const ttl = await redisClient.ttl(key);
+        return { limited: true, retryAfter: ttl > 0 ? ttl : 60 };
+      }
+      return { limited: false, retryAfter: 0 };
+    } catch (err) {
+      logger.warn('SpamDetection: Redis rate-limit check failed, using in-memory:', err.message);
+      // Fall through to in-memory
+    }
+  }
+
+  // In-memory fallback
   const now = Date.now();
   const cache = rateLimitCache.get(userId);
 
@@ -79,11 +132,36 @@ function checkRateLimit(userId, maxPerMinute = 30) {
  * @param {string} userId - User ID
  * @param {string} content - Message content
  * @param {number} windowSeconds - Detection window in seconds
- * @returns {boolean} True if duplicate detected
+ * @returns {Promise<boolean>} True if duplicate detected
  */
-function checkDuplicate(userId, content, windowSeconds = 5) {
-  const now = Date.now();
+async function checkDuplicate(userId, content, windowSeconds = 5) {
+  initRedis();
   const normalized = content.trim().toLowerCase();
+
+  // Redis-backed duplicate detection using a hash of content with TTL
+  if (redisClient) {
+    try {
+      // Use a per-user set of content hashes with TTL
+      const key = `spam:dup:${userId}`;
+      // Store content hash to bound key size
+      const contentHash = crypto.createHash('sha1').update(normalized).digest('hex');
+
+      // Check if this content hash was recently sent
+      const exists = await redisClient.hexists(key, contentHash);
+
+      // Record this message and set expiry
+      await redisClient.hset(key, contentHash, Date.now().toString());
+      await redisClient.expire(key, windowSeconds * 10); // Keep window with buffer
+
+      return exists === 1;
+    } catch (err) {
+      logger.warn('SpamDetection: Redis duplicate check failed, using in-memory:', err.message);
+      // Fall through to in-memory
+    }
+  }
+
+  // In-memory fallback
+  const now = Date.now();
 
   let recent = recentMessagesCache.get(userId);
   if (!recent) {
@@ -154,9 +232,9 @@ function detectSpamKeywords(content) {
  * @param {string} userId - User ID
  * @param {string} content - Message content
  * @param {Object} options - Detection options
- * @returns {Object} { isSpam: boolean, reason: string, score: number }
+ * @returns {Promise<Object>} { isSpam: boolean, reason: string, score: number }
  */
-function checkSpam(userId, content, options = {}) {
+async function checkSpam(userId, content, options = {}) {
   const {
     maxUrlCount = 5,
     maxPerMinute = 30,
@@ -168,14 +246,14 @@ function checkSpam(userId, content, options = {}) {
   const reasons = [];
 
   // Rate limit check
-  const rateLimit = checkRateLimit(userId, maxPerMinute);
+  const rateLimit = await checkRateLimit(userId, maxPerMinute);
   if (rateLimit.limited) {
     score += 100;
     reasons.push(`Rate limit exceeded (${maxPerMinute} messages/minute)`);
   }
 
   // Duplicate check
-  if (checkDuplicates && checkDuplicate(userId, content)) {
+  if (checkDuplicates && (await checkDuplicate(userId, content))) {
     score += 50;
     reasons.push('Duplicate message detected');
   }

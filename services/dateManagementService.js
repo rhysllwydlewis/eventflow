@@ -494,8 +494,6 @@ class DateManagementService {
         return;
       }
 
-      const notifications = await this.dbUnified.read('notifications');
-
       const message =
         updateInfo.type === 'AUTO_UPDATE'
           ? `Legal document dates automatically updated from ${updateInfo.previousDate} to ${updateInfo.newDate}`

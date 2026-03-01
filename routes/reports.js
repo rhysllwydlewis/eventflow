@@ -7,7 +7,7 @@
 
 const express = require('express');
 const logger = require('../utils/logger');
-const { read, write, uid } = require('../store');
+const { uid } = require('../store');
 const dbUnified = require('../db-unified');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
