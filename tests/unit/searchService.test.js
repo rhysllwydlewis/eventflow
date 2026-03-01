@@ -490,10 +490,10 @@ describe('Search Service', () => {
       expect(result.results[0].id).toBe('gbp1');
     });
 
-    it('should sort by distance falling back to relevance', async () => {
+    it('should sort by distance falling back to relevance when no postcode provided', async () => {
       const result = await searchService.searchSuppliers({ sortBy: 'distance' });
 
-      // distance sort is a stub; it should not throw and should return results
+      // No postcode provided — falls back to relevance order; should not throw
       expect(result.results).toBeDefined();
       expect(result.results.length).toBe(3);
     });
@@ -549,6 +549,220 @@ describe('Search Service', () => {
     it('should not crash when minPrice is NaN', async () => {
       const result = await searchService.searchSuppliers({ minPrice: 'bad', maxPrice: 'bad' });
       expect(result.results.length).toBe(3);
+    });
+  });
+
+  describe('Distance and geo filtering', () => {
+    // Note: geocodeLocation is called internally. In test environment it returns
+    // mock coordinates for known postcodes (see utils/geocoding.js test handling).
+
+    it('should return all results when no postcode is provided with distance sort', async () => {
+      const result = await searchService.searchSuppliers({ sortBy: 'distance' });
+      expect(result.results).toBeDefined();
+      expect(result.results.length).toBe(3);
+    });
+
+    it('should filter by maxDistance when supplier has GeoJSON coordinates', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'near',
+              name: 'Near Supplier',
+              category: 'Venues',
+              approved: true,
+              // Cardiff coordinates
+              location: { type: 'Point', coordinates: [-3.1791, 51.4816] },
+            },
+            {
+              id: 'far',
+              name: 'Far Supplier',
+              category: 'Catering',
+              approved: true,
+              // London coordinates
+              location: { type: 'Point', coordinates: [-0.1278, 51.5074] },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      // postcode 'CF10 1AA' geocodes to Cardiff in test env; maxDistance 5 miles
+      const result = await searchService.searchSuppliers({
+        postcode: 'CF10 1AA',
+        maxDistance: 5,
+      });
+
+      // Only the near (Cardiff) supplier should be within 5 miles of Cardiff
+      expect(result.results.find(r => r.id === 'near')).toBeDefined();
+      expect(result.results.find(r => r.id === 'far')).toBeUndefined();
+    });
+
+    it('should include distanceMiles on results when postcode is provided', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'geo1',
+              name: 'Geo Supplier',
+              category: 'Venues',
+              approved: true,
+              location: { type: 'Point', coordinates: [-3.1791, 51.4816] },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const result = await searchService.searchSuppliers({ postcode: 'CF10 1AA' });
+      const supplier = result.results[0];
+      expect(supplier).toBeDefined();
+      expect(supplier.distanceMiles).toBeDefined();
+      expect(typeof supplier.distanceMiles).toBe('number');
+    });
+
+    it('should sort by distance nearest first when postcode is provided', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'london',
+              name: 'London Supplier',
+              category: 'Venues',
+              approved: true,
+              location: { type: 'Point', coordinates: [-0.1278, 51.5074] },
+            },
+            {
+              id: 'cardiff',
+              name: 'Cardiff Supplier',
+              category: 'Venues',
+              approved: true,
+              location: { type: 'Point', coordinates: [-3.1791, 51.4816] },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      // Searching near Cardiff — Cardiff supplier should be first
+      const result = await searchService.searchSuppliers({
+        postcode: 'CF10 1AA',
+        sortBy: 'distance',
+      });
+
+      expect(result.results[0].id).toBe('cardiff');
+      expect(result.results[1].id).toBe('london');
+    });
+
+    it('should not expose _distanceMiles internal field on results', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'geo2',
+              name: 'Geo Supplier',
+              category: 'Venues',
+              approved: true,
+              location: { type: 'Point', coordinates: [-3.1791, 51.4816] },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const result = await searchService.searchSuppliers({ postcode: 'CF10 1AA' });
+      const supplier = result.results[0];
+      expect(supplier).toBeDefined();
+      expect(supplier._distanceMiles).toBeUndefined();
+    });
+
+    it('should include suppliers without coordinates when no maxDistance filter', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'no-coords',
+              name: 'No Coords Supplier',
+              category: 'Venues',
+              approved: true,
+              location: 'Birmingham',
+            },
+            {
+              id: 'with-coords',
+              name: 'Coords Supplier',
+              category: 'Venues',
+              approved: true,
+              location: { type: 'Point', coordinates: [-3.1791, 51.4816] },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const result = await searchService.searchSuppliers({ postcode: 'CF10 1AA' });
+      // Both suppliers should be included (no maxDistance filter)
+      expect(result.results.length).toBe(2);
+    });
+
+    it('should exclude suppliers without coordinates when maxDistance is set', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'no-coords',
+              name: 'No Coords Supplier',
+              category: 'Venues',
+              approved: true,
+              location: 'Birmingham',
+            },
+            {
+              id: 'near',
+              name: 'Near Supplier',
+              category: 'Venues',
+              approved: true,
+              location: { type: 'Point', coordinates: [-3.1791, 51.4816] },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      // maxDistance=5 — supplier without coordinates should be excluded
+      const result = await searchService.searchSuppliers({
+        postcode: 'CF10 1AA',
+        maxDistance: 5,
+      });
+      expect(result.results.find(r => r.id === 'no-coords')).toBeUndefined();
+      expect(result.results.find(r => r.id === 'near')).toBeDefined();
+    });
+
+    it('should treat location as text filter even when other suppliers have GeoJSON', async () => {
+      dbUnified.read.mockImplementation(collection => {
+        if (collection === 'suppliers') {
+          return Promise.resolve([
+            {
+              id: 'geo-london',
+              name: 'London Venue',
+              category: 'Venues',
+              approved: true,
+              location: { type: 'Point', coordinates: [-0.1278, 51.5074] },
+            },
+            {
+              id: 'str-manchester',
+              name: 'Manchester Venue',
+              category: 'Venues',
+              approved: true,
+              location: 'Manchester',
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      // GeoJSON location field should not cause TypeError in text filter
+      const result = await searchService.searchSuppliers({ location: 'Manchester' });
+      expect(result.results.length).toBe(1);
+      expect(result.results[0].id).toBe('str-manchester');
     });
   });
 });

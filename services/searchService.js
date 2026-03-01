@@ -11,6 +11,7 @@ const {
   getMatchingSnippets,
   getMatchingFields,
 } = require('../utils/searchWeighting');
+const { geocodeLocation, calculateDistance } = require('../utils/geocoding');
 
 /**
  * Count price-tier symbols in a price_display string.
@@ -98,7 +99,9 @@ function projectPublicPackageFields(pkg) {
  * @param {boolean|string} [query.proOnly] - Filter to pro suppliers only
  * @param {boolean|string} [query.featuredOnly] - Filter to featured only
  * @param {boolean|string} [query.verifiedOnly] - Filter to verified only
- * @param {string} [query.sortBy='relevance'] - Sort order: relevance, rating, reviews, name, newest, priceAsc, priceDesc
+ * @param {string} [query.sortBy='relevance'] - Sort order: relevance, rating, reviews, name, newest, priceAsc, priceDesc, distance
+ * @param {string} [query.postcode] - UK postcode for distance-based filtering/sorting
+ * @param {number} [query.maxDistance] - Maximum distance in miles from postcode
  * @param {number} [query.page=1] - Page number (1-indexed)
  * @param {number} [query.limit=20] - Results per page (max 100)
  * @returns {Promise<Object>} Search results with scores
@@ -112,11 +115,17 @@ async function searchSuppliers(query) {
   const startTime = Date.now();
   const suppliers = await dbUnified.read('suppliers');
 
+  // Geocode postcode for distance filtering/sorting
+  let userCoords = null;
+  if (query.postcode) {
+    userCoords = await geocodeLocation(query.postcode);
+  }
+
   // Filter approved suppliers
   let results = suppliers.filter(s => s.approved);
 
-  // Apply filters
-  results = applyFilters(results, query);
+  // Apply filters (pass userCoords for distance filtering)
+  results = applyFilters(results, query, userCoords);
 
   // Calculate relevance scores if query present
   if (query.q) {
@@ -135,8 +144,12 @@ async function searchSuppliers(query) {
       // Project only public fields
       const publicSupplier = projectPublicSupplierFields(supplier);
 
+      // Attach pre-calculated distance if available
       return {
         ...publicSupplier,
+        ...(supplier._distanceMiles !== undefined
+          ? { distanceMiles: supplier._distanceMiles }
+          : {}),
         relevanceScore: score,
         match: {
           fields: matchedFields,
@@ -149,11 +162,14 @@ async function searchSuppliers(query) {
     results = results.filter(r => r.relevanceScore > 0);
   } else {
     // No search query, just project public fields
-    results = results.map(projectPublicSupplierFields);
+    results = results.map(supplier => ({
+      ...projectPublicSupplierFields(supplier),
+      ...(supplier._distanceMiles !== undefined ? { distanceMiles: supplier._distanceMiles } : {}),
+    }));
   }
 
-  // Sort results
-  results = sortResults(results, query.sortBy || 'relevance');
+  // Sort results (pass userCoords for distance sort)
+  results = sortResults(results, query.sortBy || 'relevance', userCoords);
 
   // Get total before pagination
   const total = results.length;
@@ -320,10 +336,49 @@ async function advancedSearch(criteria) {
  * Apply filters to supplier results
  * @param {Array} suppliers - Supplier array
  * @param {Object} query - Query parameters
+ * @param {Object|null} userCoords - User's geocoded coordinates {latitude, longitude}
  * @returns {Array} Filtered suppliers
  */
-function applyFilters(suppliers, query) {
+function applyFilters(suppliers, query, userCoords) {
   let results = suppliers;
+
+  // Distance filter: annotate each supplier with distanceMiles if userCoords available
+  if (userCoords) {
+    const maxDistance = query.maxDistance ? Number(query.maxDistance) : null;
+    results = results.reduce((acc, s) => {
+      // Support GeoJSON Point: { type: 'Point', coordinates: [lng, lat] }
+      // or flat lat/lng fields
+      let supplierLat = null;
+      let supplierLng = null;
+      if (s.location && s.location.coordinates && Array.isArray(s.location.coordinates)) {
+        [supplierLng, supplierLat] = s.location.coordinates;
+      } else if (s.lat !== undefined && s.lng !== undefined) {
+        supplierLat = s.lat;
+        supplierLng = s.lng;
+      }
+
+      if (supplierLat !== null && supplierLng !== null) {
+        const dist = calculateDistance(
+          userCoords.latitude,
+          userCoords.longitude,
+          supplierLat,
+          supplierLng
+        );
+        // Filter by maxDistance if set
+        if (maxDistance !== null && dist > maxDistance) {
+          return acc;
+        }
+        // Attach distance for sorting (using temporary private field)
+        acc.push({ ...s, _distanceMiles: dist });
+      } else {
+        // No coordinates — include unless strict distance filter is active
+        if (!maxDistance) {
+          acc.push(s);
+        }
+      }
+      return acc;
+    }, []);
+  }
 
   // Text search (applied in scoring, but also filter out non-matches)
   if (query.q) {
@@ -334,7 +389,7 @@ function applyFilters(suppliers, query) {
         s.description_short || '',
         s.description_long || '',
         s.category || '',
-        s.location || '',
+        typeof s.location === 'string' ? s.location : '',
         ...(s.amenities || []),
         ...(s.tags || []),
       ]
@@ -354,7 +409,7 @@ function applyFilters(suppliers, query) {
   if (query.location) {
     const locationTerm = query.location.toLowerCase();
     results = results.filter(s => {
-      const location = (s.location || '').toLowerCase();
+      const location = typeof s.location === 'string' ? s.location.toLowerCase() : '';
       return location.includes(locationTerm);
     });
   }
@@ -496,9 +551,10 @@ function applyPackageFilters(packages, query, supplierMap) {
  * Sort search results
  * @param {Array} results - Results to sort
  * @param {string} sortBy - Sort criteria
+ * @param {Object|null} userCoords - Geocoded user coordinates for distance sort
  * @returns {Array} Sorted results
  */
-function sortResults(results, sortBy) {
+function sortResults(results, sortBy, userCoords) {
   const sorted = [...results];
 
   switch (sortBy) {
@@ -535,17 +591,17 @@ function sortResults(results, sortBy) {
       break;
 
     case 'distance':
-      // STUB: Distance sort requires geolocation; falls back to relevance order.
-      // To implement properly:
-      //   1. Add a 2dsphere index to the suppliers collection on a `location.coordinates` field
-      //   2. Implement a postcode → lat/lng lookup (e.g. postcodes.io API or stored lookup table)
-      //   3. Accept user coordinates as query parameters and use MongoDB $geoNear aggregation
-      // For now the relevance order is preserved unchanged.
-      sorted.sort((a, b) => {
-        const scoreA = a.relevanceScore || 0;
-        const scoreB = b.relevanceScore || 0;
-        return scoreB - scoreA;
-      });
+      if (userCoords) {
+        // Suppliers with known distance first (nearest first), then those without coordinates
+        sorted.sort((a, b) => {
+          const distA = a.distanceMiles !== undefined ? a.distanceMiles : Infinity;
+          const distB = b.distanceMiles !== undefined ? b.distanceMiles : Infinity;
+          return distA - distB;
+        });
+      } else {
+        // No postcode provided — fall back to relevance order
+        sorted.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+      }
       break;
 
     default:

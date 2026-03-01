@@ -5,7 +5,7 @@
 
 /**
  * Read filters from URL parameters
- * @returns {Object} Filter object with category, location, priceLevel, q, eventType, sort, minRating, verifiedOnly, page
+ * @returns {Object} Filter object with category, location, priceLevel, q, eventType, sort, minRating, verifiedOnly, postcode, maxDistance, page
  */
 export function getFiltersFromURL() {
   const params = new URLSearchParams(window.location.search);
@@ -19,6 +19,8 @@ export function getFiltersFromURL() {
     sort: params.get('sort') || 'relevance',
     minRating: params.get('minRating') || '',
     verifiedOnly: params.get('verifiedOnly') === 'true',
+    postcode: params.get('postcode') || '',
+    maxDistance: params.get('maxDistance') || '',
     page: parseInt(params.get('page'), 10) || 1,
   };
 }
@@ -46,6 +48,12 @@ export function updateURL(filters, replace = false) {
   }
   if (filters.eventType) {
     params.set('eventType', filters.eventType);
+  }
+  if (filters.postcode) {
+    params.set('postcode', filters.postcode);
+  }
+  if (filters.maxDistance) {
+    params.set('maxDistance', filters.maxDistance);
   }
   if (filters.minRating) {
     params.set('minRating', filters.minRating);
