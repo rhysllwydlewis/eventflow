@@ -13,8 +13,6 @@
         throw new Error(data.error || 'Failed to load content dates');
       }
 
-      void data.config; // config loaded; kept for consistency with server response
-
       // Update status
       const statusHtml = `
         <div class="info-row">

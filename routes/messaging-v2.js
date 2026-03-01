@@ -9,7 +9,7 @@ const express = require('express');
 const { ObjectId } = require('mongodb');
 const multer = require('multer');
 const path = require('path');
-const { writeLimiter } = require('../middleware/rateLimits');
+const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const { createDeprecationMiddleware } = require('../middleware/legacyMessaging');
 
 // Dependencies injected by server.js
@@ -1160,8 +1160,9 @@ router.post(
 /**
  * GET /api/v2/messages/attachments/:id
  * Serve a message attachment stored in MongoDB
+ * Requires authentication to prevent unauthorized access to private attachments
  */
-router.get('/attachments/:id', async (req, res) => {
+router.get('/attachments/:id', apiLimiter, applyAuthRequired, async (req, res) => {
   try {
     const { id } = req.params;
 

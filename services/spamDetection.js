@@ -6,6 +6,7 @@
 'use strict';
 
 const logger = require('../utils/logger');
+const crypto = require('crypto');
 
 /**
  * Rate limiter cache
@@ -143,7 +144,6 @@ async function checkDuplicate(userId, content, windowSeconds = 5) {
       // Use a per-user set of content hashes with TTL
       const key = `spam:dup:${userId}`;
       // Store content hash to bound key size
-      const crypto = require('crypto');
       const contentHash = crypto.createHash('sha1').update(normalized).digest('hex');
 
       // Check if this content hash was recently sent
