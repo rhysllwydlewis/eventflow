@@ -270,6 +270,47 @@ describe('Analytics API Integration Tests', () => {
       expect(routeContent).toContain("router.get('/events'");
       expect(routeContent).toContain('Admin access required');
     });
+
+    it('should define POST /track endpoint for profile views and enquiries', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/analytics.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain("router.post('/track'");
+      expect(routeContent).toContain('profile_view');
+      expect(routeContent).toContain("'enquiry'");
+    });
+
+    it('should rate-limit the /track endpoint by IP and supplierId', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/analytics.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('isTrackRateLimited');
+      expect(routeContent).toContain('trackRateLimitCache');
+    });
+
+    it('should validate supplierId format on /track endpoint', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/analytics.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('Invalid supplierId format');
+      expect(routeContent).toContain('[a-zA-Z0-9_-]');
+    });
+
+    it('should call supplierAnalytics.trackProfileView for profile_view type', () => {
+      const routeContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/analytics.js'),
+        'utf8'
+      );
+
+      expect(routeContent).toContain('supplierAnalytics.trackProfileView');
+      expect(routeContent).toContain('supplierAnalytics.trackEnquirySent');
+    });
   });
 });
 
@@ -437,6 +478,35 @@ describe('Shortlist Manager Auto-Merge', () => {
 
       expect(managerContent).toContain('existingIds');
       expect(managerContent).toContain('has(itemKey)');
+    });
+  });
+});
+
+describe('Supplier Profile View Tracking', () => {
+  describe('supplier.html client-side analytics ping', () => {
+    const supplierHtml = fs.readFileSync(
+      path.join(__dirname, '../../public/supplier.html'),
+      'utf8'
+    );
+
+    it('fires POST /api/analytics/track on page load', () => {
+      expect(supplierHtml).toContain('/api/analytics/track');
+      expect(supplierHtml).toContain("type: 'profile_view'");
+    });
+
+    it('reads supplierId from URL query parameters', () => {
+      expect(supplierHtml).toContain('URLSearchParams');
+      expect(supplierHtml).toContain("params.get('id')");
+    });
+
+    it('uses fetch to send the tracking request', () => {
+      expect(supplierHtml).toContain("method: 'POST'");
+      expect(supplierHtml).toContain("'Content-Type': 'application/json'");
+    });
+
+    it('wraps tracking in try/catch to not break page load', () => {
+      expect(supplierHtml).toContain('try {');
+      expect(supplierHtml).toContain('} catch (e) {}');
     });
   });
 });

@@ -108,4 +108,32 @@ describe('Thread metadata updates on message send', () => {
       expect(postStartHandler).toContain('lastMessagePreview');
     });
   });
+
+  describe('Lead scoring fields on thread creation', () => {
+    const postStartHandler = threadsRouteJs
+      .split("router.post(\n  '/start'")[1]
+      .split('router.')[0];
+
+    it('stores leadScore (rating string) on thread', () => {
+      expect(postStartHandler).toContain('leadScore: leadScoreResult.rating');
+    });
+
+    it('stores leadScoreRaw (numeric 0-100) on thread', () => {
+      expect(postStartHandler).toContain('leadScoreRaw: leadScoreResult.score');
+    });
+
+    it('stores leadScoreBreakdown (detailed breakdown) on thread', () => {
+      expect(postStartHandler).toContain('leadScoreBreakdown: leadScoreResult.breakdown');
+    });
+
+    it('stores scoredAt timestamp on thread', () => {
+      expect(postStartHandler).toContain('scoredAt:');
+      expect(postStartHandler).toContain('new Date().toISOString()');
+    });
+
+    it('tracks enquiry analytics after thread creation', () => {
+      expect(postStartHandler).toContain('supplierAnalytics');
+      expect(postStartHandler).toContain('trackEnquirySent');
+    });
+  });
 });

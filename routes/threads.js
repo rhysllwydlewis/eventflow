@@ -415,6 +415,8 @@ router.post(
         leadScore: leadScoreResult.rating,
         leadScoreRaw: leadScoreResult.score,
         leadScoreFlags: leadScoreResult.flags,
+        leadScoreBreakdown: leadScoreResult.breakdown,
+        scoredAt: new Date().toISOString(),
         validationFlags: {
           captchaPassed: true,
           emailVerified: req.user.verified || false,
