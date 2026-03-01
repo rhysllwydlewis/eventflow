@@ -199,20 +199,43 @@ async function processSubscriptionPlanChange(subscription, newPlan) {
       return;
     }
 
-    // Look up the Stripe price ID for the new plan from environment variables.
-    // Required environment variable naming convention:
-    //   STRIPE_PRICE_FREE      → free plan price ID
-    //   STRIPE_PRICE_BASIC     → basic plan price ID
-    //   STRIPE_PRICE_PRO       → pro plan price ID
-    //   STRIPE_PRICE_PRO_PLUS  → pro_plus plan price ID (note: underscore → underscore)
-    //   STRIPE_PRICE_ENTERPRISE → enterprise plan price ID
-    // Set these in your .env file or deployment environment before enabling plan changes.
-    const envKey = `STRIPE_PRICE_${newPlan.toUpperCase()}`;
-    const newPriceId = process.env[envKey];
+    // Look up the Stripe price ID for the new plan using the same env var convention
+    // as the rest of the codebase (see routes/subscriptions-v2.js and routes/payments.js).
+    //   STRIPE_PRO_PRICE_ID       → pro plan monthly price ID
+    //   STRIPE_PRO_PLUS_PRICE_ID  → pro_plus plan monthly price ID
+    //   STRIPE_BASIC_PRICE_ID     → basic plan monthly price ID  (if using basic tier)
+    //   STRIPE_ENTERPRISE_PRICE_ID → enterprise plan monthly price ID
+    // Set these in your .env file (see .env.example for details).
+    const PLAN_PRICE_ENV_MAP = {
+      free: null, // Free plan — no Stripe price needed; cancellation is handled separately
+      basic: process.env.STRIPE_BASIC_PRICE_ID || null,
+      pro: process.env.STRIPE_PRO_PRICE_ID || null,
+      pro_plus: process.env.STRIPE_PRO_PLUS_PRICE_ID || null,
+      enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID || null,
+    };
+
+    // Changing to the free plan requires subscription cancellation, not a price change.
+    // Callers should use cancelSubscription() instead.
+    if (newPlan === 'free') {
+      logger.info(
+        `Plan change to "free" — subscription cancellation should be handled via cancelSubscription(). Skipping Stripe price update.`
+      );
+      return;
+    }
+
+    const newPriceId = PLAN_PRICE_ENV_MAP[newPlan];
 
     if (!newPriceId) {
+      const envVarHint =
+        newPlan === 'pro'
+          ? 'STRIPE_PRO_PRICE_ID'
+          : newPlan === 'pro_plus'
+            ? 'STRIPE_PRO_PLUS_PRICE_ID'
+            : newPlan === 'basic'
+              ? 'STRIPE_BASIC_PRICE_ID'
+              : `STRIPE_${newPlan.toUpperCase()}_PRICE_ID`;
       logger.warn(
-        `No Stripe price ID configured for plan "${newPlan}" (env: ${envKey}). ` +
+        `No Stripe price ID configured for plan "${newPlan}" (set ${envVarHint} in .env). ` +
           `Skipping Stripe proration — update the subscription plan in the Stripe dashboard manually.`
       );
       return;
