@@ -18,6 +18,12 @@ Disallow: /settings
 Disallow: /dashboard
 Disallow: /dashboard-customer
 Disallow: /dashboard-supplier
+Disallow: /checkout
+Disallow: /payment-success
+Disallow: /payment-cancel
+Disallow: /reset-password
+Disallow: /verify
+Disallow: /data-rights
 Disallow: /api/
 Disallow: /uploads/
 Disallow: /*.json$
