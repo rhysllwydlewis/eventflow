@@ -17,10 +17,15 @@ class ImageZoom {
     this.element = typeof element === 'string' ? document.querySelector(element) : element;
     this.options = {
       zoomLevel: 2.5,
+      minZoom: 1,
       transitionDuration: 200, // ms
       containerClass: 'ef-zoom-container',
       ...options,
     };
+    // Ensure maxZoom is respected when passed directly
+    if (options.maxZoom) {
+      this.options.zoomLevel = options.maxZoom;
+    }
 
     this._onMouseMove = this._onMouseMove.bind(this);
     this._onMouseEnter = this._onMouseEnter.bind(this);
@@ -164,7 +169,10 @@ class ImageZoom {
 
     const currentDistance = this._getPinchDistance(event.touches);
     const ratio = currentDistance / this._initialPinchDistance;
-    const newScale = Math.min(Math.max(this._pinchStartScale * ratio, 1), this.options.zoomLevel);
+    const newScale = Math.min(
+      Math.max(this._pinchStartScale * ratio, this.options.minZoom),
+      this.options.zoomLevel
+    );
 
     this._currentScale = newScale;
     this.element.style.transform = `scale(${newScale})`;
@@ -172,8 +180,8 @@ class ImageZoom {
 
   _onTouchEnd() {
     this._initialPinchDistance = null;
-    if (this._currentScale <= 1.05) {
-      this._currentScale = 1;
+    if (this._currentScale <= this.options.minZoom + 0.05) {
+      this._currentScale = this.options.minZoom;
       this._resetTransform();
     }
   }

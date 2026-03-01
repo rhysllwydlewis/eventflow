@@ -15,6 +15,10 @@
 
 const { test, expect } = require('@playwright/test');
 
+// Timeout for WebSocket connection attempts (ms).
+// CI runners can be slower — increase if tests flake in slow environments.
+const WS_CONNECT_TIMEOUT_MS = 4000;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -24,36 +28,42 @@ const { test, expect } = require('@playwright/test');
  * Returns a Promise that resolves to { connected, error }.
  */
 async function tryWebSocketConnect(page, token = null) {
-  return page.evaluate(async authToken => {
-    return new Promise(resolve => {
-      const timeout = setTimeout(() => resolve({ connected: false, error: 'timeout' }), 4000);
+  return page.evaluate(
+    async ({ authToken, wsConnectTimeout }) => {
+      return new Promise(resolve => {
+        const timeout = setTimeout(
+          () => resolve({ connected: false, error: 'timeout' }),
+          wsConnectTimeout
+        );
 
-      if (typeof window.io === 'undefined') {
-        clearTimeout(timeout);
-        return resolve({ connected: false, error: 'Socket.IO not loaded' });
-      }
+        if (typeof window.io === 'undefined') {
+          clearTimeout(timeout);
+          return resolve({ connected: false, error: 'Socket.IO not loaded' });
+        }
 
-      const opts = { transports: ['websocket', 'polling'], timeout: 3000 };
-      if (authToken) {
-        opts.auth = { token: authToken };
-      }
+        const opts = { transports: ['websocket', 'polling'], timeout: 3000 };
+        if (authToken) {
+          opts.auth = { token: authToken };
+        }
 
-      const socket = window.io(opts);
+        const socket = window.io(opts);
 
-      socket.on('connect', () => {
-        clearTimeout(timeout);
-        socket.disconnect();
-        resolve({ connected: true, error: null });
+        socket.on('connect', () => {
+          clearTimeout(timeout);
+          socket.disconnect();
+          resolve({ connected: true, error: null });
+        });
+
+        socket.on('connect_error', err => {
+          clearTimeout(timeout);
+          socket.disconnect();
+          // Auth errors are expected for unauthenticated users
+          resolve({ connected: false, error: err.message });
+        });
       });
-
-      socket.on('connect_error', err => {
-        clearTimeout(timeout);
-        socket.disconnect();
-        // Auth errors are expected for unauthenticated users
-        resolve({ connected: false, error: err.message });
-      });
-    });
-  }, token);
+    },
+    { authToken: token, wsConnectTimeout: WS_CONNECT_TIMEOUT_MS }
+  );
 }
 
 // ---------------------------------------------------------------------------

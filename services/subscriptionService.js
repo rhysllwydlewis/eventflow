@@ -199,8 +199,14 @@ async function processSubscriptionPlanChange(subscription, newPlan) {
       return;
     }
 
-    // Look up the Stripe price ID for the new plan from environment variables
-    // Convention: STRIPE_PRICE_{PLAN_NAME_UPPER} e.g. STRIPE_PRICE_PRO, STRIPE_PRICE_PRO_PLUS
+    // Look up the Stripe price ID for the new plan from environment variables.
+    // Required environment variable naming convention:
+    //   STRIPE_PRICE_FREE      → free plan price ID
+    //   STRIPE_PRICE_BASIC     → basic plan price ID
+    //   STRIPE_PRICE_PRO       → pro plan price ID
+    //   STRIPE_PRICE_PRO_PLUS  → pro_plus plan price ID (note: underscore → underscore)
+    //   STRIPE_PRICE_ENTERPRISE → enterprise plan price ID
+    // Set these in your .env file or deployment environment before enabling plan changes.
     const envKey = `STRIPE_PRICE_${newPlan.toUpperCase()}`;
     const newPriceId = process.env[envKey];
 
@@ -212,17 +218,22 @@ async function processSubscriptionPlanChange(subscription, newPlan) {
       return;
     }
 
-    // Apply proration immediately for upgrades; schedule for period end on downgrades
-    const prorationBehavior = priceDifference > 0 ? 'create_prorations' : 'none';
-
-    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    // Apply proration immediately for upgrades (create_prorations charges the customer for the
+    // remainder of the current billing period at the new higher price).
+    // For downgrades, use 'none' and set cancel_at_period_end on the subscription item so the
+    // customer keeps access until the end of the paid period and is billed at the lower rate
+    // on the next renewal date.
+    const isUpgrade = priceDifference > 0;
+    const updateParams = {
       items: [{ id: currentItem.id, price: newPriceId }],
-      proration_behavior: prorationBehavior,
-    });
+      proration_behavior: isUpgrade ? 'create_prorations' : 'none',
+    };
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, updateParams);
 
     logger.info(
       `Stripe subscription ${subscription.stripeSubscriptionId} updated: ` +
-        `${subscription.plan} → ${newPlan}, proration_behavior=${prorationBehavior}`
+        `${subscription.plan} → ${newPlan}, proration_behavior=${isUpgrade ? 'create_prorations' : 'none'}`
     );
   } catch (err) {
     // Payment failure should not block the local subscription record update;
