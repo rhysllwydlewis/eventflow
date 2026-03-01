@@ -13,6 +13,36 @@ const { getUserFromCookie, authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimits');
 const validator = require('validator');
+const supplierAnalytics = require('../utils/supplierAnalytics');
+
+// In-memory rate limit store for POST /track (IP+supplierId, 1 view per hour)
+const trackRateLimitCache = new Map();
+// Periodic cleanup every 30 minutes to prevent unbounded memory growth
+setInterval(
+  () => {
+    const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+    for (const [k, v] of trackRateLimitCache) {
+      if (v < cutoff) {
+        trackRateLimitCache.delete(k);
+      }
+    }
+  },
+  30 * 60 * 1000
+).unref();
+
+function isTrackRateLimited(ip, supplierId) {
+  if (!ip) {
+    return false; // Skip rate limiting when IP is unavailable
+  }
+  const key = `${ip}:${supplierId}`;
+  const now = Date.now();
+  const last = trackRateLimitCache.get(key);
+  if (last && now - last < 60 * 60 * 1000) {
+    return true;
+  }
+  trackRateLimitCache.set(key, now);
+  return false;
+}
 
 // Whitelist of allowed event types
 const ALLOWED_EVENTS = [
@@ -359,5 +389,63 @@ function getLeadRecommendations(score, quality, enquiry) {
 
   return recommendations;
 }
+
+/**
+ * POST /api/analytics/track
+ * Track profile views and enquiries per supplier
+ * Rate-limited to 1 event per IP per supplier per hour
+ */
+router.post('/track', writeLimiter, async (req, res) => {
+  try {
+    const { type, supplierId } = req.body || {};
+
+    const allowedTypes = ['profile_view', 'enquiry'];
+    if (!type || !allowedTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid type. Must be profile_view or enquiry',
+      });
+    }
+
+    if (!supplierId || typeof supplierId !== 'string' || supplierId.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'supplierId is required',
+      });
+    }
+
+    // Validate supplierId contains only safe characters (alphanumeric, hyphens, underscores)
+    const cleanSupplierId = supplierId.trim();
+    if (!/^[a-zA-Z0-9_-]+$/.test(cleanSupplierId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid supplierId format',
+      });
+    }
+
+    // Rate-limit: max 1 view per IP per supplier per hour (skip if no IP available)
+    const ip = req.ip;
+    if (isTrackRateLimited(ip, cleanSupplierId)) {
+      return res.json({ success: true, message: 'Already tracked' });
+    }
+
+    // Get authenticated user if available
+    const user = await getUserFromCookie(req);
+    const userId = user ? user.id : null;
+
+    // Track the event using supplierAnalytics
+    if (type === 'profile_view') {
+      await supplierAnalytics.trackProfileView(cleanSupplierId, userId);
+    } else if (type === 'enquiry') {
+      await supplierAnalytics.trackEnquirySent(cleanSupplierId, userId);
+    }
+
+    res.json({ success: true, message: 'Event tracked' });
+  } catch (error) {
+    // Fail silently — analytics should never break UX
+    logger.debug('Analytics track error:', error);
+    res.json({ success: true, message: 'Event received' });
+  }
+});
 
 module.exports = router;
