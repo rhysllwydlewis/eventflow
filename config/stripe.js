@@ -24,6 +24,14 @@ function initializeStripe() {
       const stripeLib = require('stripe');
       stripeClient = stripeLib(secret);
       STRIPE_ENABLED = true;
+
+      // Warn if test keys are used in production
+      if (process.env.NODE_ENV === 'production' && secret.startsWith('sk_test_')) {
+        logger.warn(
+          '⚠️  Stripe is using TEST keys in production! Switch to live keys before go-live.'
+        );
+      }
+
       logger.info('✅ Stripe: Configured');
     } else {
       logger.info('ℹ️  Stripe: Not configured (optional)');

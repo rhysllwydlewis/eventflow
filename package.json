@@ -19,6 +19,7 @@
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
+    "test:debug": "jest --coverage --detectOpenHandles",
     "load-test": "artillery run tests/load/load-test.yml",
     "load-test:report": "artillery run tests/load/load-test.yml --output report.json && artillery report report.json",
     "test:e2e": "playwright test",
