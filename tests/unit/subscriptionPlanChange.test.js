@@ -131,7 +131,7 @@ describe('processSubscriptionPlanChange — successful upgrade', () => {
   });
 
   it('calls stripe.subscriptions.update with create_prorations for an upgrade', async () => {
-    const sub = makeSub({ plan: 'pro' }); // pro (£29.99) → pro_plus (£59.00) — upgrade
+    const sub = makeSub({ plan: 'pro' }); // pro → pro_plus (upgrade to higher tier)
     await processSubscriptionPlanChange(sub, 'pro_plus');
 
     expect(stripeMock.subscriptions.retrieve).toHaveBeenCalledWith('sub_stripe_123');
@@ -161,7 +161,7 @@ describe('processSubscriptionPlanChange — successful downgrade', () => {
   });
 
   it('calls stripe.subscriptions.update with proration_behavior none for a downgrade', async () => {
-    const sub = makeSub({ plan: 'pro_plus' }); // pro_plus (£59) → pro (£29.99) — downgrade
+    const sub = makeSub({ plan: 'pro_plus' }); // pro_plus → pro (downgrade to lower tier)
     await processSubscriptionPlanChange(sub, 'pro');
 
     expect(stripeMock.subscriptions.update).toHaveBeenCalledWith(

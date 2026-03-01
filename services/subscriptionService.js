@@ -226,14 +226,14 @@ async function processSubscriptionPlanChange(subscription, newPlan) {
     const newPriceId = PLAN_PRICE_ENV_MAP[newPlan];
 
     if (!newPriceId) {
-      const envVarHint =
-        newPlan === 'pro'
-          ? 'STRIPE_PRO_PRICE_ID'
-          : newPlan === 'pro_plus'
-            ? 'STRIPE_PRO_PLUS_PRICE_ID'
-            : newPlan === 'basic'
-              ? 'STRIPE_BASIC_PRICE_ID'
-              : `STRIPE_${newPlan.toUpperCase()}_PRICE_ID`;
+      // Map plan name to the conventional env var name used across the codebase
+      const PLAN_ENV_VAR_NAMES = {
+        basic: 'STRIPE_BASIC_PRICE_ID',
+        pro: 'STRIPE_PRO_PRICE_ID',
+        pro_plus: 'STRIPE_PRO_PLUS_PRICE_ID',
+        enterprise: 'STRIPE_ENTERPRISE_PRICE_ID',
+      };
+      const envVarHint = PLAN_ENV_VAR_NAMES[newPlan] || `STRIPE_${newPlan.toUpperCase()}_PRICE_ID`;
       logger.warn(
         `No Stripe price ID configured for plan "${newPlan}" (set ${envVarHint} in .env). ` +
           `Skipping Stripe proration — update the subscription plan in the Stripe dashboard manually.`
