@@ -224,6 +224,12 @@ async function searchSuppliers(filters, page = 1) {
   if (filters.verifiedOnly) {
     params.set('verifiedOnly', 'true');
   }
+  if (filters.postcode) {
+    params.set('postcode', filters.postcode);
+  }
+  if (filters.maxDistance) {
+    params.set('maxDistance', filters.maxDistance);
+  }
   if (filters.sort && filters.sort !== 'relevance') {
     params.set('sortBy', filters.sort);
   }
@@ -266,6 +272,9 @@ async function initSuppliersPage() {
   const filterRatingEl = document.getElementById('filterRating');
   const filterVerifiedEl = document.getElementById('filterVerified');
   const filterSortEl = document.getElementById('filterSort');
+  const filterEventTypeEl = document.getElementById('filterEventType');
+  const filterPostcodeEl = document.getElementById('filterPostcode');
+  const filterDistanceEl = document.getElementById('filterDistance');
 
   if (!resultsContainer) {
     console.warn('Results container not found, skipping suppliers init');
@@ -294,6 +303,15 @@ async function initSuppliersPage() {
     }
     if (filterSortEl && currentFilters.sort) {
       filterSortEl.value = currentFilters.sort;
+    }
+    if (filterEventTypeEl && currentFilters.eventType) {
+      filterEventTypeEl.value = currentFilters.eventType;
+    }
+    if (filterPostcodeEl && currentFilters.postcode) {
+      filterPostcodeEl.value = currentFilters.postcode;
+    }
+    if (filterDistanceEl && currentFilters.maxDistance) {
+      filterDistanceEl.value = currentFilters.maxDistance;
     }
   }
 
@@ -489,6 +507,15 @@ async function initSuppliersPage() {
         if (filterSortEl) {
           filterSortEl.value = 'relevance';
         }
+        if (filterEventTypeEl) {
+          filterEventTypeEl.value = '';
+        }
+        if (filterPostcodeEl) {
+          filterPostcodeEl.value = '';
+        }
+        if (filterDistanceEl) {
+          filterDistanceEl.value = '';
+        }
         renderResults();
       });
     }
@@ -564,6 +591,40 @@ async function initSuppliersPage() {
     });
   }
 
+  if (filterEventTypeEl) {
+    filterEventTypeEl.addEventListener('change', e => {
+      currentFilters.eventType = e.target.value;
+      currentFilters.page = 1;
+      updateURL(currentFilters);
+      renderResults();
+      trackFilterChange('eventType', e.target.value);
+    });
+  }
+
+  if (filterPostcodeEl) {
+    let postcodeDebounce;
+    filterPostcodeEl.addEventListener('input', e => {
+      clearTimeout(postcodeDebounce);
+      postcodeDebounce = setTimeout(() => {
+        currentFilters.postcode = e.target.value.trim();
+        currentFilters.page = 1;
+        updateURL(currentFilters);
+        renderResults();
+        trackFilterChange('postcode', e.target.value.trim());
+      }, 600);
+    });
+  }
+
+  if (filterDistanceEl) {
+    filterDistanceEl.addEventListener('change', e => {
+      currentFilters.maxDistance = e.target.value;
+      currentFilters.page = 1;
+      updateURL(currentFilters);
+      renderResults();
+      trackFilterChange('maxDistance', e.target.value);
+    });
+  }
+
   // Handle browser back/forward
   handlePopState(filters => {
     currentFilters = filters;
@@ -608,6 +669,15 @@ async function initSuppliersPage() {
       }
       if (filterSortEl) {
         filterSortEl.value = 'relevance';
+      }
+      if (filterEventTypeEl) {
+        filterEventTypeEl.value = '';
+      }
+      if (filterPostcodeEl) {
+        filterPostcodeEl.value = '';
+      }
+      if (filterDistanceEl) {
+        filterDistanceEl.value = '';
       }
       renderResults();
     });

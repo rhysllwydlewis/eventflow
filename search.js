@@ -6,6 +6,7 @@
 'use strict';
 
 const dbUnified = require('./db-unified');
+const { geocodeLocation, calculateDistance } = require('./utils/geocoding');
 
 /**
  * Search suppliers with advanced filters
@@ -64,6 +65,16 @@ async function searchSuppliers(query) {
     results = results.filter(s => s.category === query.category);
   }
 
+  // Event type filter
+  if (query.eventType) {
+    const eventTypeTerm = query.eventType.toLowerCase();
+    results = results.filter(s => {
+      const category = (s.category || '').toLowerCase();
+      const tags = (s.tags || []).map(t => t.toLowerCase());
+      return category.includes(eventTypeTerm) || tags.some(t => t.includes(eventTypeTerm));
+    });
+  }
+
   // Location filter
   if (query.location) {
     const locationTerm = query.location.toLowerCase();
@@ -71,6 +82,40 @@ async function searchSuppliers(query) {
       const location = (s.location || '').toLowerCase();
       return location.includes(locationTerm);
     });
+  }
+
+  // Distance filter using postcode lookup
+  let userCoords = null;
+  if (query.postcode) {
+    userCoords = await geocodeLocation(query.postcode);
+    if (userCoords) {
+      const maxDistance = query.maxDistance ? Number(query.maxDistance) : null;
+      results = results.reduce((acc, s) => {
+        let supplierLat = null;
+        let supplierLng = null;
+        if (s.location && s.location.coordinates && Array.isArray(s.location.coordinates)) {
+          [supplierLng, supplierLat] = s.location.coordinates;
+        } else if (s.lat !== undefined && s.lng !== undefined) {
+          supplierLat = s.lat;
+          supplierLng = s.lng;
+        }
+        if (supplierLat !== null && supplierLng !== null) {
+          const dist = calculateDistance(
+            userCoords.latitude,
+            userCoords.longitude,
+            supplierLat,
+            supplierLng
+          );
+          if (maxDistance !== null && dist > maxDistance) {
+            return acc;
+          }
+          acc.push({ ...s, _distanceMiles: dist });
+        } else if (!maxDistance) {
+          acc.push(s);
+        }
+        return acc;
+      }, []);
+    }
   }
 
   // Price range filter
@@ -160,12 +205,14 @@ async function searchSuppliers(query) {
       return priceB - priceA;
     });
   } else if (sortBy === 'distance') {
-    // STUB: Distance sort falls back to relevance (no geo data available).
-    // To implement properly:
-    //   1. Add a 2dsphere index to the suppliers collection on a `location.coordinates` field
-    //   2. Implement a postcode → lat/lng lookup (e.g. postcodes.io API or stored lookup table)
-    //   3. Pass the user's coordinates as query parameters and use MongoDB $geoNear aggregation
-    // For now the order is unchanged (relevance/insertion order).
+    if (userCoords) {
+      results.sort((a, b) => {
+        const distA = a._distanceMiles !== undefined ? a._distanceMiles : Infinity;
+        const distB = b._distanceMiles !== undefined ? b._distanceMiles : Infinity;
+        return distA - distB;
+      });
+    }
+    // If no postcode provided, order is unchanged (relevance/insertion order)
   }
 
   // Pagination

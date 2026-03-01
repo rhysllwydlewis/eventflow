@@ -41,6 +41,8 @@ router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, 
       category: req.query.category,
       eventType: req.query.eventType ? String(req.query.eventType).trim() : undefined,
       location: req.query.location,
+      postcode: req.query.postcode ? String(req.query.postcode).trim() : undefined,
+      maxDistance: req.query.maxDistance ? Number(req.query.maxDistance) : undefined,
       minPrice: req.query.minPrice,
       maxPrice: req.query.maxPrice,
       minRating: req.query.minRating,
@@ -65,6 +67,21 @@ router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, 
       return res.status(400).json({
         success: false,
         error: 'Event type filter too long (max 100 characters)',
+      });
+    }
+    if (query.postcode && query.postcode.length > 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'Postcode too long (max 10 characters)',
+      });
+    }
+    if (
+      query.maxDistance !== undefined &&
+      (isNaN(query.maxDistance) || query.maxDistance < 0 || query.maxDistance > 500)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'maxDistance must be a number between 0 and 500',
       });
     }
     const VALID_SORT_VALUES = [
