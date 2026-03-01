@@ -5,18 +5,18 @@
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>Marketplace Management — EventFlow Admin</title>
-<link rel="stylesheet" href="/assets/css/tokens.css?v=18.1.1">
-<link rel='stylesheet' href='/assets/css/styles.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/utilities.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/components.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/animations.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/admin.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/admin-enhanced.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/admin-navbar.css?v=18.1.1'>
-<link rel='stylesheet' href='/assets/css/admin-cards.css?v=18.1.1'>
-<link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.1.1"><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.1.1'>
-<link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.1">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=18.3.0">
+<link rel='stylesheet' href='/assets/css/styles.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/utilities.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/components.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/animations.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/admin.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/admin-enhanced.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/admin-navbar.css?v=18.3.0'>
+<link rel='stylesheet' href='/assets/css/admin-cards.css?v=18.3.0'>
+<link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.3.0"><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.3.0'>
+<link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.3.0">
 <link rel='icon' href='/favicon.svg'>
 <style>
   .marketplace-hero {
@@ -189,9 +189,9 @@
     }
   }
 </style>
-<script src="/assets/js/admin-shared.js?v=18.1.1"></script>
-<script src="/assets/js/components.js?v=18.1.1" defer></script>
-<script src="/assets/js/admin-navbar.js?v=18.1.1" defer></script>
+<script src="/assets/js/admin-shared.js?v=18.3.0"></script>
+<script src="/assets/js/components.js?v=18.3.0" defer></script>
+<script src="/assets/js/admin-navbar.js?v=18.3.0" defer></script>
 </head>
 <body class="has-admin-navbar admin">
 <!-- Modern Top Navbar -->
@@ -340,9 +340,9 @@
     <div id="bulkActionsBar" style="display:none;margin-bottom:16px;padding:12px 16px;background:#f3f4f6;border-radius:8px;align-items:center;gap:12px;">
       <input type="checkbox" id="selectAll" style="cursor:pointer">
       <span id="selectedCount" style="flex:1;font-weight:500;">0 selected</span>
-      <button class="cta" onclick="bulkApprove()" style="padding:6px 12px;font-size:14px;">Approve Selected</button>
-      <button class="cta secondary" onclick="bulkMarkSold()" style="padding:6px 12px;font-size:14px;">Mark Sold</button>
-      <button class="cta ghost" onclick="bulkDelete()" style="padding:6px 12px;font-size:14px;">Delete Selected</button>
+      <button class="cta" data-action="bulk-approve" style="padding:6px 12px;font-size:14px;">Approve Selected</button>
+      <button class="cta secondary" data-action="bulk-mark-sold" style="padding:6px 12px;font-size:14px;">Mark Sold</button>
+      <button class="cta ghost" data-action="bulk-delete" style="padding:6px 12px;font-size:14px;">Delete Selected</button>
     </div>
 
     <!-- Listings -->
@@ -352,7 +352,14 @@
   </div>
 </main>
 
-<script src="/assets/js/pages/admin-marketplace-init.js?v=18.1.1" defer></script>
+<script src="/assets/js/pages/admin-marketplace-init.js?v=18.3.0" defer></script>
 <script src="/assets/js/cookie-consent.js?v=2.0.0" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelector('[data-action="bulk-approve"]').addEventListener('click', function () { bulkApprove(); });
+    document.querySelector('[data-action="bulk-mark-sold"]').addEventListener('click', function () { bulkMarkSold(); });
+    document.querySelector('[data-action="bulk-delete"]').addEventListener('click', function () { bulkDelete(); });
+  });
+</script>
 </body>
 </html>

@@ -22,5 +22,10 @@ Disallow: /api/
 Disallow: /uploads/
 Disallow: /*.json$
 
+# Prevent crawling of demo/test pages
+Disallow: /messaging-demo
+Disallow: /demo-loading-spinner
+Disallow: /test-notifications
+
 # Sitemap location
 Sitemap: https://event-flow.co.uk/sitemap.xml
