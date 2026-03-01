@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Supplier dashboard — EventFlow</title>
+<meta name="robots" content="noindex,nofollow">
     <link rel="stylesheet" href="/assets/css/design-tokens.css?v=18.2.0" />
     <link rel="stylesheet" href="/assets/css/styles.css?v=18.2.0" />
     <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.2.0" />
@@ -465,12 +466,7 @@
             <div class="dashboard-hero__actions">
               <button
                 class="dashboard-action-chip dashboard-action-chip--primary"
-                onclick="
-                  document.getElementById('sup-name').focus();
-                  document
-                    .getElementById('sup-name')
-                    .scrollIntoView({ behavior: 'smooth', block: 'center' });
-                "
+                data-action="create-profile"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10" />
@@ -482,12 +478,7 @@
 
               <button
                 class="dashboard-action-chip"
-                onclick="
-                  document.getElementById('pkg-title').focus();
-                  document
-                    .getElementById('pkg-title')
-                    .scrollIntoView({ behavior: 'smooth', block: 'center' });
-                "
+                data-action="new-package"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -504,7 +495,7 @@
                 <span>Messages</span>
               </button>
 
-              <button class="dashboard-action-chip" onclick="showEarningsComingSoon()">
+              <button class="dashboard-action-chip" data-action="view-earnings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="1" x2="12" y2="23" />
                   <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -514,11 +505,7 @@
 
               <button
                 class="dashboard-action-chip"
-                onclick="
-                  document
-                    .getElementById('supplier-stats-grid')
-                    .scrollIntoView({ behavior: 'smooth', block: 'start' })
-                "
+                data-action="view-stats"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="3" width="7" height="7" />
@@ -2788,7 +2775,7 @@
         </div>
         <div class="version">Version: <span id="ef-version-label">loading…</span></div>
         <div class="small">
-          <a href="/blog">Blog</a> · <a href="/pricing">Pricing</a> · <a href="/credits">Credits</a> ·
+          <a href="/blog">Guides</a> · <a href="/pricing">Pricing</a> · <a href="/credits">Credits</a> ·
           <a href="/contact">Contact</a> · <a href="/legal">Legal Hub</a> ·
       <button type="button" data-cookie-prefs style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Cookie preferences</button>
         </div>
@@ -2861,6 +2848,26 @@
             }
           });
         }
+      });
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.querySelector('[data-action="create-profile"]');
+        if (btn) btn.addEventListener('click', function () {
+          document.getElementById('sup-name').focus();
+          document.getElementById('sup-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        var btnPkg = document.querySelector('[data-action="new-package"]');
+        if (btnPkg) btnPkg.addEventListener('click', function () {
+          document.getElementById('pkg-title').focus();
+          document.getElementById('pkg-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        var btnEarnings = document.querySelector('[data-action="view-earnings"]');
+        if (btnEarnings) btnEarnings.addEventListener('click', function () { showEarningsComingSoon(); });
+        var btnStats = document.querySelector('[data-action="view-stats"]');
+        if (btnStats) btnStats.addEventListener('click', function () {
+          document.getElementById('supplier-stats-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
       });
     </script>
   </body>

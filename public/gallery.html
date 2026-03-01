@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photo Gallery - EventFlow</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/utilities.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/components.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/animations.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0">
-  <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.1.1">
-  <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.1">
-  <link rel="stylesheet" href="/assets/css/gallery.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/utilities.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/components.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/animations.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/navbar.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/gallery.css?v=18.3.0">
   <!-- PHASE 2: Error boundary (must load before other components) -->
   <script src="/assets/js/utils/global-error-handler.js" defer></script>
   <script src="/assets/js/utils/sentry-browser-init.js" defer></script>
@@ -723,9 +723,9 @@
 <footer class="footer" role="contentinfo">
   <div class="container supplier-footer-content">
     <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
-    <div class="version">Version: v17.0.0</div>
+    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
     <div class="small">
-      <a href="/blog">Blog</a> &middot;
+      <a href="/blog">Guides</a> &middot;
       <a href="/credits">Credits</a> &middot;
       <a href="/contact">Contact</a> &middot;
       <a href="/legal">Legal Hub</a> &middot;

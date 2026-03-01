@@ -18,9 +18,20 @@ Disallow: /settings
 Disallow: /dashboard
 Disallow: /dashboard-customer
 Disallow: /dashboard-supplier
+Disallow: /checkout
+Disallow: /payment-success
+Disallow: /payment-cancel
+Disallow: /reset-password
+Disallow: /verify
+Disallow: /data-rights
 Disallow: /api/
 Disallow: /uploads/
 Disallow: /*.json$
+
+# Prevent crawling of demo/test pages
+Disallow: /messaging-demo
+Disallow: /demo-loading-spinner
+Disallow: /test-notifications
 
 # Sitemap location
 Sitemap: https://event-flow.co.uk/sitemap.xml
