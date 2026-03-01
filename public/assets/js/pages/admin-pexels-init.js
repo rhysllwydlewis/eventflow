@@ -180,7 +180,7 @@
       .then(() => {
         AdminShared.showToast('Image URL copied to clipboard!', 'success');
       })
-      .catch(err => {
+      .catch(_err => {
         AdminShared.showToast('Failed to copy URL', 'error');
       });
   }

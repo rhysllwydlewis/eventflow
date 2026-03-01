@@ -329,7 +329,7 @@ class MessengerV4Service {
 
     // Check for spam only when there is text content (attachment-only messages skip text checks)
     if (sanitizedContent.trim().length > 0) {
-      const spamCheck = spamDetection.checkSpam(messageData.senderId, sanitizedContent);
+      const spamCheck = await spamDetection.checkSpam(messageData.senderId, sanitizedContent);
       if (spamCheck.isSpam) {
         throw new Error(`Message flagged as spam: ${spamCheck.reason}`);
       }

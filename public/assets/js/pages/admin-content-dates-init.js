@@ -1,6 +1,4 @@
 (async function () {
-  let currentConfig = {};
-
   // Use CSRF token from AdminShared
   function getCSRFToken() {
     return window.__CSRF_TOKEN__ || '';
@@ -15,7 +13,7 @@
         throw new Error(data.error || 'Failed to load content dates');
       }
 
-      currentConfig = data.config;
+      void data.config; // config loaded; kept for consistency with server response
 
       // Update status
       const statusHtml = `

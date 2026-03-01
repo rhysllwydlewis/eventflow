@@ -248,8 +248,6 @@ router.post('/saved', authRequired, csrfProtection, async (req, res) => {
       });
     }
 
-    const savedSearches = (await dbUnified.read('savedSearches')) || [];
-
     const savedSearch = {
       id: `saved_${Date.now()}_${crypto.randomUUID()}`,
       userId: req.user.id,

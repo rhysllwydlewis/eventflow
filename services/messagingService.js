@@ -293,7 +293,7 @@ class MessagingService {
 
       // SECURITY: Check for spam before processing
       if (sanitizedData.content) {
-        const spamCheck = checkSpam(sanitizedData.senderId, sanitizedData.content, {
+        const spamCheck = await checkSpam(sanitizedData.senderId, sanitizedData.content, {
           maxUrlCount: 5,
           maxPerMinute: parseInt(process.env.MAX_MESSAGES_PER_MINUTE || '30', 10),
           checkDuplicates: true,

@@ -103,7 +103,6 @@ router.post('/', writeLimiter, csrfProtection, async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
-    const quoteRequests = (await dbUnified.read('quoteRequests')) || [];
     await dbUnified.insertOne('quoteRequests', quoteRequest);
 
     res.json({

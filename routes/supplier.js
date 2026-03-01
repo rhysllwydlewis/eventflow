@@ -173,6 +173,7 @@ router.get('/analytics/legacy', authRequired, async (req, res) => {
       bookingCount = bookings.filter(b => b.supplierId === supplierId).length;
     } catch (e) {
       // bookings collection may not exist
+      logger.debug('Bookings collection not available:', e.message);
     }
 
     // Generate chart data for last N days

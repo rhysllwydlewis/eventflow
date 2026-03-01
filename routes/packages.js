@@ -240,7 +240,6 @@ router.post(
       featured: false,
       createdAt: new Date().toISOString(),
     };
-    const all = allPkgs;
     await dbUnified.insertOne('packages', pkg);
     res.json({ ok: true, package: pkg });
   }

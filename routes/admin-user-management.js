@@ -7,7 +7,7 @@
 
 const express = require('express');
 const logger = require('../utils/logger');
-const { read, write, uid } = require('../store');
+const { uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');

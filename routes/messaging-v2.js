@@ -101,20 +101,26 @@ async function initializeRouter(deps) {
   // Services will be initialized lazily on first request to avoid blocking
   // MongoDB connection during startup
 
-  // Ensure attachments directory exists at startup
-  const fs = require('fs').promises;
-  const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
-  try {
-    await fs.mkdir(uploadsDir, { recursive: true });
-    if (logger) {
-      logger.info('Attachments directory ready:', uploadsDir);
-    }
-  } catch (err) {
-    if (err.code !== 'EEXIST') {
+  // Ensure attachments directory exists for development/fallback use
+  // In production with MongoDB available, attachments are stored in the database
+  if (process.env.NODE_ENV !== 'production') {
+    const fs = require('fs').promises;
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
+    try {
+      await fs.mkdir(uploadsDir, { recursive: true });
       if (logger) {
-        logger.error('Failed to initialize attachments directory:', err);
+        logger.info('Attachments directory ready (dev fallback):', uploadsDir);
       }
-      throw err; // Fail fast if storage unavailable
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        if (logger) {
+          logger.error('Failed to initialize attachments directory:', err);
+        }
+        // Non-fatal in production since MongoDB is used instead
+        if (logger) {
+          logger.warn('Could not create attachments directory; relying on MongoDB storage');
+        }
+      }
     }
   }
 }
@@ -171,26 +177,12 @@ async function initializeServices() {
 
 /**
  * Helper function to store attachment files
- * Currently stores files to the local filesystem (uploads/attachments/).
- *
- * ⚠️  PRODUCTION LIMITATION: Local files are lost on every redeployment (e.g. Railway).
- * To fix for production, integrate with the existing photo-upload infrastructure:
- *   1. Use the S3/Cloudinary upload helpers already present in photo-upload.js
- *   2. Store the returned cloud URL in the attachment object instead of a local path
- *   3. Remove the local fs.writeFile call once cloud storage is confirmed working
- * TODO: Integrate with existing photo-upload for cloud storage
+ * Stores attachments in MongoDB when available (persists across deployments).
+ * Falls back to local filesystem when MongoDB is not available (development only).
  */
 async function storeAttachment(file) {
   const fs = require('fs').promises;
   const crypto = require('crypto');
-
-  // Warn on every invocation so the limitation is visible in logs
-  if (logger) {
-    logger.warn(
-      'Attachment stored to local filesystem — files will be lost on redeployment. ' +
-        'Configure cloud storage (S3/Cloudinary) for production.'
-    );
-  }
 
   // Sanitize original filename to prevent path traversal and special chars
   const sanitizedOriginalName = file.originalname
@@ -198,11 +190,51 @@ async function storeAttachment(file) {
     .replace(/\.{2,}/g, '_') // Replace multiple dots with underscore
     .substring(0, 255); // Limit length
 
-  // Generate unique filename for storage
+  // Generate unique ID for storage
   const hash = crypto.randomBytes(16).toString('hex');
   const timestamp = Date.now();
   const ext = path.extname(sanitizedOriginalName).toLowerCase();
   const filename = `${timestamp}-${hash}${ext}`;
+
+  // Use MongoDB cloud storage when available (persists across deployments)
+  if (mongoDb) {
+    try {
+      const db = await mongoDb.getDb();
+      const attachmentId = `att_${timestamp}_${hash}`;
+      await db.collection('attachments').insertOne({
+        _id: attachmentId,
+        data: file.buffer.toString('base64'),
+        mimeType: file.mimetype,
+        filename: sanitizedOriginalName || 'attachment',
+        size: file.size,
+        createdAt: new Date().toISOString(),
+      });
+      if (logger) {
+        logger.info('Attachment stored in MongoDB', { attachmentId, size: file.size });
+      }
+      return {
+        type: file.mimetype.startsWith('image/') ? 'image' : 'document',
+        url: `/api/v2/messages/attachments/${attachmentId}`,
+        filename: sanitizedOriginalName || 'attachment',
+        size: file.size,
+        mimeType: file.mimetype,
+        metadata: {},
+      };
+    } catch (dbError) {
+      if (logger) {
+        logger.error('Failed to store attachment in MongoDB, falling back to filesystem:', dbError);
+      }
+      // Fall through to filesystem storage
+    }
+  }
+
+  // Fallback: local filesystem (development or when MongoDB unavailable)
+  if (logger) {
+    logger.warn(
+      'Attachment stored to local filesystem — files will be lost on redeployment. ' +
+        'Configure MongoDB for production attachment storage.'
+    );
+  }
 
   // Store in uploads/attachments directory
   const uploadsDir = path.join(__dirname, '..', 'uploads', 'attachments');
@@ -1124,6 +1156,46 @@ router.post(
     }
   }
 );
+
+/**
+ * GET /api/v2/messages/attachments/:id
+ * Serve a message attachment stored in MongoDB
+ */
+router.get('/attachments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate attachment ID format
+    if (!id || !/^att_\d+_[a-f0-9]+$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid attachment ID' });
+    }
+
+    if (!mongoDb) {
+      return res.status(503).json({ error: 'Storage not available' });
+    }
+
+    const db = await mongoDb.getDb();
+    const attachment = await db.collection('attachments').findOne({ _id: id });
+
+    if (!attachment) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+
+    const buffer = Buffer.from(attachment.data, 'base64');
+    const safeFilename = (attachment.filename || 'attachment').replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    res.setHeader('Content-Type', attachment.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.send(buffer);
+  } catch (error) {
+    if (logger) {
+      logger.error('Error serving attachment:', error);
+    }
+    res.status(500).json({ error: 'Failed to retrieve attachment' });
+  }
+});
 
 /**
  * GET /api/v2/messages/:threadId

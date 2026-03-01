@@ -1229,7 +1229,6 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
     }
 
     const now = new Date().toISOString();
-    const messages = await dbUnified.read('messages');
 
     const newMessage = {
       id: uid(),
