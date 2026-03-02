@@ -948,11 +948,11 @@
               <div class="form-row supplier-form-grid">
                 <div>
                   <label for="sup-name">Business name</label>
-                  <input id="sup-name" name="name" />
+                  <input id="sup-name" name="name" required maxlength="100" />
                 </div>
                 <div>
                   <label>Category</label>
-                  <select id="sup-category" name="category">
+                  <select id="sup-category" name="category" required>
                     <option value="">Choose a category…</option>
                     <option>Venues</option>
                     <option>Catering</option>
@@ -965,27 +965,27 @@
                 </div>
                 <div>
                   <label>Location</label>
-                  <input id="sup-location" name="location" placeholder="City, region" />
+                  <input id="sup-location" name="location" placeholder="City, region" maxlength="200" />
                 </div>
                 <div>
                   <label>Price display</label>
-                  <input id="sup-price" name="price_display" placeholder="e.g. From £500 or ££" />
+                  <input id="sup-price" name="price_display" placeholder="e.g. From £500 or ££" maxlength="100" />
                 </div>
               </div>
 
               <div class="form-row">
                 <label>Short description</label>
-                <input id="sup-short" name="description_short" />
+                <input id="sup-short" name="description_short" maxlength="300" />
               </div>
 
               <div class="form-row">
                 <label>Long description</label>
-                <textarea id="sup-long" name="description_long" rows="4"></textarea>
+                <textarea id="sup-long" name="description_long" rows="4" maxlength="5000"></textarea>
               </div>
 
               <div class="form-row">
                 <label>Website</label>
-                <input id="sup-website" name="website" placeholder="your-website-url" />
+                <input id="sup-website" name="website" type="url" placeholder="your-website-url" maxlength="500" />
               </div>
 
               <div class="form-row">

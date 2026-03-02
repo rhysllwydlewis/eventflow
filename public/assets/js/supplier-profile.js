@@ -16,6 +16,13 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
   /**
    * Update SEO meta tags dynamically based on supplier data
    * @param {Object} supplier - Supplier data
+   *
+   * NOTE: These meta tags are updated client-side via JavaScript. Search engines and
+   * social media link preview crawlers (Facebook, Twitter/X, Slack, etc.) do NOT
+   * execute JavaScript, so they will always see the generic default meta values from
+   * the static HTML. For proper SEO and social sharing previews, server-side rendering
+   * (SSR) or a prerender service is required to inject per-supplier meta tags into the
+   * HTML response before it reaches the client.
    */
   function updateMetaTags(supplier) {
     if (!supplier) {
@@ -578,6 +585,12 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
     if (!supplierId) {
       console.warn('No supplier ID found');
+      return;
+    }
+
+    // Validate supplierId format before making API calls (expected format: sup_xxxxx)
+    if (!/^sup_[a-zA-Z0-9_-]+$/.test(supplierId)) {
+      console.warn('Invalid supplier ID format:', supplierId);
       return;
     }
 

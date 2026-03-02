@@ -13,6 +13,10 @@ const logger = require('../utils/logger');
 
 const router = express.Router();
 
+// Initialize Stripe at module level to avoid creating a new instance per request
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey ? require('stripe')(stripeSecretKey) : null;
+
 // Constants
 const TRIAL_DURATION_DAYS = 14;
 const DEFAULT_ANALYTICS_WINDOW_DAYS = 30;
@@ -74,8 +78,8 @@ router.post('/trial/activate', authRequired, csrfProtection, async (req, res) =>
       message: 'Trial activated successfully',
       trial: {
         status: 'trial',
-        startedAt: supplier.trialStartedAt,
-        endsAt: supplier.trialEndsAt,
+        startedAt: now.toISOString(),
+        endsAt: trialEndsAt.toISOString(),
         daysRemaining: TRIAL_DURATION_DAYS,
       },
     });
@@ -108,8 +112,8 @@ router.get('/analytics', authRequired, async (req, res) => {
 
     const supplierId = supplier.id;
 
-    // Get analytics window from query parameter, default to 7 days
-    const days = parseInt(req.query.days) || 7;
+    // Get analytics window from query parameter, default to 7 days, max 365 days
+    const days = Math.min(parseInt(req.query.days) || 7, 365);
 
     // Use supplierAnalytics utility for real tracked data
     const supplierAnalytics = require('../utils/supplierAnalytics');
@@ -266,13 +270,10 @@ router.get('/invoices', authRequired, async (req, res) => {
       return res.json({ invoices: [], message: 'No Stripe customer ID found' });
     }
 
-    // Initialize Stripe
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey) {
+    // Check Stripe is configured
+    if (!stripe) {
       return res.status(503).json({ error: 'Stripe not configured' });
     }
-
-    const stripe = require('stripe')(stripeSecretKey);
 
     // Fetch invoices from Stripe
     const invoices = await stripe.invoices.list({
@@ -321,12 +322,9 @@ router.get('/invoices/:id/download', authRequired, async (req, res) => {
       return res.status(404).json({ error: 'Supplier or Stripe customer not found' });
     }
 
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey) {
+    if (!stripe) {
       return res.status(503).json({ error: 'Stripe not configured' });
     }
-
-    const stripe = require('stripe')(stripeSecretKey);
 
     // Fetch invoice
     const invoice = await stripe.invoices.retrieve(id);

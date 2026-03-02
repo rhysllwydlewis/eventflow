@@ -10,6 +10,25 @@ const logger = require('../utils/logger');
 const { paginationHelper } = require('../utils/database');
 
 /**
+ * Valid supplier categories matching the dashboard HTML select options
+ */
+const VALID_CATEGORIES = [
+  'Venues',
+  'Catering',
+  'Photography',
+  'Videography',
+  'Entertainment',
+  'Florist',
+  'Decor',
+  'Transport',
+  'Cake',
+  'Stationery',
+  'Hair & Makeup',
+  'Planning',
+  'Other',
+];
+
+/**
  * Generate SEO-friendly slug from text
  * @param {string} text - Text to slugify
  * @returns {string} - URL-safe slug
@@ -48,6 +67,66 @@ class SupplierService {
       throw new ValidationError('Category is required');
     }
 
+    // Validate category against whitelist
+    if (!VALID_CATEGORIES.includes(data.category)) {
+      throw new ValidationError(`Category must be one of: ${VALID_CATEGORIES.join(', ')}`);
+    }
+
+    // Validate max lengths
+    if (String(data.name).trim().length > 100) {
+      throw new ValidationError('Supplier name must be 100 characters or fewer');
+    }
+    if (data.description && String(data.description).trim().length > 5000) {
+      throw new ValidationError('Description must be 5000 characters or fewer');
+    }
+    if (data.email && String(data.email).length > 254) {
+      throw new ValidationError('Email must be 254 characters or fewer');
+    }
+    if (data.phone && String(data.phone).length > 20) {
+      throw new ValidationError('Phone must be 20 characters or fewer');
+    }
+    if (data.website && String(data.website).length > 500) {
+      throw new ValidationError('Website URL must be 500 characters or fewer');
+    }
+    if (data.bookingUrl && String(data.bookingUrl).length > 500) {
+      throw new ValidationError('Booking URL must be 500 characters or fewer');
+    }
+    if (data.videoUrl && String(data.videoUrl).length > 500) {
+      throw new ValidationError('Video URL must be 500 characters or fewer');
+    }
+
+    // Validate email format
+    if (data.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(String(data.email))) {
+        throw new ValidationError('Invalid email format');
+      }
+    }
+
+    // Validate URL formats
+    const urlFields = [
+      { field: 'website', label: 'Website URL' },
+      { field: 'bookingUrl', label: 'Booking URL' },
+      { field: 'videoUrl', label: 'Video URL' },
+    ];
+    for (const { field, label } of urlFields) {
+      if (data[field]) {
+        try {
+          new URL(String(data[field]));
+        } catch {
+          throw new ValidationError(`${label} must be a valid URL`);
+        }
+      }
+    }
+
+    // Validate phone format (digits, spaces, +, -, (, ) only)
+    if (data.phone) {
+      const phoneRegex = /^[0-9+\-\s().]{1,20}$/;
+      if (!phoneRegex.test(String(data.phone))) {
+        throw new ValidationError('Invalid phone number format');
+      }
+    }
+
     // Check if user already has a supplier profile
     const suppliers = await this.db.read('suppliers');
     const existing = suppliers.find(s => s.ownerUserId === userId);
@@ -55,11 +134,21 @@ class SupplierService {
       throw new ValidationError('User already has a supplier profile');
     }
 
+    // Generate unique slug
+    const baseName = String(data.name).trim();
+    const baseSlug = data.slug || generateSlug(baseName);
+    let slug = baseSlug;
+    let suffix = 2;
+    while (suppliers.find(s => s.slug === slug)) {
+      slug = `${baseSlug}-${suffix}`;
+      suffix++;
+    }
+
     // Create supplier
     const supplier = {
       id: this.uid('sup'),
       ownerUserId: userId,
-      name: String(data.name).trim(),
+      name: baseName,
       category: data.category,
       description: data.description ? String(data.description).trim() : '',
       location: data.location || '',
@@ -81,7 +170,7 @@ class SupplierService {
 
       // Publishing workflow (Phase 1 additions)
       status: data.status || 'draft',
-      slug: data.slug || generateSlug(String(data.name).trim()),
+      slug,
       publishedAt: data.publishedAt || null,
 
       // SEO & Social
@@ -103,13 +192,13 @@ class SupplierService {
       awards: Array.isArray(data.awards) ? data.awards : [],
       certifications: Array.isArray(data.certifications) ? data.certifications : [],
 
-      // Analytics (denormalized)
-      viewCount: data.viewCount || 0,
-      enquiryCount: data.enquiryCount || 0,
+      // Analytics (denormalized) — hardcoded to safe defaults; never trust user input
+      viewCount: 0,
+      enquiryCount: 0,
 
-      // Admin approval
-      approvedAt: data.approvedAt || null,
-      approvedBy: data.approvedBy || null,
+      // Admin approval — hardcoded to safe defaults; never trust user input
+      approvedAt: null,
+      approvedBy: null,
     };
 
     suppliers.push(supplier);
@@ -184,6 +273,65 @@ class SupplierService {
     // Authorization check
     if (userRole !== 'admin' && supplier.ownerUserId !== userId) {
       throw new AuthorizationError('You do not have permission to update this supplier');
+    }
+
+    // Validate fields if provided
+    if (updates.category !== undefined && !VALID_CATEGORIES.includes(updates.category)) {
+      throw new ValidationError(`Category must be one of: ${VALID_CATEGORIES.join(', ')}`);
+    }
+    if (updates.name !== undefined && String(updates.name).trim().length > 100) {
+      throw new ValidationError('Supplier name must be 100 characters or fewer');
+    }
+    if (updates.description !== undefined && String(updates.description).trim().length > 5000) {
+      throw new ValidationError('Description must be 5000 characters or fewer');
+    }
+    if (updates.email !== undefined && updates.email) {
+      if (String(updates.email).length > 254) {
+        throw new ValidationError('Email must be 254 characters or fewer');
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(String(updates.email))) {
+        throw new ValidationError('Invalid email format');
+      }
+    }
+    if (updates.phone !== undefined && updates.phone) {
+      if (String(updates.phone).length > 20) {
+        throw new ValidationError('Phone must be 20 characters or fewer');
+      }
+      const phoneRegex = /^[0-9+\-\s().]{1,20}$/;
+      if (!phoneRegex.test(String(updates.phone))) {
+        throw new ValidationError('Invalid phone number format');
+      }
+    }
+    const urlUpdateFields = [
+      { field: 'website', label: 'Website URL' },
+      { field: 'bookingUrl', label: 'Booking URL' },
+      { field: 'videoUrl', label: 'Video URL' },
+    ];
+    for (const { field, label } of urlUpdateFields) {
+      if (updates[field] !== undefined && updates[field]) {
+        if (String(updates[field]).length > 500) {
+          throw new ValidationError(`${label} must be 500 characters or fewer`);
+        }
+        try {
+          new URL(String(updates[field]));
+        } catch {
+          throw new ValidationError(`${label} must be a valid URL`);
+        }
+      }
+    }
+
+    // Enforce slug uniqueness if name or slug changes
+    if (updates.name !== undefined || updates.slug !== undefined) {
+      const allSuppliers = await this.db.read('suppliers');
+      const baseSlug = updates.slug || generateSlug(String(updates.name || supplier.name).trim());
+      let slug = baseSlug;
+      let suffix = 2;
+      while (allSuppliers.find(s => s.slug === slug && s.id !== id)) {
+        slug = `${baseSlug}-${suffix}`;
+        suffix++;
+      }
+      updates = { ...updates, slug };
     }
 
     // Allowed fields
@@ -266,6 +414,27 @@ class SupplierService {
       throw new AuthorizationError('You do not have permission to delete this supplier');
     }
 
+    // Cascade delete related data
+    try {
+      const packages = await this.db.read('packages');
+      const supplierPackages = packages.filter(p => p.supplierId === id);
+      for (const pkg of supplierPackages) {
+        await this.db.deleteOne('packages', pkg.id);
+      }
+    } catch (e) {
+      logger.debug('Could not cascade delete packages:', e.message);
+    }
+
+    try {
+      const analyticsEvents = await this.db.read('analyticsEvents');
+      const supplierEvents = analyticsEvents.filter(e => e.supplierId === id);
+      for (const event of supplierEvents) {
+        await this.db.deleteOne('analyticsEvents', event.id);
+      }
+    } catch (e) {
+      logger.debug('Could not cascade delete analytics events:', e.message);
+    }
+
     // Remove supplier
     await this.db.deleteOne('suppliers', id);
 
@@ -279,6 +448,11 @@ class SupplierService {
    */
   async searchSuppliers(filters = {}) {
     let suppliers = await this.db.read('suppliers');
+
+    // By default, only return published and approved suppliers for public search
+    if (!filters.includeAll) {
+      suppliers = suppliers.filter(s => s.status === 'published' && s.approved === true);
+    }
 
     // Apply filters
     if (filters.name) {
@@ -344,8 +518,7 @@ class SupplierService {
    * @returns {Promise<boolean>} - True if Pro is active
    */
   async isProActive(id) {
-    const suppliers = await this.db.read('suppliers');
-    const supplier = suppliers.find(s => s.id === id);
+    const supplier = await this.db.findOne('suppliers', { id });
 
     if (!supplier) {
       return false;
@@ -358,6 +531,12 @@ class SupplierService {
     if (supplier.proExpiresAt) {
       const expiresAt = new Date(supplier.proExpiresAt);
       if (expiresAt < new Date()) {
+        // Auto-deactivate expired Pro status
+        await this.db.updateOne(
+          'suppliers',
+          { id },
+          { $set: { isPro: false, updatedAt: new Date().toISOString() } }
+        );
         return false;
       }
     }
@@ -398,6 +577,9 @@ class SupplierService {
    */
   async getFeaturedSuppliers(limit = 10) {
     let suppliers = await this.db.read('suppliers');
+
+    // Only feature approved and published suppliers
+    suppliers = suppliers.filter(s => s.approved === true && s.status === 'published');
 
     // Get reviews for rating calculation
     const reviews = await this.db.read('reviews');
