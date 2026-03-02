@@ -4181,15 +4181,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    attachPasswordToggle(loginPassword);
-    attachPasswordToggle(regPassword);
-
-    // Also attach to confirm password field if it exists
-    const regPasswordConfirm = document.getElementById('reg-password-confirm');
-    if (regPasswordConfirm) {
-      attachPasswordToggle(regPasswordConfirm);
-    }
-
     // Add caps lock warning to login password field
     if (loginPassword) {
       const loginCapsLockWarning = document.getElementById('login-caps-lock-warning');
