@@ -3,9 +3,7 @@
  * Liquid glass design system for authentication forms
  */
 
-/* Liquid glass ambient background — gives backdrop-filter something to blur */
-
-/* Ambient gradient blobs behind auth card */
+/* Ambient gradient blobs behind auth card — gives backdrop-filter something to blur */
 .auth-container::before {
   content: '';
   position: fixed;
