@@ -442,7 +442,7 @@ html[data-theme="dark"] .timeline-step::before{
   cursor: pointer;
   flex-shrink:0;
   margin:0;
-  order:2;
+  order:0;
   accent-color: #0B8073;
 }
 .checkbox-label-right:hover {
@@ -1175,6 +1175,7 @@ button, .cta{
 /* Account type toggle on auth page */
 .role-toggle{
   display:inline-flex;
+  flex-direction: row !important;
   background:rgba(255,255,255,0.06);
   border-radius:999px;
   padding:3px;
@@ -1182,21 +1183,25 @@ button, .cta{
 }
 .role-pill{
   border:0;
-  border-radius:999px;
-  padding:6px 14px;
+  border-radius:999px !important;
+  padding:6px 14px !important;
   font-size:0.9rem;
   background:transparent;
   color:inherit;
   cursor:pointer;
   opacity:0.7;
+  box-shadow: none !important;
+  font-weight: normal !important;
+  width: auto !important;
+  margin-top: 0 !important;
 }
 .role-pill.is-active{
-  background:#00c896;
-  color:#02040a;
+  background:#0B8073;
+  color:#ffffff;
   opacity:1;
 }
 .role-pill:focus-visible{
-  outline:2px solid #00c896;
+  outline:2px solid #0B8073;
   outline-offset:2px;
 }
 
@@ -2360,4 +2365,21 @@ textarea:focus:not(:focus-visible) {
   .section-lg {
     padding: 64px 0;
   }
+}
+
+/* Cookie preferences link-style button used in footers sitewide */
+[data-cookie-prefs] {
+  background: none !important;
+  border: none !important;
+  color: inherit !important;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-weight: inherit !important;
+  width: auto !important;
+  margin-top: 0 !important;
+  display: inline;
 }

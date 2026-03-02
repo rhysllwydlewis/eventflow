@@ -7,7 +7,6 @@
 .auth-container {
   max-width: 480px;
   margin: 2rem auto;
-  padding: 2rem;
 }
 
 /* Enhanced auth card with liquid glass */
@@ -173,12 +172,9 @@
   animation: spin 0.6s linear infinite;
 }
 
-/* Password strength always visible */
+/* Password strength shown by JS when user types */
 #password-strength-container {
-  display: block !important;
   margin-top: 0.75rem;
-  opacity: 1;
-  animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -308,4 +304,212 @@
   .auth-loading-overlay {
     background: rgba(15, 23, 42, 0.9);
   }
+}
+
+/* Auth page subtitle */
+.auth-subtitle {
+  margin-bottom: 1rem;
+  color: #667085;
+  font-size: 0.9375rem;
+}
+
+/* Tab switcher - liquid glass design system */
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(227, 233, 239, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(11, 128, 115, 0.1);
+  width: max-content;
+  margin-bottom: 1.25rem;
+}
+
+.auth-tab {
+  padding: 8px 18px !important;
+  border: none !important;
+  background: transparent;
+  border-radius: 9px !important;
+  font-size: 0.9375rem !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  color: #374151;
+  box-shadow: none !important;
+  width: auto !important;
+  margin-top: 0 !important;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-tab:hover {
+  background: rgba(255, 255, 255, 0.7);
+  color: #0B8073;
+}
+
+.auth-tab[aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0B8073;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(11, 128, 115, 0.15), 0 0 0 1px rgba(11, 128, 115, 0.1);
+}
+
+.auth-tab:focus-visible {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+}
+
+/* Tab panel top spacing */
+.auth-tab-panel {
+  margin-top: 0;
+}
+
+/* Caps lock warning */
+.auth-caps-warning {
+  display: none;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #856404;
+}
+
+/* Inline form error message */
+.auth-error-msg {
+  display: none;
+  color: #b00020;
+  font-size: 0.875rem;
+}
+
+/* Inline validation message */
+.auth-validation-msg {
+  display: none;
+  color: #b00020;
+}
+
+/* Password strength bar container */
+.auth-strength-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.auth-strength-track {
+  flex: 1;
+  height: 6px;
+  background: #e3e9ef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.auth-strength-bar {
+  height: 100%;
+  width: 0%;
+  background: #b00020;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.auth-strength-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.auth-strength-msg {
+  display: block;
+  color: #666;
+}
+
+/* Password requirements list */
+.auth-requirements {
+  margin-top: 8px;
+  padding-left: 20px;
+  color: #666;
+  font-size: 0.875rem;
+  display: none;
+}
+
+/* Individual requirement items default to "not met" (red) */
+.auth-requirements li {
+  color: #b00020;
+}
+
+/* Password match message */
+.auth-match-msg {
+  margin-top: 4px;
+  display: none;
+  color: #b00020;
+}
+
+/* File upload custom styling */
+.auth-file-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 2px dashed rgba(11, 128, 115, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-file-upload:hover {
+  border-color: rgba(11, 128, 115, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.auth-file-help {
+  display: block;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Social media stacked inputs spacing */
+#supplier-fields .form-row input + input {
+  margin-top: 8px;
+}
+
+/* Resend verification button container */
+#resend-verification-container {
+  margin-top: 12px;
+}
+
+/* Email verification page */
+.verify-card {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.verify-icon {
+  font-size: 4rem;
+  line-height: 1;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+.verify-status {
+  margin-bottom: 1.5rem;
+}
+
+.verify-status p {
+  margin: 8px 0;
+}
+
+.verify-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.verify-actions .cta,
+.verify-actions .cta.secondary {
+  min-width: 140px;
 }

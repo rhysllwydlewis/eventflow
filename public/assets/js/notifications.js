@@ -791,7 +791,7 @@
       dropdown.innerHTML = `
         <div class="notification-header">
           <h3>Notifications</h3>
-          <button class="notification-mark-all" id="notification-mark-all-read">
+          <button class="notification-mark-all" id="notification-mark-all-read" type="button">
             Mark all as read
           </button>
         </div>
