@@ -328,14 +328,17 @@
 }
 
 .auth-tab {
-  padding: 8px 18px;
-  border: none;
+  padding: 8px 18px !important;
+  border: none !important;
   background: transparent;
-  border-radius: 9px;
-  font-size: 0.9375rem;
-  font-weight: 500;
+  border-radius: 9px !important;
+  font-size: 0.9375rem !important;
+  font-weight: 500 !important;
   cursor: pointer;
   color: #374151;
+  box-shadow: none !important;
+  width: auto !important;
+  margin-top: 0 !important;
   transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
