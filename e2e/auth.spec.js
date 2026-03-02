@@ -232,4 +232,76 @@ test.describe('Authentication Flow', () => {
     const loginError = page.locator('#login-error');
     await expect(loginError).toHaveAttribute('role', 'alert');
   });
+
+  test('no console TypeError on page load (indexOf on undefined)', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', err => errors.push(err.message));
+
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    const indexOfErrors = errors.filter(
+      msg => msg.includes('indexOf') && msg.includes('undefined')
+    );
+    expect(indexOfErrors).toHaveLength(0);
+  });
+
+  test('password toggle stays vertically centered on mobile before and after click', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
+
+    const passwordInput = page.locator('#login-password');
+    const toggleButton = page.locator('.password-toggle').first();
+
+    await expect(passwordInput).toBeVisible();
+    await expect(toggleButton).toBeVisible();
+
+    const inputBoxBefore = await passwordInput.boundingBox();
+    const toggleBoxBefore = await toggleButton.boundingBox();
+
+    // Toggle center Y should be within the input's vertical bounds before click
+    const toggleCenterBefore = toggleBoxBefore.y + toggleBoxBefore.height / 2;
+    expect(toggleCenterBefore).toBeGreaterThanOrEqual(inputBoxBefore.y);
+    expect(toggleCenterBefore).toBeLessThanOrEqual(inputBoxBefore.y + inputBoxBefore.height);
+
+    // Click the toggle to switch to "show" mode
+    await toggleButton.click();
+    await page.waitForTimeout(200);
+
+    // Re-capture both boxes after click (input may have scrolled)
+    const inputBoxAfter = await passwordInput.boundingBox();
+    const toggleBoxAfter = await toggleButton.boundingBox();
+
+    // Toggle center must still be within input bounds after the icon swap
+    const toggleCenterAfter = toggleBoxAfter.y + toggleBoxAfter.height / 2;
+    expect(toggleCenterAfter).toBeGreaterThanOrEqual(inputBoxAfter.y);
+    expect(toggleCenterAfter).toBeLessThanOrEqual(inputBoxAfter.y + inputBoxAfter.height);
+
+    // The toggle must not drift relative to the input (within 4px tolerance)
+    const toggleOffsetBefore = toggleBoxBefore.y - inputBoxBefore.y;
+    const toggleOffsetAfter = toggleBoxAfter.y - inputBoxAfter.y;
+    expect(Math.abs(toggleOffsetAfter - toggleOffsetBefore)).toBeLessThanOrEqual(4);
+  });
+
+  test('"Forgot password?" link is below password input on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    const passwordInput = page.locator('#login-password');
+    const forgotLink = page.locator('.auth-forgot-link--below');
+
+    await expect(passwordInput).toBeVisible();
+    await expect(forgotLink).toBeVisible();
+
+    const inputBox = await passwordInput.boundingBox();
+    const forgotBox = await forgotLink.boundingBox();
+
+    // Forgot link top edge must be below the password input's bottom edge
+    expect(forgotBox.y).toBeGreaterThan(inputBox.y + inputBox.height - 2);
+  });
 });

@@ -800,18 +800,29 @@ body.auth-page .auth-card select.auth-input {
   position: absolute;
   right: 12px;
   top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
+  /* neutralize global `bottom: 12px / 13px` from styles.css so top+transform wins */
+  bottom: auto !important;
+  /* !important overrides `button:hover:not(:disabled) { transform: translateY(-1px) }` in p3-features.css */
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: none !important;
   cursor: pointer;
   color: #6B7280;
-  padding: 4px;
+  padding: 4px !important;
   line-height: 0;
   border-radius: 4px;
   /* !important overrides `button { width:100%; margin-top:6px }` from styles.css */
   width: auto !important;
   margin-top: 0 !important;
-  transition: color 0.2s ease;
+  /* neutralize `min-height/min-width: 44px` from mobile-optimizations.css */
+  min-height: unset !important;
+  min-width: unset !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  /* !important overrides `button { transition: all }` in p3-features.css to prevent transform transition */
+  transition: color 0.2s ease !important;
 }
 
 .password-toggle:hover {
@@ -836,6 +847,25 @@ body.auth-page .auth-card select.auth-input {
 .auth-forgot-link:hover {
   color: #13B6A2;
   text-decoration: underline;
+}
+
+/* Desktop: show inline in label row; hide below-input duplicate */
+.auth-forgot-link--below {
+  display: none;
+}
+
+/* Mobile: hide label-row link, show below-input link */
+@media (max-width: 640px) {
+  .auth-forgot-link--label {
+    display: none;
+  }
+
+  .auth-forgot-link--below {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.5rem;
+    min-height: 44px;
+  }
 }
 
 /* Inline field errors */
@@ -1342,6 +1372,29 @@ body.auth-page .auth-card .checkbox-label-right {
   .auth-role-option {
     width: 100% !important;
     text-align: center;
+  }
+
+  /* Footer polish: ensure content is above bottom-nav and readable */
+  body.auth-page .auth-main {
+    /* leave room for fixed bottom nav (~64px) + iOS safe-area */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.auth-page .footer {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.auth-page .footer .ef-footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  body.auth-page .footer .ef-footer-content > div:last-child a,
+  body.auth-page .footer .ef-footer-content > div:last-child button {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
   }
 }
 
