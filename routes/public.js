@@ -12,7 +12,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const dbUnified = require('../db-unified');
 const { csrfProtection } = require('../middleware/csrf');
-const { writeLimiter } = require('../middleware/rateLimits');
+const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 
 function isCollageDebugEnabled() {
   return process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true';
@@ -366,7 +366,7 @@ function buildAuthFallbackResponse(fallbacks) {
   };
 }
 
-router.get('/auth-photos', async (req, res) => {
+router.get('/auth-photos', apiLimiter, async (req, res) => {
   try {
     res.set('Cache-Control', 'public, max-age=300');
 
@@ -376,14 +376,14 @@ router.get('/auth-photos', async (req, res) => {
     const pexels = getPexelsService();
 
     if (!pexels.isConfigured()) {
-      return res.json(buildAuthFallbackResponse(getRandomFallbackPhotos(6)));
+      return res.json(buildAuthFallbackResponse(getRandomFallbackPhotos(8)));
     }
 
     const query = AUTH_PHOTO_QUERIES[Math.floor(Math.random() * AUTH_PHOTO_QUERIES.length)];
 
     let results;
     try {
-      results = await pexels.searchPhotos(query, 6, 1, { orientation: 'portrait', size: 'large' });
+      results = await pexels.searchPhotos(query, 8, 1, { orientation: 'portrait', size: 'large' });
     } catch (_) {
       results = { photos: [] };
     }
@@ -417,7 +417,7 @@ router.get('/auth-photos', async (req, res) => {
     try {
       const { getRandomFallbackPhotos } = require('../config/pexels-fallback');
       res.set('Cache-Control', 'public, max-age=60');
-      res.json(buildAuthFallbackResponse(getRandomFallbackPhotos(6)));
+      res.json(buildAuthFallbackResponse(getRandomFallbackPhotos(8)));
     } catch (_) {
       res.status(500).json({ photos: [] });
     }

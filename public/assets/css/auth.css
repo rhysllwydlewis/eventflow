@@ -1058,12 +1058,21 @@ body.auth-page {
   bottom: 0.5rem;
   right: 0.875rem;
   z-index: 4;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.45);
   display: none; /* hidden until JS populates it */
+  transition: opacity 0.4s ease;
 }
 .auth-panel-credit:not(:empty) {
   display: block;
+}
+/* Fade the credit on every credit update (class toggled by JS) */
+.auth-panel-credit--fade {
+  animation: authCreditFade 0.5s ease forwards;
+}
+@keyframes authCreditFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .auth-panel-credit a {
   color: rgba(255, 255, 255, 0.55);
@@ -1072,6 +1081,35 @@ body.auth-page {
 .auth-panel-credit a:hover {
   color: rgba(255, 255, 255, 0.85);
   text-decoration: underline;
+}
+
+/* Loading shimmer — shown while JS fetches Pexels photos */
+@keyframes authPhotoShimmer {
+  0%   { opacity: 0.55; }
+  50%  { opacity: 0.75; }
+  100% { opacity: 0.55; }
+}
+.auth-photos--loading .auth-panel-photo--1 {
+  opacity: 0.55;
+  animation: authPhotoShimmer 1.6s ease-in-out infinite;
+}
+
+/* Reduced motion: show first photo statically, skip all animations */
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel-photo {
+    animation: none;
+    opacity: 0;
+  }
+  .auth-panel-photo--1 {
+    opacity: 1;
+  }
+  .auth-brand-visual,
+  .auth-panel-stats {
+    animation: none;
+  }
+  .auth-split-right .auth-container {
+    animation: none;
+  }
 }
 
 @media (min-width: 1024px) {
