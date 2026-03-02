@@ -1027,10 +1027,10 @@ router.post('/validate-reset-token', authLimiter, async (req, res) => {
     const users = await dbUnified.read('users');
 
     // Try JWT token first
-    const validation = tokenUtils.validatePasswordResetToken(token);
-    if (validation.valid) {
+    const jwtValidation = tokenUtils.validatePasswordResetToken(token);
+    if (jwtValidation.valid) {
       const userExists = users.some(
-        u => (u.email || '').toLowerCase() === String(validation.email).toLowerCase()
+        u => (u.email || '').toLowerCase() === String(jwtValidation.email).toLowerCase()
       );
       if (!userExists) {
         return res.status(400).json({ error: 'Invalid or expired password reset link' });
