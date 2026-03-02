@@ -4,10 +4,6 @@
  */
 
 /* Liquid glass ambient background — gives backdrop-filter something to blur */
-.auth-container ~ * ,
-#main-content:has(.auth-container) {
-  position: relative;
-}
 
 /* Ambient gradient blobs behind auth card */
 .auth-container::before {
