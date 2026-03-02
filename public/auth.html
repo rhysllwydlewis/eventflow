@@ -139,11 +139,11 @@
 <main id="main-content" class="section">
   <div class="container">
     <h1>Account</h1>
-    <div style="display:flex;gap:10px;border:1px solid #e3e9ef;border-radius:10px;overflow:hidden;width:max-content">
-      <button id="tab-signin" aria-selected="true" style="padding:10px 14px;border:none;background:#fff;cursor:pointer">Log in</button>
-      <button id="tab-create" aria-selected="false" style="padding:10px 14px;border:none;background:#f7fafc;cursor:pointer">Create a free account</button>
+    <div role="tablist" aria-label="Authentication options" style="display:flex;gap:10px;border:1px solid #e3e9ef;border-radius:10px;overflow:hidden;width:max-content">
+      <button id="tab-signin" role="tab" aria-selected="true" aria-controls="panel-signin" tabindex="0" style="padding:10px 14px;border:none;background:#fff;cursor:pointer">Log in</button>
+      <button id="tab-create" role="tab" aria-selected="false" aria-controls="panel-create" tabindex="-1" style="padding:10px 14px;border:none;background:#f7fafc;cursor:pointer">Create a free account</button>
     </div>
-    <section id="panel-signin" style="margin-top:12px">
+    <section id="panel-signin" role="tabpanel" aria-labelledby="tab-signin" style="margin-top:12px">
       <form id="login-form" class="card" action="#">
         <div class="form-row"><label for="login-email">Email</label><input id="login-email" name="email" type="email" required placeholder="you@example.com" aria-required="true" autocomplete="email"></div>
         <div class="form-row">
@@ -154,7 +154,7 @@
           </div>
         </div>
         <div class="form-row">
-          <div id="login-error" class="error" style="display: none; visibility: hidden; color: #b00020; font-size: 0.875rem;" aria-live="polite"></div>
+          <div id="login-error" class="error" role="alert" style="display: none; color: #b00020; font-size: 0.875rem;" aria-live="assertive" aria-atomic="true"></div>
         </div>
         <div class="form-row">
           <label class="small checkbox-label-right" for="login-remember">
@@ -169,7 +169,7 @@
         <p class="small"><a href="#" id="forgot-password-link">Forgot your password?</a></p>
       </form>
     </section>
-    <section id="panel-create" hidden style="margin-top:12px">
+    <section id="panel-create" role="tabpanel" aria-labelledby="tab-create" hidden style="margin-top:12px">
       <form id="register-form" class="card" action="#">
         <div class="form-row">
           <label for="reg-firstname">First Name</label>
@@ -449,15 +449,11 @@
                 const errorMessages = errors.map(([field, msg]) => msg).join(', ');
                 loginErrorEl.textContent = errorMessages || 'Please fix the errors above';
                 loginErrorEl.style.display = 'block';
-                loginErrorEl.style.visibility = 'visible';
-                loginErrorEl.setAttribute('aria-hidden', 'false');
               }
             } else if (result && loginErrorEl) {
               // Clear errors when validation passes
               loginErrorEl.textContent = '';
               loginErrorEl.style.display = 'none';
-              loginErrorEl.style.visibility = 'hidden';
-              loginErrorEl.setAttribute('aria-hidden', 'true');
             }
             // Don't clear the error here - let app.js manage #login-error for API responses
             return result;
