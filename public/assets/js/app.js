@@ -128,72 +128,100 @@ function validateRedirectForRole(redirectUrl, userRole) {
   // Define allowlisted pages per role
   const allowedPaths = {
     admin: [
+      '/admin',
       '/admin.html',
+      '/admin-audit',
       '/admin-audit.html',
+      '/admin-content',
       '/admin-content.html',
+      '/admin-homepage',
       '/admin-homepage.html',
+      '/admin-marketplace',
       '/admin-marketplace.html',
+      '/admin-packages',
       '/admin-packages.html',
+      '/admin-payments',
       '/admin-payments.html',
+      '/admin-pexels',
       '/admin-pexels.html',
+      '/admin-photos',
       '/admin-photos.html',
+      '/admin-reports',
       '/admin-reports.html',
+      '/admin-settings',
       '/admin-settings.html',
+      '/admin-supplier-detail',
       '/admin-supplier-detail.html',
+      '/admin-suppliers',
       '/admin-suppliers.html',
+      '/admin-tickets',
       '/admin-tickets.html',
+      '/admin-user-detail',
       '/admin-user-detail.html',
+      '/admin-users',
       '/admin-users.html',
     ],
     supplier: [
+      '/dashboard/supplier',
       '/dashboard-supplier.html',
+      '/dashboard',
       '/dashboard.html',
-      '/settings.html',
       '/settings',
-      '/plan.html',
+      '/settings.html',
       '/plan',
-      '/pricing.html',
+      '/plan.html',
       '/pricing',
-      '/checkout.html',
+      '/pricing.html',
       '/checkout',
+      '/checkout.html',
+      '/supplier/subscription',
       '/supplier/subscription.html',
-      '/my-marketplace-listings.html',
       '/my-marketplace-listings',
+      '/my-marketplace-listings.html',
+      '/supplier/marketplace-new-listing',
       '/supplier/marketplace-new-listing.html',
       '/marketplace',
       '/marketplace.html',
-      '/conversation.html',
       '/messenger/',
-      '/notifications.html',
+      '/messages',
+      '/messages.html',
+      '/conversation',
+      '/conversation.html',
       '/notifications',
-      '/timeline.html',
+      '/notifications.html',
       '/timeline',
-      '/budget.html',
+      '/timeline.html',
       '/budget',
+      '/budget.html',
     ],
     customer: [
+      '/dashboard/customer',
       '/dashboard-customer.html',
+      '/dashboard',
       '/dashboard.html',
-      '/settings.html',
       '/settings',
-      '/plan.html',
+      '/settings.html',
       '/plan',
-      '/pricing.html',
+      '/plan.html',
       '/pricing',
-      '/checkout.html',
+      '/pricing.html',
       '/checkout',
-      '/my-marketplace-listings.html',
+      '/checkout.html',
       '/my-marketplace-listings',
+      '/my-marketplace-listings.html',
       '/marketplace',
       '/marketplace.html',
-      '/conversation.html',
       '/messenger/',
-      '/notifications.html',
+      '/messages',
+      '/messages.html',
+      '/conversation',
+      '/conversation.html',
       '/notifications',
-      '/timeline.html',
+      '/notifications.html',
       '/timeline',
-      '/budget.html',
+      '/timeline.html',
       '/budget',
+      '/budget.html',
     ],
   };
 
@@ -377,13 +405,13 @@ function supplierCard(s, user) {
     ${avatarHtml}
     <div style="flex: 1; min-width: 0;">
       <h3 style="margin: 0 0 8px 0;">
-        <a href="/supplier.html?id=${encodeURIComponent(s.id)}" style="text-decoration: none; color: inherit;">${escapeHtml(s.name)}</a>
+        <a href="/supplier?id=${encodeURIComponent(s.id)}" style="text-decoration: none; color: inherit;">${escapeHtml(s.name)}</a>
       </h3>
       <div class="small" style="margin-bottom: 8px;">${escapeHtml(s.location || '')} · <span class="badge">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}</div>
       <p class="small" style="margin-bottom: 8px;">${escapeHtml(s.description_short || '')}</p>
       <div class="supplier-badges" style="margin: 8px 0;">${supplierBadges.join('')}</div>
       <div class="small" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">${tags.join(' ')}</div>
-      <div class="form-actions">${addBtn}<a class="cta secondary" href="/supplier.html?id=${encodeURIComponent(s.id)}">View details</a></div>
+      <div class="form-actions">${addBtn}<a class="cta secondary" href="/supplier?id=${encodeURIComponent(s.id)}">View details</a></div>
     </div>
   </div>`;
 }
@@ -1229,7 +1257,7 @@ async function initSupplier() {
     const slug = card.dataset.packageSlug;
     if (slug) {
       card.addEventListener('click', () => {
-        window.location.href = `/package.html?slug=${encodeURIComponent(slug)}`;
+        window.location.href = `/package?slug=${encodeURIComponent(slug)}`;
       });
       // Make keyboard accessible
       card.setAttribute('tabindex', '0');
@@ -1237,7 +1265,7 @@ async function initSupplier() {
       card.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          window.location.href = `/package.html?slug=${encodeURIComponent(slug)}`;
+          window.location.href = `/package?slug=${encodeURIComponent(slug)}`;
         }
       });
     }
@@ -3286,7 +3314,7 @@ async function initDashSupplier() {
       const supplierIdInput = document.getElementById('sup-id');
       if (supplierIdInput && supplierIdInput.value) {
         const supplierId = supplierIdInput.value;
-        window.open(`/supplier.html?id=${encodeURIComponent(supplierId)}&preview=true`, '_blank');
+        window.open(`/supplier?id=${encodeURIComponent(supplierId)}&preview=true`, '_blank');
       } else {
         alert('Please save your profile first before previewing.');
       }
@@ -3957,21 +3985,24 @@ async function initAdminUsers() {
 document.addEventListener('DOMContentLoaded', () => {
   const page =
     window.__EF_PAGE__ ||
-    (location.pathname.endsWith('admin-users.html')
+    (location.pathname.endsWith('admin-users.html') || location.pathname === '/admin-users'
       ? 'admin_users'
-      : location.pathname.endsWith('admin.html')
+      : location.pathname.endsWith('admin.html') || location.pathname === '/admin'
         ? 'admin'
         : location.pathname.endsWith('auth.html') || location.pathname === '/auth'
           ? 'auth'
           : location.pathname.endsWith('verify.html') || location.pathname === '/verify'
             ? 'verify'
-            : location.pathname.endsWith('dashboard-customer.html')
+            : location.pathname.endsWith('dashboard-customer.html') ||
+                location.pathname === '/dashboard/customer'
               ? 'dash_customer'
-              : location.pathname.endsWith('dashboard-supplier.html')
+              : location.pathname.endsWith('dashboard-supplier.html') ||
+                  location.pathname === '/dashboard/supplier'
                 ? 'dash_supplier'
-                : location.pathname.endsWith('suppliers.html')
+                : location.pathname.endsWith('suppliers.html') || location.pathname === '/suppliers'
                   ? 'results'
-                  : location.pathname.endsWith('supplier.html')
+                  : location.pathname.endsWith('supplier.html') ||
+                      location.pathname.startsWith('/supplier')
                     ? 'supplier'
                     : location.pathname.endsWith('plan.html') || location.pathname === '/plan'
                       ? 'plan'
@@ -4135,11 +4166,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (redirectParam && validateRedirectForRole(redirectParam, existing.role)) {
             destination = redirectParam;
           } else if (existing.role === 'admin') {
-            destination = '/admin.html';
+            destination = '/admin';
           } else if (existing.role === 'supplier') {
-            destination = '/dashboard-supplier.html';
+            destination = '/dashboard/supplier';
           } else {
-            destination = '/dashboard-customer.html';
+            destination = '/dashboard/customer';
           }
 
           setTimeout(() => {
@@ -4626,11 +4657,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Determine destination based on user role (SECURITY: never trust redirect param alone)
             let destination;
             if (user.role === 'admin') {
-              destination = '/admin.html';
+              destination = '/admin';
             } else if (user.role === 'supplier') {
-              destination = '/dashboard-supplier.html';
+              destination = '/dashboard/supplier';
             } else {
-              destination = '/dashboard-customer.html';
+              destination = '/dashboard/customer';
             }
 
             // Check for redirect parameter - only allow if it matches user's role-appropriate pages

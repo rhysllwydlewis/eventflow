@@ -84,4 +84,20 @@ router.get('/suppliers.html', (req, res) => {
   res.redirect(301, `/suppliers${qs}`);
 });
 
+/**
+ * GET /newsletter/confirmed
+ * Serve the newsletter subscription confirmed page
+ */
+router.get('/newsletter/confirmed', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'newsletter', 'confirmed.html'));
+});
+
+/**
+ * GET /newsletter/expired
+ * Serve the newsletter link-expired page
+ */
+router.get('/newsletter/expired', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'newsletter', 'expired.html'));
+});
+
 module.exports = router;
