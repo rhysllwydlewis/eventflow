@@ -405,7 +405,7 @@ router.post(
       // Create portal session
       const session = await stripe.billingPortal.sessions.create({
         customer: stripeCustomerId,
-        return_url: returnUrl || `${process.env.BASE_URL}/dashboard-supplier.html`,
+        return_url: returnUrl || `${process.env.BASE_URL}/dashboard/supplier`,
       });
 
       res.json({

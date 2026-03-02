@@ -507,8 +507,14 @@ app.get('/supplier/:page.html', (req, res) => {
 });
 
 // Dashboard role pages — redirect old .html paths to clean role-based routes
-app.get('/dashboard-customer.html', (req, res) => res.redirect(301, '/dashboard/customer'));
-app.get('/dashboard-supplier.html', (req, res) => res.redirect(301, '/dashboard/supplier'));
+app.get('/dashboard-customer.html', (req, res) => {
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(301, `/dashboard/customer${qs}`);
+});
+app.get('/dashboard-supplier.html', (req, res) => {
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(301, `/dashboard/supplier${qs}`);
+});
 
 // Newsletter result pages — redirect .html to canonical
 app.get('/newsletter/confirmed.html', (req, res) => res.redirect(301, '/newsletter/confirmed'));
