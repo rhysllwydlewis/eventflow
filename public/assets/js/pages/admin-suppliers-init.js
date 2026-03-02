@@ -66,8 +66,8 @@
       totalFields: profileFields.length,
     };
 
-    // Response rate (0-25) - default to 0.5 if not available
-    const responseRate = supplier.responseRate || 0.5;
+    // Response rate (0-25) - default to 0 if not available
+    const responseRate = supplier.responseRate || 0;
     const responseScore = responseRate * 25;
     score += responseScore;
     breakdown.responseRate = {
@@ -77,7 +77,7 @@
     };
 
     // Review rating (0-20)
-    const averageRating = supplier.averageRating || supplier.rating || 3.5;
+    const averageRating = supplier.averageRating || supplier.rating || 0;
     const ratingScore = (averageRating / 5) * 20;
     score += ratingScore;
     breakdown.reviewRating = {
@@ -266,27 +266,27 @@
 
         return `
         <tr>
-          <td><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="window.toggleSupplierSelection('${supplier.id}')"></td>
-          <td><a href="/admin-supplier-detail.html?id=${supplier.id}" style="color: #667eea; font-weight: 500;">${escapeHtml(supplier.name || 'Unknown')}</a></td>
+          <td><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="window.toggleSupplierSelection('${escapeHtml(supplier.id)}')"></td>
+          <td><a href="/admin-supplier-detail.html?id=${escapeHtml(supplier.id)}" style="color: #667eea; font-weight: 500;">${escapeHtml(supplier.name || 'Unknown')}</a></td>
           <td>${escapeHtml(supplier.email || '')}</td>
           <td>${supplier.approved ? '<span style="color: #10b981;">✓ Yes</span>' : '<span style="color: #f59e0b;">Pending</span>'}</td>
           <td>${subscriptionBadge}</td>
           <td>${healthScoreBadge}</td>
-          <td><span style="font-size: 12px; color: #6b7280;">${supplier.tags?.join(', ') || 'None'}</span></td>
+          <td><span style="font-size: 12px; color: #6b7280;">${escapeHtml(supplier.tags?.join(', ') || 'None')}</span></td>
           <td>
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <div style="display: flex; gap: 8px;">
-                <button onclick="window.viewSupplier('${supplier.id}')" class="btn-xs" title="View Profile">👁️</button>
-                <button onclick="window.editSupplier('${supplier.id}')" class="btn-xs" title="Edit">✏️</button>
-                ${!supplier.approved ? `<button onclick="window.approveSupplier('${supplier.id}')" class="btn-xs" style="background: #10b981; color: white;" title="Approve">✓</button>` : ''}
-                <button onclick="window.deleteSupplier('${supplier.id}')" class="btn-xs" style="background: #ef4444; color: white;" title="Delete">🗑️</button>
+                <button onclick="window.viewSupplier('${escapeHtml(supplier.id)}')" class="btn-xs" title="View Profile">👁️</button>
+                <button onclick="window.editSupplier('${escapeHtml(supplier.id)}')" class="btn-xs" title="Edit">✏️</button>
+                ${!supplier.approved ? `<button onclick="window.approveSupplier('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #10b981; color: white;" title="Approve">✓</button>` : ''}
+                <button onclick="window.deleteSupplier('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #ef4444; color: white;" title="Delete">🗑️</button>
               </div>
               <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                <select id="sub-tier-${supplier.id}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Subscription tier">
+                <select id="sub-tier-${escapeHtml(supplier.id)}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Subscription tier">
                   <option value="pro">Pro</option>
                   <option value="pro_plus">Pro+</option>
                 </select>
-                <select id="sub-days-${supplier.id}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Duration">
+                <select id="sub-days-${escapeHtml(supplier.id)}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Duration">
                   <option value="7">7d</option>
                   <option value="14">14d</option>
                   <option value="30" selected>30d</option>
@@ -294,8 +294,8 @@
                   <option value="180">180d</option>
                   <option value="365">1yr</option>
                 </select>
-                <button onclick="window.grantSubscription('${supplier.id}')" class="btn-xs" style="background: #667eea; color: white; font-size: 11px;" title="Grant subscription">Grant</button>
-                <button onclick="window.removeSubscription('${supplier.id}')" class="btn-xs" style="background: #6b7280; color: white; font-size: 11px;" title="Remove subscription">Remove</button>
+                <button onclick="window.grantSubscription('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #667eea; color: white; font-size: 11px;" title="Grant subscription">Grant</button>
+                <button onclick="window.removeSubscription('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #6b7280; color: white; font-size: 11px;" title="Remove subscription">Remove</button>
               </div>
             </div>
           </td>

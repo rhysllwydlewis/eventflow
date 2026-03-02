@@ -19,6 +19,19 @@
     return r.json();
   }
 
+  // Helper to escape HTML special characters to prevent XSS
+  function escapeHtml(str) {
+    if (!str) {
+      return '';
+    }
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // Helper to get CSRF token
   async function ensureCsrfToken() {
     try {
@@ -63,7 +76,7 @@
         // Only one profile - auto-select it
         container.innerHTML = `
           <p class="small" style="color: #667085;">
-            Customizing profile for: <strong>${suppliers[0].name}</strong>
+            Customizing profile for: <strong>${escapeHtml(suppliers[0].name)}</strong>
           </p>
         `;
         currentEditingSupplierId = suppliers[0].id;
@@ -73,7 +86,7 @@
         container.innerHTML = `
           <label for="profile-select">Choose a profile to customize:</label>
           <select id="profile-select" style="margin-top: 0.5rem;">
-            ${suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+            ${suppliers.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('')}
           </select>
         `;
 
