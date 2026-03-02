@@ -381,7 +381,7 @@ html[data-theme="dark"] .timeline-step::before{
   position:relative;
 }
 /* Password inputs with toggle buttons need extra padding on the right */
-.form-row input[type="password"],
+.form-row input[type="password"].has-toggle,
 .form-row input[type="text"].has-toggle{
   padding-right:60px;
 }
@@ -420,7 +420,7 @@ html[data-theme="dark"] .timeline-step::before{
     border-radius:6px;
     z-index:1;
   }
-  .form-row input[type="password"],
+  .form-row input[type="password"].has-toggle,
   .form-row input[type="text"].has-toggle{
     padding-right:44px;
   }

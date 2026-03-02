@@ -30,11 +30,6 @@
   z-index: 0;
 }
 
-.auth-card {
-  position: relative;
-  z-index: 1;
-}
-
 /* Auth container with liquid glass effect */
 .auth-container {
   max-width: 560px;
