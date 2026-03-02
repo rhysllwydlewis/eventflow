@@ -478,6 +478,8 @@ const canonicalPages = [
   'messages',
   'category',
   'package',
+  'reset-password',
+  'dashboard',
 ];
 
 canonicalPages.forEach(page => {
