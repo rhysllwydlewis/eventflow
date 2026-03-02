@@ -3,32 +3,7 @@
  * Liquid glass design system for authentication forms
  */
 
-/* Ambient gradient blobs behind auth card — gives backdrop-filter something to blur */
-.auth-container::before {
-  content: '';
-  position: fixed;
-  top: -20%;
-  left: -10%;
-  width: 60vw;
-  height: 60vw;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(11, 128, 115, 0.12) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.auth-container::after {
-  content: '';
-  position: fixed;
-  bottom: -10%;
-  right: -10%;
-  width: 50vw;
-  height: 50vw;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
+/* Legacy pseudo-element blobs replaced by .auth-bg-blob elements — see end of file */
 
 /* Auth container with liquid glass effect */
 .auth-container {
@@ -37,27 +12,30 @@
   padding: 0 1rem;
 }
 
-/* Enhanced auth card with liquid glass */
-.auth-card {
+/* Enhanced auth card with liquid glass
+   Uses `form.auth-card` (tag + class = specificity 0,1,1) to beat the global
+   `.card { ... !important }` rules (specificity 0,1,0) without chaining !important. */
+form.auth-card {
   position: relative;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(11, 128, 115, 0.1);
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-radius: 16px !important;
+  border: 1px solid rgba(11, 128, 115, 0.14) !important;
   box-shadow: 
     0 10px 30px rgba(15, 23, 42, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset !important;
   padding: 2rem;
-  transition: all 0.3s ease;
+  margin-bottom: 0 !important;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
-.auth-card:hover {
+form.auth-card:hover {
   box-shadow: 
-    0 15px 40px rgba(15, 23, 42, 0.12),
-    0 0 0 1px rgba(11, 128, 115, 0.2) inset;
-  transform: translateY(-2px);
+    0 16px 40px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(11, 128, 115, 0.18) inset !important;
+  transform: none !important;
 }
 
 /* Loading overlay with spinner */
@@ -313,7 +291,7 @@
     margin: 1rem auto;
   }
   
-  .auth-card {
+  form.auth-card {
     padding: 1.5rem;
   }
   
@@ -332,7 +310,7 @@
     padding: 0 1.5rem;
   }
 
-  .auth-card {
+  form.auth-card {
     padding: 2.5rem;
   }
 }
@@ -345,16 +323,17 @@
     padding: 0;
   }
 
-  .auth-card {
+  form.auth-card {
     padding: 3rem;
   }
 }
 
 /* Auth page subtitle */
 .auth-subtitle {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   color: #667085;
   font-size: 0.9375rem;
+  line-height: 1.5;
 }
 
 /* Tab switcher - liquid glass design system */
@@ -374,7 +353,10 @@
 .auth-tab {
   flex: 1;
   padding: 8px 18px !important;
-  border: none !important;
+  border: 1px solid transparent !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
   background: transparent;
   border-radius: 9px !important;
   font-size: 0.9375rem !important;
@@ -399,9 +381,13 @@
   box-shadow: 0 1px 4px rgba(11, 128, 115, 0.15), 0 0 0 1px rgba(11, 128, 115, 0.1);
 }
 
+.auth-tab:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .auth-tab:focus-visible {
-  outline: 2px solid #0B8073;
-  outline-offset: 2px;
+  outline: 2px solid #0B8073 !important;
+  outline-offset: 2px !important;
 }
 
 /* Tab panel top spacing */
@@ -409,16 +395,22 @@
   margin-top: 0;
 }
 
-/* Caps lock warning */
+/* Caps lock warning
+   !important required to win over ui-ux-fixes.css ".form-row > div { display: flex }"
+   which has higher specificity (0,1,1) than a lone class (0,1,0).
+   JS shows it by setting inline style.display='flex', which beats any CSS. */
 .auth-caps-warning {
-  display: none;
+  display: none !important;
+  align-items: center;
+  gap: 6px;
   margin-top: 4px;
   padding: 6px 10px;
-  background: #fff3cd;
+  background: rgba(255, 243, 205, 0.95);
   border: 1px solid #ffc107;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  color: #856404;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #78350f;
+  font-weight: 500;
 }
 
 /* Inline form error message */
@@ -614,5 +606,729 @@
   .role-pill {
     padding: 6px 8px !important;
     font-size: 0.8125rem;
+  }
+}
+
+/* =============================================================
+   SPLIT-SCREEN LAYOUT & LIQUID GLASS BACKGROUND
+   ============================================================= */
+
+/* Auth page header-height token — update here if the navbar changes */
+body.auth-page {
+  --auth-header-h: 72px;
+}
+
+/* Override body background on the auth page — stays within EventFlow teal/green palette */
+body.auth-page {
+  background: linear-gradient(160deg, #f0fdf9 0%, #f7fffe 55%, #eafaf6 100%);
+  min-height: 100vh;
+}
+
+/* Full-page main wrapper */
+.auth-main {
+  position: relative;
+  min-height: calc(100vh - var(--auth-header-h, 72px));
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+/* ---- Animated background blobs ---- */
+.auth-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.auth-bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+}
+
+.auth-bg-blob--1 {
+  width: 640px;
+  height: 640px;
+  top: -160px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(19, 182, 162, 0.45) 0%, rgba(11, 128, 115, 0.2) 55%, transparent 100%);
+  animation: authBlob1 14s ease-in-out infinite;
+}
+
+.auth-bg-blob--2 {
+  width: 520px;
+  height: 520px;
+  bottom: -120px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(11, 128, 115, 0.22) 0%, rgba(11, 128, 115, 0.08) 55%, transparent 100%);
+  animation: authBlob2 18s ease-in-out infinite;
+}
+
+.auth-bg-blob--3 {
+  width: 380px;
+  height: 380px;
+  top: 40%;
+  left: 35%;
+  background: radial-gradient(circle, rgba(79, 209, 199, 0.2) 0%, rgba(19, 182, 162, 0.08) 55%, transparent 100%);
+  animation: authBlob3 22s ease-in-out infinite;
+}
+
+@keyframes authBlob1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(40px, 25px) scale(1.06); }
+  66%       { transform: translate(-20px, 35px) scale(0.96); }
+}
+
+@keyframes authBlob2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(-30px, -35px) scale(1.08); }
+  75%       { transform: translate(20px, -15px) scale(0.94); }
+}
+
+@keyframes authBlob3 {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.15); }
+}
+
+/* ---- Split-screen structure ---- */
+.auth-split {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* Left panel hidden on mobile */
+.auth-split-left {
+  display: none;
+}
+
+/* Right panel: scrollable form column */
+.auth-split-right {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* Override auth-container positioning inside split layout */
+.auth-split-right .auth-container {
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Desktop: 50/50 split */
+@media (min-width: 1024px) {
+  .auth-main {
+    min-height: calc(100vh - var(--auth-header-h, 72px));
+  }
+
+  .auth-split {
+    flex-direction: row;
+    min-height: calc(100vh - var(--auth-header-h, 72px));
+  }
+
+  .auth-split-left {
+    display: flex; /* override display:none; also becomes the flex centring container */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 0; /* flex item sizing in the parent .auth-split row */
+    position: sticky;
+    top: var(--auth-header-h, 72px);
+    height: calc(100vh - var(--auth-header-h, 72px));
+    overflow: hidden;
+    background: linear-gradient(145deg, #064e3b 0%, #0B8073 35%, #13B6A2 65%, #4fd1c7 100%);
+  }
+
+  .auth-split-right {
+    flex: 1 1 0;
+    overflow-y: auto;
+    padding: 4rem 3rem;
+    align-items: flex-start;
+  }
+
+  .auth-split-right .auth-container {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+/* ---- Brand visual panel ---- */
+/* In-flow flex item, centred by the parent flex container (.auth-split-left) */
+.auth-brand-visual {
+  position: relative; /* normal flow — parent flex does the centering */
+  z-index: 1;
+  width: calc(100% - 5rem);
+  max-width: 340px;
+  text-align: center;
+  color: #fff;
+}
+
+.auth-brand-logo-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin: 0 auto 1rem;
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.auth-brand-heading {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.375rem;
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+}
+
+.auth-brand-tagline {
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0;
+  opacity: 0.88;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Decorative glass orbs — direct children of .auth-split-left (positioned relative to the panel) */
+.auth-brand-blob-1,
+.auth-brand-blob-2,
+.auth-brand-blob-3 {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-brand-blob-1 {
+  width: 340px;
+  height: 340px;
+  top: -80px;
+  right: -100px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.auth-brand-blob-2 {
+  width: 240px;
+  height: 240px;
+  bottom: -60px;
+  left: -80px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.auth-brand-blob-3 {
+  width: 120px;
+  height: 120px;
+  bottom: 30%;
+  right: 15%;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* ---- Feature list inside left panel ---- */
+.auth-brand-features {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem auto 0;
+  width: 100%;
+  text-align: left;
+}
+
+.auth-brand-features li {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 0.45rem 0.75rem;
+  margin-bottom: 0.4rem;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Improved heading section ---- */
+.auth-header {
+  margin-bottom: 1.25rem;
+}
+
+/* Use compound selector for specificity over generic h1 resets — no !important needed */
+.auth-header .auth-heading {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0B1220;
+  margin: 0 0 0.375rem;
+  line-height: 1.15;
+}
+
+/* =============================================================
+   IMPROVED INPUT PADDING INSIDE AUTH-CARD
+   ============================================================= */
+
+.auth-card .form-row input,
+.auth-card .form-row select {
+  padding: 13px 16px;
+  font-size: 0.9375rem;
+  border-radius: 10px;
+}
+
+/* Checkboxes must NOT inherit the text-input padding above —
+   reset them to a size that matches the surrounding label text.
+   min-height: unset cancels the global `input { min-height: 44px }` rule
+   from ui-ux-fixes.css so the checkbox doesn't inflate to touch-target height. */
+.auth-card .form-row input[type="checkbox"] {
+  width: 1em;
+  height: 1em;
+  min-height: unset;
+  padding: 0;
+  border-radius: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: #0B8073;
+}
+
+/* Tighten checkbox + label text gap inside the auth card */
+.auth-card .checkbox-label-right {
+  gap: 6px;
+}
+
+/* Ensure password-toggle inputs keep text clear of the button */
+.auth-card .form-row input.has-toggle {
+  padding-right: 52px !important;
+}
+
+/* Extra vertical breathing room between form rows */
+.auth-card .form-row {
+  margin-bottom: 1rem;
+}
+
+/* =============================================================
+   PEXELS PHOTO SLIDESHOW — left panel background
+   Photos sourced from Pexels (free to use)
+   ============================================================= */
+
+.auth-panel-photos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.auth-panel-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  animation: authPhotoFade 32s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* Event celebration/party — Pexels ID 787961 */
+.auth-panel-photo--1 {
+  background-image: url('https://images.pexels.com/photos/787961/pexels-photo-787961.jpeg?auto=compress&cs=tinysrgb&w=720&h=960&fit=crop&q=75');
+  animation-delay: 0s;
+}
+
+/* Wedding/event decor — Pexels ID 1444442 */
+.auth-panel-photo--2 {
+  background-image: url('https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=720&h=960&fit=crop&q=75');
+  animation-delay: 8s;
+}
+
+/* Corporate event/venue — Pexels ID 1181406 */
+.auth-panel-photo--3 {
+  background-image: url('https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=720&h=960&fit=crop&q=75');
+  animation-delay: 16s;
+}
+
+/* Floral/celebration decor — Pexels ID 931177 */
+.auth-panel-photo--4 {
+  background-image: url('https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=720&h=960&fit=crop&q=75');
+  animation-delay: 24s;
+}
+
+@keyframes authPhotoFade {
+  0%   { opacity: 0; }
+  5%   { opacity: 1; }
+  25%  { opacity: 1; }
+  30%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* Dark gradient overlay — ensures text is legible over any photo */
+.auth-panel-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    160deg,
+    rgba(4, 78, 59, 0.72) 0%,
+    rgba(11, 128, 115, 0.62) 40%,
+    rgba(6, 95, 70, 0.75) 100%
+  );
+}
+
+/* Keep glass orbs above the overlay */
+.auth-brand-blob-1,
+.auth-brand-blob-2,
+.auth-brand-blob-3 {
+  z-index: 2;
+}
+
+/* Keep brand visual above everything */
+.auth-brand-visual {
+  z-index: 3;
+}
+
+/* =============================================================
+   TRUST STATS ROW — bottom of left panel
+   ============================================================= */
+
+.auth-panel-stats {
+  position: absolute;
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: none; /* hidden on mobile */
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  padding: 0 2.5rem;
+}
+
+.auth-panel-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  text-align: center;
+}
+
+.auth-panel-stat-value {
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.auth-panel-stat-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.auth-panel-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+  margin: 0 0.25rem;
+}
+
+/* Pexels photographer attribution — bottom-right of left panel */
+.auth-panel-credit {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.875rem;
+  z-index: 4;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.45);
+  display: none; /* hidden until JS populates it */
+  transition: opacity 0.4s ease;
+}
+.auth-panel-credit:not(:empty) {
+  display: block;
+}
+/* Fade the credit on every credit update (class toggled by JS) */
+.auth-panel-credit--fade {
+  animation: authCreditFade 0.5s ease forwards;
+}
+@keyframes authCreditFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.auth-panel-credit a {
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+}
+.auth-panel-credit a:hover {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: underline;
+}
+
+/* Loading shimmer — shown while JS fetches Pexels photos */
+@keyframes authPhotoShimmer {
+  0%   { opacity: 0.55; }
+  50%  { opacity: 0.75; }
+  100% { opacity: 0.55; }
+}
+.auth-photos--loading .auth-panel-photo--1 {
+  opacity: 0.55;
+  animation: authPhotoShimmer 1.6s ease-in-out infinite;
+}
+
+/* Reduced motion: show first photo statically, skip all animations */
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel-photo {
+    animation: none;
+    opacity: 0;
+  }
+  .auth-panel-photo--1 {
+    opacity: 1;
+  }
+  .auth-brand-visual,
+  .auth-panel-stats {
+    animation: none;
+  }
+  .auth-split-right .auth-container {
+    animation: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-panel-stats {
+    display: flex;
+  }
+}
+
+/* =============================================================
+   ENTRY ANIMATIONS — form slides in, left panel fades up
+   ============================================================= */
+
+@keyframes authFormSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes authPanelFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apply to the right panel content on load */
+.auth-split-right .auth-container {
+  animation: authFormSlideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Brand visual animates up */
+.auth-brand-visual {
+  animation: authPanelFadeUp 0.7s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stats bar fades up slightly later */
+.auth-panel-stats {
+  animation: authPanelFadeUp 0.7s 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* =============================================================
+   ENHANCED GLASS CARD POLISH
+   ============================================================= */
+
+/* Subtle shimmer highlight on top of card */
+form.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(11, 128, 115, 0.35) 40%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(11, 128, 115, 0.35) 60%,
+    transparent 100%
+  );
+  border-radius: 16px 16px 0 0;
+  pointer-events: none;
+}
+
+/* CTA button enhancements */
+.auth-btn.cta {
+  background: linear-gradient(160deg, #0B8073 0%, #13B6A2 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 13px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.3);
+}
+
+.auth-btn.cta:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(11, 128, 115, 0.4);
+  background: linear-gradient(160deg, #097267 0%, #0B8073 100%);
+}
+
+.auth-btn.cta:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.25);
+}
+
+/* Input focus ring uses brand teal */
+.auth-card .form-row input:focus,
+.auth-card .form-row select:focus {
+  outline: none;
+  border-color: #0B8073;
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.15);
+}
+
+/* Tab active state polish */
+.auth-tab[aria-selected="true"] {
+  position: relative;
+}
+
+.auth-tab[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: linear-gradient(90deg, #0B8073, #13B6A2);
+  border-radius: 1px;
+}
+
+/* =============================================================
+   DEAD-SPACE ELIMINATION & RESPONSIVE SPACING POLISH
+   ============================================================= */
+
+/* Remove bottom margin from form-rows whose only child is a hidden
+   error / validation message — prevents invisible elements from adding
+   white-space gaps between visible form fields.
+   :has() is Baseline-available (Chrome 105+, FF 121+, Safari 15.4+). */
+.auth-card .form-row:has(> .auth-error-msg:only-child),
+.auth-card .form-row:has(> .auth-validation-msg:only-child),
+.auth-card .form-row:has(> [role="alert"]:only-child) {
+  margin-bottom: 0;
+}
+
+/* ---- Mobile ( ≤ 640px ) ---- */
+@media (max-width: 640px) {
+  /* Tighter right-panel vertical padding */
+  .auth-split-right {
+    padding: 1.25rem 1rem;
+  }
+
+  /* Smaller heading on small screens */
+  .auth-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .auth-header .auth-heading {
+    font-size: 1.5rem;
+  }
+
+  /* Smaller tab margin */
+  .auth-tabs {
+    margin-bottom: 0.75rem;
+  }
+
+  /* Compact inputs — shave 3px per side → rows drop ~96 px → ~80 px */
+  .auth-card .form-row input,
+  .auth-card .form-row select {
+    padding: 10px 14px;
+  }
+
+  .auth-card .form-row input.has-toggle {
+    padding-right: 46px !important;
+  }
+
+  /* Tighter gap between form rows */
+  .auth-card .form-row {
+    margin-bottom: 0.75rem;
+  }
+
+  /* Reduce inner card padding */
+  form.auth-card {
+    padding: 1.25rem !important;
+  }
+}
+
+/* ---- Tablet ( 641 px – 1023 px ) ---- */
+@media (min-width: 641px) and (max-width: 1023px) {
+  /* Reduce top/bottom padding — was 3rem from .auth-container margin rule */
+  .auth-split-right {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .auth-header {
+    margin-bottom: 1rem;
+  }
+
+  .auth-tabs {
+    margin-bottom: 0.875rem;
+  }
+
+  .auth-card .form-row input,
+  .auth-card .form-row select {
+    padding: 11px 15px;
+  }
+
+  .auth-card .form-row {
+    margin-bottom: 0.875rem;
+  }
+
+  /* Zero out the legacy auth-container margin that was added for the
+     old single-column layout (the split layout handles it now). */
+  .auth-split-right .auth-container {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
+
+/* ---- Desktop ( ≥ 1024 px ) ---- */
+@media (min-width: 1024px) {
+  /* Reduce right panel padding — was 4rem 3rem, now tighter */
+  .auth-split-right {
+    padding: 2.5rem 3rem;
+  }
+
+  /* Vertically centre brand content, nudging it up slightly so it sits
+     mid-panel rather than pure-centre (accounts for the stats bar) */
+  .auth-split-left {
+    padding-bottom: 5rem; /* leaves room for the stats bar without visual gap */
   }
 }

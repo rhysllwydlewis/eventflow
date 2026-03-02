@@ -26,7 +26,7 @@
     <meta name="sentry-environment" content="production" />
     <link rel="icon" href="/favicon.svg" />
   </head>
-  <body>
+  <body class="auth-page">
     <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
     <header class="ef-header" role="banner">
       <div class="ef-container">
@@ -154,11 +154,70 @@
     <script src="/assets/js/notifications.js" defer></script>
     <script src="/assets/js/websocket-client.js" defer></script>
 
-    <main id="main-content" class="section">
-      <div class="container">
-        <div class="auth-container">
-        <h1>Account</h1>
-        <p class="small auth-subtitle">Sign in to your EventFlow account or create a new one to get started.</p>
+    <main id="main-content" class="auth-main">
+      <!-- Animated background blobs — give backdrop-filter something to refract -->
+      <div class="auth-bg" aria-hidden="true">
+        <div class="auth-bg-blob auth-bg-blob--1"></div>
+        <div class="auth-bg-blob auth-bg-blob--2"></div>
+        <div class="auth-bg-blob auth-bg-blob--3"></div>
+      </div>
+
+      <div class="auth-split">
+        <!-- Left panel: EventFlow branding visual (desktop only) -->
+        <div class="auth-split-left" aria-hidden="true">
+          <!-- Pexels event photos — crossfading slideshow -->
+          <div class="auth-panel-photos">
+            <div class="auth-panel-photo auth-panel-photo--1"></div>
+            <div class="auth-panel-photo auth-panel-photo--2"></div>
+            <div class="auth-panel-photo auth-panel-photo--3"></div>
+            <div class="auth-panel-photo auth-panel-photo--4"></div>
+          </div>
+          <!-- Dark gradient overlay so text is always legible -->
+          <div class="auth-panel-overlay"></div>
+          <!-- Decorative background glass orbs (positioned relative to the panel) -->
+          <div class="auth-brand-blob-1"></div>
+          <div class="auth-brand-blob-2"></div>
+          <div class="auth-brand-blob-3"></div>
+          <!-- Brand content -->
+          <div class="auth-brand-visual">
+            <div class="auth-brand-logo-mark">EF</div>
+            <p class="auth-brand-heading">EventFlow</p>
+            <p class="auth-brand-tagline">Plan unforgettable events</p>
+            <ul class="auth-brand-features">
+              <li>🎉 Discover local suppliers &amp; venues</li>
+              <li>📋 Build detailed event timelines</li>
+              <li>💬 Message suppliers directly</li>
+              <li>⭐ Compare reviews &amp; packages</li>
+            </ul>
+          </div>
+          <!-- Trust stats row at the bottom -->
+          <div class="auth-panel-stats">
+            <div class="auth-panel-stat">
+              <span class="auth-panel-stat-value">500+</span>
+              <span class="auth-panel-stat-label">Verified suppliers</span>
+            </div>
+            <div class="auth-panel-stat-divider"></div>
+            <div class="auth-panel-stat">
+              <span class="auth-panel-stat-value">10K+</span>
+              <span class="auth-panel-stat-label">Events planned</span>
+            </div>
+            <div class="auth-panel-stat-divider"></div>
+            <div class="auth-panel-stat">
+              <span class="auth-panel-stat-value">Free</span>
+              <span class="auth-panel-stat-label">Always free to join</span>
+            </div>
+          </div>
+          <!-- Pexels photo attribution (populated by auth-slideshow.js) -->
+          <div class="auth-panel-credit" id="auth-panel-credit" aria-hidden="true"></div>
+        </div>
+
+        <!-- Right panel: auth form -->
+        <div class="auth-split-right">
+          <div class="auth-container">
+          <div class="auth-header">
+            <h1 class="auth-heading">Welcome back</h1>
+            <p class="auth-subtitle">Sign in to your EventFlow account or create a new one to get started.</p>
+          </div>
         <div
           role="tablist"
           aria-label="Authentication options"
@@ -705,7 +764,8 @@
             initFormValidation();
           }
         </script>
-      </div>
+          </div><!-- /.auth-split-right -->
+        </div><!-- /.auth-split -->
     </main>
 
     <!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
@@ -853,6 +913,7 @@
     </footer>
     <script src="/assets/js/cookie-consent.js?v=2.0.0" defer></script>
     <script src="/assets/js/keyboard-shortcuts.js" defer></script>
+    <script src="/assets/js/pages/auth-slideshow.js" defer></script>
 
     <!-- JadeAssist Chat Widget -->
     <script

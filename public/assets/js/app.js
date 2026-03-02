@@ -4216,12 +4216,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginPassword) {
       const loginCapsLockWarning = document.getElementById('login-caps-lock-warning');
       if (loginCapsLockWarning) {
-        loginPassword.addEventListener('keyup', e => {
-          if (e.getModifierState && e.getModifierState('CapsLock')) {
-            loginCapsLockWarning.style.display = 'block';
-          } else {
-            loginCapsLockWarning.style.display = 'none';
+        const _checkLoginCaps = e => {
+          let on = !!(e.getModifierState && e.getModifierState('CapsLock'));
+          // Secondary: verify via key character — only for letters that have distinct case forms
+          // (handles both ASCII and accented non-English letters; excludes numbers and symbols)
+          if (e.key && e.key.length === 1 && e.key.toUpperCase() !== e.key.toLowerCase()) {
+            on = (e.key === e.key.toUpperCase()) !== !!e.shiftKey;
           }
+          loginCapsLockWarning.style.display = on ? 'flex' : 'none';
+        };
+        loginPassword.addEventListener('keydown', _checkLoginCaps);
+        loginPassword.addEventListener('keyup', _checkLoginCaps);
+        loginPassword.addEventListener('blur', () => {
+          loginCapsLockWarning.style.display = 'none';
         });
       }
     }
@@ -4260,16 +4267,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Caps lock warning
       const checkCapsLock = e => {
-        if (capsLockWarning && e.getModifierState && e.getModifierState('CapsLock')) {
-          capsLockWarning.style.display = 'block';
-        } else if (capsLockWarning) {
+        if (!capsLockWarning) {
+          return;
+        }
+        let on = !!(e.getModifierState && e.getModifierState('CapsLock'));
+        // Secondary: verify via key character — only for letters that have distinct case forms
+        // (handles both ASCII and accented non-English letters; excludes numbers and symbols)
+        if (e.key && e.key.length === 1 && e.key.toUpperCase() !== e.key.toLowerCase()) {
+          on = (e.key === e.key.toUpperCase()) !== !!e.shiftKey;
+        }
+        capsLockWarning.style.display = on ? 'flex' : 'none';
+      };
+      const _hideRegCaps = () => {
+        if (capsLockWarning) {
           capsLockWarning.style.display = 'none';
         }
       };
 
+      regPassword.addEventListener('keydown', checkCapsLock);
       regPassword.addEventListener('keyup', checkCapsLock);
+      regPassword.addEventListener('blur', _hideRegCaps);
       if (regPasswordConfirm) {
+        regPasswordConfirm.addEventListener('keydown', checkCapsLock);
         regPasswordConfirm.addEventListener('keyup', checkCapsLock);
+        regPasswordConfirm.addEventListener('blur', _hideRegCaps);
       }
 
       // Password validation function (matches server-side validation)
