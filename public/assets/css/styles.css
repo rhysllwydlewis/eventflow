@@ -2361,3 +2361,20 @@ textarea:focus:not(:focus-visible) {
     padding: 64px 0;
   }
 }
+
+/* Cookie preferences link-style button used in footers sitewide */
+[data-cookie-prefs] {
+  background: none !important;
+  border: none !important;
+  color: inherit !important;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-weight: inherit !important;
+  width: auto !important;
+  margin-top: 0 !important;
+  display: inline;
+}

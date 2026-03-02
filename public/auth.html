@@ -241,7 +241,7 @@
               <button class="cta" type="submit">Log in</button
               ><span class="small" id="login-status" role="status" aria-live="polite"></span>
             </div>
-            <div id="resend-verification-container" style="display: none; margin-top: 12px">
+            <div id="resend-verification-container" style="display: none">
               <button type="button" class="cta" id="resend-verification-btn">
                 Resend Verification Email
               </button>
@@ -332,9 +332,9 @@
                 id="password-requirements"
                 class="small auth-requirements"
               >
-                <li id="req-length" style="color: #b00020">At least 8 characters</li>
-                <li id="req-letter" style="color: #b00020">Contains a letter</li>
-                <li id="req-number" style="color: #b00020">Contains a number</li>
+                <li id="req-length">At least 8 characters</li>
+                <li id="req-letter">Contains a letter</li>
+                <li id="req-number">Contains a number</li>
               </ul>
               <div
                 id="caps-lock-warning"
@@ -836,16 +836,7 @@
     </nav>
 
     <footer class="footer" role="contentinfo">
-      <div
-        class="container"
-        style="
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          flex-wrap: wrap;
-        "
-      >
+      <div class="container ef-footer-content">
         <div>
           <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
         </div>
@@ -854,21 +845,7 @@
           <a href="/blog">Guides</a> · <a href="/marketplace">Marketplace</a> ·
           <a href="/credits">Credits</a> · <a href="/contact">Contact</a> ·
           <a href="/legal">Legal Hub</a> ·
-          <button
-            type="button"
-            data-cookie-prefs
-            style="
-              background: none;
-              border: none;
-              color: inherit;
-              text-decoration: underline;
-              cursor: pointer;
-              font-size: inherit;
-              padding: 0;
-            "
-          >
-            Cookie preferences
-          </button>
+          <button type="button" data-cookie-prefs>Cookie preferences</button>
         </div>
       </div>
     </footer>

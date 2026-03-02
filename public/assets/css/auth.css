@@ -429,6 +429,11 @@
   display: none;
 }
 
+/* Individual requirement items default to "not met" (red) */
+.auth-requirements li {
+  color: #b00020;
+}
+
 /* Password match message */
 .auth-match-msg {
   margin-top: 4px;
@@ -465,4 +470,43 @@
 /* Social media stacked inputs spacing */
 #supplier-fields .form-row input + input {
   margin-top: 8px;
+}
+
+/* Resend verification button container */
+#resend-verification-container {
+  margin-top: 12px;
+}
+
+/* Email verification page */
+.verify-card {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.verify-icon {
+  font-size: 4rem;
+  line-height: 1;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+.verify-status {
+  margin-bottom: 1.5rem;
+}
+
+.verify-status p {
+  margin: 8px 0;
+}
+
+.verify-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.verify-actions .cta,
+.verify-actions .cta.secondary {
+  min-width: 140px;
 }
