@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.3.0" />
     <link rel="stylesheet" href="/assets/css/navbar.css?v=18.3.0" />
     <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.3.0" />
     <link rel="stylesheet" href="/assets/css/auth.css?v=18.3.0" />
     <meta name="hcaptcha-sitekey" content="" />
     <meta name="sentry-dsn" content="" />
@@ -156,17 +157,11 @@
     <main id="main-content" class="section">
       <div class="container">
         <h1>Account</h1>
+        <p class="small auth-subtitle">Sign in to your EventFlow account or create a new one to get started.</p>
         <div
           role="tablist"
           aria-label="Authentication options"
-          style="
-            display: flex;
-            gap: 10px;
-            border: 1px solid #e3e9ef;
-            border-radius: 10px;
-            overflow: hidden;
-            width: max-content;
-          "
+          class="auth-tabs"
         >
           <button
             id="tab-signin"
@@ -174,7 +169,7 @@
             aria-selected="true"
             aria-controls="panel-signin"
             tabindex="0"
-            style="padding: 10px 14px; border: none; background: #fff; cursor: pointer"
+            class="auth-tab"
           >
             Log in
           </button>
@@ -184,18 +179,19 @@
             aria-selected="false"
             aria-controls="panel-create"
             tabindex="-1"
-            style="padding: 10px 14px; border: none; background: #f7fafc; cursor: pointer"
+            class="auth-tab"
           >
             Create a free account
           </button>
         </div>
+        <div class="auth-container">
         <section
           id="panel-signin"
           role="tabpanel"
           aria-labelledby="tab-signin"
-          style="margin-top: 12px"
+          class="auth-tab-panel"
         >
-          <form id="login-form" class="card" action="#">
+          <form id="login-form" class="card auth-card" action="#" novalidate>
             <div class="form-row">
               <label for="login-email">Email</label
               ><input
@@ -221,16 +217,7 @@
               />
               <div
                 id="login-caps-lock-warning"
-                style="
-                  display: none;
-                  margin-top: 4px;
-                  padding: 6px 10px;
-                  background: #fff3cd;
-                  border: 1px solid #ffc107;
-                  border-radius: 4px;
-                  font-size: 0.875rem;
-                  color: #856404;
-                "
+                class="auth-caps-warning"
               >
                 ⚠️ Caps Lock is on
               </div>
@@ -238,17 +225,16 @@
             <div class="form-row">
               <div
                 id="login-error"
-                class="error"
+                class="error auth-error-msg"
                 role="alert"
-                style="display: none; color: #b00020; font-size: 0.875rem"
                 aria-live="assertive"
                 aria-atomic="true"
               ></div>
             </div>
             <div class="form-row">
               <label class="small checkbox-label-right" for="login-remember">
-                Remember me
                 <input type="checkbox" id="login-remember" name="remember" />
+                Remember me
               </label>
             </div>
             <div class="form-actions">
@@ -268,9 +254,9 @@
           role="tabpanel"
           aria-labelledby="tab-create"
           hidden
-          style="margin-top: 12px"
+          class="auth-tab-panel"
         >
-          <form id="register-form" class="card" action="#">
+          <form id="register-form" class="card auth-card" action="#" novalidate>
             <div class="form-row">
               <label for="reg-firstname">First Name</label>
               <input
@@ -303,11 +289,11 @@
                 aria-required="true"
                 aria-describedby="email-validation-msg"
                 autocomplete="email"
+                placeholder="you@example.com"
               />
               <span
-                class="small"
+                class="small auth-validation-msg"
                 id="email-validation-msg"
-                style="display: none; color: #b00020"
                 aria-live="polite"
               ></span>
             </div>
@@ -323,51 +309,28 @@
                 aria-describedby="password-strength-msg password-requirements"
                 autocomplete="new-password"
               />
-              <div id="password-strength-container" style="margin-top: 8px; display: none">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px">
-                  <div
-                    style="
-                      flex: 1;
-                      height: 6px;
-                      background: #e3e9ef;
-                      border-radius: 3px;
-                      overflow: hidden;
-                    "
-                  >
+              <div id="password-strength-container" style="display: none">
+                <div class="auth-strength-container">
+                  <div class="auth-strength-track">
                     <div
                       id="password-strength-bar"
-                      style="
-                        height: 100%;
-                        width: 0%;
-                        background: #b00020;
-                        transition:
-                          width 0.3s ease,
-                          background-color 0.3s ease;
-                      "
+                      class="auth-strength-bar"
                     ></div>
                   </div>
                   <span
                     id="password-strength-label"
-                    style="font-size: 0.75rem; font-weight: 600; min-width: 60px"
+                    class="auth-strength-label"
                   ></span>
                 </div>
                 <span
-                  class="small"
+                  class="small auth-strength-msg"
                   id="password-strength-msg"
-                  style="display: block; color: #666"
                   role="status"
                 ></span>
               </div>
               <ul
                 id="password-requirements"
-                class="small"
-                style="
-                  margin-top: 8px;
-                  padding-left: 20px;
-                  color: #666;
-                  font-size: 0.875rem;
-                  display: none;
-                "
+                class="small auth-requirements"
               >
                 <li id="req-length" style="color: #b00020">At least 8 characters</li>
                 <li id="req-letter" style="color: #b00020">Contains a letter</li>
@@ -375,16 +338,7 @@
               </ul>
               <div
                 id="caps-lock-warning"
-                style="
-                  display: none;
-                  margin-top: 4px;
-                  padding: 6px 10px;
-                  background: #fff3cd;
-                  border: 1px solid #ffc107;
-                  border-radius: 4px;
-                  font-size: 0.875rem;
-                  color: #856404;
-                "
+                class="auth-caps-warning"
               >
                 ⚠️ Caps Lock is on
               </div>
@@ -402,9 +356,8 @@
                 autocomplete="new-password"
               />
               <span
-                class="small"
+                class="small auth-match-msg"
                 id="password-match-msg"
-                style="margin-top: 4px; display: none; color: #b00020"
                 role="alert"
               ></span>
             </div>
@@ -522,48 +475,48 @@
                   name="instagram"
                   type="url"
                   placeholder="Instagram URL"
-                  style="margin-bottom: 8px"
                 />
                 <input
                   id="reg-facebook"
                   name="facebook"
                   type="url"
                   placeholder="Facebook URL"
-                  style="margin-bottom: 8px"
                 />
                 <input
                   id="reg-twitter"
                   name="twitter"
                   type="url"
                   placeholder="Twitter/X URL"
-                  style="margin-bottom: 8px"
                 />
                 <input id="reg-linkedin" name="linkedin" type="url" placeholder="LinkedIn URL" />
               </div>
             </div>
             <div class="form-row">
               <label for="reg-avatar">Profile Picture (Optional)</label>
-              <input
-                id="reg-avatar"
-                name="avatar"
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-              />
-              <span class="small" style="color: #666; margin-top: 4px; display: block"
+              <div class="auth-file-upload">
+                <input
+                  id="reg-avatar"
+                  name="avatar"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  aria-describedby="reg-avatar-help"
+                />
+              </div>
+              <span class="small auth-file-help" id="reg-avatar-help"
                 >Max 5MB. Formats: JPEG, PNG, WebP</span
               >
             </div>
             <div class="form-row">
               <label class="small checkbox-label-right" for="reg-marketing">
-                Send me the occasional EventFlow update and planning tips.
                 <input type="checkbox" id="reg-marketing" name="marketing" />
+                Send me the occasional EventFlow update and planning tips.
               </label>
             </div>
             <div class="form-row">
               <label class="small checkbox-label-right" for="reg-terms">
+                <input type="checkbox" id="reg-terms" name="terms" required aria-required="true" />
                 I agree to the <a href="/terms" target="_blank">Terms</a> and
                 <a href="/privacy" target="_blank">Privacy Policy</a>. *
-                <input type="checkbox" id="reg-terms" name="terms" required aria-required="true" />
               </label>
             </div>
             <div class="form-row" id="reg-hcaptcha-container">
@@ -575,6 +528,7 @@
             </div>
           </form>
         </section>
+        </div><!-- /.auth-container -->
         <!-- Load utilities -->
         <script src="/assets/js/utils/api-client.js" defer></script>
         <script src="/assets/js/utils/auth-helpers.js" defer></script>

@@ -442,7 +442,7 @@ html[data-theme="dark"] .timeline-step::before{
   cursor: pointer;
   flex-shrink:0;
   margin:0;
-  order:2;
+  order:0;
   accent-color: #0B8073;
 }
 .checkbox-label-right:hover {
@@ -1191,12 +1191,12 @@ button, .cta{
   opacity:0.7;
 }
 .role-pill.is-active{
-  background:#00c896;
-  color:#02040a;
+  background:#0B8073;
+  color:#ffffff;
   opacity:1;
 }
 .role-pill:focus-visible{
-  outline:2px solid #00c896;
+  outline:2px solid #0B8073;
   outline-offset:2px;
 }
 
