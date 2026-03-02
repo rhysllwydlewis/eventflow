@@ -1,113 +1,131 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en-GB">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
-  <meta name="theme-color" content="#0B8073">
-  <title>Sign in / Create account — EventFlow</title>
-<meta name="robots" content="noindex,nofollow">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=18.3.0">
-  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.3.0">
-  <link rel="stylesheet" href="/assets/css/utilities.css?v=18.3.0">
-  <link rel="stylesheet" href="/assets/css/components.css?v=18.3.0">
-  <link rel="stylesheet" href="/assets/css/animations.css?v=18.3.0">
-  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.3.0">
-  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.3.0">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
+    />
+    <meta name="theme-color" content="#0B8073" />
+    <title>Sign in / Create account — EventFlow</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="stylesheet" href="/assets/css/styles.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/utilities.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/components.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/animations.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.3.0" />
     <link rel="stylesheet" href="/assets/css/navbar.css?v=18.3.0" />
-  <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.3.0" />
-  <link rel="stylesheet" href="/assets/css/auth.css?v=18.3.0" />
-  <meta name="hcaptcha-sitekey" content="">
-  <meta name="sentry-dsn" content="">
-  <meta name="sentry-release" content="eventflow@18.1.0">
-  <meta name="sentry-environment" content="production">
-  <link rel="icon" href="/favicon.svg">
-</head>
-<body>
-<!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
-<header class="ef-header" role="banner">
-  <div class="ef-container">
-    <div class="ef-header-content">
-      <!-- Brand Logo - Enhanced Animated -->
-      <a href="/" class="ef-brand" aria-label="EventFlow - Return to homepage">
-        <div class="ef-logo" aria-hidden="true">
-          <div class="ef-logo-inner"></div>
+    <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.3.0" />
+    <link rel="stylesheet" href="/assets/css/auth.css?v=18.3.0" />
+    <meta name="hcaptcha-sitekey" content="" />
+    <meta name="sentry-dsn" content="" />
+    <meta name="sentry-release" content="eventflow@18.1.0" />
+    <meta name="sentry-environment" content="production" />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
+    <header class="ef-header" role="banner">
+      <div class="ef-container">
+        <div class="ef-header-content">
+          <!-- Brand Logo - Enhanced Animated -->
+          <a href="/" class="ef-brand" aria-label="EventFlow - Return to homepage">
+            <div class="ef-logo" aria-hidden="true">
+              <div class="ef-logo-inner"></div>
+            </div>
+            <span class="ef-brand-text">EventFlow</span>
+          </a>
+
+          <!-- Desktop Navigation -->
+          <nav class="ef-nav-desktop" aria-label="Main navigation">
+            <a href="/start" class="ef-nav-link">Plan</a>
+            <a href="/suppliers" class="ef-nav-link">Suppliers</a>
+            <a href="/marketplace" class="ef-nav-link">Marketplace</a>
+            <a href="/blog" class="ef-nav-link">Guides</a>
+            <a href="/pricing" class="ef-nav-link">Pricing</a>
+          </nav>
+
+          <!-- Actions -->
+          <div class="ef-header-actions">
+            <!-- Notification Bell (hidden by default, shown when logged in) -->
+            <button
+              id="ef-notification-btn"
+              class="ef-icon-btn"
+              type="button"
+              aria-label="View notifications"
+              style="display: none"
+            >
+              <svg
+                class="ef-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span id="ef-notification-badge" class="ef-badge" style="display: none">0</span>
+            </button>
+
+            <!-- Auth Button (Desktop) -->
+            <a href="/auth" id="ef-auth-link" class="ef-btn ef-btn-primary"> Log in </a>
+
+            <!-- Dashboard Link (Desktop, hidden by default) -->
+            <a href="#" id="ef-dashboard-link" class="ef-nav-link" style="display: none">
+              Dashboard
+            </a>
+
+            <!-- Mobile Menu Toggle -->
+            <button
+              id="ef-mobile-toggle"
+              class="ef-mobile-toggle"
+              type="button"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="ef-mobile-menu"
+            >
+              <span class="ef-toggle-line"></span>
+              <span class="ef-toggle-line"></span>
+              <span class="ef-toggle-line"></span>
+            </button>
+          </div>
         </div>
-        <span class="ef-brand-text">EventFlow</span>
-      </a>
-
-      <!-- Desktop Navigation -->
-      <nav class="ef-nav-desktop" aria-label="Main navigation">
-        <a href="/start" class="ef-nav-link">Plan</a>
-        <a href="/suppliers" class="ef-nav-link">Suppliers</a>
-        <a href="/marketplace" class="ef-nav-link">Marketplace</a>
-        <a href="/blog" class="ef-nav-link">Guides</a>
-        <a href="/pricing" class="ef-nav-link">Pricing</a>
-      </nav>
-
-      <!-- Actions -->
-      <div class="ef-header-actions">
-        <!-- Notification Bell (hidden by default, shown when logged in) -->
-        <button 
-          id="ef-notification-btn" 
-          class="ef-icon-btn" 
-          type="button" 
-          aria-label="View notifications"
-          style="display: none;"
-        >
-          <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-          <span id="ef-notification-badge" class="ef-badge" style="display: none;">0</span>
-        </button>
-
-        <!-- Auth Button (Desktop) -->
-        <a href="/auth" id="ef-auth-link" class="ef-btn ef-btn-primary">
-          Log in
-        </a>
-
-        <!-- Dashboard Link (Desktop, hidden by default) -->
-        <a href="#" id="ef-dashboard-link" class="ef-nav-link" style="display: none;">
-          Dashboard
-        </a>
-
-        <!-- Mobile Menu Toggle -->
-        <button 
-          id="ef-mobile-toggle" 
-          class="ef-mobile-toggle" 
-          type="button"
-          aria-label="Toggle menu"
-          aria-expanded="false"
-          aria-controls="ef-mobile-menu"
-        >
-          <span class="ef-toggle-line"></span>
-          <span class="ef-toggle-line"></span>
-          <span class="ef-toggle-line"></span>
-        </button>
       </div>
-    </div>
-  </div>
 
-  <!-- Mobile Menu -->
-  <div id="ef-mobile-menu" class="ef-mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
-    <nav class="ef-mobile-nav" aria-label="Primary navigation">
-      <a href="/start" class="ef-mobile-link">Plan an Event</a>
-      <a href="/suppliers" class="ef-mobile-link">Browse Suppliers</a>
-      <a href="/marketplace" class="ef-mobile-link">Marketplace</a>
-      <a href="/blog" class="ef-mobile-link">Guides</a>
-      <a href="/pricing" class="ef-mobile-link">Pricing</a>
-      <a href="/for-suppliers" class="ef-mobile-link">For Suppliers</a>
-      <a href="/faq" class="ef-mobile-link">FAQ</a>
-      <div class="ef-mobile-divider"></div>
-      <a href="/auth" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
-      <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
-      <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
-    </nav>
-  </div>
-</header>
+      <!-- Mobile Menu -->
+      <div
+        id="ef-mobile-menu"
+        class="ef-mobile-menu"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
+      >
+        <nav class="ef-mobile-nav" aria-label="Primary navigation">
+          <a href="/start" class="ef-mobile-link">Plan an Event</a>
+          <a href="/suppliers" class="ef-mobile-link">Browse Suppliers</a>
+          <a href="/marketplace" class="ef-mobile-link">Marketplace</a>
+          <a href="/blog" class="ef-mobile-link">Guides</a>
+          <a href="/pricing" class="ef-mobile-link">Pricing</a>
+          <a href="/for-suppliers" class="ef-mobile-link">For Suppliers</a>
+          <a href="/faq" class="ef-mobile-link">FAQ</a>
+          <div class="ef-mobile-divider"></div>
+          <a href="/auth" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
+          <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none"
+            >Dashboard</a
+          >
+          <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none">Log out</a>
+        </nav>
+      </div>
+    </header>
 
     <!-- Notification Dropdown (Pre-rendered, shown/hidden by JS) -->
-    <div id="notification-dropdown" class="notification-dropdown" style="display: none;">
+    <div id="notification-dropdown" class="notification-dropdown" style="display: none">
       <div class="notification-header">
         <h3>Notifications</h3>
         <button class="notification-mark-all" id="notification-mark-all-read">
@@ -120,467 +138,795 @@
       </div>
     </div>
 
+    <!-- Load auth state manager first -->
+    <script src="/assets/js/utils/auth-state.js" defer></script>
+    <!-- Global error handler - catches all unhandled errors and API failures -->
+    <script src="/assets/js/utils/global-error-handler.js" defer></script>
+    <!-- Sentry browser error tracking -->
+    <script src="/assets/js/utils/sentry-browser-init.js" defer></script>
+    <!-- Burger menu - simple standalone implementation -->
+    <script src="/assets/js/burger-menu.js" defer></script>
+    <script src="/assets/js/navbar.js" defer></script>
 
-<!-- Load auth state manager first -->
-<script src="/assets/js/utils/auth-state.js" defer></script>
-<!-- Global error handler - catches all unhandled errors and API failures -->
-<script src="/assets/js/utils/global-error-handler.js" defer></script>
-<!-- Sentry browser error tracking -->
-<script src="/assets/js/utils/sentry-browser-init.js" defer></script>
-<!-- Burger menu - simple standalone implementation -->
-<script src="/assets/js/burger-menu.js" defer></script>
-<script src="/assets/js/navbar.js" defer></script>
+    <script src="/assets/js/components.js" defer></script>
+    <script src="/assets/js/animations.js" defer></script>
+    <script src="/assets/js/notifications.js" defer></script>
+    <script src="/assets/js/websocket-client.js" defer></script>
 
-<script src="/assets/js/components.js" defer></script>
-<script src="/assets/js/animations.js" defer></script>
-<script src="/assets/js/notifications.js" defer></script>
-<script src="/assets/js/websocket-client.js" defer></script>
-
-<main id="main-content" class="section">
-  <div class="container">
-    <h1>Account</h1>
-    <div style="display:flex;gap:10px;border:1px solid #e3e9ef;border-radius:10px;overflow:hidden;width:max-content">
-      <button id="tab-signin" aria-selected="true" style="padding:10px 14px;border:none;background:#fff;cursor:pointer">Log in</button>
-      <button id="tab-create" aria-selected="false" style="padding:10px 14px;border:none;background:#f7fafc;cursor:pointer">Create a free account</button>
-    </div>
-    <section id="panel-signin" style="margin-top:12px">
-      <form id="login-form" class="card" action="#">
-        <div class="form-row"><label for="login-email">Email</label><input id="login-email" name="email" type="email" required placeholder="you@example.com" aria-required="true" autocomplete="email"></div>
-        <div class="form-row">
-          <label for="login-password">Password</label>
-          <input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true" autocomplete="current-password">
-          <div id="login-caps-lock-warning" style="display:none;margin-top:4px;padding:6px 10px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;font-size:0.875rem;color:#856404">
-            ⚠️ Caps Lock is on
-          </div>
+    <main id="main-content" class="section">
+      <div class="container">
+        <h1>Account</h1>
+        <div
+          role="tablist"
+          aria-label="Authentication options"
+          style="
+            display: flex;
+            gap: 10px;
+            border: 1px solid #e3e9ef;
+            border-radius: 10px;
+            overflow: hidden;
+            width: max-content;
+          "
+        >
+          <button
+            id="tab-signin"
+            role="tab"
+            aria-selected="true"
+            aria-controls="panel-signin"
+            tabindex="0"
+            style="padding: 10px 14px; border: none; background: #fff; cursor: pointer"
+          >
+            Log in
+          </button>
+          <button
+            id="tab-create"
+            role="tab"
+            aria-selected="false"
+            aria-controls="panel-create"
+            tabindex="-1"
+            style="padding: 10px 14px; border: none; background: #f7fafc; cursor: pointer"
+          >
+            Create a free account
+          </button>
         </div>
-        <div class="form-row">
-          <div id="login-error" class="error" style="display: none; visibility: hidden; color: #b00020; font-size: 0.875rem;" aria-live="polite"></div>
-        </div>
-        <div class="form-row">
-          <label class="small checkbox-label-right" for="login-remember">
-            Remember me
-            <input type="checkbox" id="login-remember" name="remember">
-          </label>
-        </div>
-        <div class="form-actions"><button class="cta" type="submit">Log in</button><span class="small" id="login-status" role="status" aria-live="polite"></span></div>
-        <div id="resend-verification-container" style="display:none;margin-top:12px;">
-          <button type="button" class="cta" id="resend-verification-btn">Resend Verification Email</button>
-        </div>
-        <p class="small"><a href="#" id="forgot-password-link">Forgot your password?</a></p>
-      </form>
-    </section>
-    <section id="panel-create" hidden style="margin-top:12px">
-      <form id="register-form" class="card" action="#">
-        <div class="form-row">
-          <label for="reg-firstname">First Name</label>
-          <input id="reg-firstname" name="firstname" required aria-required="true" autocomplete="given-name" placeholder="Your first name">
-        </div>
-        <div class="form-row">
-          <label for="reg-lastname">Surname</label>
-          <input id="reg-lastname" name="lastname" required aria-required="true" autocomplete="family-name" placeholder="Your surname">
-        </div>
-        <div class="form-row">
-          <label for="reg-email">Email</label>
-          <input id="reg-email" name="email" type="email" required aria-required="true" aria-describedby="email-validation-msg" autocomplete="email">
-          <span class="small" id="email-validation-msg" style="display:none;color:#b00020" aria-live="polite"></span>
-        </div>
-        <div class="form-row">
-          <label for="reg-password">Password</label>
-          <input id="reg-password" name="password" type="password" required placeholder="Min 8 chars with letter and number" aria-required="true" aria-describedby="password-strength-msg password-requirements" autocomplete="new-password">
-          <div id="password-strength-container" style="margin-top:8px;display:none">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-              <div style="flex:1;height:6px;background:#e3e9ef;border-radius:3px;overflow:hidden">
-                <div id="password-strength-bar" style="height:100%;width:0%;background:#b00020;transition:width 0.3s ease, background-color 0.3s ease"></div>
-              </div>
-              <span id="password-strength-label" style="font-size:0.75rem;font-weight:600;min-width:60px"></span>
+        <section
+          id="panel-signin"
+          role="tabpanel"
+          aria-labelledby="tab-signin"
+          style="margin-top: 12px"
+        >
+          <form id="login-form" class="card" action="#">
+            <div class="form-row">
+              <label for="login-email">Email</label
+              ><input
+                id="login-email"
+                name="email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                aria-required="true"
+                autocomplete="email"
+              />
             </div>
-            <span class="small" id="password-strength-msg" style="display:block;color:#666" role="status"></span>
-          </div>
-          <ul id="password-requirements" class="small" style="margin-top:8px;padding-left:20px;color:#666;font-size:0.875rem;display:none">
-            <li id="req-length" style="color:#b00020">At least 8 characters</li>
-            <li id="req-letter" style="color:#b00020">Contains a letter</li>
-            <li id="req-number" style="color:#b00020">Contains a number</li>
-          </ul>
-          <div id="caps-lock-warning" style="display:none;margin-top:4px;padding:6px 10px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;font-size:0.875rem;color:#856404">
-            ⚠️ Caps Lock is on
-          </div>
-        </div>
-        <div class="form-row">
-          <label for="reg-password-confirm">Confirm Password</label>
-          <input id="reg-password-confirm" name="passwordConfirm" type="password" required placeholder="Re-enter your password" aria-required="true" aria-describedby="password-match-msg" autocomplete="new-password">
-          <span class="small" id="password-match-msg" style="margin-top:4px;display:none;color:#b00020" role="alert"></span>
-        </div>
-        <div class="form-row">
-          <label for="reg-location">Location (UK County) *</label>
-          <select id="reg-location" name="location" required aria-required="true">
-            <option value="">Select your county...</option>
-            <option value="Bedfordshire">Bedfordshire</option>
-            <option value="Berkshire">Berkshire</option>
-            <option value="Bristol">Bristol</option>
-            <option value="Buckinghamshire">Buckinghamshire</option>
-            <option value="Cambridgeshire">Cambridgeshire</option>
-            <option value="Cheshire">Cheshire</option>
-            <option value="Cornwall">Cornwall</option>
-            <option value="Cumbria">Cumbria</option>
-            <option value="Derbyshire">Derbyshire</option>
-            <option value="Devon">Devon</option>
-            <option value="Dorset">Dorset</option>
-            <option value="Durham">Durham</option>
-            <option value="East Sussex">East Sussex</option>
-            <option value="Essex">Essex</option>
-            <option value="Gloucestershire">Gloucestershire</option>
-            <option value="Greater London">Greater London</option>
-            <option value="Greater Manchester">Greater Manchester</option>
-            <option value="Hampshire">Hampshire</option>
-            <option value="Herefordshire">Herefordshire</option>
-            <option value="Hertfordshire">Hertfordshire</option>
-            <option value="Isle of Wight">Isle of Wight</option>
-            <option value="Kent">Kent</option>
-            <option value="Lancashire">Lancashire</option>
-            <option value="Leicestershire">Leicestershire</option>
-            <option value="Lincolnshire">Lincolnshire</option>
-            <option value="Merseyside">Merseyside</option>
-            <option value="Norfolk">Norfolk</option>
-            <option value="North Yorkshire">North Yorkshire</option>
-            <option value="Northamptonshire">Northamptonshire</option>
-            <option value="Northumberland">Northumberland</option>
-            <option value="Nottinghamshire">Nottinghamshire</option>
-            <option value="Oxfordshire">Oxfordshire</option>
-            <option value="Rutland">Rutland</option>
-            <option value="Shropshire">Shropshire</option>
-            <option value="Somerset">Somerset</option>
-            <option value="South Yorkshire">South Yorkshire</option>
-            <option value="Staffordshire">Staffordshire</option>
-            <option value="Suffolk">Suffolk</option>
-            <option value="Surrey">Surrey</option>
-            <option value="Tyne and Wear">Tyne and Wear</option>
-            <option value="Warwickshire">Warwickshire</option>
-            <option value="West Midlands">West Midlands</option>
-            <option value="West Sussex">West Sussex</option>
-            <option value="West Yorkshire">West Yorkshire</option>
-            <option value="Wiltshire">Wiltshire</option>
-            <option value="Worcestershire">Worcestershire</option>
-            <option value="Wales">Wales</option>
-            <option value="Scotland">Scotland</option>
-            <option value="Northern Ireland">Northern Ireland</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label for="reg-postcode">Postcode (Optional)</label>
-          <input id="reg-postcode" name="postcode" type="text" placeholder="e.g. SW1A 1AA" autocomplete="postal-code">
-        </div>
-        <div class="form-row">
-          <label for="reg-role">I am a…</label>
-          <div class="role-toggle" role="radiogroup" aria-label="Account type">
-            <button type="button" class="role-pill is-active" data-role="customer">Customer</button>
-            <button type="button" class="role-pill" data-role="supplier">Supplier</button>
-          </div>
-          <input type="hidden" id="reg-role" name="role" value="customer">
-        </div>
-        <!-- Supplier-specific fields (shown when supplier role is selected) -->
-        <div id="supplier-fields" style="display:none">
-          <div class="form-row">
-            <label for="reg-company">Company Name *</label>
-            <input id="reg-company" name="company" type="text" placeholder="Your business name" autocomplete="organization">
-          </div>
-          <div class="form-row">
-            <label for="reg-jobtitle">Job Title (Optional)</label>
-            <input id="reg-jobtitle" name="jobtitle" type="text" placeholder="e.g. Event Manager" autocomplete="organization-title">
-          </div>
-          <div class="form-row">
-            <label for="reg-website">Website (Optional)</label>
-            <input id="reg-website" name="website" type="url" placeholder="https://example.com" autocomplete="url">
-          </div>
-          <div class="form-row">
-            <label>Social Media (Optional)</label>
-            <input id="reg-instagram" name="instagram" type="url" placeholder="Instagram URL" style="margin-bottom:8px">
-            <input id="reg-facebook" name="facebook" type="url" placeholder="Facebook URL" style="margin-bottom:8px">
-            <input id="reg-twitter" name="twitter" type="url" placeholder="Twitter/X URL" style="margin-bottom:8px">
-            <input id="reg-linkedin" name="linkedin" type="url" placeholder="LinkedIn URL">
-          </div>
-        </div>
-        <div class="form-row">
-          <label for="reg-avatar">Profile Picture (Optional)</label>
-          <input id="reg-avatar" name="avatar" type="file" accept="image/jpeg,image/jpg,image/png,image/webp">
-          <span class="small" style="color:#666;margin-top:4px;display:block">Max 5MB. Formats: JPEG, PNG, WebP</span>
-        </div>
-        <div class="form-row">
-          <label class="small checkbox-label-right" for="reg-marketing">
-            Send me the occasional EventFlow update and planning tips.
-            <input type="checkbox" id="reg-marketing" name="marketing">
-          </label>
-        </div>
-        <div class="form-row">
-          <label class="small checkbox-label-right" for="reg-terms">
-            I agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. *
-            <input type="checkbox" id="reg-terms" name="terms" required aria-required="true">
-          </label>
-        </div>
-        <div class="form-row" id="reg-hcaptcha-container">
-          <!-- hCaptcha widget rendered here by JavaScript -->
-        </div>
-        <div class="form-actions">
-          <button class="cta" type="submit">Create account</button>
-          <span class="small" id="reg-status" role="status" aria-live="polite"></span>
-        </div>
-      </form>
-    </section>
-    <!-- Load utilities -->
-    <script src="/assets/js/utils/api-client.js" defer></script>
-    <script src="/assets/js/utils/auth-helpers.js" defer></script>
-    <script src="/assets/js/utils/form-validator.js" defer></script>
-    <script src="/assets/js/components/ErrorBoundary.js" defer></script>
-    <script src="/assets/js/utils/keyboard-nav.js" defer></script>
-    <script src="/assets/js/utils/mobile-enhancements.js" defer></script>
-    
-    <script src="/assets/js/pages/auth-init.js" defer></script>
-    <script src="/assets/js/app.js" defer></script>
-    <script>window.__EF_PAGE__='auth'</script>
+            <div class="form-row">
+              <label for="login-password">Password</label>
+              <input
+                id="login-password"
+                name="password"
+                type="password"
+                required
+                placeholder="Your password"
+                aria-required="true"
+                autocomplete="current-password"
+              />
+              <div
+                id="login-caps-lock-warning"
+                style="
+                  display: none;
+                  margin-top: 4px;
+                  padding: 6px 10px;
+                  background: #fff3cd;
+                  border: 1px solid #ffc107;
+                  border-radius: 4px;
+                  font-size: 0.875rem;
+                  color: #856404;
+                "
+              >
+                ⚠️ Caps Lock is on
+              </div>
+            </div>
+            <div class="form-row">
+              <div
+                id="login-error"
+                class="error"
+                role="alert"
+                style="display: none; color: #b00020; font-size: 0.875rem"
+                aria-live="assertive"
+                aria-atomic="true"
+              ></div>
+            </div>
+            <div class="form-row">
+              <label class="small checkbox-label-right" for="login-remember">
+                Remember me
+                <input type="checkbox" id="login-remember" name="remember" />
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="cta" type="submit">Log in</button
+              ><span class="small" id="login-status" role="status" aria-live="polite"></span>
+            </div>
+            <div id="resend-verification-container" style="display: none; margin-top: 12px">
+              <button type="button" class="cta" id="resend-verification-btn">
+                Resend Verification Email
+              </button>
+            </div>
+            <p class="small"><a href="#" id="forgot-password-link">Forgot your password?</a></p>
+          </form>
+        </section>
+        <section
+          id="panel-create"
+          role="tabpanel"
+          aria-labelledby="tab-create"
+          hidden
+          style="margin-top: 12px"
+        >
+          <form id="register-form" class="card" action="#">
+            <div class="form-row">
+              <label for="reg-firstname">First Name</label>
+              <input
+                id="reg-firstname"
+                name="firstname"
+                required
+                aria-required="true"
+                autocomplete="given-name"
+                placeholder="Your first name"
+              />
+            </div>
+            <div class="form-row">
+              <label for="reg-lastname">Surname</label>
+              <input
+                id="reg-lastname"
+                name="lastname"
+                required
+                aria-required="true"
+                autocomplete="family-name"
+                placeholder="Your surname"
+              />
+            </div>
+            <div class="form-row">
+              <label for="reg-email">Email</label>
+              <input
+                id="reg-email"
+                name="email"
+                type="email"
+                required
+                aria-required="true"
+                aria-describedby="email-validation-msg"
+                autocomplete="email"
+              />
+              <span
+                class="small"
+                id="email-validation-msg"
+                style="display: none; color: #b00020"
+                aria-live="polite"
+              ></span>
+            </div>
+            <div class="form-row">
+              <label for="reg-password">Password</label>
+              <input
+                id="reg-password"
+                name="password"
+                type="password"
+                required
+                placeholder="Min 8 chars with letter and number"
+                aria-required="true"
+                aria-describedby="password-strength-msg password-requirements"
+                autocomplete="new-password"
+              />
+              <div id="password-strength-container" style="margin-top: 8px; display: none">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px">
+                  <div
+                    style="
+                      flex: 1;
+                      height: 6px;
+                      background: #e3e9ef;
+                      border-radius: 3px;
+                      overflow: hidden;
+                    "
+                  >
+                    <div
+                      id="password-strength-bar"
+                      style="
+                        height: 100%;
+                        width: 0%;
+                        background: #b00020;
+                        transition:
+                          width 0.3s ease,
+                          background-color 0.3s ease;
+                      "
+                    ></div>
+                  </div>
+                  <span
+                    id="password-strength-label"
+                    style="font-size: 0.75rem; font-weight: 600; min-width: 60px"
+                  ></span>
+                </div>
+                <span
+                  class="small"
+                  id="password-strength-msg"
+                  style="display: block; color: #666"
+                  role="status"
+                ></span>
+              </div>
+              <ul
+                id="password-requirements"
+                class="small"
+                style="
+                  margin-top: 8px;
+                  padding-left: 20px;
+                  color: #666;
+                  font-size: 0.875rem;
+                  display: none;
+                "
+              >
+                <li id="req-length" style="color: #b00020">At least 8 characters</li>
+                <li id="req-letter" style="color: #b00020">Contains a letter</li>
+                <li id="req-number" style="color: #b00020">Contains a number</li>
+              </ul>
+              <div
+                id="caps-lock-warning"
+                style="
+                  display: none;
+                  margin-top: 4px;
+                  padding: 6px 10px;
+                  background: #fff3cd;
+                  border: 1px solid #ffc107;
+                  border-radius: 4px;
+                  font-size: 0.875rem;
+                  color: #856404;
+                "
+              >
+                ⚠️ Caps Lock is on
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="reg-password-confirm">Confirm Password</label>
+              <input
+                id="reg-password-confirm"
+                name="passwordConfirm"
+                type="password"
+                required
+                placeholder="Re-enter your password"
+                aria-required="true"
+                aria-describedby="password-match-msg"
+                autocomplete="new-password"
+              />
+              <span
+                class="small"
+                id="password-match-msg"
+                style="margin-top: 4px; display: none; color: #b00020"
+                role="alert"
+              ></span>
+            </div>
+            <div class="form-row">
+              <label for="reg-location">Location (UK County) *</label>
+              <select id="reg-location" name="location" required aria-required="true">
+                <option value="">Select your county...</option>
+                <option value="Bedfordshire">Bedfordshire</option>
+                <option value="Berkshire">Berkshire</option>
+                <option value="Bristol">Bristol</option>
+                <option value="Buckinghamshire">Buckinghamshire</option>
+                <option value="Cambridgeshire">Cambridgeshire</option>
+                <option value="Cheshire">Cheshire</option>
+                <option value="Cornwall">Cornwall</option>
+                <option value="Cumbria">Cumbria</option>
+                <option value="Derbyshire">Derbyshire</option>
+                <option value="Devon">Devon</option>
+                <option value="Dorset">Dorset</option>
+                <option value="Durham">Durham</option>
+                <option value="East Sussex">East Sussex</option>
+                <option value="Essex">Essex</option>
+                <option value="Gloucestershire">Gloucestershire</option>
+                <option value="Greater London">Greater London</option>
+                <option value="Greater Manchester">Greater Manchester</option>
+                <option value="Hampshire">Hampshire</option>
+                <option value="Herefordshire">Herefordshire</option>
+                <option value="Hertfordshire">Hertfordshire</option>
+                <option value="Isle of Wight">Isle of Wight</option>
+                <option value="Kent">Kent</option>
+                <option value="Lancashire">Lancashire</option>
+                <option value="Leicestershire">Leicestershire</option>
+                <option value="Lincolnshire">Lincolnshire</option>
+                <option value="Merseyside">Merseyside</option>
+                <option value="Norfolk">Norfolk</option>
+                <option value="North Yorkshire">North Yorkshire</option>
+                <option value="Northamptonshire">Northamptonshire</option>
+                <option value="Northumberland">Northumberland</option>
+                <option value="Nottinghamshire">Nottinghamshire</option>
+                <option value="Oxfordshire">Oxfordshire</option>
+                <option value="Rutland">Rutland</option>
+                <option value="Shropshire">Shropshire</option>
+                <option value="Somerset">Somerset</option>
+                <option value="South Yorkshire">South Yorkshire</option>
+                <option value="Staffordshire">Staffordshire</option>
+                <option value="Suffolk">Suffolk</option>
+                <option value="Surrey">Surrey</option>
+                <option value="Tyne and Wear">Tyne and Wear</option>
+                <option value="Warwickshire">Warwickshire</option>
+                <option value="West Midlands">West Midlands</option>
+                <option value="West Sussex">West Sussex</option>
+                <option value="West Yorkshire">West Yorkshire</option>
+                <option value="Wiltshire">Wiltshire</option>
+                <option value="Worcestershire">Worcestershire</option>
+                <option value="Wales">Wales</option>
+                <option value="Scotland">Scotland</option>
+                <option value="Northern Ireland">Northern Ireland</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="reg-postcode">Postcode (Optional)</label>
+              <input
+                id="reg-postcode"
+                name="postcode"
+                type="text"
+                placeholder="e.g. SW1A 1AA"
+                autocomplete="postal-code"
+              />
+            </div>
+            <div class="form-row">
+              <label for="reg-role">I am a…</label>
+              <div class="role-toggle" role="radiogroup" aria-label="Account type">
+                <button type="button" class="role-pill is-active" data-role="customer">
+                  Customer
+                </button>
+                <button type="button" class="role-pill" data-role="supplier">Supplier</button>
+              </div>
+              <input type="hidden" id="reg-role" name="role" value="customer" />
+            </div>
+            <!-- Supplier-specific fields (shown when supplier role is selected) -->
+            <div id="supplier-fields" style="display: none">
+              <div class="form-row">
+                <label for="reg-company">Company Name *</label>
+                <input
+                  id="reg-company"
+                  name="company"
+                  type="text"
+                  placeholder="Your business name"
+                  autocomplete="organization"
+                />
+              </div>
+              <div class="form-row">
+                <label for="reg-jobtitle">Job Title (Optional)</label>
+                <input
+                  id="reg-jobtitle"
+                  name="jobtitle"
+                  type="text"
+                  placeholder="e.g. Event Manager"
+                  autocomplete="organization-title"
+                />
+              </div>
+              <div class="form-row">
+                <label for="reg-website">Website (Optional)</label>
+                <input
+                  id="reg-website"
+                  name="website"
+                  type="url"
+                  placeholder="https://example.com"
+                  autocomplete="url"
+                />
+              </div>
+              <div class="form-row">
+                <label>Social Media (Optional)</label>
+                <input
+                  id="reg-instagram"
+                  name="instagram"
+                  type="url"
+                  placeholder="Instagram URL"
+                  style="margin-bottom: 8px"
+                />
+                <input
+                  id="reg-facebook"
+                  name="facebook"
+                  type="url"
+                  placeholder="Facebook URL"
+                  style="margin-bottom: 8px"
+                />
+                <input
+                  id="reg-twitter"
+                  name="twitter"
+                  type="url"
+                  placeholder="Twitter/X URL"
+                  style="margin-bottom: 8px"
+                />
+                <input id="reg-linkedin" name="linkedin" type="url" placeholder="LinkedIn URL" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="reg-avatar">Profile Picture (Optional)</label>
+              <input
+                id="reg-avatar"
+                name="avatar"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+              />
+              <span class="small" style="color: #666; margin-top: 4px; display: block"
+                >Max 5MB. Formats: JPEG, PNG, WebP</span
+              >
+            </div>
+            <div class="form-row">
+              <label class="small checkbox-label-right" for="reg-marketing">
+                Send me the occasional EventFlow update and planning tips.
+                <input type="checkbox" id="reg-marketing" name="marketing" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="small checkbox-label-right" for="reg-terms">
+                I agree to the <a href="/terms" target="_blank">Terms</a> and
+                <a href="/privacy" target="_blank">Privacy Policy</a>. *
+                <input type="checkbox" id="reg-terms" name="terms" required aria-required="true" />
+              </label>
+            </div>
+            <div class="form-row" id="reg-hcaptcha-container">
+              <!-- hCaptcha widget rendered here by JavaScript -->
+            </div>
+            <div class="form-actions">
+              <button class="cta" type="submit">Create account</button>
+              <span class="small" id="reg-status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </section>
+        <!-- Load utilities -->
+        <script src="/assets/js/utils/api-client.js" defer></script>
+        <script src="/assets/js/utils/auth-helpers.js" defer></script>
+        <script src="/assets/js/utils/form-validator.js" defer></script>
+        <script src="/assets/js/components/ErrorBoundary.js" defer></script>
+        <script src="/assets/js/utils/keyboard-nav.js" defer></script>
+        <script src="/assets/js/utils/mobile-enhancements.js" defer></script>
 
-    <!-- hCaptcha: load API script and render widget in the registration form -->
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-    <script>
-      (function () {
-        var CAPTCHA_MAX_RETRIES = 25; // 25 × 200 ms = 5 s max wait
-        var captchaRetries = 0;
-        function initRegisterCaptcha() {
-          var container = document.getElementById('reg-hcaptcha-container');
-          if (!container || !window.hcaptcha) {
-            captchaRetries++;
-            if (captchaRetries < CAPTCHA_MAX_RETRIES) {
-              setTimeout(initRegisterCaptcha, 200);
-            }
-            return;
-          }
-          // Sitekey priority: meta tag → EVENTFLOW_CONFIG (from /api/v1/config) → dev test key
-          var meta = document.querySelector('meta[name="hcaptcha-sitekey"]');
-          var sitekey =
-            (meta && meta.getAttribute('content')) ||
-            (window.EVENTFLOW_CONFIG && window.EVENTFLOW_CONFIG.hcaptchaSitekey) ||
-            '10000000-ffff-ffff-ffff-000000000001';
-          var widgetId = window.hcaptcha.render(container, { sitekey: sitekey, theme: 'light' });
-          window.__regHCaptchaWidgetId = widgetId;
-        }
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', initRegisterCaptcha);
-        } else {
-          initRegisterCaptcha();
-        }
-      })();
-    </script>
-    
-    <!-- Fetch CSRF token on page load using api-client -->
-    <script>
-      (async function() {
-        // Wait for api-client to load (max 3 s / 60 attempts at 50 ms)
-        const API_CLIENT_MAX_WAIT = 60;
-        function waitForApiClient(attempt) {
-          return new Promise((resolve, reject) => {
-            if (window.apiClient) {
-              resolve();
-            } else if ((attempt || 0) >= API_CLIENT_MAX_WAIT) {
-              reject(new Error('api-client did not load in time'));
-            } else {
-              setTimeout(() => waitForApiClient((attempt || 0) + 1).then(resolve, reject), 50);
-            }
-          });
-        }
-        
-        try {
-          await waitForApiClient();
-          const response = await window.apiClient.get('csrf-token');
-          if (response.ok) {
-            const data = await response.json();
-            window.csrfToken = data.csrfToken;
-            window.__CSRF_TOKEN__ = data.csrfToken; // Backward compatibility
-          } else {
-            console.error('Failed to fetch CSRF token:', response.statusText);
-          }
-        } catch (error) {
-          console.error('Error fetching CSRF token:', error);
-        }
-      })();
-    </script>
-    
-    <!-- Initialize form validation -->
-    <script defer>
-      // Wait for dependencies to load before initializing (max 3 s / 60 × 50 ms)
-      var FORM_INIT_MAX_RETRIES = 60;
-      var formInitRetries = 0;
-      function initFormValidation() {
-        // Check if dependencies are loaded
-        if (typeof FormValidator === 'undefined' || typeof ErrorBoundary === 'undefined') {
-          formInitRetries++;
-          if (formInitRetries < FORM_INIT_MAX_RETRIES) {
-            // Retry after a short delay
-            setTimeout(initFormValidation, 50);
-          }
-          return;
-        }
-        
-        // Initialize error boundary
-        window.errorBoundary = new ErrorBoundary({
-          onError: function(errorInfo) {
-            console.error('Error caught:', errorInfo);
-          }
-        });
-        
-        // Initialize form validation for login form
-        const loginForm = document.querySelector('#login-form');
-        if (loginForm) {
-          const loginValidator = new FormValidator(loginForm, {
-            validateOnBlur: true,
-            validateOnInput: false
-          });
-          
-          // Store reference to validator for other scripts
-          loginForm._validator = loginValidator;
-          
-          // Override the handleSubmit to also show #login-error
-          const originalHandleSubmit = loginValidator.handleSubmit.bind(loginValidator);
-          loginValidator.handleSubmit = function(e) {
-            const result = originalHandleSubmit(e);
-            const loginErrorEl = document.getElementById('login-error');
-            
-            // Show #login-error if validation failed
-            if (!result && loginErrorEl) {
-              const errors = loginValidator.getErrors();
-              if (errors.length > 0) {
-                const errorMessages = errors.map(([field, msg]) => msg).join(', ');
-                loginErrorEl.textContent = errorMessages || 'Please fix the errors above';
-                loginErrorEl.style.display = 'block';
-                loginErrorEl.style.visibility = 'visible';
-                loginErrorEl.setAttribute('aria-hidden', 'false');
+        <script src="/assets/js/pages/auth-init.js" defer></script>
+        <script src="/assets/js/app.js" defer></script>
+        <script>
+          window.__EF_PAGE__ = 'auth';
+        </script>
+
+        <!-- hCaptcha: load API script and render widget in the registration form -->
+        <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+        <script>
+          (function () {
+            var CAPTCHA_MAX_RETRIES = 25; // 25 × 200 ms = 5 s max wait
+            var captchaRetries = 0;
+            function initRegisterCaptcha() {
+              var container = document.getElementById('reg-hcaptcha-container');
+              if (!container || !window.hcaptcha) {
+                captchaRetries++;
+                if (captchaRetries < CAPTCHA_MAX_RETRIES) {
+                  setTimeout(initRegisterCaptcha, 200);
+                }
+                return;
               }
-            } else if (result && loginErrorEl) {
-              // Clear errors when validation passes
-              loginErrorEl.textContent = '';
-              loginErrorEl.style.display = 'none';
-              loginErrorEl.style.visibility = 'hidden';
-              loginErrorEl.setAttribute('aria-hidden', 'true');
+              // Sitekey priority: meta tag → EVENTFLOW_CONFIG (from /api/v1/config) → dev test key
+              var meta = document.querySelector('meta[name="hcaptcha-sitekey"]');
+              var sitekey =
+                (meta && meta.getAttribute('content')) ||
+                (window.EVENTFLOW_CONFIG && window.EVENTFLOW_CONFIG.hcaptchaSitekey) ||
+                '10000000-ffff-ffff-ffff-000000000001';
+              var widgetId = window.hcaptcha.render(container, {
+                sitekey: sitekey,
+                theme: 'light',
+              });
+              window.__regHCaptchaWidgetId = widgetId;
             }
-            // Don't clear the error here - let app.js manage #login-error for API responses
-            return result;
-          };
-          
-          // Listen for valid submissions
-          loginForm.addEventListener('validsubmit', function(e) {
-            // The existing auth-init.js will handle the actual submission
-          });
-        }
-        
-        // Initialize form validation for registration form
-        const registerForm = document.querySelector('#register-form');
-        if (registerForm) {
-          const registerValidator = new FormValidator(registerForm, {
-            validateOnBlur: true,
-            validateOnInput: false
-          });
-          
-          // Add custom password strength validation
-          registerValidator.addValidator('reg-password', {
-            required: true,
-            password: true,
-            minLength: 8
-          });
-          
-          // Listen for valid submissions
-          registerForm.addEventListener('validsubmit', function(e) {
-            // The existing auth-init.js will handle the actual submission
-          });
-        }
-      }
-      
-      // Start initialization when DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFormValidation);
-      } else {
-        initFormValidation();
-      }
-    </script>
-  </div>
-</main>
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', initRegisterCaptcha);
+            } else {
+              initRegisterCaptcha();
+            }
+          })();
+        </script>
 
-<!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
-<nav class="ef-bottom-nav" role="navigation" aria-label="Mobile bottom navigation">
-  <a href="/start" class="ef-bottom-link" aria-label="Plan your event">
-    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12 20h9"/>
-      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-    </svg>
-    <span class="ef-bottom-label">Plan</span>
-  </a>
-  
-  <a href="/suppliers" class="ef-bottom-link" aria-label="Browse suppliers">
-    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.35-4.35"/>
-    </svg>
-    <span class="ef-bottom-label">Suppliers</span>
-  </a>
-  
-  <a href="/blog" class="ef-bottom-link" aria-label="View guides">
-    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-    </svg>
-    <span class="ef-bottom-label">Guides</span>
-  </a>
-  
-  <!-- Dashboard with notification badge (shown when logged in, replaces Alerts) -->
-  <a href="#" id="ef-bottom-dashboard" class="ef-bottom-link" style="display: none;" aria-label="Go to dashboard">
-    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="7" height="7" rx="1"/>
-      <rect x="14" y="3" width="7" height="7" rx="1"/>
-      <rect x="14" y="14" width="7" height="7" rx="1"/>
-      <rect x="3" y="14" width="7" height="7" rx="1"/>
-    </svg>
-    <span class="ef-bottom-label">Dashboard</span>
-    <span id="ef-bottom-dashboard-badge" class="ef-badge" style="display: none;">0</span>
-  </a>
-  
-  <!-- Alerts button (shown when logged out) -->
-  <a href="/blog" id="ef-bottom-alerts" class="ef-bottom-link" aria-label="View guides and alerts">
-    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-    </svg>
-    <span class="ef-bottom-label">Alerts</span>
-  </a>
-  
-  <button 
-    id="ef-bottom-menu" 
-    class="ef-bottom-link" 
-    type="button"
-    aria-label="Open menu"
-    aria-expanded="false"
-    aria-controls="ef-mobile-menu"
-  >
-    <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
-    <span class="ef-bottom-label">Menu</span>
-  </button>
-</nav>
+        <!-- Fetch CSRF token on page load using api-client -->
+        <script>
+          (async function () {
+            // Wait for api-client to load (max 3 s / 60 attempts at 50 ms)
+            const API_CLIENT_MAX_WAIT = 60;
+            function waitForApiClient(attempt) {
+              return new Promise((resolve, reject) => {
+                if (window.apiClient) {
+                  resolve();
+                } else if ((attempt || 0) >= API_CLIENT_MAX_WAIT) {
+                  reject(new Error('api-client did not load in time'));
+                } else {
+                  setTimeout(() => waitForApiClient((attempt || 0) + 1).then(resolve, reject), 50);
+                }
+              });
+            }
 
+            try {
+              await waitForApiClient();
+              const response = await window.apiClient.get('csrf-token');
+              if (response.ok) {
+                const data = await response.json();
+                window.csrfToken = data.csrfToken;
+                window.__CSRF_TOKEN__ = data.csrfToken; // Backward compatibility
+              } else {
+                console.error('Failed to fetch CSRF token:', response.statusText);
+              }
+            } catch (error) {
+              console.error('Error fetching CSRF token:', error);
+            }
+          })();
+        </script>
 
-<footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
-    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
-    <div class="small"><a href="/blog">Guides</a> ·
-      <a href="/marketplace">Marketplace</a> ·
-      <a href="/credits">Credits</a> · <a href="/contact">Contact</a> · <a href="/legal">Legal Hub</a> · <button type="button" data-cookie-prefs style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Cookie preferences</button></div>
-  </div>
-</footer>
-<script src="/assets/js/cookie-consent.js?v=2.0.0" defer></script>
-<script src="/assets/js/password-toggle.js" defer></script>
-<script src="/assets/js/keyboard-shortcuts.js" defer></script>
+        <!-- Initialize form validation -->
+        <script defer>
+          // Wait for dependencies to load before initializing (max 3 s / 60 × 50 ms)
+          var FORM_INIT_MAX_RETRIES = 60;
+          var formInitRetries = 0;
+          function initFormValidation() {
+            // Check if dependencies are loaded
+            if (typeof FormValidator === 'undefined' || typeof ErrorBoundary === 'undefined') {
+              formInitRetries++;
+              if (formInitRetries < FORM_INIT_MAX_RETRIES) {
+                // Retry after a short delay
+                setTimeout(initFormValidation, 50);
+              }
+              return;
+            }
 
-<!-- JadeAssist Chat Widget -->
-<script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
-<script src="/assets/js/jadeassist-init.v2.js" defer></script>
-</body>
+            // Initialize error boundary
+            window.errorBoundary = new ErrorBoundary({
+              onError: function (errorInfo) {
+                console.error('Error caught:', errorInfo);
+              },
+            });
+
+            // Initialize form validation for login form
+            const loginForm = document.querySelector('#login-form');
+            if (loginForm) {
+              const loginValidator = new FormValidator(loginForm, {
+                validateOnBlur: true,
+                validateOnInput: false,
+              });
+
+              // Store reference to validator for other scripts
+              loginForm._validator = loginValidator;
+
+              // Override the handleSubmit to also show #login-error
+              const originalHandleSubmit = loginValidator.handleSubmit.bind(loginValidator);
+              loginValidator.handleSubmit = function (e) {
+                const result = originalHandleSubmit(e);
+                const loginErrorEl = document.getElementById('login-error');
+
+                // Show #login-error if validation failed
+                if (!result && loginErrorEl) {
+                  const errors = loginValidator.getErrors();
+                  if (errors.length > 0) {
+                    const errorMessages = errors.map(([field, msg]) => msg).join(', ');
+                    loginErrorEl.textContent = errorMessages || 'Please fix the errors above';
+                    loginErrorEl.style.display = 'block';
+                  }
+                } else if (result && loginErrorEl) {
+                  // Clear errors when validation passes
+                  loginErrorEl.textContent = '';
+                  loginErrorEl.style.display = 'none';
+                }
+                // Don't clear the error here - let app.js manage #login-error for API responses
+                return result;
+              };
+
+              // Listen for valid submissions
+              loginForm.addEventListener('validsubmit', function (e) {
+                // The existing auth-init.js will handle the actual submission
+              });
+            }
+
+            // Initialize form validation for registration form
+            const registerForm = document.querySelector('#register-form');
+            if (registerForm) {
+              const registerValidator = new FormValidator(registerForm, {
+                validateOnBlur: true,
+                validateOnInput: false,
+              });
+
+              // Add custom password strength validation
+              registerValidator.addValidator('reg-password', {
+                required: true,
+                password: true,
+                minLength: 8,
+              });
+
+              // Listen for valid submissions
+              registerForm.addEventListener('validsubmit', function (e) {
+                // The existing auth-init.js will handle the actual submission
+              });
+            }
+          }
+
+          // Start initialization when DOM is ready
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFormValidation);
+          } else {
+            initFormValidation();
+          }
+        </script>
+      </div>
+    </main>
+
+    <!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
+    <nav class="ef-bottom-nav" role="navigation" aria-label="Mobile bottom navigation">
+      <a href="/start" class="ef-bottom-link" aria-label="Plan your event">
+        <svg
+          class="ef-bottom-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+        <span class="ef-bottom-label">Plan</span>
+      </a>
+
+      <a href="/suppliers" class="ef-bottom-link" aria-label="Browse suppliers">
+        <svg
+          class="ef-bottom-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <span class="ef-bottom-label">Suppliers</span>
+      </a>
+
+      <a href="/blog" class="ef-bottom-link" aria-label="View guides">
+        <svg
+          class="ef-bottom-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+        <span class="ef-bottom-label">Guides</span>
+      </a>
+
+      <!-- Dashboard with notification badge (shown when logged in, replaces Alerts) -->
+      <a
+        href="#"
+        id="ef-bottom-dashboard"
+        class="ef-bottom-link"
+        style="display: none"
+        aria-label="Go to dashboard"
+      >
+        <svg
+          class="ef-bottom-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+        </svg>
+        <span class="ef-bottom-label">Dashboard</span>
+        <span id="ef-bottom-dashboard-badge" class="ef-badge" style="display: none">0</span>
+      </a>
+
+      <!-- Alerts button (shown when logged out) -->
+      <a
+        href="/blog"
+        id="ef-bottom-alerts"
+        class="ef-bottom-link"
+        aria-label="View guides and alerts"
+      >
+        <svg
+          class="ef-bottom-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <span class="ef-bottom-label">Alerts</span>
+      </a>
+
+      <button
+        id="ef-bottom-menu"
+        class="ef-bottom-link"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="ef-mobile-menu"
+      >
+        <svg
+          class="ef-bottom-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+        <span class="ef-bottom-label">Menu</span>
+      </button>
+    </nav>
+
+    <footer class="footer" role="contentinfo">
+      <div
+        class="container"
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+        "
+      >
+        <div>
+          <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
+        </div>
+        <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+        <div class="small">
+          <a href="/blog">Guides</a> · <a href="/marketplace">Marketplace</a> ·
+          <a href="/credits">Credits</a> · <a href="/contact">Contact</a> ·
+          <a href="/legal">Legal Hub</a> ·
+          <button
+            type="button"
+            data-cookie-prefs
+            style="
+              background: none;
+              border: none;
+              color: inherit;
+              text-decoration: underline;
+              cursor: pointer;
+              font-size: inherit;
+              padding: 0;
+            "
+          >
+            Cookie preferences
+          </button>
+        </div>
+      </div>
+    </footer>
+    <script src="/assets/js/cookie-consent.js?v=2.0.0" defer></script>
+    <script src="/assets/js/password-toggle.js" defer></script>
+    <script src="/assets/js/keyboard-shortcuts.js" defer></script>
+
+    <!-- JadeAssist Chat Widget -->
+    <script
+      src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js"
+      defer
+    ></script>
+    <script src="/assets/js/jadeassist-init.v2.js" defer></script>
+  </body>
 </html>

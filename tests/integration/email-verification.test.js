@@ -100,7 +100,7 @@ describe('Email Verification Integration Tests', () => {
           role: 'customer',
           location: 'London',
         })
-        .expect(200);
+        .expect(201);
 
       expect(response.body).toHaveProperty('ok', true);
       expect(response.body).toHaveProperty('user');
@@ -340,7 +340,7 @@ describe('Email Verification Integration Tests', () => {
           role: 'customer',
           location: 'London',
         })
-        .expect(200);
+        .expect(201);
 
       expect(registerResponse.body.ok).toBe(true);
 

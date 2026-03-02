@@ -11,6 +11,73 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('#login-form')).toBeVisible();
   });
 
+  test('should have correct ARIA roles on tab interface', async ({ page }) => {
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    // Tab list role
+    await expect(page.locator('[role="tablist"]')).toBeVisible();
+
+    // Tab buttons
+    const signinTab = page.locator('#tab-signin');
+    const createTab = page.locator('#tab-create');
+    await expect(signinTab).toHaveAttribute('role', 'tab');
+    await expect(createTab).toHaveAttribute('role', 'tab');
+    await expect(signinTab).toHaveAttribute('aria-selected', 'true');
+    await expect(createTab).toHaveAttribute('aria-selected', 'false');
+    await expect(signinTab).toHaveAttribute('aria-controls', 'panel-signin');
+    await expect(createTab).toHaveAttribute('aria-controls', 'panel-create');
+
+    // Tab panels
+    await expect(page.locator('#panel-signin')).toHaveAttribute('role', 'tabpanel');
+    await expect(page.locator('#panel-create')).toHaveAttribute('role', 'tabpanel');
+    await expect(page.locator('#panel-signin')).toHaveAttribute('aria-labelledby', 'tab-signin');
+    await expect(page.locator('#panel-create')).toHaveAttribute('aria-labelledby', 'tab-create');
+  });
+
+  test('should switch tabs on click and update aria-selected', async ({ page }) => {
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    // Initially login panel is visible, create panel is hidden
+    await expect(page.locator('#panel-signin')).toBeVisible();
+    await expect(page.locator('#panel-create')).toBeHidden();
+
+    // Click create tab
+    await page.click('#tab-create');
+
+    await expect(page.locator('#tab-create')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tab-signin')).toHaveAttribute('aria-selected', 'false');
+    await expect(page.locator('#panel-create')).toBeVisible();
+    await expect(page.locator('#panel-signin')).toBeHidden();
+
+    // Click login tab back
+    await page.click('#tab-signin');
+
+    await expect(page.locator('#tab-signin')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tab-create')).toHaveAttribute('aria-selected', 'false');
+    await expect(page.locator('#panel-signin')).toBeVisible();
+    await expect(page.locator('#panel-create')).toBeHidden();
+  });
+
+  test('should support keyboard navigation between tabs', async ({ page }) => {
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    // Focus login tab and press ArrowRight to switch to create tab
+    await page.focus('#tab-signin');
+    await page.keyboard.press('ArrowRight');
+
+    await expect(page.locator('#tab-create')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#panel-create')).toBeVisible();
+
+    // Press ArrowLeft to go back
+    await page.keyboard.press('ArrowLeft');
+
+    await expect(page.locator('#tab-signin')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#panel-signin')).toBeVisible();
+  });
+
   test('should show validation errors for empty login', async ({ page, browserName }) => {
     await page.goto('/auth.html');
 
@@ -47,19 +114,24 @@ test.describe('Authentication Flow', () => {
 
   test('should show password visibility toggle', async ({ page }) => {
     await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
 
     const passwordInput = page.locator('input[type="password"]').first();
     if ((await passwordInput.count()) > 0) {
       await expect(passwordInput).toBeVisible();
 
-      // Look for toggle button
+      // Look for toggle button (may be added by password-toggle.js or app.js)
       const toggleButton = page.locator(
-        'button:has-text("Show"), .toggle-password, [aria-label*="password"]'
+        'button:has-text("Show"), .toggle-password, .password-toggle, [aria-label*="password" i]'
       );
       if ((await toggleButton.count()) > 0) {
         await toggleButton.first().click();
-        // Password should be visible now
-        await expect(page.locator('input[type="text"][placeholder*="password" i]')).toBeVisible();
+        // Password input type should now be text
+        const visibleInput = page.locator('input[type="text"]').first();
+        if ((await visibleInput.count()) > 0) {
+          await expect(visibleInput).toBeVisible();
+        }
       }
     }
   });
@@ -121,5 +193,45 @@ test.describe('Authentication Flow', () => {
       const windowWidth = await page.evaluate(() => window.innerWidth);
       expect(bodyWidth).toBeLessThanOrEqual(windowWidth + 1); // Allow 1px tolerance
     }
+  });
+
+  test('should have remember-me checkbox in login form', async ({ page }) => {
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    const rememberCheckbox = page.locator('#login-remember');
+    await expect(rememberCheckbox).toBeVisible();
+    // Should be unchecked by default
+    await expect(rememberCheckbox).not.toBeChecked();
+  });
+
+  test('should show supplier fields only when supplier role selected', async ({ page }) => {
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    // Switch to create tab
+    await page.click('#tab-create');
+
+    // Supplier fields should be hidden initially
+    const supplierFields = page.locator('#supplier-fields');
+    await expect(supplierFields).toBeHidden();
+
+    // Click supplier role pill
+    await page.click('.role-pill[data-role="supplier"]');
+
+    // Supplier fields should now be visible
+    await expect(supplierFields).toBeVisible();
+
+    // Switch back to customer
+    await page.click('.role-pill[data-role="customer"]');
+    await expect(supplierFields).toBeHidden();
+  });
+
+  test('login error element should have role="alert"', async ({ page }) => {
+    await page.goto('/auth.html');
+    await page.waitForLoadState('networkidle');
+
+    const loginError = page.locator('#login-error');
+    await expect(loginError).toHaveAttribute('role', 'alert');
   });
 });

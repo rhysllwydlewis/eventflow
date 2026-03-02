@@ -362,7 +362,11 @@ router.post(
     // Default to remember=true for registration to provide better UX
     setAuthCookie(res, token, { remember: true });
 
-    res.json({
+    // Prevent caching of registration responses
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+
+    res.status(201).json({
       ok: true,
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
@@ -444,6 +448,10 @@ router.post(
 router.post('/login', authLimiter, async (req, res) => {
   const { email, password, remember } = req.body || {};
 
+  // Prevent caching of login responses
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+
   logger.info('[LOGIN] Attempt');
 
   if (!email || !password) {
@@ -508,8 +516,10 @@ router.post('/login', authLimiter, async (req, res) => {
   logger.info('[LOGIN] Successful login');
   await updateLastLogin(user.id);
 
+  // Align JWT expiry with remember-me: session-only (24h) vs persistent (7d)
+  const tokenExpiry = remember ? '7d' : '24h';
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: '7d',
+    expiresIn: tokenExpiry,
   });
 
   // Set cookie with remember option: if remember is true, persist for 7 days; otherwise session-only
@@ -608,8 +618,10 @@ router.post('/login-2fa', authLimiter, async (req, res) => {
   logger.info('[LOGIN-2FA] Successful 2FA login');
   await updateLastLogin(user.id);
 
+  // Align JWT expiry with remember-me: session-only (24h) vs persistent (7d)
+  const twoFaTokenExpiry = remember ? '7d' : '24h';
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: '7d',
+    expiresIn: twoFaTokenExpiry,
   });
 
   setAuthCookie(res, token, { remember: !!remember });
