@@ -914,29 +914,15 @@ body.auth-page {
   padding-right: 52px !important;
 }
 
-/* Password show/hide toggle wrapper and button */
+/* Password show/hide toggle wrapper — gives the dynamically-injected
+   .password-toggle button (added by app.js) a positioned context so that
+   `position: absolute` in styles.css scopes correctly to the input area. */
 .auth-pw-wrap {
   position: relative;
 }
 .auth-pw-wrap input {
   width: 100%;
 }
-.auth-pw-toggle {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  color: #667085;
-  display: flex;
-  align-items: center;
-  min-height: unset;
-  width: auto;
-}
-.auth-pw-toggle:hover { color: #0B8073; }
 
 /* Extra vertical breathing room between form rows */
 .auth-card .form-row {
