@@ -306,4 +306,122 @@ router.get('/recommendations', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/public/auth-photos
+ * Returns event-themed photos for the auth page left-panel slideshow.
+ * No authentication required — uses Pexels API if configured, or falls back
+ * to curated hardcoded photos from pexels-fallback.js.
+ * Response is cached for 5 minutes to minimise API calls.
+ */
+const AUTH_PHOTO_QUERIES = [
+  'wedding celebration venue',
+  'corporate event conference',
+  'birthday party celebration',
+  'event planning elegant flowers',
+];
+
+const AUTH_PHOTO_PEXELS_DOMAIN = 'images.pexels.com';
+const AUTH_PHOTO_PEXELS_PROFILE_DOMAIN = 'www.pexels.com';
+
+function isSafeAuthPexelsUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === 'https:' &&
+      (parsed.hostname === AUTH_PHOTO_PEXELS_DOMAIN ||
+        parsed.hostname === AUTH_PHOTO_PEXELS_PROFILE_DOMAIN)
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Return the first URL in the list that passes isSafeAuthPexelsUrl, or null.
+function pickSafeAuthUrl(...candidates) {
+  for (const u of candidates) {
+    if (u && isSafeAuthPexelsUrl(u)) {
+      return u;
+    }
+  }
+  return null;
+}
+
+function buildAuthFallbackResponse(fallbacks) {
+  return {
+    source: 'fallback',
+    photos: fallbacks
+      .map(p => {
+        const url = pickSafeAuthUrl(p.src && p.src.large, p.url);
+        if (!url) {
+          return null;
+        }
+        return {
+          url,
+          photographer: String(p.photographer || 'Pexels').slice(0, 80),
+          photographerUrl: 'https://www.pexels.com',
+          alt: String(p.alt || 'Event photo').slice(0, 120),
+        };
+      })
+      .filter(Boolean),
+  };
+}
+
+router.get('/auth-photos', async (req, res) => {
+  try {
+    res.set('Cache-Control', 'public, max-age=300');
+
+    const { getPexelsService } = require('../utils/pexels-service');
+    const { getRandomFallbackPhotos } = require('../config/pexels-fallback');
+
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.json(buildAuthFallbackResponse(getRandomFallbackPhotos(6)));
+    }
+
+    const query = AUTH_PHOTO_QUERIES[Math.floor(Math.random() * AUTH_PHOTO_QUERIES.length)];
+
+    let results;
+    try {
+      results = await pexels.searchPhotos(query, 6, 1, { orientation: 'portrait', size: 'large' });
+    } catch (_) {
+      results = { photos: [] };
+    }
+
+    const photos = (results.photos || [])
+      .map(p => {
+        const url = p.src && pickSafeAuthUrl(p.src.large, p.src.medium, p.src.original);
+        const photographerUrl =
+          p.photographer_url && isSafeAuthPexelsUrl(p.photographer_url)
+            ? p.photographer_url
+            : 'https://www.pexels.com';
+        if (!url) {
+          return null;
+        }
+        return {
+          url,
+          photographer: String(p.photographer || 'Pexels').slice(0, 80),
+          photographerUrl,
+          alt: String(p.alt || 'Event photo').slice(0, 120),
+        };
+      })
+      .filter(Boolean);
+
+    if (photos.length === 0) {
+      return res.json(buildAuthFallbackResponse(getRandomFallbackPhotos(6)));
+    }
+
+    res.json({ source: 'pexels', photos });
+  } catch (error) {
+    logger.error('Auth photos error:', error);
+    try {
+      const { getRandomFallbackPhotos } = require('../config/pexels-fallback');
+      res.set('Cache-Control', 'public, max-age=60');
+      res.json(buildAuthFallbackResponse(getRandomFallbackPhotos(6)));
+    } catch (_) {
+      res.status(500).json({ photos: [] });
+    }
+  }
+});
+
 module.exports = router;
