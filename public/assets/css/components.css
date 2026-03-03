@@ -2912,11 +2912,18 @@ html[data-theme='dark'] .skeleton-card {
   }
 
   .supplier-card-actions {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
   .supplier-card-actions .btn {
-    width: 100%;
+    flex: 1 1 auto;
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .supplier-card-actions .btn-shortlist {
+    flex: 0 0 auto;
   }
 }
 

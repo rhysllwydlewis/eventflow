@@ -24,7 +24,8 @@
     <meta name="sentry-dsn" content="" />
     <meta name="sentry-release" content="eventflow@18.1.0" />
     <meta name="sentry-environment" content="production" />
-    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
   </head>
   <body class="auth-page">
     <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
@@ -290,7 +291,6 @@
                       aria-required="true"
                     />
                   </div>
-                  <a href="/forgot-password" class="auth-forgot-link auth-forgot-link--below" aria-label="Forgot your password?">Forgot password?</a>
                   <div id="login-caps-lock-warning" class="auth-caps-warning">
                     ⚠️ Caps Lock is on
                   </div>
@@ -312,6 +312,7 @@
                     <span class="auth-checkbox-custom"></span>
                     <span>Keep me signed in</span>
                   </label>
+                  <a href="/forgot-password" class="auth-forgot-link auth-forgot-link--below" aria-label="Forgot your password?">Forgot password?</a>
                 </div>
 
                 <button class="auth-submit cta ef-btn ef-btn-primary auth-submit--full" type="submit">

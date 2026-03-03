@@ -532,19 +532,22 @@
   }
   
   .dashboard-action-chip {
-    padding: 16px 12px;
-    font-size: 13px;
+    padding: 10px 8px;
+    font-size: 12px;
     flex-direction: column;
     text-align: center;
     min-width: 0;
+    white-space: normal;
+    word-break: break-word;
   }
   
   .dashboard-action-chip svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
   
   .dashboard-hero__tip {
+    grid-column: 1 / -1;
     width: 100%;
     justify-content: center;
     margin-left: 0;

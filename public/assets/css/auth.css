@@ -854,7 +854,7 @@ body.auth-page .auth-card select.auth-input {
   display: none;
 }
 
-/* Mobile: hide label-row link, show below-input link */
+/* Mobile: hide label-row link; show the one inside the remember-me row */
 @media (max-width: 640px) {
   .auth-forgot-link--label {
     display: none;
@@ -863,8 +863,13 @@ body.auth-page .auth-card select.auth-input {
   .auth-forgot-link--below {
     display: inline-flex;
     align-items: center;
-    margin-top: 0.5rem;
     min-height: 44px;
+    margin-top: 0;
+  }
+
+  /* Spread checkbox and forgot-password link to opposite ends of the row */
+  .auth-field--inline {
+    justify-content: space-between;
   }
 }
 
