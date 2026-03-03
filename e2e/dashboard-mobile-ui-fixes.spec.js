@@ -64,7 +64,7 @@ test.describe('Dashboard Action Buttons Mobile Layout', () => {
 
       // Check font-size is smaller for mobile
       const fontSize = await firstChip.evaluate(el => window.getComputedStyle(el).fontSize);
-      expect(fontSize).toBe('13px');
+      expect(fontSize).toBe('12px');
     }
   });
 
