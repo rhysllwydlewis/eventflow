@@ -472,7 +472,7 @@ body.auth-page .auth-split-right .auth-container {
 
 /* Page heading */
 .auth-header {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .auth-header .auth-heading,
@@ -505,7 +505,7 @@ h1.auth-heading {
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(11, 128, 115, 0.1);
   width: 100%;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 /* !important overrides `button { width:100%; margin-top:6px }` in styles.css
@@ -633,7 +633,7 @@ body.auth-page form.auth-card {
   box-shadow:
     0 10px 30px rgba(15, 23, 42, 0.08),
     inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-  padding: 2rem;
+  padding: 1.5rem;
   margin-bottom: 0;
   display: block; /* reset any inherited display:flex from .card */
   overflow: visible;
@@ -705,7 +705,7 @@ body.auth-page form.auth-card:hover {
    10. FORM FIELDS
 ───────────────────────────────────────────────────────────────*/
 .auth-field {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .auth-field-row {
@@ -728,8 +728,9 @@ body.auth-page form.auth-card:hover {
   color: #9CA3AF;
 }
 
-.auth-label-row {
+body.auth-page .auth-label-row {
   display: flex;
+  flex-direction: row; /* override .form-row > div { flex-direction: column } from ui-ux-fixes.css */
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.375rem;
@@ -744,7 +745,7 @@ body.auth-page .auth-card .auth-input,
 body.auth-page .auth-card input.auth-input,
 body.auth-page .auth-card select.auth-input {
   width: 100%;
-  height: 48px;
+  height: 44px;
   padding: 0 16px;
   font-size: 0.9375rem;
   font-family: var(--auth-font);
