@@ -688,7 +688,7 @@
                 'X-CSRF-Token': csrfToken,
               },
               credentials: 'include',
-              body: JSON.stringify({ message: message.trim() }),
+              body: JSON.stringify({ content: message.trim() }),
             });
           } catch (msgError) {
             console.error('Failed to send initial message:', msgError);

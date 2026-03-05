@@ -337,7 +337,9 @@ function mountRoutes(app, deps) {
     // Pass mongoDb module for lazy db initialization in routes
     const messengerV4Deps = { ...deps };
     messengerV4Deps.db = deps.mongoDb; // Pass module, routes will call getDb() when needed
-    messengerV4Deps.wsServer = deps.getWebSocketServer ? deps.getWebSocketServer() : null;
+    // Pass the getter function, NOT the resolved value - the WS server is initialized
+    // after HTTP listen() so it would be null if resolved here at startup.
+    messengerV4Deps.getWebSocketServer = deps.getWebSocketServer || null;
     const messengerV4Router = messengerV4.initialize(messengerV4Deps);
     app.use('/api/v4/messenger', messengerV4Router);
   }
