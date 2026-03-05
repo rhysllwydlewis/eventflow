@@ -33,6 +33,15 @@
         console.warn('[conversation-handler] Legacy thd_ thread ID detected; v1 API removed.');
         thread = { subject: errorMsg, participants: [] };
         renderThreadHeader();
+        const legacyContainer = document.getElementById('messages-container');
+        if (legacyContainer) {
+          legacyContainer.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #6b7280;">
+              <p><strong>This conversation belongs to an older messaging system.</strong></p>
+              <p>Legacy threads are no longer accessible here. Please start a new conversation or contact support if you need help retrieving old messages.</p>
+              <a href="/messenger/" style="display: inline-block; margin-top: 1rem; color: #6366f1; text-decoration: underline;">Go to Messenger</a>
+            </div>`;
+        }
         return;
       } else {
         // Modern v4 thread
