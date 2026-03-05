@@ -13,10 +13,11 @@ const { ObjectId } = require('mongodb');
 const messagingServicePath = path.join(process.cwd(), 'services/messagingService.js');
 const _messagingServiceExists = fs.existsSync(messagingServicePath);
 
-// eslint-disable-next-line node/no-missing-require
+/* eslint-disable node/no-missing-require */
 const MessagingService = _messagingServiceExists
   ? require('../../services/messagingService')
   : null;
+/* eslint-enable node/no-missing-require */
 
 // Mock database
 const mockDb = {
