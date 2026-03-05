@@ -664,7 +664,7 @@
           type: 'marketplace',
           participantIds: [sellerUserId],
           context: {
-            type: 'listing',
+            type: 'marketplace_listing',
             referenceId: listing.id,
             referenceTitle: listingTitle,
           },

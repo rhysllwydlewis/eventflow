@@ -1136,7 +1136,7 @@ async function initSupplier() {
           type: 'direct',
           participantIds: [s.userId || s.id],
           context: {
-            type: 'supplier',
+            type: 'supplier_profile',
             referenceId: s.id,
             referenceTitle: s.name || s.businessName,
           },

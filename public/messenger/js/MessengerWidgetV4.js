@@ -248,15 +248,6 @@
           return this._currentUserId;
         }
       }
-      // AuthState (legacy global - dead code path, kept for safety)
-      if (window.AuthStateManager) {
-        const u2 = window.AuthStateManager.getUser();
-        const uid = u2 && (u2.id || u2._id);
-        if (uid) {
-          this._currentUserId = String(uid);
-          return this._currentUserId;
-        }
-      }
       // Container data attribute fallback (set by page if needed)
       if (this.container.dataset.currentUserId) {
         this._currentUserId = this.container.dataset.currentUserId;

@@ -363,7 +363,7 @@ router.get('/conversations', applyAuthRequired, async (req, res) => {
       filters.search = search.substring(0, 200);
     }
     if (status) {
-      const allowedStatuses = ['active', 'archived'];
+      const allowedStatuses = ['active', 'closed'];
       if (allowedStatuses.includes(status)) {
         filters.status = status;
       }
@@ -440,10 +440,11 @@ router.patch(
         await getMessengerService()
       ).updateConversation(id, userId, updates);
 
-      // Emit update event
+      // Emit update event with the full updated conversation so clients can correctly
+      // refresh participant-level fields (isPinned, isArchived, isMuted, unreadCount)
       emitToUser(userId, 'messenger:v4:conversation-updated', {
         conversationId: id,
-        updates,
+        conversation,
       });
 
       res.json({
@@ -766,7 +767,7 @@ router.patch(
       ).getConversation(message.conversationId.toString(), userId);
       emitToConversation(conversation, 'messenger:v4:message-edited', {
         messageId: id,
-        content,
+        content: message.content,
         editedAt: message.editedAt,
       });
 
@@ -1127,7 +1128,7 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
     }
     if (status) {
       // Admins can filter by a broader set of statuses
-      const allowedAdminStatuses = ['active', 'archived', 'deleted', 'flagged'];
+      const allowedAdminStatuses = ['active', 'closed'];
       if (allowedAdminStatuses.includes(status)) {
         query.status = status;
       }
