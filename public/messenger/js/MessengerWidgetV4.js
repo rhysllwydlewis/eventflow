@@ -316,6 +316,12 @@
           return sum + ((me && me.unreadCount) || 0);
         }, 0);
 
+        // Broadcast so NotificationBridgeV4 (loaded on dashboards) can update
+        // bell badges and tab title without polling.
+        window.dispatchEvent(
+          new CustomEvent('messenger:unread-count', { detail: { count: this.unreadCount } })
+        );
+
         this._render();
       } catch (err) {
         console.error('MessengerWidgetV4: fetch failed', err);
