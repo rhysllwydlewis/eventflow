@@ -780,12 +780,10 @@
 }
 
 /* Mobile (< 768px) */
-/* Issue 12: use absolute positioning so polish-file slide transitions work correctly */
+/* Issue 12: absolute positioning aligns with the polish-file slide transitions.
+   JS (MessengerAppV4.handleMobilePanel) uses inline style.display to toggle
+   panels; the CSS only sets the initial stack layout and default visibility. */
 @media (max-width: 767px) {
-  .messenger-v4 {
-    /* position: relative already set on base rule */
-  }
-  
   .messenger-v4__sidebar {
     position: absolute;
     inset: 0;
@@ -798,14 +796,8 @@
     position: absolute;
     inset: 0;
     width: 100%;
-  }
-  
-  /* Hide panels via JS class; absolute approach replaces display:none toggling */
-  .messenger-v4__chat--hidden {
-    display: none;
-  }
-  
-  .messenger-v4__sidebar--hidden {
+    /* Chat is hidden by default on mobile; JS shows it via style.display='flex'
+       when a conversation is opened, and hides it again on back navigation. */
     display: none;
   }
   
@@ -865,8 +857,9 @@
 
 /* Issue 7: expand high-contrast mode coverage to all interactive messenger elements */
 @media (prefers-contrast: high) {
+  /* Sent bubbles have a teal background — white border provides contrast */
   .messenger-v4__message--sent .messenger-v4__message-bubble {
-    border: 2px solid var(--messenger-primary);
+    border: 2px solid #fff;
   }
   
   .messenger-v4__message--received .messenger-v4__message-bubble {
