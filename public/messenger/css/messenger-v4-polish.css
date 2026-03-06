@@ -1980,3 +1980,29 @@ body:has(.messenger-v4) {
   background: rgba(239, 68, 68, 0.06);
   color: #dc2626;
 }
+
+/* ============================================================
+   67. TOUCH DEVICE OVERRIDES  (Issue 13)
+   On touch devices there is no :hover, so any UI that is
+   hidden by default and only revealed on :hover must be made
+   permanently visible.  This covers:
+     • message timestamps (.messenger-v4__message-meta)
+     • context-menu button (.messenger-v4__context-menu-btn)
+     • message actions bar (.messenger-v4__message-actions)
+   ============================================================ */
+@media (hover: none) {
+  /* Timestamps: always visible at a readable opacity on touch */
+  .messenger-v4__message-meta {
+    opacity: 0.75;
+  }
+
+  /* Context menu button: always visible on touch */
+  .messenger-v4__context-menu-btn {
+    opacity: 1;
+  }
+
+  /* Message actions bar: always visible on touch */
+  .messenger-v4__message-actions {
+    opacity: 1;
+  }
+}

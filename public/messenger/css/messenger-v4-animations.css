@@ -11,16 +11,10 @@
 
 /* ============================================================
    0. Motion preference guard
+   Issue 6: canonical guard lives in messenger-v4-polish.css.
+   Removed nuclear *,*::before,*::after reset from here to
+   avoid triple-duplicate conflicts across the three CSS files.
    ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
 
 /* ============================================================
    1. Message send – bubble slides up with fade-in
@@ -60,8 +54,8 @@
   }
 }
 
-.conversation-item.is-new,
-.conversation-list__item.is-new {
+/* Issue 11: use BEM class .messenger-v4__conversation-item instead of generic names */
+.messenger-v4__conversation-item.is-new {
   animation: convItemSlideIn 0.28s ease-out both;
 }
 
@@ -94,10 +88,11 @@
 
 /* ============================================================
    4. Unread badge – pulse animation on increment
+   Issue 8: use teal accent to match the design system, not indigo
    ============================================================ */
 @keyframes badgePulse {
-  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(var(--color-accent-rgb, 99,102,241), 0.6); }
-  50%       { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(var(--color-accent-rgb, 99,102,241), 0); }
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(var(--color-accent-rgb, 11,128,115), 0.6); }
+  50%       { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(var(--color-accent-rgb, 11,128,115), 0); }
 }
 
 .unread-badge.has-unread-pulse {
@@ -118,30 +113,10 @@
 
 /* ============================================================
    6. Mobile panel transitions – slide between list and chat
+   Issue 9: complete slide keyframes (all 4 directions, opacity
+   transitions, correct easing) live in messenger-v4-polish.css
+   section 18.  Removed duplicate from here to avoid conflicts.
    ============================================================ */
-@keyframes panelSlideInRight {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0);    }
-}
-
-@keyframes panelSlideOutLeft {
-  from { transform: translateX(0);     }
-  to   { transform: translateX(-100%); }
-}
-
-@media (max-width: 767px) {
-  .messenger-v4__sidebar {
-    transition: transform 0.25s ease-out;
-  }
-
-  .messenger-v4__chat.is-entering {
-    animation: panelSlideInRight 0.25s ease-out both;
-  }
-
-  .messenger-v4__sidebar.is-leaving {
-    animation: panelSlideOutLeft 0.25s ease-out both;
-  }
-}
 
 /* ============================================================
    7. Emoji reactions – pop + scale on add
@@ -157,7 +132,8 @@
 }
 
 /* ============================================================
-   8. Read receipts – checkmark transitions from grey → blue
+   8. Read receipts – checkmark transitions from grey → teal
+   Issue 8: use teal #0B8073 to match design system, not indigo
    ============================================================ */
 .read-receipt__icon {
   transition: color 0.3s ease, opacity 0.3s ease;
@@ -165,7 +141,7 @@
 }
 
 .read-receipt__icon--read {
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #0B8073);
 }
 
 /* ============================================================
@@ -204,28 +180,27 @@
   border-radius: 16px;
 }
 
-.messenger-v4__sidebar,
-.messenger-v4__chat {
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
-}
+/* Issue 10: backdrop-filter for sidebar/chat lives in messenger-v4-polish.css
+   section 3 (blur(20px) / blur(16px)).  Removed duplicate from here to keep
+   a single authoritative source for these glass effects. */
 
-/* Conversation list items – subtle hover glass lift */
-.conversation-item,
-.conversation-list__item {
+/* Issue 11: .conversation-item / .conversation-list__item are non-BEM generic
+   class names that don't match the V4 BEM class .messenger-v4__conversation-item.
+   Replaced with the correct BEM selectors below. */
+.messenger-v4__conversation-item {
   transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.conversation-item:hover,
-.conversation-list__item:hover {
+.messenger-v4__conversation-item:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: translateX(2px);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* Active / selected conversation */
-.conversation-item.is-active,
-.conversation-list__item.is-active {
-  background: rgba(99, 102, 241, 0.15);
-  border-left: 3px solid var(--color-primary, #6366f1);
+/* Issue 8: use teal instead of indigo for active state */
+.messenger-v4__conversation-item.is-active,
+.messenger-v4__conversation-item--active {
+  background: rgba(11, 128, 115, 0.12);
+  border-left: 3px solid var(--color-primary, #0B8073);
 }
