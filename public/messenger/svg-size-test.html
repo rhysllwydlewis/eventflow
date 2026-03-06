@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SVG Fill Test</title>
+  <link rel="stylesheet" href="/assets/css/messenger-v4.css?v=4.0.1">
+  <link rel="stylesheet" href="/messenger/css/messenger-v4-animations.css?v=7.1.0">
+  <link rel="stylesheet" href="/messenger/css/messenger-v4-polish.css?v=1.2.0">
+  <style>
+    :root { --ef-header-height: 0px; }
+    body { margin: 0; padding: 24px; background: #f0f4f8; font-family: -apple-system, sans-serif; }
+    h3 { font-size: 11px; color: #6b7280; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
+    .item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .label { font-size: 10px; color: #9ca3af; }
+    /* Show button outline so we can see size */
+    .outline button, .outline .messenger-v4__read-receipt, .outline .messenger-v4__attachment--file {
+      outline: 2px solid rgba(239,68,68,0.6) !important;
+    }
+  </style>
+</head>
+<body>
+
+<h3>1. Action Buttons (40×40px target)</h3>
+<div class="row outline" id="action-buttons">
+  <div class="item">
+    <button class="messenger-v4__action-button" title="Pin">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17H19V13L14 3H10L5 13V17Z"/></svg>
+    </button>
+    <span class="label">Pin</span>
+  </div>
+  <div class="item">
+    <button class="messenger-v4__action-button" title="Archive">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+    </button>
+    <span class="label">Archive</span>
+  </div>
+  <div class="item">
+    <button class="messenger-v4__action-button" title="Delete">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    </button>
+    <span class="label">Delete</span>
+  </div>
+  <div class="item">
+    <button class="messenger-v4__action-button" title="Email">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    </button>
+    <span class="label">Email</span>
+  </div>
+  <div class="item">
+    <button class="messenger-v4__action-button" title="Back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    </button>
+    <span class="label">Back</span>
+  </div>
+</div>
+
+<h3>2. Composer Buttons (32×32px target)</h3>
+<div class="row outline" id="composer-buttons" style="background:#f9fafb;padding:8px;border-radius:8px;">
+  <div class="item">
+    <button class="messenger-v4__composer-button" title="Emoji">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+    </button>
+    <span class="label">Emoji</span>
+  </div>
+  <div class="item">
+    <button class="messenger-v4__composer-button" title="Attach">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+    </button>
+    <span class="label">Attach</span>
+  </div>
+  <div class="item">
+    <button class="messenger-v4__send-button" style="background:#0B8073;color:white;" title="Send">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+    <span class="label">Send</span>
+  </div>
+</div>
+
+<h3>3. Context Menu Options Button (visible)</h3>
+<div class="row outline" id="options-btn">
+  <div class="item">
+    <div style="position:relative;background:white;border-radius:12px;padding:12px;">
+      <button class="messenger-v4__context-menu-btn" style="position:relative;opacity:1;" title="Options">
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <span class="label">Options (⋮)</span>
+  </div>
+</div>
+
+<h3>4. Read Receipts</h3>
+<div class="row outline" id="read-receipts">
+  <div class="item" style="background:#0B8073;padding:8px;border-radius:8px;">
+    <span class="messenger-v4__read-receipt" aria-label="Sent">
+      <svg width="12" height="10" viewBox="0 0 12 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,5 4,9 11,1"/></svg>
+    </span>
+    <span class="label" style="color:white;">Sent</span>
+  </div>
+  <div class="item" style="background:#0B8073;padding:8px;border-radius:8px;">
+    <span class="messenger-v4__read-receipt" aria-label="Delivered">
+      <svg width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,5 4,9 11,1"/><polyline points="7,5 10,9 17,1"/></svg>
+    </span>
+    <span class="label" style="color:white;">Delivered</span>
+  </div>
+  <div class="item" style="background:#0B8073;padding:8px;border-radius:8px;">
+    <span class="messenger-v4__read-receipt messenger-v4__read-receipt--read" aria-label="Read">
+      <svg width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,5 4,9 11,1"/><polyline points="7,5 10,9 17,1"/></svg>
+    </span>
+    <span class="label" style="color:white;">Read</span>
+  </div>
+</div>
+
+<h3>5. Scroll-to-bottom & Lightbox Close</h3>
+<div class="row outline" id="util-buttons">
+  <div class="item">
+    <button class="messenger-v4__scroll-to-bottom" style="position:relative;display:flex;" title="Scroll">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <span class="label">Scroll Down</span>
+  </div>
+  <div class="item" style="background:#111827;padding:6px;border-radius:8px;">
+    <button class="messenger-v4__lightbox-close" style="position:relative;" title="Close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="label" style="color:white;">Lightbox ×</span>
+  </div>
+</div>
+
+<h3>6. Context Menu Items</h3>
+<div class="row outline" id="context-menu">
+  <div class="item">
+    <div class="messenger-v4__context-menu" style="position:relative;display:block;" role="menu">
+      <button class="messenger-v4__context-menu-item">
+        <svg class="messenger-v4__menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+        Reply
+      </button>
+      <button class="messenger-v4__context-menu-item">
+        <svg class="messenger-v4__menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        React
+      </button>
+      <button class="messenger-v4__context-menu-item">
+        <svg class="messenger-v4__menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy
+      </button>
+      <button class="messenger-v4__context-menu-item">
+        <svg class="messenger-v4__menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
+      </button>
+      <button class="messenger-v4__context-menu-item messenger-v4__context-menu-item--danger">
+        <svg class="messenger-v4__menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Delete
+      </button>
+    </div>
+    <span class="label">Message menu</span>
+  </div>
+</div>
+
+<h3>7. Reply Bar Close & File Chip Remove</h3>
+<div class="row outline" id="small-buttons">
+  <div class="item">
+    <div class="messenger-v4__reply-bar" style="display:flex;align-items:center;gap:8px;background:rgba(11,128,115,0.08);padding:8px 12px;border-radius:8px;">
+      <span class="messenger-v4__reply-bar-label">Replying to</span>
+      <span class="messenger-v4__reply-bar-name">Alice</span>
+      <button class="messenger-v4__reply-bar-close" title="Cancel reply">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <span class="label">Reply-bar close</span>
+  </div>
+  <div class="item">
+    <div class="messenger-v4__file-chip" style="display:flex;align-items:center;gap:6px;background:rgba(11,128,115,0.06);border:1px solid rgba(11,128,115,0.15);padding:4px 8px;border-radius:6px;">
+      <span class="messenger-v4__file-chip-name">report.pdf</span>
+      <button class="messenger-v4__file-chip-remove" title="Remove">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <span class="label">File chip remove</span>
+  </div>
+</div>
+
+<h3>8. New Conversation Button</h3>
+<div class="row outline" id="new-convo">
+  <div class="item">
+    <div style="background:white;padding:12px;border-radius:8px;">
+      <button class="messenger-v4__new-convo-btn" title="New conversation">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+    <span class="label">New Conv (+)</span>
+  </div>
+</div>
+
+<script>
+// Measure and display button sizes
+document.querySelectorAll('button').forEach(btn => {
+  const r = btn.getBoundingClientRect();
+  btn.title = `${Math.round(r.width)}×${Math.round(r.height)}px`;
+});
+</script>
+</body>
+</html>
