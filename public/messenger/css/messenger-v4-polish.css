@@ -410,15 +410,18 @@
 .messenger-v4__context-menu {
   position: absolute;
   z-index: var(--messenger-z-dropdown, 100);
-  min-width: 160px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(11, 128, 115, 0.14);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(11, 128, 115, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-width: 172px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid rgba(11, 128, 115, 0.16);
+  border-radius: 14px;
+  box-shadow:
+    0 12px 40px rgba(11, 128, 115, 0.16),
+    0 4px 12px rgba(0, 0, 0, 0.10),
+    0 1px 3px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  padding: 4px 0;
+  padding: 5px 6px;
 }
 
 @keyframes mvContextMenuIn {
@@ -434,26 +437,31 @@
 .messenger-v4__context-menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  font-size: 14px;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 450;
   color: #374151;
+  background: none;
+  border: none;
+  text-align: left;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background 140ms ease, color 140ms ease, transform 100ms ease;
 }
 
 .messenger-v4__context-menu-item:hover {
-  background: rgba(11, 128, 115, 0.08);
+  background: rgba(11, 128, 115, 0.09);
   color: var(--messenger-primary, #0B8073);
+  border-radius: 8px;
+}
+
+.messenger-v4__context-menu-item:active {
+  transform: scale(0.98);
 }
 
 .messenger-v4__context-menu-item--danger {
   color: #ef4444;
-}
-
-.messenger-v4__context-menu-item--danger:hover {
-  background: rgba(239, 68, 68, 0.06);
-  color: #dc2626;
 }
 
 /* ============================================================
@@ -1211,7 +1219,12 @@
   cursor: pointer;
   padding: 0;
   opacity: 0;
-  transition: opacity 150ms ease, background 150ms ease, color 150ms ease;
+  transition:
+    opacity 150ms ease,
+    background 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 120ms ease;
 }
 
 .messenger-v4__message:hover .messenger-v4__context-menu-btn {
@@ -1219,8 +1232,16 @@
 }
 
 .messenger-v4__context-menu-btn:hover {
-  background: rgba(11, 128, 115, 0.10);
+  background: rgba(255, 255, 255, 0.85);
   color: var(--messenger-primary, #0B8073);
+  box-shadow:
+    0 2px 8px rgba(11, 128, 115, 0.18),
+    0 0 0 1px rgba(11, 128, 115, 0.12);
+  transform: scale(1.08);
+}
+
+.messenger-v4__context-menu-btn:active {
+  transform: scale(0.94);
 }
 
 /* ============================================================
@@ -1936,15 +1957,18 @@ body:has(.messenger-v4) {
    ============================================================ */
 .messenger-v4__conv-context-menu {
   z-index: var(--messenger-z-modal, 400);
-  min-width: 180px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(11, 128, 115, 0.14);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(11, 128, 115, 0.18), 0 2px 8px rgba(0, 0, 0, 0.10);
+  min-width: 188px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid rgba(11, 128, 115, 0.16);
+  border-radius: 14px;
+  box-shadow:
+    0 12px 40px rgba(11, 128, 115, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.10),
+    0 1px 3px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  padding: 4px 0;
+  padding: 5px 6px;
   animation: mvContextMenuIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-origin: top left;
 }
@@ -1952,30 +1976,31 @@ body:has(.messenger-v4) {
 .messenger-v4__conv-context-menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 10px 16px;
-  font-size: 14px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 450;
   color: #374151;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background 140ms ease, color 140ms ease, transform 100ms ease;
 }
 
 .messenger-v4__conv-context-menu-item:hover {
-  background: rgba(11, 128, 115, 0.08);
+  background: rgba(11, 128, 115, 0.09);
   color: var(--messenger-primary, #0B8073);
+  border-radius: 8px;
+}
+
+.messenger-v4__conv-context-menu-item:active {
+  transform: scale(0.98);
 }
 
 .messenger-v4__conv-context-menu-item--danger {
   color: #ef4444;
-}
-
-.messenger-v4__conv-context-menu-item--danger:hover {
-  background: rgba(239, 68, 68, 0.06);
-  color: #dc2626;
 }
 
 /* ============================================================
@@ -2031,11 +2056,11 @@ body:has(.messenger-v4) {
   height: 20px;
 }
 
-/* Context menu item icons — consistent 14 × 14, flex-aligned */
+/* Context menu item icons — consistent 16 × 16, flex-aligned */
 .messenger-v4__menu-icon {
   display: inline-block;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   vertical-align: middle;
   pointer-events: none;
@@ -2072,4 +2097,19 @@ body:has(.messenger-v4) {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Shared danger-item separator — used by both message and conversation menus */
+.messenger-v4__context-menu-item--danger,
+.messenger-v4__conv-context-menu-item--danger {
+  border-top: 1px solid rgba(239, 68, 68, 0.10);
+  padding-top: 13px;
+}
+
+/* Shared danger-item hover — rounded highlight in red */
+.messenger-v4__context-menu-item--danger:hover,
+.messenger-v4__conv-context-menu-item--danger:hover {
+  background: rgba(239, 68, 68, 0.07);
+  color: #dc2626;
+  border-radius: 8px;
 }
