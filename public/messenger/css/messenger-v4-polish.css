@@ -645,7 +645,7 @@
     width: 36px;
     height: 36px;
     /* Explicit min-width keeps the compact size; the touch-target rule below
-       uses 44px only for composer-button and filter-tab (larger hit areas). */
+       uses 40px for composer-button and filter-tab (larger hit areas). */
     min-width: 36px;
     min-height: 36px;
     font-size: 14px;
