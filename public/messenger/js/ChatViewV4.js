@@ -252,9 +252,9 @@ class ChatViewV4 {
 
     try {
       const data = await this.api.getMessages(conversationId, { limit: 40 });
-      const messages = data.messages || data || [];
+      const messages = Array.isArray(data?.messages) ? data.messages : Array.isArray(data) ? data : [];
       // Respect the server's hasMore flag; fall back to truthy when messages filled the page
-      this.hasMoreMessages = data.hasMore !== undefined ? data.hasMore : messages.length >= 40;
+      this.hasMoreMessages = data?.hasMore !== undefined ? data.hasMore : messages.length >= 40;
       this.oldestCursor = messages[0]?._id || null;
 
       this.state.setMessages(conversationId, messages);
@@ -271,7 +271,32 @@ class ChatViewV4 {
         { once: true }
       );
 
-      this.scrollToBottom();
+      // Wrap in rAF so the DOM is laid out before measuring scrollHeight
+      requestAnimationFrame(() => {
+        this.scrollToBottom();
+
+        // Re-scroll after lazy images load so we reach the true bottom
+        const images = this.messagesEl.querySelectorAll('img[loading="lazy"]');
+        if (images.length) {
+          let pending = images.length;
+          const onImageSettled = () => {
+            pending--;
+            if (pending <= 0) {
+              this.scrollToBottom();
+            }
+          };
+          images.forEach(img => {
+            if (img.complete) {
+              pending--;
+            } else {
+              img.addEventListener('load', onImageSettled, { once: true });
+              img.addEventListener('error', onImageSettled, { once: true });
+            }
+          });
+          // If all images were already complete, onImageSettled won't fire;
+          // the initial scrollToBottom() above already handled this case.
+        }
+      });
     } catch (err) {
       console.error('[ChatViewV4] Failed to load messages:', err);
       this.messagesEl.innerHTML = `<div class="messenger-v4__empty-state">Failed to load messages. Please try again.</div>`;
