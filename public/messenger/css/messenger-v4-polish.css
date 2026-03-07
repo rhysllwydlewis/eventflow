@@ -720,8 +720,7 @@
     min-width: 38px;
     min-height: 38px;
     max-width: 38px;
-    flex-grow: 0;
-    flex-basis: 38px;
+    flex: 0 0 38px;
     margin-left: 0; /* override base `margin-left: auto` which causes stretching */
   }
 
@@ -788,6 +787,8 @@
     height: 34px;
     min-width: 34px;
     min-height: 34px;
+    max-width: 34px;
+    flex: 0 0 34px; /* override flex-basis from the max-width: 767px rule */
   }
 
   /* === FILTER TABS: compact on narrowest phones === */
