@@ -300,7 +300,9 @@ describe('Messenger client-side fixes', () => {
     );
     expect(cssSrc).toContain('.messenger-v4__attachment-error-label');
     // Uses a light background (low opacity black overlay) so grey text is readable
-    expect(cssSrc).toMatch(/\.messenger-v4__attachment-error-label\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,/);
+    expect(cssSrc).toMatch(
+      /\.messenger-v4__attachment-error-label\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,/
+    );
     // Uses a neutral grey text color (readable on light background)
     expect(cssSrc).toMatch(/\.messenger-v4__attachment-error-label\s*\{[^}]*color:\s*#9ca3af/);
   });

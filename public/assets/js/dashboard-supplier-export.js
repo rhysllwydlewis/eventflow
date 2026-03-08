@@ -62,10 +62,8 @@
             }
           }
           return {
-            customerName:
-              otherParticipant?.displayName || otherParticipant?.name || 'Unknown',
-            lastMessage:
-              conv.lastMessagePreview || conv.lastMessage?.content || 'No messages',
+            customerName: otherParticipant?.displayName || otherParticipant?.name || 'Unknown',
+            lastMessage: conv.lastMessagePreview || conv.lastMessage?.content || 'No messages',
             status: conv.status || 'Open',
             unreadCount: myParticipant?.unreadCount || 0,
             createdAt: conv.createdAt,

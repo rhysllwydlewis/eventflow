@@ -473,11 +473,16 @@ class ConversationView {
       <div class="messenger-v4__message-attachments">
         ${attachments
           .map(att => {
+            if (!att) {
+              return '';
+            }
             if (att.type?.startsWith('image/')) {
-              return `<img src="${att.url}" alt="${att.name}" class="messenger-v4__message-image" loading="lazy"/>`;
+              const safeUrl = this.escapeHtml(att.url || '');
+              const safeAlt = this.escapeHtml(att.name || 'Image attachment');
+              return `<img src="${safeUrl}" alt="${safeAlt}" class="messenger-v4__message-image" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.classList.add('messenger-v4__attachment-error');if(this.parentNode){var w=document.createElement('span');w.className='messenger-v4__attachment-error-label';w.title='Image unavailable';var l=document.createElement('span');l.textContent='Image unavailable';var h=document.createElement('span');h.className='messenger-v4__attachment-error-hint';h.textContent='The file may have been removed';w.appendChild(l);w.appendChild(h);this.parentNode.appendChild(w);}" />`;
             } else {
               return `
-              <a href="${att.url}" target="_blank" class="messenger-v4__message-file">
+              <a href="${this.escapeHtml(att.url || '')}" target="_blank" rel="noopener noreferrer" class="messenger-v4__message-file">
                 <span class="messenger-v4__message-file-icon">📄</span>
                 <span class="messenger-v4__message-file-name">${this.escapeHtml(att.name)}</span>
                 <span class="messenger-v4__message-file-size">${this.formatFileSize(att.size)}</span>
