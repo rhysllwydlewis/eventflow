@@ -440,6 +440,22 @@
   z-index: var(--messenger-z-sticky);
 }
 
+.messenger-v4__chat-header-profile-link {
+  display: flex;
+  align-items: center;
+  gap: var(--messenger-space-lg);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.messenger-v4__chat-header-profile-link:hover .messenger-v4__chat-header-avatar,
+.messenger-v4__chat-header-profile-link:hover .messenger-v4__chat-header-name {
+  opacity: 0.8;
+}
+
 .messenger-v4__chat-header-info {
   flex: 1;
   min-width: 0;
@@ -555,9 +571,10 @@
 /* Message bubbles */
 .messenger-v4__message {
   display: flex;
-  gap: var(--messenger-space-md);
+  gap: var(--messenger-space-xs);
   margin-bottom: var(--messenger-space-md);
   animation: messenger-fade-in-up var(--messenger-transition-base);
+  position: relative;
 }
 
 @keyframes messenger-fade-in-up {
