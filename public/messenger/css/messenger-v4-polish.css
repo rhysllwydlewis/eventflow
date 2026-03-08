@@ -469,6 +469,29 @@
   transform-origin: top left;
 }
 
+.messenger-v4__context-menu--above {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+@keyframes mvContextMenuInAbove {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.messenger-v4__context-menu--above.is-entering {
+  animation: mvContextMenuInAbove 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: bottom left;
+}
+
 .messenger-v4__context-menu-item {
   display: flex;
   align-items: center;
@@ -1429,7 +1452,7 @@
    ============================================================ */
 .messenger-v4__context-menu-btn {
   align-self: center;
-  flex-shrink: 0;
+  flex: 0 0 28px;
   width: 28px;
   height: 28px;
   display: flex;

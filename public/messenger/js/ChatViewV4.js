@@ -63,14 +63,16 @@ class ChatViewV4 {
         <button class="messenger-v4__action-button" id="v4BackBtn" aria-label="Back to list" title="Back" style="display:none">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
-        <div class="messenger-v4__avatar-wrapper">
-          <div class="messenger-v4__avatar messenger-v4__chat-header-avatar" aria-hidden="true"></div>
-          <span class="messenger-v4__presence-dot" id="v4HeaderPresenceDot"></span>
-        </div>
-        <div class="messenger-v4__chat-header-info">
-          <span class="messenger-v4__chat-header-name" id="v4ChatHeaderName"></span>
-          <span class="messenger-v4__chat-header-status" id="v4ChatHeaderStatus"></span>
-        </div>
+        <a class="messenger-v4__chat-header-profile-link" id="v4HeaderProfileLink" href="#" aria-label="View profile">
+          <div class="messenger-v4__avatar-wrapper">
+            <div class="messenger-v4__avatar messenger-v4__chat-header-avatar" aria-hidden="true"></div>
+            <span class="messenger-v4__presence-dot" id="v4HeaderPresenceDot"></span>
+          </div>
+          <div class="messenger-v4__chat-header-info">
+            <span class="messenger-v4__chat-header-name" id="v4ChatHeaderName"></span>
+            <span class="messenger-v4__chat-header-status" id="v4ChatHeaderStatus"></span>
+          </div>
+        </a>
         <div class="messenger-v4__chat-actions">
           <button class="messenger-v4__action-button" id="v4PinBtn" aria-label="Pin conversation" title="Pin">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17H19V13L14 3H10L5 13V17Z"/></svg>
@@ -480,6 +482,12 @@ class ChatViewV4 {
     const dot = this.container.querySelector('#v4HeaderPresenceDot');
     dot.classList.toggle('messenger-v4__presence-dot--online', isOnline);
 
+    // Make avatar + name link to the other user's profile
+    const profileLink = this.container.querySelector('#v4HeaderProfileLink');
+    if (profileLink && other.userId) {
+      profileLink.href = `/supplier?id=${encodeURIComponent(other.userId)}`;
+    }
+
     // Set mark-read/unread toggle button based on conversation state
     const me = conv.participants?.find(p => p.userId === uid);
     const isUnread = me ? (me.unreadCount || 0) > 0 : false;
@@ -749,6 +757,16 @@ class ChatViewV4 {
     const menuEl = wrapper.firstElementChild;
     if (menuEl) {
       msgEl.appendChild(menuEl);
+
+      // Flip the menu above the button if it would be clipped by the bottom of the scroll container
+      const menuRect = menuEl.getBoundingClientRect();
+      const scrollContainer = this.messagesEl;
+      const containerRect = scrollContainer ? scrollContainer.getBoundingClientRect() : null;
+      const bottomBoundary = containerRect ? containerRect.bottom : window.innerHeight;
+      if (menuRect.bottom > bottomBoundary) {
+        menuEl.classList.add('messenger-v4__context-menu--above');
+      }
+
       // Trigger the glass slide-in animation defined in messenger-v4-polish.css §14
       requestAnimationFrame(() => menuEl.classList.add('is-entering'));
       menuEl.addEventListener('animationend', () => menuEl.classList.remove('is-entering'), {
