@@ -25,6 +25,7 @@
 
   // Tickets waiting more than this many hours without admin reply are considered stale.
   const STALE_HOURS = 48;
+  const MS_PER_HOUR = 3_600_000;
 
   function escapeHtml(text) {
     const div = document.createElement('div');
@@ -64,7 +65,7 @@
     }, 0);
     const lastUpdate = new Date(ticket.updatedAt || ticket.createdAt || 0).getTime();
     const compareTime = lastAdminReply > 0 ? lastAdminReply : lastUpdate;
-    const hoursAgo = (Date.now() - compareTime) / 3_600_000;
+    const hoursAgo = (Date.now() - compareTime) / MS_PER_HOUR;
     return hoursAgo > STALE_HOURS;
   }
 
