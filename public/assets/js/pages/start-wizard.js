@@ -569,7 +569,7 @@
             ${state.eventName ? `<p><strong>Name:</strong> ${escapeHtml(state.eventName)}</p>` : ''}
             ${state.location ? `<p><strong>Location:</strong> ${escapeHtml(state.location)}</p>` : ''}
             ${state.date ? `<p><strong>Date:</strong> ${formatDate(state.date)}</p>` : ''}
-            ${state.guests ? `<p><strong>Guests:</strong> ${state.guests}</p>` : ''}
+            ${state.guests ? `<p><strong>Guests:</strong> ${escapeHtml(state.guests)}</p>` : ''}
             ${state.budget ? `<p><strong>Budget:</strong> ${escapeHtml(state.budget)}</p>` : ''}
             <a href="#" class="wizard-review-edit" data-step="${STEP_CONFIG.EVENT_TYPE}">✏️ Edit event type</a>
             <a href="#" class="wizard-review-edit" data-step="${STEP_CONFIG.EVENT_BASICS}">✏️ Edit details</a>
@@ -690,7 +690,7 @@
       html += `
         <div class="plan-summary-item">
           <span class="small">Guests:</span>
-          <span>${state.guests}</span>
+          <span>${escapeHtml(state.guests)}</span>
         </div>
       `;
     }
@@ -758,7 +758,7 @@
       detailsHtml += `<div class="plan-summary-item"><span class="small">Location:</span><span>${escapeHtml(state.location)}</span></div>`;
     }
     if (state.guests) {
-      detailsHtml += `<div class="plan-summary-item"><span class="small">Guests:</span><span>${state.guests}</span></div>`;
+      detailsHtml += `<div class="plan-summary-item"><span class="small">Guests:</span><span>${escapeHtml(state.guests)}</span></div>`;
     }
     if (state.budget) {
       detailsHtml += `<div class="plan-summary-item"><span class="small">Budget:</span><span>${escapeHtml(state.budget)}</span></div>`;
