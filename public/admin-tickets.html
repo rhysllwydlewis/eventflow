@@ -222,13 +222,16 @@
               <option value="pro">Pro</option>
               <option value="free">Free</option>
             </select>
+            <select id="sortOrder" class="filter-select" aria-label="Sort tickets">
+              <option value="newest">Newest first</option>
+              <option value="priority">Priority (high → low)</option>
+              <option value="updated">Last updated</option>
+              <option value="oldest">Oldest first</option>
+            </select>
             <button class="btn-secondary" id="refreshTicketsBtn" type="button">Refresh</button>
           </div>
 
-          <div
-            id="ticketSummaryCards"
-            style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem"
-          ></div>
+          <div id="ticketSummaryCards" class="ticket-summary-grid"></div>
 
           <div id="ticketsContainer">
             <p class="small">Loading tickets...</p>

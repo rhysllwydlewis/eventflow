@@ -71,13 +71,8 @@
 
   function getTierBadgeHtml(tier) {
     const label = TIER_LABELS[tier] || 'Free';
-    const colorMap = {
-      pro_plus: '#7c3aed',
-      pro: '#2563eb',
-      free: '#6b7280',
-    };
-    const color = colorMap[tier] || colorMap.free;
-    return `<span style="display:inline-block;padding:0.1em 0.45em;border-radius:4px;font-size:0.7rem;font-weight:600;color:#fff;background:${color};">${escapeHtml(label)}</span>`;
+    const safeKey = ['pro_plus', 'pro', 'free'].includes(tier) ? tier : 'free';
+    return `<span class="tier-badge tier-badge--${safeKey}">${escapeHtml(label)}</span>`;
   }
 
   async function loadTickets() {
@@ -112,40 +107,26 @@
     const proPlusCount = allTickets.filter(t => t.accountTier === 'pro_plus').length;
     const proCount = allTickets.filter(t => t.accountTier === 'pro').length;
 
-    summaryContainer.innerHTML = `
-      <div class="card" style="min-width:150px;">
-        <div class="small">Open</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#92400e;">${open}</div>
-      </div>
-      <div class="card" style="min-width:150px;">
-        <div class="small">In Progress</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#1e3a8a;">${inProgress}</div>
-      </div>
-      <div class="card" style="min-width:150px;">
-        <div class="small">Resolved</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#166534;">${resolved}</div>
-      </div>
-      <div class="card" style="min-width:150px;">
-        <div class="small">Urgent</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#b91c1c;">${urgent}</div>
-      </div>
-      <div class="card" style="min-width:150px;">
-        <div class="small">Unassigned (active)</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#b45309;">${unassigned}</div>
-      </div>
-      <div class="card" style="min-width:150px;">
-        <div class="small">Stale (&gt;${STALE_HOURS}h)</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#7c3aed;">${stale}</div>
-      </div>
-      <div class="card" style="min-width:150px;">
-        <div class="small">Pro Plus tickets</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#7c3aed;">${proPlusCount}</div>
-      </div>
-      <div class="card" style="min-width:150px;">
-        <div class="small">Pro tickets</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#2563eb;">${proCount}</div>
-      </div>
-    `;
+    const cards = [
+      { label: 'Open',               value: open,        mod: 'open' },
+      { label: 'In Progress',        value: inProgress,  mod: 'progress' },
+      { label: 'Resolved',           value: resolved,    mod: 'resolved' },
+      { label: 'Urgent',             value: urgent,      mod: 'urgent' },
+      { label: 'Unassigned (active)',value: unassigned,  mod: 'warning' },
+      { label: `Stale (>${STALE_HOURS}h)`, value: stale, mod: 'stale' },
+      { label: 'Pro Plus tickets',   value: proPlusCount,mod: 'pro_plus' },
+      { label: 'Pro tickets',        value: proCount,    mod: 'pro' },
+    ];
+
+    summaryContainer.innerHTML = cards
+      .map(
+        card => `
+      <div class="ticket-summary-card ticket-summary-card--${card.mod}">
+        <div class="ticket-summary-card__label">${escapeHtml(card.label)}</div>
+        <div class="ticket-summary-card__value">${card.value}</div>
+      </div>`
+      )
+      .join('');
   }
 
   function renderTickets() {
@@ -159,6 +140,9 @@
     const priorityFilter = document.getElementById('priorityFilter')?.value || '';
     const assignedFilter = document.getElementById('assignedFilter')?.value || '';
     const tierFilter = document.getElementById('tierFilter')?.value || '';
+    const sortOrder = document.getElementById('sortOrder')?.value || 'newest';
+
+    const PRIORITY_SORT_RANK = { urgent: 4, high: 3, medium: 2, low: 1 };
 
     const filtered = allTickets.filter(ticket => {
       if (searchTerm) {
@@ -203,9 +187,9 @@
       container.innerHTML = `
         <div class="data-section">
           <div style="text-align:center;padding:4rem 2rem;">
-            <div style="font-size:4rem;margin-bottom:1rem;">🎫</div>
-            <h3 style="margin:0 0 0.5rem 0;font-size:1.5rem;">No tickets found</h3>
-            <p style="color:#6b7280;margin:0;">
+            <div style="font-size:3.5rem;margin-bottom:1rem;">🎫</div>
+            <h3 style="margin:0 0 0.5rem 0;">No tickets found</h3>
+            <p class="small" style="color:#6b7280;margin:0;">
               ${allTickets.length === 0 ? 'Support tickets will appear here when users submit them.' : 'No tickets match your current filters.'}
             </p>
           </div>
@@ -213,6 +197,25 @@
       `;
       return;
     }
+
+    // Sort
+    filtered.sort((a, b) => {
+      if (sortOrder === 'priority') {
+        const rankA = PRIORITY_SORT_RANK[a.priority] || 2;
+        const rankB = PRIORITY_SORT_RANK[b.priority] || 2;
+        if (rankB !== rankA) return rankB - rankA;
+        // secondary: newest first
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      if (sortOrder === 'oldest') {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortOrder === 'updated') {
+        return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+      }
+      // newest (default)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
     let html =
       '<div class="table-wrapper"><table><thead><tr><th>Subject</th><th>From / Tier</th><th>Status</th><th>Priority</th><th>Created</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>';
@@ -224,7 +227,7 @@
       const replyCount = getTicketResponses(ticket).length;
       const tierBadge = getTierBadgeHtml(ticket.accountTier || 'free');
       const staleIndicator = isStale(ticket)
-        ? ' <span title="No admin reply in over 48 hours" style="color:#7c3aed;font-size:0.75rem;">⚠ stale</span>'
+        ? ' <span class="stale-indicator" title="No admin reply in over 48 hours">⚠ stale</span>'
         : '';
 
       html += `
@@ -280,12 +283,12 @@
         const role = response.userRole || response.responderType || 'user';
         const isAdmin = role === 'admin';
         return `
-          <div style="background:${isAdmin ? '#eff6ff' : '#f9fafb'};border:1px solid #e5e7eb;border-radius:8px;padding:0.75rem;margin-bottom:0.75rem;">
-            <div style="display:flex;justify-content:space-between;gap:0.75rem;">
+          <div class="ticket-response ticket-response--${isAdmin ? 'admin' : 'user'}">
+            <div class="ticket-response__header">
               <strong>${escapeHtml(author)} ${isAdmin ? '<span class="badge badge-in_progress">Admin</span>' : ''}</strong>
               <span class="small">${formatDate(response.createdAt || response.timestamp)}</span>
             </div>
-            <p style="margin:0.5rem 0 0;white-space:pre-wrap;">${escapeHtml(response.message || '')}</p>
+            <p class="ticket-response__body">${escapeHtml(response.message || '')}</p>
           </div>
         `;
       })
@@ -300,24 +303,24 @@
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';
     modal.innerHTML = `
-      <div class="modal" style="max-width:780px;">
+      <div class="modal ticket-modal">
         <div class="modal-header">
           <h3>Manage Ticket</h3>
           <button class="modal-close" type="button" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="small" style="margin:0 0 0.25rem;">From ${escapeHtml(ticket.senderName || ticket.senderEmail || 'Unknown')}</p>
-          <h4 style="margin:0 0 0.5rem;">${escapeHtml(ticket.subject || 'No subject')}</h4>
+          <p class="small ticket-modal__sender">From ${escapeHtml(ticket.senderName || ticket.senderEmail || 'Unknown')}</p>
+          <h4 class="ticket-modal__subject">${escapeHtml(ticket.subject || 'No subject')}</h4>
 
-          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;">
+          <div class="ticket-modal__meta">
             ${getTierBadgeHtml(tier)}
-            <span class="small" style="color:#6b7280;">Account tier: <strong>${escapeHtml(tierLabel)}</strong></span>
-            <span class="small" style="color:#6b7280;">• Priority source: <strong>${escapeHtml(prioritySourceLabel)}</strong></span>
+            <span class="small">Account tier: <strong>${escapeHtml(tierLabel)}</strong></span>
+            <span class="small">• Priority source: <strong>${escapeHtml(prioritySourceLabel)}</strong></span>
           </div>
 
-          <p style="background:#f9fafb;border-radius:8px;padding:0.75rem;border:1px solid #e5e7eb;white-space:pre-wrap;">${escapeHtml(ticket.message || '')}</p>
+          <p class="ticket-modal__message">${escapeHtml(ticket.message || '')}</p>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin:1rem 0;">
+          <div class="ticket-modal__controls">
             <label class="small">Status
               <select id="ticketStatusSelect">${statusOptions}</select>
             </label>
@@ -329,15 +332,15 @@
             </label>
           </div>
 
-          <h4 style="margin:1rem 0 0.5rem;">Conversation</h4>
-          <div>${responsesHtml || '<p class="small">No replies yet.</p>'}</div>
+          <h4 class="ticket-modal__section-heading">Conversation</h4>
+          <div class="ticket-modal__responses">${responsesHtml || '<p class="small">No replies yet.</p>'}</div>
 
-          <label for="ticketReplyMessage" class="small" style="display:block;margin:1rem 0 0.5rem;">Reply to user</label>
-          <textarea id="ticketReplyMessage" rows="4" placeholder="Write your reply..." style="width:100%;"></textarea>
+          <label for="ticketReplyMessage" class="small ticket-modal__reply-label">Reply to user</label>
+          <textarea id="ticketReplyMessage" rows="4" placeholder="Write your reply..."></textarea>
         </div>
-        <div class="modal-footer" style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;">
+        <div class="modal-footer ticket-modal__footer">
           <button type="button" class="btn btn-secondary" id="markResolvedBtn">Mark Resolved</button>
-          <div style="display:flex;gap:0.5rem;">
+          <div class="ticket-modal__footer-actions">
             <button type="button" class="btn btn-secondary" id="saveTicketBtn">Save Changes</button>
             <button type="button" class="btn btn-primary" id="sendReplyBtn">Send Reply</button>
           </div>
@@ -414,7 +417,7 @@
   }
 
   function setupFilterListeners() {
-    ['ticketSearch', 'statusFilter', 'priorityFilter', 'assignedFilter', 'tierFilter'].forEach(
+    ['ticketSearch', 'statusFilter', 'priorityFilter', 'assignedFilter', 'tierFilter', 'sortOrder'].forEach(
       id => {
         const element = document.getElementById(id);
         if (!element) {
