@@ -4990,18 +4990,12 @@ body.supplier-dashboard-page .sd-two-col > .card {
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--ef-text, #0b1220);
-  /* Ensure title is wide enough to not collapse in flex layout */
-  width: 100%;
-  max-width: 360px;
 }
 
 .sd-empty-state__desc {
   margin: 0;
   font-size: 0.8125rem;
-  color: #6b7280;
-  /* Constrain to readable width but always fill available space in flex */
-  width: 100%;
-  max-width: 360px;
+  color: var(--ef-text-muted, #6b7280);
   line-height: 1.5;
 }
 
@@ -5061,9 +5055,23 @@ body.supplier-dashboard-page .sd-two-col > .card {
   flex-shrink: 0;
 }
 
+/* Body wrapper: used in both standard and inline variants to group title+desc */
+.sd-empty-state__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  /* In the standard (centered) variant, fill width so text centers correctly */
+  width: 100%;
+  max-width: 360px;
+  align-items: center;
+  text-align: center;
+}
+
 .sd-empty-state--inline .sd-empty-state__body {
   flex: 1;
   min-width: 0;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .sd-empty-state--inline .sd-empty-state__title {
