@@ -10,14 +10,11 @@
    * HTML escape utility — defined first so all template literals below can use it.
    */
   function escapeHtml(unsafe) {
-    if (unsafe == null) {
+    if (unsafe === null || unsafe === undefined) {
       return '';
     }
-    if (typeof unsafe !== 'string') {
-      return String(unsafe);
-    }
     const div = document.createElement('div');
-    div.textContent = unsafe;
+    div.textContent = String(unsafe);
     return div.innerHTML;
   }
 
@@ -551,12 +548,14 @@
     const selectedPackages = Object.keys(state.selectedPackages || {});
 
     // Build per-category edit links for selected packages
-    const categoryEditLinks = selectedPackages.map(catKey => {
-      const cat = CATEGORIES.find(c => c.key === catKey);
-      const catName = cat ? cat.name : catKey;
-      const stepIdx = STEP_CONFIG.CATEGORY_START + CATEGORIES.findIndex(c => c.key === catKey);
-      return `<a href="#" class="wizard-review-edit" data-step="${stepIdx}">✏️ Edit ${escapeHtml(catName)}</a>`;
-    }).join('');
+    const categoryEditLinks = selectedPackages
+      .map(catKey => {
+        const cat = CATEGORIES.find(c => c.key === catKey);
+        const catName = cat ? cat.name : catKey;
+        const stepIdx = STEP_CONFIG.CATEGORY_START + CATEGORIES.findIndex(c => c.key === catKey);
+        return `<a href="#" class="wizard-review-edit" data-step="${stepIdx}">✏️ Edit ${escapeHtml(catName)}</a>`;
+      })
+      .join('');
 
     return `
       <div class="wizard-card">
@@ -601,7 +600,6 @@
    */
   function renderSuccessScreen() {
     const state = window.WizardState.getState();
-    const planLink = savedPlanId ? `/dashboard/customer/plans/${savedPlanId}` : '/dashboard/customer';
 
     return `
       <div class="wizard-card wizard-success">
@@ -731,9 +729,15 @@
 
     // Build compact one-liner
     const parts = [];
-    if (state.eventType) parts.push(escapeHtml(state.eventType));
-    if (state.location)  parts.push(escapeHtml(state.location));
-    if (selectedCount)   parts.push(`${selectedCount} package${selectedCount !== 1 ? 's' : ''}`);
+    if (state.eventType) {
+      parts.push(escapeHtml(state.eventType));
+    }
+    if (state.location) {
+      parts.push(escapeHtml(state.location));
+    }
+    if (selectedCount) {
+      parts.push(`${selectedCount} package${selectedCount !== 1 ? 's' : ''}`);
+    }
     const compactText = parts.length ? parts.join(' · ') : 'Your Plan';
 
     // Build detailed rows
@@ -942,7 +946,9 @@
 
       const viewPlanBtn = document.getElementById('success-view-plan');
       if (viewPlanBtn) {
-        const planLink = savedPlanId ? `/dashboard/customer/plans/${savedPlanId}` : '/dashboard/customer';
+        const planLink = savedPlanId
+          ? `/dashboard/customer/plans/${savedPlanId}`
+          : '/dashboard/customer';
         viewPlanBtn.addEventListener('click', () => {
           location.href = planLink;
         });
@@ -1008,14 +1014,21 @@
         confettiContainer.appendChild(confetti);
 
         // animationend is the primary cleanup; safety timeout as fallback
-        let cleanupTimer;
-        confetti.addEventListener('animationend', () => {
-          clearTimeout(cleanupTimer);
-          if (confetti.parentNode) confetti.remove();
-        }, { once: true });
-        cleanupTimer = setTimeout(() => {
-          if (confetti.parentNode) confetti.remove();
+        const cleanupTimer = setTimeout(() => {
+          if (confetti.parentNode) {
+            confetti.remove();
+          }
         }, 5000);
+        confetti.addEventListener(
+          'animationend',
+          () => {
+            clearTimeout(cleanupTimer);
+            if (confetti.parentNode) {
+              confetti.remove();
+            }
+          },
+          { once: true }
+        );
       }, i * 50);
     }
   }
@@ -1129,7 +1142,10 @@
 
       // Enforce validation before advancing (Bug 1.3)
       if (window.WizardValidation) {
-        const validationResult = window.WizardValidation.validateStep(currentStep, stepDataForValidation);
+        const validationResult = window.WizardValidation.validateStep(
+          currentStep,
+          stepDataForValidation
+        );
         if (!validationResult.valid) {
           // Show errors on fields and shake invalid ones
           Object.keys(validationResult.errors).forEach(fieldName => {
@@ -1223,6 +1239,7 @@
     const state = window.WizardState.getState();
     return !!(
       state.eventType ||
+      state.eventName ||
       state.location ||
       state.date ||
       state.guests ||
