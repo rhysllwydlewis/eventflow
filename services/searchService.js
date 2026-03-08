@@ -11,6 +11,8 @@ const {
   calculateQualityScore,
   getMatchingSnippets,
   getMatchingFields,
+  getRankingReason,
+  RANKING_CONFIG,
 } = require('../utils/searchWeighting');
 const { geocodeLocation, calculateDistance } = require('../utils/geocoding');
 
@@ -268,6 +270,7 @@ async function searchSuppliers(query) {
           ? { distanceMiles: supplier._distanceMiles }
           : {}),
         relevanceScore: score,
+        rankingReason: getRankingReason(supplier, normalizedQuery.q),
         match: {
           fields: matchedFields,
           snippets,
@@ -286,6 +289,7 @@ async function searchSuppliers(query) {
       ...projectPublicSupplierFields(supplier),
       ...(supplier._distanceMiles !== undefined ? { distanceMiles: supplier._distanceMiles } : {}),
       relevanceScore: calculateQualityScore(supplier),
+      rankingReason: getRankingReason(supplier, ''),
     }));
   }
 
@@ -297,6 +301,15 @@ async function searchSuppliers(query) {
 
   // Get total before pagination
   const total = results.length;
+
+  // Build zero-results fallback before pagination (only on the first page)
+  let fallback = null;
+  if (total === 0 && normalizedQuery.page === 1) {
+    fallback = await buildZeroResultsFallback(
+      normalizedQuery,
+      suppliers.filter(s => s.approved)
+    );
+  }
 
   // Pagination
   const { page, limit } = normalizedQuery;
@@ -318,6 +331,7 @@ async function searchSuppliers(query) {
     },
     appliedSort,
     facets,
+    ...(fallback ? { fallback } : {}),
     durationMs: duration,
   };
 }
@@ -1157,6 +1171,330 @@ async function getDiscoveryFeed({
   return { featured, topRated, newArrivals };
 }
 
+/**
+ * Build a zero-results fallback object.
+ *
+ * When a supplier search returns no results, this function attempts to return
+ * alternative suggestions by progressively relaxing the strictest filters.
+ * The fallback is surfaced in the API response alongside an explanatory message
+ * so clients can guide users toward useful alternatives rather than showing a
+ * blank page.
+ *
+ * Relaxation order (most specific → most general):
+ *   1. Drop minRating (quality gate)
+ *   2. Drop amenities (feature requirements)
+ *   3. Drop minGuests (capacity requirement)
+ *   4. Drop location (if category still yields results)
+ *   5. Drop query (browse by category)
+ *
+ * @param {Object} query - Normalized search query (from normalizeSupplierQuery)
+ * @param {Array} approvedSuppliers - Pre-filtered approved suppliers
+ * @returns {Promise<Object|null>} Fallback object or null if none possible
+ */
+async function buildZeroResultsFallback(query, approvedSuppliers) {
+  const relaxationSteps = [
+    { name: 'minRating', label: 'minimum rating removed' },
+    { name: 'amenities', label: 'amenity requirements removed' },
+    { name: 'minGuests', label: 'guest capacity requirement removed' },
+    { name: 'location', label: 'location filter removed' },
+    { name: 'q', label: 'search term removed — browsing by category' },
+  ];
+
+  const relaxedFilters = [];
+  let relaxedQuery = { ...query };
+
+  for (const step of relaxationSteps) {
+    // Remove this filter from the working query
+    const prevValue = relaxedQuery[step.name];
+    if (prevValue === undefined || prevValue === '' || prevValue === null) {
+      continue; // Already absent — skip this step
+    }
+
+    relaxedQuery = { ...relaxedQuery, [step.name]: undefined };
+    relaxedFilters.push(step.label);
+
+    // Re-filter with the relaxed query
+    const candidates = applyFilters(approvedSuppliers, relaxedQuery, null);
+
+    if (candidates.length > 0) {
+      // Score and sort the fallback candidates by quality
+      const suggestions = candidates
+        .map(s => ({
+          ...projectPublicSupplierFields(s),
+          relevanceScore: calculateQualityScore(s),
+          rankingReason: getRankingReason(s, relaxedQuery.q || ''),
+        }))
+        .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
+        .slice(0, 6);
+
+      const message = buildFallbackMessage(query, relaxedFilters);
+      return { suggestions, relaxedFilters, message };
+    }
+  }
+
+  // Nothing found even after full relaxation
+  return null;
+}
+
+/**
+ * Compose a user-facing message explaining why the fallback was triggered.
+ * @param {Object} originalQuery - Original normalized query
+ * @param {Array<string>} relaxedFilters - Labels of removed filters
+ * @returns {string} Explanatory message
+ */
+function buildFallbackMessage(originalQuery, relaxedFilters) {
+  const parts = [];
+
+  if (originalQuery.q) {
+    parts.push(`No exact matches for "${originalQuery.q}"`);
+  } else {
+    parts.push('No suppliers matched your filters');
+  }
+
+  if (relaxedFilters.length > 0) {
+    parts.push(`Showing results with ${relaxedFilters[relaxedFilters.length - 1]}`);
+  }
+
+  return `${parts.join('. ')}. Try adjusting your search to see more options.`;
+}
+
+/**
+ * Get a personalized discovery feed for a user.
+ *
+ * Uses the user's recent search history to infer preferred categories and
+ * locations, then surfaces suppliers that match those preferences ranked by
+ * quality.  Falls back gracefully to a quality-ranked generic feed when the
+ * user has no history or when no matching suppliers are found.
+ *
+ * @param {string|null} userId - Authenticated user ID (null for anonymous)
+ * @param {Object} [context={}] - Optional explicit context signals
+ * @param {string} [context.eventType] - Event type hint (e.g. "wedding")
+ * @param {string} [context.location] - Location hint
+ * @param {number} [context.budget] - Price tier preference (1–4)
+ * @param {Object} [options={}] - Limit options
+ * @param {number} [options.limit=12] - Max suppliers to return
+ * @param {number} [options.historyDays=30] - Look-back window for history
+ * @returns {Promise<Object>} Personalized feed result
+ */
+async function getPersonalizedFeed(userId, context = {}, options = {}) {
+  const { limit = 12, historyDays = 30 } = options;
+  const { eventType, location, budget } = context;
+
+  const suppliers = await dbUnified.read('suppliers');
+  const approved = suppliers.filter(s => s.approved);
+
+  // Build personalization signals from user search history when userId is known
+  let preferredCategories = [];
+  let preferredLocations = [];
+  const inferredTags = [];
+
+  if (userId) {
+    const searchHistory = (await dbUnified.read('searchHistory')) || [];
+    const cutoff = new Date(Date.now() - historyDays * 24 * 60 * 60 * 1000);
+
+    const recentHistory = searchHistory.filter(
+      h => h.userId === userId && new Date(h.timestamp || 0) >= cutoff
+    );
+
+    // Tally categories and locations from history filters
+    const categoryCounts = {};
+    const locationCounts = {};
+
+    recentHistory.forEach(h => {
+      const filters = h.filters || {};
+      if (filters.category) {
+        categoryCounts[filters.category] = (categoryCounts[filters.category] || 0) + 1;
+      }
+      if (filters.location) {
+        locationCounts[filters.location] = (locationCounts[filters.location] || 0) + 1;
+      }
+      // Extract keywords from query text as inferred tag interests
+      if (h.queryText) {
+        h.queryText
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(w => w.length > 3)
+          .forEach(w => inferredTags.push(w));
+      }
+    });
+
+    preferredCategories = Object.entries(categoryCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat]) => cat)
+      .slice(0, 3);
+
+    preferredLocations = Object.entries(locationCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([loc]) => loc)
+      .slice(0, 3);
+  }
+
+  // Merge explicit context signals (take precedence over inferred signals)
+  const topCategory = eventType || preferredCategories[0] || null;
+  const topLocation = location || preferredLocations[0] || null;
+
+  const { categoryMatchBonus, locationMatchBonus, tagMatchBonus, budgetProximityBonus } =
+    RANKING_CONFIG.personalization;
+
+  // Score each approved supplier against personalization signals
+  const scored = approved.map(s => {
+    let personalizationScore = calculateQualityScore(s);
+    const matchReasons = [];
+
+    if (topCategory && s.category && s.category.toLowerCase() === topCategory.toLowerCase()) {
+      personalizationScore += categoryMatchBonus;
+      matchReasons.push(topCategory);
+    }
+
+    if (
+      topLocation &&
+      typeof s.location === 'string' &&
+      s.location.toLowerCase().includes(topLocation.toLowerCase())
+    ) {
+      personalizationScore += locationMatchBonus;
+      matchReasons.push(topLocation);
+    }
+
+    // Tag overlap with inferred interests
+    if (inferredTags.length > 0 && s.tags && Array.isArray(s.tags)) {
+      const tagMatches = s.tags.filter(t => inferredTags.includes(t.toLowerCase())).length;
+      personalizationScore += Math.min(tagMatches * tagMatchBonus, 20);
+    }
+
+    // Budget proximity (if a budget tier is provided)
+    if (budget !== undefined) {
+      const priceDiff = Math.abs(getPriceLevel(s.price_display) - budget);
+      if (priceDiff <= 1) {
+        personalizationScore += budgetProximityBonus;
+      }
+    }
+
+    const personalized = matchReasons.length > 0;
+    return { supplier: s, score: personalizationScore, personalized, matchReasons };
+  });
+
+  // Sort by personalization score descending
+  scored.sort((a, b) => b.score - a.score);
+
+  const isPersonalized = topCategory !== null || topLocation !== null;
+  const contextSummary = {
+    isPersonalized,
+    preferredCategory: topCategory,
+    preferredLocation: topLocation,
+    signalSource:
+      userId && preferredCategories.length > 0
+        ? 'history'
+        : eventType || location || budget !== undefined
+          ? 'context'
+          : 'none',
+  };
+
+  const results = scored.slice(0, limit).map(({ supplier, personalized }) => ({
+    ...projectPublicSupplierFields(supplier),
+    relevanceScore: calculateQualityScore(supplier),
+    rankingReason: getRankingReason(supplier, '', {
+      isPersonalized: personalized,
+      preferredCategory: topCategory,
+      preferredLocation: topLocation,
+    }),
+  }));
+
+  return { results, context: contextSummary };
+}
+
+/**
+ * Get suppliers that users also viewed alongside a given supplier.
+ *
+ * Complements `getSimilarSuppliers` with a different signal mix: where
+ * getSimilarSuppliers requires the same category, getPeopleAlsoViewed
+ * is more exploratory — it weights tag overlap, price proximity, and
+ * location first, so it surfaces suppliers a browsing user might consider
+ * even across adjacent categories.
+ *
+ * @param {string} supplierId - The reference supplier's ID
+ * @param {number} [limit=6] - Maximum number of results to return
+ * @returns {Promise<Array>} Array of projected public supplier objects
+ */
+async function getPeopleAlsoViewed(supplierId, limit = 6) {
+  const suppliers = await dbUnified.read('suppliers');
+
+  const reference = suppliers.find(s => s.id === supplierId || s._id === supplierId);
+  if (!reference) {
+    return [];
+  }
+
+  const referencePrice = getPriceLevel(reference.price_display);
+  const referenceTags = new Set((reference.tags || []).map(t => t.toLowerCase()));
+  const referenceCategory = (reference.category || '').toLowerCase();
+
+  // Exclude the reference itself (same logic as getSimilarSuppliers)
+  const candidates = suppliers.filter(s => {
+    if (!s.approved) {
+      return false;
+    }
+    if (reference.id && s.id === reference.id) {
+      return false;
+    }
+    if (reference._id && s._id === reference._id) {
+      return false;
+    }
+    return true;
+  });
+
+  const scored = candidates.map(s => {
+    let score = 0;
+
+    // Tag overlap is the primary signal (max 30 points)
+    const sharedTags = (s.tags || []).filter(t => referenceTags.has(t.toLowerCase())).length;
+    score += Math.min(sharedTags * 6, 30);
+
+    // Price tier proximity (max 20 points)
+    const priceDiff = Math.abs(getPriceLevel(s.price_display) - referencePrice);
+    if (priceDiff === 0) {
+      score += 20;
+    } else if (priceDiff === 1) {
+      score += 12;
+    } else if (priceDiff === 2) {
+      score += 5;
+    }
+
+    // Location match (up to 15 points)
+    if (
+      reference.location &&
+      typeof reference.location === 'string' &&
+      typeof s.location === 'string'
+    ) {
+      const refLocLower = reference.location.toLowerCase();
+      const candLocLower = s.location.toLowerCase();
+      if (candLocLower.includes(refLocLower) || refLocLower.includes(candLocLower)) {
+        score += 15;
+      }
+    }
+
+    // Same category gives a moderate bonus (not required, unlike getSimilarSuppliers)
+    if (s.category && s.category.toLowerCase() === referenceCategory) {
+      score += 10;
+    }
+
+    // Quality contribution as tie-break
+    score += calculateQualityScore(s) * 0.1;
+
+    return { supplier: s, score };
+  });
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return calculateQualityScore(b.supplier) - calculateQualityScore(a.supplier);
+  });
+
+  return scored.slice(0, limit).map(r => ({
+    ...projectPublicSupplierFields(r.supplier),
+    rankingReason: getRankingReason(r.supplier, ''),
+  }));
+}
+
 module.exports = {
   searchSuppliers,
   searchPackages,
@@ -1166,6 +1504,9 @@ module.exports = {
   calculateFacets,
   getSimilarSuppliers,
   getDiscoveryFeed,
+  getPersonalizedFeed,
+  getPeopleAlsoViewed,
+  buildZeroResultsFallback,
   getPriceLevel,
   VALID_SUPPLIER_SORT_VALUES,
   VALID_PACKAGE_SORT_VALUES,

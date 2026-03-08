@@ -751,4 +751,93 @@ router.get('/discovery', searchCacheMiddleware({ fixedTtl: 600 }), async (req, r
   }
 });
 
+/**
+ * GET /api/v2/search/personalized
+ * Personalized discovery feed using user history and context signals (Phase 3)
+ *
+ * Query parameters:
+ *   eventType  - Event type hint (e.g. "wedding", "corporate")
+ *   location   - Location preference hint
+ *   budget     - Price-tier preference (1–4)
+ *   limit      - Max suppliers to return (default 12, max 24)
+ */
+router.get('/personalized', searchCacheMiddleware({ fixedTtl: null }), async (req, res) => {
+  try {
+    const user = await getUserFromCookie(req);
+    const userId = user?.id || null;
+
+    const parsedLimit = parseInt(req.query.limit, 10);
+    const limit = !isNaN(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 24) : 12;
+
+    const parsedBudget = parseInt(req.query.budget, 10);
+    const budget =
+      !isNaN(parsedBudget) && parsedBudget >= 1 && parsedBudget <= 4 ? parsedBudget : undefined;
+
+    const context = {
+      eventType: req.query.eventType ? String(req.query.eventType).trim().slice(0, 100) : undefined,
+      location: req.query.location ? String(req.query.location).trim() : undefined,
+      budget,
+    };
+
+    const feed = await searchService.getPersonalizedFeed(userId, context, { limit });
+
+    return res.json({
+      success: true,
+      data: feed,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Personalized feed error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get personalized feed',
+    });
+  }
+});
+
+/**
+ * GET /api/v2/search/also-viewed/:supplierId
+ * People-also-viewed recommendations for a supplier (Phase 3)
+ *
+ * Complements /similar/:supplierId with a different signal mix:
+ * tag overlap + price proximity + location (category not required).
+ */
+router.get(
+  '/also-viewed/:supplierId',
+  searchCacheMiddleware({ fixedTtl: 1800 }),
+  async (req, res) => {
+    try {
+      const { supplierId } = req.params;
+
+      if (!supplierId || !/^[a-zA-Z0-9_-]{1,100}$/.test(supplierId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid supplierId',
+        });
+      }
+
+      const parsedLimit = parseInt(req.query.limit, 10);
+      const limit = !isNaN(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 12) : 6;
+
+      const results = await searchService.getPeopleAlsoViewed(supplierId, limit);
+
+      return res.json({
+        success: true,
+        data: {
+          supplierId,
+          results,
+          count: results.length,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Also-viewed error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get also-viewed suppliers',
+      });
+    }
+  }
+);
+
 module.exports = router;
