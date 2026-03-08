@@ -19,6 +19,7 @@ const {
   canUserAccessTicket,
   normalizePriority: normalizeTicketPriority,
 } = require('../utils/ticketNormalization');
+const { deriveTicketPriority } = require('../utils/tierPriority');
 
 const router = express.Router();
 
@@ -88,7 +89,6 @@ router.post(
         senderEmail,
         subject,
         message,
-        priority = 'medium',
       } = req.body;
 
       // Validation
@@ -130,6 +130,14 @@ router.post(
         normalizeTicketRecord(ticket, { generateId: uid })
       );
 
+      // Auto-derive priority from the sender's subscription tier.
+      // User-supplied priority values are intentionally ignored.
+      const { priority, accountTier, prioritySource } = await deriveTicketPriority(
+        senderType,
+        userId,
+        dbUnified
+      );
+
       const newTicket = {
         id: uid(),
         senderId: userId,
@@ -140,7 +148,9 @@ router.post(
         subject: subject.trim(),
         message: message.trim(),
         status: 'open',
-        priority: normalizeTicketPriority(priority),
+        priority,
+        accountTier,
+        prioritySource,
         assignedTo: null,
         lastReplyAt: now,
         lastReplyBy: senderType,
@@ -159,7 +169,7 @@ router.post(
         action: 'TICKET_CREATED',
         targetType: 'ticket',
         targetId: newTicket.id,
-        details: { subject, priority },
+        details: { subject, priority, accountTier, prioritySource },
       });
 
       res.status(201).json({ ticketId: newTicket.id, ticket: newTicket });
@@ -342,6 +352,7 @@ router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) 
       }
 
       ticket.priority = normalizeTicketPriority(priority);
+      ticket.prioritySource = 'admin';
     }
 
     // Ticket assignment is admin-only.

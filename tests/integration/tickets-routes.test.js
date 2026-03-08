@@ -287,4 +287,201 @@ describe('Tickets Routes Integration', () => {
     expect(response.body.ticket.responses[0].message).toBe('Adding more context for support team');
     expect(response.body.ticket.status).toBe('open');
   });
+
+  describe('Tier-based auto-priority', () => {
+    it('ignores user-supplied priority for customer tickets and defaults to medium', async () => {
+      // customers collection returns empty; tickets read returns empty
+      dbUnified.read.mockResolvedValue([]);
+      dbUnified.insertOne.mockResolvedValue(true);
+
+      const response = await request(app)
+        .post('/api/tickets')
+        .set('x-test-user-role', 'customer')
+        .send({
+          senderType: 'customer',
+          subject: 'Invoice question',
+          message: 'I cannot access my invoice for the last booking.',
+          priority: 'urgent', // should be ignored
+        });
+
+      expect(response.status).toBe(201);
+      // Customer always gets medium (free-tier default); user-supplied 'urgent' is ignored
+      expect(response.body.ticket.priority).toBe('medium');
+      expect(response.body.ticket.accountTier).toBe('free');
+      expect(response.body.ticket.prioritySource).toBe('auto');
+    });
+
+    it('assigns urgent priority to a pro_plus supplier without reading user-supplied priority', async () => {
+      // First read → tickets collection (empty), second read → suppliers with pro_plus tier
+      dbUnified.read
+        .mockResolvedValueOnce([]) // tickets read in POST handler
+        .mockResolvedValueOnce([
+          {
+            userId: 'sup-user-1',
+            subscription: { tier: 'pro_plus', status: 'active' },
+          },
+        ]); // suppliers read in deriveTicketPriority
+
+      dbUnified.insertOne.mockResolvedValue(true);
+
+      const response = await request(app)
+        .post('/api/tickets')
+        .set('x-test-user-id', 'sup-user-1')
+        .set('x-test-user-role', 'supplier')
+        .send({
+          senderType: 'supplier',
+          subject: 'Booking issue',
+          message: 'My booking dashboard is not loading any events.',
+          priority: 'low', // should be ignored in favour of tier-derived value
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.ticket.priority).toBe('urgent');
+      expect(response.body.ticket.accountTier).toBe('pro_plus');
+      expect(response.body.ticket.prioritySource).toBe('auto');
+    });
+
+    it('assigns high priority to a pro supplier', async () => {
+      dbUnified.read
+        .mockResolvedValueOnce([]) // tickets
+        .mockResolvedValueOnce([
+          {
+            userId: 'sup-user-2',
+            subscription: { tier: 'pro', status: 'active' },
+          },
+        ]); // suppliers
+
+      dbUnified.insertOne.mockResolvedValue(true);
+
+      const response = await request(app)
+        .post('/api/tickets')
+        .set('x-test-user-id', 'sup-user-2')
+        .set('x-test-user-role', 'supplier')
+        .send({
+          senderType: 'supplier',
+          subject: 'Profile photo not showing',
+          message: 'My profile photo has disappeared from the marketplace listing.',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.ticket.priority).toBe('high');
+      expect(response.body.ticket.accountTier).toBe('pro');
+      expect(response.body.ticket.prioritySource).toBe('auto');
+    });
+
+    it('assigns medium priority to a free supplier', async () => {
+      dbUnified.read
+        .mockResolvedValueOnce([]) // tickets
+        .mockResolvedValueOnce([
+          {
+            userId: 'sup-user-3',
+            subscription: { tier: 'free', status: 'active' },
+          },
+        ]); // suppliers
+
+      dbUnified.insertOne.mockResolvedValue(true);
+
+      const response = await request(app)
+        .post('/api/tickets')
+        .set('x-test-user-id', 'sup-user-3')
+        .set('x-test-user-role', 'supplier')
+        .send({
+          senderType: 'supplier',
+          subject: 'Cannot log in',
+          message: 'I keep getting an error when I try to log into my supplier account.',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.ticket.priority).toBe('medium');
+      expect(response.body.ticket.accountTier).toBe('free');
+      expect(response.body.ticket.prioritySource).toBe('auto');
+    });
+
+    it('falls back to medium priority when supplier record cannot be found', async () => {
+      dbUnified.read
+        .mockResolvedValueOnce([]) // tickets
+        .mockResolvedValueOnce([]); // suppliers — no matching record
+
+      dbUnified.insertOne.mockResolvedValue(true);
+
+      const response = await request(app)
+        .post('/api/tickets')
+        .set('x-test-user-id', 'unknown-supplier')
+        .set('x-test-user-role', 'supplier')
+        .send({
+          senderType: 'supplier',
+          subject: 'Billing question',
+          message: 'I was charged but cannot see the subscription in my account.',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.ticket.priority).toBe('medium');
+      expect(response.body.ticket.accountTier).toBe('free');
+      expect(response.body.ticket.prioritySource).toBe('auto');
+    });
+  });
+
+  describe('Backward compatibility — normalization of legacy tickets', () => {
+    it('sets accountTier to null and prioritySource to "auto" for legacy tickets without those fields', async () => {
+      dbUnified.read.mockResolvedValue([
+        {
+          id: 'legacy-ticket-2',
+          senderId: 'user-1',
+          senderType: 'customer',
+          subject: 'Old ticket',
+          message: 'An old ticket without triage metadata',
+          status: 'open',
+          priority: 'medium',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          // No accountTier or prioritySource fields
+        },
+      ]);
+
+      const response = await request(app)
+        .get('/api/tickets')
+        .set('x-test-user-id', 'user-1')
+        .set('x-test-user-role', 'customer');
+
+      expect(response.status).toBe(200);
+      const ticket = response.body.tickets[0];
+      expect(ticket.accountTier).toBeNull();
+      expect(ticket.prioritySource).toBe('auto');
+      expect(typeof ticket.priorityRank).toBe('number');
+    });
+  });
+
+  describe('Admin priority override records prioritySource as "admin"', () => {
+    it('marks prioritySource as "admin" when an admin changes ticket priority', async () => {
+      const existing = [
+        {
+          id: 'ticket-admin-pri',
+          senderId: 'user-1',
+          senderType: 'customer',
+          senderEmail: 'user@example.com',
+          subject: 'Need help',
+          message: 'Detailed message here',
+          status: 'open',
+          priority: 'medium',
+          accountTier: 'free',
+          prioritySource: 'auto',
+          responses: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+
+      dbUnified.read.mockResolvedValue(existing);
+
+      const response = await request(app)
+        .put('/api/tickets/ticket-admin-pri')
+        .set('x-test-user-id', 'admin-1')
+        .set('x-test-user-role', 'admin')
+        .send({ priority: 'urgent' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.ticket.priority).toBe('urgent');
+      expect(response.body.ticket.prioritySource).toBe('admin');
+    });
+  });
 });

@@ -1,8 +1,12 @@
 'use strict';
 
+const { PRIORITY_RANK } = require('./tierPriority');
+
 const VALID_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed']);
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high', 'urgent']);
 const VALID_SENDER_TYPES = new Set(['customer', 'supplier']);
+const VALID_TIER_VALUES = new Set(['free', 'pro', 'pro_plus']);
+const VALID_PRIORITY_SOURCES = new Set(['auto', 'admin']);
 
 function normalizeStatus(status) {
   if (status === 'in-progress') {
@@ -56,6 +60,23 @@ function normalizeTicketRecord(rawTicket = {}, options = {}) {
   ticket.status = normalizeStatus(ticket.status);
   ticket.priority = normalizePriority(ticket.priority);
 
+  // Triage metadata — normalise for new tickets and provide backward-compatible
+  // defaults for existing tickets that pre-date this field.
+  if (typeof ticket.accountTier === 'string' && VALID_TIER_VALUES.has(ticket.accountTier)) {
+    // keep as-is
+  } else {
+    ticket.accountTier = null; // legacy ticket — unknown tier
+  }
+
+  if (typeof ticket.prioritySource === 'string' && VALID_PRIORITY_SOURCES.has(ticket.prioritySource)) {
+    // keep as-is
+  } else {
+    ticket.prioritySource = 'auto'; // legacy ticket — assume auto-assigned
+  }
+
+  // Computed rank used for queue-oriented sorting; never stored on the record.
+  ticket.priorityRank = PRIORITY_RANK[ticket.priority] || 2;
+
   if (Array.isArray(ticket.responses)) {
     // keep normalized responses
   } else if (Array.isArray(ticket.replies)) {
@@ -95,4 +116,5 @@ module.exports = {
   normalizePriority,
   normalizeSenderType,
   canUserAccessTicket,
+  VALID_PRIORITIES,
 };
