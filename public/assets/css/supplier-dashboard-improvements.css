@@ -4711,3 +4711,21 @@ html {
 .sd-two-col > .card {
   margin-top: 0;
 }
+
+/* SD card header subtitle variant — no left indent (used when title row has stacked text) */
+.sd-card-header__subtitle--no-indent {
+  padding-left: 0;
+}
+
+/* Unread message badge blue variant */
+.supplier-unread-badge--blue {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.15) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #1e40af;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+}

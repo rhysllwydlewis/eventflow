@@ -225,6 +225,7 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
       const boundingBox = await searchInput.boundingBox();
       expect(boundingBox).not.toBeNull();
       // Should be within the page width with some tolerance
+      // +2px accounts for sub-pixel rendering and fractional scroll differences
       expect(boundingBox.x + boundingBox.width).toBeLessThanOrEqual(375 + 2);
     }
   });
@@ -284,6 +285,7 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
   });
 
   test('desktop layout: subscription and lead quality are side-by-side at 1200px', async ({ page }) => {
+    // 1200px is well above the 1024px breakpoint where sd-two-col switches to flex-direction: row
     await page.setViewportSize({ width: 1200, height: 800 });
     await page.goto('/dashboard-supplier.html');
     await page.waitForLoadState('networkidle');
