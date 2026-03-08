@@ -30,6 +30,67 @@ const NEW_SUPPLIER_DAYS = 30;
 const HIGH_RATING_THRESHOLD = 4.5;
 
 /**
+ * Centralised ranking configuration.
+ *
+ * All weight and boost values used by the relevance and quality scoring
+ * functions are collected here so they can be inspected and understood
+ * without reading individual functions.  The objects exported below
+ * (`FIELD_WEIGHTS`, `BOOSTS`) are the authoritative values used at runtime;
+ * `RANKING_CONFIG` is a read-only summary that documents their meaning.
+ *
+ * To tune ranking behaviour, adjust `FIELD_WEIGHTS` or `BOOSTS` above and
+ * update the corresponding entry in `RANKING_CONFIG`.
+ */
+const RANKING_CONFIG = {
+  fieldWeights: FIELD_WEIGHTS,
+  boosts: BOOSTS,
+  quality: {
+    // Rating contributes up to 50 points (rating × 10, max 5 stars)
+    ratingMultiplier: 10,
+    // Review count contributes up to 30 points (log-scale)
+    reviewCountLogMultiplier: 5,
+    reviewCountMax: 30,
+    // View count contributes up to 20 points (log-scale)
+    viewCountLogMultiplier: 3,
+    viewCountMax: 20,
+    // Profile completeness contributes up to 15 points
+    profileCompletenessMax: 15,
+  },
+  freshness: {
+    // Recency decay multipliers — older suppliers receive a lower multiplier
+    day7: 1.0,
+    day30: 0.95,
+    day90: 0.9,
+    day180: 0.85,
+    day365: 0.8,
+    older: 0.75,
+  },
+  personalization: {
+    // Points awarded when a supplier's category matches the user's preferred category
+    categoryMatchBonus: 30,
+    // Points awarded when a supplier's location matches the user's preferred location
+    locationMatchBonus: 20,
+    // Points awarded for each overlapping tag with the user's interests
+    tagMatchBonus: 5,
+    // Budget proximity: points awarded when price tier is within 1 level of preference
+    budgetProximityBonus: 10,
+  },
+  similarSuppliers: {
+    // Base score for same-category match
+    categoryMatchScore: 50,
+    // Max score for price-tier proximity
+    priceTierExactScore: 20,
+    priceTierOneOffScore: 10,
+    priceTierTwoOffScore: 5,
+    // Max tag overlap score
+    tagOverlapPointsPerTag: 5,
+    tagOverlapMax: 20,
+    // Location substring match score
+    locationMatchScore: 10,
+  },
+};
+
+/**
  * Calculate relevance score for a search result
  *
  * This function implements a weighted full-text search algorithm with the following components:
@@ -502,12 +563,87 @@ function getMatchingFields(item, query) {
   return [...new Set(matchedFields)]; // Remove duplicates
 }
 
+/**
+ * Produce a human-readable primary reason why this supplier ranked where it did.
+ *
+ * The reason is the single most prominent positive signal for the item.
+ * It is intended for display in the UI ("Why this result?") and for aiding
+ * maintainers when debugging unexpected ranking outcomes.
+ *
+ * @param {Object} item - Supplier or package object (may be a projected public object)
+ * @param {string} [query=''] - Active search query text
+ * @param {Object} [context={}] - Optional context signals
+ * @param {boolean} [context.isPersonalized=false] - Whether this result is from a personalized feed
+ * @param {string} [context.preferredCategory] - User's inferred preferred category
+ * @param {string} [context.preferredLocation] - User's inferred preferred location
+ * @returns {string} Short human-readable ranking reason
+ */
+function getRankingReason(item, query = '', context = {}) {
+  const { isPersonalized = false, preferredCategory, preferredLocation } = context;
+
+  // Personalization signals take top priority when the feed is personalised
+  if (isPersonalized) {
+    if (preferredCategory && item.category === preferredCategory) {
+      return `Matches your interest in ${item.category}`;
+    }
+    if (
+      preferredLocation &&
+      typeof item.location === 'string' &&
+      item.location.toLowerCase().includes(preferredLocation.toLowerCase())
+    ) {
+      return `Available near ${item.location}`;
+    }
+  }
+
+  // Query-match signals
+  if (query) {
+    const queryLower = query.toLowerCase();
+    if ((item.name || '').toLowerCase().includes(queryLower)) {
+      return 'Name matches your search';
+    }
+    if (
+      item.tags &&
+      Array.isArray(item.tags) &&
+      item.tags.some(t => t.toLowerCase().includes(queryLower))
+    ) {
+      return 'Tagged keyword match';
+    }
+    if ((item.category || '').toLowerCase().includes(queryLower)) {
+      return 'Category matches your search';
+    }
+  }
+
+  // Quality signals
+  if (item.featured || item.featuredSupplier) {
+    return 'Featured supplier';
+  }
+  if ((item.averageRating || 0) >= HIGH_RATING_THRESHOLD && (item.reviewCount || 0) >= 5) {
+    return `Highly rated (${(item.averageRating || 0).toFixed(1)}★)`;
+  }
+  if (item.createdAt) {
+    const daysOld = (Date.now() - new Date(item.createdAt)) / (1000 * 60 * 60 * 24);
+    if (daysOld < NEW_SUPPLIER_DAYS) {
+      return 'New on EventFlow';
+    }
+  }
+  if (item.verified) {
+    return 'Verified supplier';
+  }
+  if ((item.reviewCount || 0) >= 10) {
+    return 'Popular with great reviews';
+  }
+
+  return 'Good match for your search';
+}
+
 module.exports = {
   FIELD_WEIGHTS,
   BOOSTS,
+  RANKING_CONFIG,
   calculateRelevanceScore,
   calculateQualityScore,
   calculateProfileCompleteness,
+  getRankingReason,
   getMatchingSnippets,
   getMatchingFields,
 };
