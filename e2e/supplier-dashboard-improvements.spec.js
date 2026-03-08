@@ -386,12 +386,22 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
       // Button should not have a style attribute (inline styles removed)
       const styleAttr = await profileToggle.getAttribute('style');
       expect(styleAttr).toBeNull();
+      // Teal variant class must be present so gradient styling still applies
+      const hasTealClass = await profileToggle.evaluate(el =>
+        el.classList.contains('form-toggle-btn--teal')
+      );
+      expect(hasTealClass).toBe(true);
     }
 
     const packageToggle = page.locator('#toggle-package-form');
     if ((await packageToggle.count()) > 0) {
       const styleAttr = await packageToggle.getAttribute('style');
       expect(styleAttr).toBeNull();
+      // Indigo variant class must be present so gradient styling still applies
+      const hasIndigoClass = await packageToggle.evaluate(el =>
+        el.classList.contains('form-toggle-btn--indigo')
+      );
+      expect(hasIndigoClass).toBe(true);
     }
   });
 });

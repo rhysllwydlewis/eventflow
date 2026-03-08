@@ -4299,7 +4299,10 @@ html {
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
   margin-bottom: 0; /* reset supplier-card-header margin when both classes co-exist */
-  border-radius: 0; /* flat within card — parent overflow:hidden handles clipping */
+  /* border-radius is 0 because .sd-card always has overflow:hidden which clips
+     the gradient to the card's own border-radius. If .sd-card ever loses
+     overflow:hidden, this will need to be updated to match the card's radius. */
+  border-radius: 0;
   border-bottom: 1px solid var(--sd-header-border, rgba(11, 128, 115, 0.1));
   background: var(--sd-header-bg, linear-gradient(135deg, rgba(11, 128, 115, 0.04) 0%, rgba(16, 185, 129, 0.03) 100%));
 }
@@ -4518,13 +4521,18 @@ html {
   flex-wrap: nowrap; /* keep all controls on one row on desktop */
   flex: 1;
   min-width: 0;
-  overflow: hidden; /* prevent spillover into neighbouring flex item */
+  /* overflow:clip (not hidden) avoids creating a new stacking context while still
+     preventing child content from overflowing the toolbar's bounds. */
+  overflow: clip;
 }
 
 .sd-messages-toolbar__search {
   flex: 1 1 100px;
   min-width: 80px;
-  max-width: 200px; /* prevent search from consuming the full row */
+  /* Allow the search to scale with the available space on very wide screens
+     (up to 30% of its container) while keeping a 200px upper cap on narrower
+     layouts where wider searches would push selects to a new row. */
+  max-width: min(200px, 30%);
   padding: 6px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
