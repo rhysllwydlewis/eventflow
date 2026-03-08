@@ -46,10 +46,8 @@ function renderTickets(tickets) {
     }
 
     const status = typeof ticket?.status === 'string' ? ticket.status : 'open';
-    const priority = typeof ticket?.priority === 'string' ? ticket.priority : 'medium';
     const message = typeof ticket?.message === 'string' ? ticket.message : '';
     const statusClass = ticketingSystem.getStatusClass(status);
-    const priorityClass = ticketingSystem.getPriorityClass(priority);
     const createdAt = ticketingSystem.formatTimestamp(ticket?.createdAt);
     const responseCount = Array.isArray(ticket?.responses) ? ticket.responses.length : 0;
 
@@ -59,7 +57,6 @@ function renderTickets(tickets) {
           <strong>${escapeHtml(ticket.subject || 'No Subject')}</strong>
           <div style="display:flex;gap:0.5rem;">
             <span class="badge ${statusClass}">${status.replace('_', ' ')}</span>
-            <span class="badge ${priorityClass}">${priority}</span>
           </div>
         </div>
         <p class="small" style="margin:0.5rem 0;color:#6b7280;">${escapeHtml(message.substring(0, 100))}${message.length > 100 ? '...' : ''}</p>
@@ -101,15 +98,6 @@ function showCreateTicketModal() {
           <div class="form-row">
             <label for="ticketMessage">Message *</label>
             <textarea id="ticketMessage" rows="6" required placeholder="Describe your issue in detail"></textarea>
-          </div>
-          <div class="form-row">
-            <label for="ticketPriority">Priority</label>
-            <select id="ticketPriority">
-              <option value="low">Low</option>
-              <option value="medium" selected>Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
           </div>
           <div class="form-actions" style="margin-top:1rem;">
             <button type="submit" class="btn btn-primary">Submit Ticket</button>
@@ -157,7 +145,6 @@ function showCreateTicketModal() {
         senderEmail: user.email,
         subject: modal.querySelector('#ticketSubject')?.value || '',
         message: modal.querySelector('#ticketMessage')?.value || '',
-        priority: modal.querySelector('#ticketPriority')?.value || 'medium',
       };
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -238,21 +225,28 @@ function viewTicket(ticketId) {
     }
 
     const status = typeof ticket?.status === 'string' ? ticket.status : 'open';
-    const priority = typeof ticket?.priority === 'string' ? ticket.priority : 'medium';
     const message = typeof ticket?.message === 'string' ? ticket.message : '';
     const statusClass = ticketingSystem.getStatusClass(status);
-    const priorityClass = ticketingSystem.getPriorityClass(priority);
     const createdAt = ticketingSystem.formatTimestamp(ticket?.createdAt);
+
+    // User-friendly status description instead of exposing internal priority
+    const statusDescriptions = {
+      open: 'Your ticket has been received and is awaiting review.',
+      in_progress: 'Our support team is actively working on your ticket.',
+      resolved: 'This ticket has been resolved. Reply if you need further help.',
+      closed: 'This ticket is closed.',
+    };
+    const statusDescription = statusDescriptions[status] || '';
 
     let html = `
       <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #e4e4e7;">
         <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
           <span class="badge ${statusClass}">${status.replace('_', ' ')}</span>
-          <span class="badge ${priorityClass}">${priority}</span>
         </div>
         <h4 style="margin:0.5rem 0;">${escapeHtml(ticket.subject)}</h4>
         <p style="margin:0.5rem 0;">${escapeHtml(message)}</p>
-        <p class="small" style="color:#9ca3af;margin:0.5rem 0 0;">Created ${createdAt}</p>
+        <p class="small" style="color:#6b7280;margin:0.5rem 0 0;">${escapeHtml(statusDescription)}</p>
+        <p class="small" style="color:#9ca3af;margin:0.25rem 0 0;">Created ${createdAt}</p>
       </div>
     `;
 

@@ -17,6 +17,15 @@
     { value: 'urgent', label: 'Urgent' },
   ];
 
+  const TIER_LABELS = {
+    pro_plus: 'Pro Plus',
+    pro: 'Pro',
+    free: 'Free',
+  };
+
+  // Tickets waiting more than this many hours without admin reply are considered stale.
+  const STALE_HOURS = 48;
+
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text || '';
@@ -35,6 +44,39 @@
       return ticket.replies;
     }
     return [];
+  }
+
+  function isActiveTicket(ticket) {
+    return ticket.status === 'open' || ticket.status === 'in_progress';
+  }
+
+  function isStale(ticket) {
+    if (!isActiveTicket(ticket)) return false;
+    const responses = getTicketResponses(ticket);
+    // Stale if the last reply was from a non-admin (or there are no replies at all) and
+    // it's been more than STALE_HOURS hours since the last update.
+    const lastAdminReply = responses.reduce((latest, r) => {
+      if (r.userRole === 'admin') {
+        const t = new Date(r.createdAt || 0).getTime();
+        return t > latest ? t : latest;
+      }
+      return latest;
+    }, 0);
+    const lastUpdate = new Date(ticket.updatedAt || ticket.createdAt || 0).getTime();
+    const compareTime = lastAdminReply > 0 ? lastAdminReply : lastUpdate;
+    const hoursAgo = (Date.now() - compareTime) / 3_600_000;
+    return hoursAgo > STALE_HOURS;
+  }
+
+  function getTierBadgeHtml(tier) {
+    const label = TIER_LABELS[tier] || 'Free';
+    const colorMap = {
+      pro_plus: '#7c3aed',
+      pro: '#2563eb',
+      free: '#6b7280',
+    };
+    const color = colorMap[tier] || colorMap.free;
+    return `<span style="display:inline-block;padding:0.1em 0.45em;border-radius:4px;font-size:0.7rem;font-weight:600;color:#fff;background:${color};">${escapeHtml(label)}</span>`;
   }
 
   async function loadTickets() {
@@ -62,23 +104,45 @@
     const inProgress = allTickets.filter(ticket => ticket.status === 'in_progress').length;
     const resolved = allTickets.filter(ticket => ticket.status === 'resolved').length;
     const urgent = allTickets.filter(ticket => ticket.priority === 'urgent').length;
+    const unassigned = allTickets.filter(
+      ticket => isActiveTicket(ticket) && !ticket.assignedTo
+    ).length;
+    const stale = allTickets.filter(isStale).length;
+    const proPlusCount = allTickets.filter(t => t.accountTier === 'pro_plus').length;
+    const proCount = allTickets.filter(t => t.accountTier === 'pro').length;
 
     summaryContainer.innerHTML = `
-      <div class="card" style="min-width:180px;">
+      <div class="card" style="min-width:150px;">
         <div class="small">Open</div>
         <div style="font-size:1.5rem;font-weight:700;color:#92400e;">${open}</div>
       </div>
-      <div class="card" style="min-width:180px;">
+      <div class="card" style="min-width:150px;">
         <div class="small">In Progress</div>
         <div style="font-size:1.5rem;font-weight:700;color:#1e3a8a;">${inProgress}</div>
       </div>
-      <div class="card" style="min-width:180px;">
+      <div class="card" style="min-width:150px;">
         <div class="small">Resolved</div>
         <div style="font-size:1.5rem;font-weight:700;color:#166534;">${resolved}</div>
       </div>
-      <div class="card" style="min-width:180px;">
+      <div class="card" style="min-width:150px;">
         <div class="small">Urgent</div>
         <div style="font-size:1.5rem;font-weight:700;color:#b91c1c;">${urgent}</div>
+      </div>
+      <div class="card" style="min-width:150px;">
+        <div class="small">Unassigned (active)</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#b45309;">${unassigned}</div>
+      </div>
+      <div class="card" style="min-width:150px;">
+        <div class="small">Stale (&gt;${STALE_HOURS}h)</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#7c3aed;">${stale}</div>
+      </div>
+      <div class="card" style="min-width:150px;">
+        <div class="small">Pro Plus tickets</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#7c3aed;">${proPlusCount}</div>
+      </div>
+      <div class="card" style="min-width:150px;">
+        <div class="small">Pro tickets</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#2563eb;">${proCount}</div>
       </div>
     `;
   }
@@ -93,6 +157,7 @@
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     const priorityFilter = document.getElementById('priorityFilter')?.value || '';
     const assignedFilter = document.getElementById('assignedFilter')?.value || '';
+    const tierFilter = document.getElementById('tierFilter')?.value || '';
 
     const filtered = allTickets.filter(ticket => {
       if (searchTerm) {
@@ -126,6 +191,10 @@
         return false;
       }
 
+      if (tierFilter && (ticket.accountTier || 'free') !== tierFilter) {
+        return false;
+      }
+
       return true;
     });
 
@@ -145,22 +214,33 @@
     }
 
     let html =
-      '<div class="table-wrapper"><table><thead><tr><th>Subject</th><th>From</th><th>Status</th><th>Priority</th><th>Created</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>';
+      '<div class="table-wrapper"><table><thead><tr><th>Subject</th><th>From / Tier</th><th>Status</th><th>Priority</th><th>Created</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>';
 
     filtered.forEach(ticket => {
       const createdAt = formatDate(ticket.createdAt);
       const senderName = ticket.senderName || ticket.userName || 'Unknown User';
       const senderEmail = ticket.senderEmail || ticket.userEmail || '';
       const replyCount = getTicketResponses(ticket).length;
+      const tierBadge = getTierBadgeHtml(ticket.accountTier || 'free');
+      const staleIndicator = isStale(ticket)
+        ? ' <span title="No admin reply in over 48 hours" style="color:#7c3aed;font-size:0.75rem;">⚠ stale</span>'
+        : '';
 
       html += `
         <tr>
-          <td><strong>${escapeHtml(ticket.subject || 'No subject')}</strong><br><span class="small">${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}</span></td>
-          <td>${escapeHtml(senderName)}<br><span class="small">${escapeHtml(senderEmail)}</span></td>
+          <td>
+            <strong>${escapeHtml(ticket.subject || 'No subject')}</strong>${staleIndicator}<br>
+            <span class="small">${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}</span>
+          </td>
+          <td>
+            ${escapeHtml(senderName)}<br>
+            <span class="small">${escapeHtml(senderEmail)}</span><br>
+            ${tierBadge}
+          </td>
           <td><span class="badge badge-${ticket.status || 'open'}">${(ticket.status || 'open').replace('_', ' ')}</span></td>
           <td><span class="badge badge-priority-${ticket.priority || 'medium'}">${ticket.priority || 'medium'}</span></td>
           <td class="small">${createdAt}</td>
-          <td class="small">${ticket.assignedTo ? escapeHtml(ticket.assignedTo) : 'Unassigned'}</td>
+          <td class="small">${ticket.assignedTo ? escapeHtml(ticket.assignedTo) : '<em>Unassigned</em>'}</td>
           <td>
             <button class="btn-sm btn-primary" data-action="viewTicket" data-id="${ticket.id}">Manage</button>
           </td>
@@ -210,6 +290,12 @@
       })
       .join('');
 
+    // Triage metadata display
+    const tier = ticket.accountTier || 'free';
+    const tierLabel = TIER_LABELS[tier] || 'Free';
+    const prioritySourceLabel =
+      ticket.prioritySource === 'admin' ? 'Admin override' : 'Auto (account tier)';
+
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';
     modal.innerHTML = `
@@ -221,13 +307,20 @@
         <div class="modal-body">
           <p class="small" style="margin:0 0 0.25rem;">From ${escapeHtml(ticket.senderName || ticket.senderEmail || 'Unknown')}</p>
           <h4 style="margin:0 0 0.5rem;">${escapeHtml(ticket.subject || 'No subject')}</h4>
+
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;">
+            ${getTierBadgeHtml(tier)}
+            <span class="small" style="color:#6b7280;">Account tier: <strong>${escapeHtml(tierLabel)}</strong></span>
+            <span class="small" style="color:#6b7280;">• Priority source: <strong>${escapeHtml(prioritySourceLabel)}</strong></span>
+          </div>
+
           <p style="background:#f9fafb;border-radius:8px;padding:0.75rem;border:1px solid #e5e7eb;white-space:pre-wrap;">${escapeHtml(ticket.message || '')}</p>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin:1rem 0;">
             <label class="small">Status
               <select id="ticketStatusSelect">${statusOptions}</select>
             </label>
-            <label class="small">Priority
+            <label class="small">Priority (admin override)
               <select id="ticketPrioritySelect">${priorityOptions}</select>
             </label>
             <label class="small">Assigned To
@@ -307,14 +400,16 @@
   }
 
   function setupFilterListeners() {
-    ['ticketSearch', 'statusFilter', 'priorityFilter', 'assignedFilter'].forEach(id => {
-      const element = document.getElementById(id);
-      if (!element) {
-        return;
+    ['ticketSearch', 'statusFilter', 'priorityFilter', 'assignedFilter', 'tierFilter'].forEach(
+      id => {
+        const element = document.getElementById(id);
+        if (!element) {
+          return;
+        }
+        const eventType = id === 'ticketSearch' ? 'input' : 'change';
+        element.addEventListener(eventType, renderTickets);
       }
-      const eventType = id === 'ticketSearch' ? 'input' : 'change';
-      element.addEventListener(eventType, renderTickets);
-    });
+    );
   }
 
   document.getElementById('backToDashboard')?.addEventListener('click', () => {

@@ -17,6 +17,7 @@ const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 const { normalizeTicketRecord } = require('../utils/ticketNormalization');
+const { PRIORITY_RANK } = require('../utils/tierPriority');
 const photoUpload = require('../photo-upload');
 
 const router = express.Router();
@@ -3068,11 +3069,29 @@ router.get('/tickets', authRequired, roleRequired('admin'), async (_req, res) =>
       normalizeTicketRecord(ticket, { generateId: uid })
     );
 
-    // Sort by date (newest first)
+    // Queue-oriented sort: surface unresolved, urgent/high-priority, and unassigned
+    // tickets first so admins can triage the most critical work immediately.
+    const ACTIVE_STATUSES = new Set(['open', 'in_progress']);
     tickets.sort((a, b) => {
+      // 1. Active tickets before resolved/closed
+      const aActive = ACTIVE_STATUSES.has(a.status) ? 1 : 0;
+      const bActive = ACTIVE_STATUSES.has(b.status) ? 1 : 0;
+      if (bActive !== aActive) return bActive - aActive;
+
+      // 2. Higher priority first (urgent > high > medium > low)
+      const aPriority = PRIORITY_RANK[a.priority] || 2;
+      const bPriority = PRIORITY_RANK[b.priority] || 2;
+      if (bPriority !== aPriority) return bPriority - aPriority;
+
+      // 3. Unassigned before assigned (unassigned needs attention sooner)
+      const aUnassigned = a.assignedTo ? 0 : 1;
+      const bUnassigned = b.assignedTo ? 0 : 1;
+      if (bUnassigned !== aUnassigned) return bUnassigned - aUnassigned;
+
+      // 4. Oldest first within the same bucket (FIFO within priority)
       const aTime = new Date(a.createdAt || 0).getTime();
       const bTime = new Date(b.createdAt || 0).getTime();
-      return bTime - aTime;
+      return aTime - bTime;
     });
 
     res.json({ items: tickets });
@@ -3138,6 +3157,7 @@ router.put(
           return res.status(400).json({ error: 'Invalid priority' });
         }
         ticket.priority = priority;
+        ticket.prioritySource = 'admin';
       }
       if (assignedTo !== undefined) {
         ticket.assignedTo = assignedTo || null;
@@ -3154,6 +3174,7 @@ router.put(
           $set: {
             status: ticket.status,
             priority: ticket.priority,
+            prioritySource: ticket.prioritySource,
             assignedTo: ticket.assignedTo,
             updatedAt: ticket.updatedAt,
             updatedBy: ticket.updatedBy,
