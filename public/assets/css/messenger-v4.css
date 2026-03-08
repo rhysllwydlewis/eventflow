@@ -17,29 +17,33 @@
 
 :root {
   /* Messenger-specific color palette */
-  --messenger-primary: #0B8073;
-  --messenger-primary-dark: #0A6B5F;
+  --messenger-primary: #0b8073;
+  --messenger-primary-dark: #0a6b5f;
   --messenger-teal-gradient-start: rgba(11, 128, 115, 0.85);
   --messenger-teal-gradient-end: rgba(10, 107, 95, 0.92);
-  
+
   /* Glass backgrounds */
   --messenger-glass-light: rgba(255, 255, 255, 0.95);
   --messenger-glass-medium: rgba(255, 255, 255, 0.72);
   --messenger-glass-heavy: rgba(255, 255, 255, 0.15);
-  
+
   /* Message bubble colors */
-  --messenger-bubble-sent-bg: linear-gradient(135deg, var(--messenger-teal-gradient-start) 0%, var(--messenger-teal-gradient-end) 100%);
+  --messenger-bubble-sent-bg: linear-gradient(
+    135deg,
+    var(--messenger-teal-gradient-start) 0%,
+    var(--messenger-teal-gradient-end) 100%
+  );
   --messenger-bubble-received-bg: var(--messenger-glass-light);
-  
+
   /* Status colors */
   --messenger-online: #10b981;
   --messenger-offline: #6b7280;
   --messenger-typing: #3b82f6;
-  
+
   /* Badge colors */
   --messenger-unread-bg: var(--messenger-primary);
   --messenger-unread-text: #ffffff;
-  
+
   /* Spacing (8px grid) */
   --messenger-space-xs: 4px;
   --messenger-space-sm: 8px;
@@ -47,18 +51,18 @@
   --messenger-space-lg: 16px;
   --messenger-space-xl: 24px;
   --messenger-space-2xl: 32px;
-  
+
   /* Transitions */
   --messenger-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --messenger-transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --messenger-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   /* Shadows */
   --messenger-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --messenger-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --messenger-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --messenger-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
+
   /* Z-index layers */
   --messenger-z-base: 1;
   --messenger-z-dropdown: 100;
@@ -90,7 +94,8 @@
   margin: 0 auto;
   width: 100%;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color: var(--ef-text-base, #1a202c);
   overflow: hidden;
   /* Issue 12: relative positioning required for absolute-positioned mobile panels */
@@ -275,8 +280,13 @@
 }
 
 @keyframes messenger-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .messenger-v4__conversation-details {
@@ -580,7 +590,9 @@
 
 .messenger-v4__message-content {
   max-width: 65%;
-  min-width: 0;
+  min-width: 120px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .messenger-v4__message-bubble {
@@ -692,7 +704,9 @@
 }
 
 @keyframes messenger-typing {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.5;
   }
@@ -785,9 +799,10 @@
     width: 320px;
     min-width: 280px;
   }
-  
+
   .messenger-v4__message-content {
     max-width: 75%;
+    min-width: 110px;
   }
 }
 
@@ -805,7 +820,7 @@
     min-width: 0;
     border-right: none;
   }
-  
+
   .messenger-v4__chat {
     position: absolute;
     inset: 0;
@@ -844,7 +859,7 @@
   /* Ensure message content column can shrink, preventing bubble overflow */
   .messenger-v4__message-content {
     max-width: 85%;
-    min-width: 0;
+    min-width: 100px;
   }
 
   /* Wrap long words / URLs inside bubbles on narrow screens */
@@ -892,6 +907,7 @@
 
   .messenger-v4__message-content {
     max-width: 90%;
+    min-width: 80px;
   }
 
   .messenger-v4__composer {
@@ -927,7 +943,7 @@
   .messenger-v4__message--sent .messenger-v4__message-bubble {
     border: 2px solid #fff;
   }
-  
+
   .messenger-v4__message--received .messenger-v4__message-bubble {
     border: 2px solid currentColor;
   }

@@ -37,11 +37,15 @@ let redisInitialised = false;
  * Falls back gracefully to null if ioredis is not installed or REDIS_URL is not set.
  */
 function initRedis() {
-  if (redisInitialised) { return; }
+  if (redisInitialised) {
+    return;
+  }
   redisInitialised = true;
 
   const redisUrl = process.env.REDIS_URL || process.env.REDIS_URI;
-  if (!redisUrl) { return; }
+  if (!redisUrl) {
+    return;
+  }
 
   try {
     // eslint-disable-next-line global-require, node/no-missing-require
