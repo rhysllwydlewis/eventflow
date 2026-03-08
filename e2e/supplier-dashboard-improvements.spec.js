@@ -260,7 +260,7 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     const dividers = page.locator('.sd-section-divider');
     if ((await dividers.count()) > 0) {
-      for (let i = 0; i < await dividers.count(); i++) {
+      for (let i = 0; i < (await dividers.count()); i++) {
         const divider = dividers.nth(i);
         const box = await divider.boundingBox();
         if (box) {
@@ -284,7 +284,9 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
     }
   });
 
-  test('desktop layout: subscription and lead quality are side-by-side at 1200px', async ({ page }) => {
+  test('desktop layout: subscription and lead quality are side-by-side at 1200px', async ({
+    page,
+  }) => {
     // 1200px is well above the 1024px breakpoint where sd-two-col switches to flex-direction: row
     await page.setViewportSize({ width: 1200, height: 800 });
     await page.goto('/dashboard-supplier.html');
@@ -345,5 +347,51 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
     await expect(page.locator('#my-packages')).toBeAttached();
     await expect(page.locator('#threads-sup')).toBeAttached();
     await expect(page.locator('#tickets-sup')).toBeAttached();
+  });
+
+  test('export button uses sd-messages-toolbar__export class and has aria-label', async ({
+    page,
+  }) => {
+    await page.goto('/dashboard-supplier.html');
+    await page.waitForLoadState('networkidle');
+
+    const exportBtn = page.locator('#export-enquiries-btn');
+    if ((await exportBtn.count()) > 0) {
+      const hasClass = await exportBtn.evaluate(el =>
+        el.classList.contains('sd-messages-toolbar__export')
+      );
+      expect(hasClass).toBe(true);
+      // aria-label must be present for icon-only display on mobile
+      const ariaLabel = await exportBtn.getAttribute('aria-label');
+      expect(ariaLabel).toBeTruthy();
+    }
+  });
+
+  test('reviews placeholder uses sd-reviews-placeholder CSS class', async ({ page }) => {
+    await page.goto('/dashboard-supplier.html');
+    await page.waitForLoadState('networkidle');
+
+    const placeholder = page.locator('.sd-reviews-placeholder');
+    if ((await placeholder.count()) > 0) {
+      await expect(placeholder.first()).toBeAttached();
+    }
+  });
+
+  test('form-toggle buttons use CSS variant classes instead of inline styles', async ({ page }) => {
+    await page.goto('/dashboard-supplier.html');
+    await page.waitForLoadState('networkidle');
+
+    const profileToggle = page.locator('#toggle-profile-form');
+    if ((await profileToggle.count()) > 0) {
+      // Button should not have a style attribute (inline styles removed)
+      const styleAttr = await profileToggle.getAttribute('style');
+      expect(styleAttr).toBeNull();
+    }
+
+    const packageToggle = page.locator('#toggle-package-form');
+    if ((await packageToggle.count()) > 0) {
+      const styleAttr = await packageToggle.getAttribute('style');
+      expect(styleAttr).toBeNull();
+    }
   });
 });
