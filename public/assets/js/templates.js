@@ -151,14 +151,16 @@
 
     templates.forEach(template => {
       html += `
-        <div class="template-card" data-template-id="${template.id}" style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; cursor: pointer; transition: all 0.2s; background: white;">
-          <div style="font-size: 3rem; margin-bottom: 0.5rem;">${template.icon}</div>
+        <div class="template-card" data-template-id="${template.id}"
+             role="button" tabindex="0"
+             style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; cursor: pointer; transition: all 0.2s; background: white;">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem;" aria-hidden="true">${template.icon}</div>
           <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">${escapeHtml(template.name)}</h4>
           <p class="small" style="color: #6b7280; margin-bottom: 1rem;">${escapeHtml(template.description)}</p>
-          <div class="small" style="color: #9ca3af;">
-            <div>💰 Budget: £${template.budget.toLocaleString()}</div>
-            <div>👥 Guests: ${template.guestCount}</div>
-            <div>⏱️ Duration: ${template.duration}h</div>
+          <div class="small" style="color: #9ca3af;" aria-label="Budget £${template.budget.toLocaleString()}, ${template.guestCount} guests, ${template.duration} hours duration">
+            <div aria-hidden="true">💰 Budget: £${template.budget.toLocaleString()}</div>
+            <div aria-hidden="true">👥 Guests: ${template.guestCount}</div>
+            <div aria-hidden="true">⏱️ Duration: ${template.duration}h</div>
           </div>
         </div>
       `;
@@ -174,11 +176,21 @@
 
     // Add event listeners
     container.querySelectorAll('.template-card').forEach(card => {
-      card.addEventListener('click', () => {
+      function activateCard() {
         const templateId = card.getAttribute('data-template-id');
         const template = getTemplate(templateId);
         if (template && onSelect) {
           onSelect(template);
+        }
+      }
+
+      card.addEventListener('click', activateCard);
+
+      // Keyboard activation for role="button" cards
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activateCard();
         }
       });
 
@@ -188,10 +200,18 @@
         card.style.boxShadow = '0 4px 12px rgba(11, 128, 115, 0.15)';
       });
 
-      card.addEventListener('mouseleave', () => {
+      card.addEventListener('focusin', () => {
+        card.style.borderColor = '#0B8073';
+        card.style.boxShadow = '0 0 0 3px rgba(11, 128, 115, 0.2)';
+      });
+
+      function removeHighlight() {
         card.style.borderColor = '#e5e7eb';
         card.style.boxShadow = 'none';
-      });
+      }
+
+      card.addEventListener('mouseleave', removeHighlight);
+      card.addEventListener('focusout', removeHighlight);
     });
 
     const skipBtn = document.getElementById('skip-template-btn');
