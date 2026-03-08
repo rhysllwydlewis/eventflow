@@ -347,7 +347,18 @@
 
     document.body.appendChild(modal);
 
-    const close = () => modal.remove();
+    const close = () => {
+      modal.remove();
+      document.removeEventListener('keydown', handleKeydown);
+    };
+
+    const handleKeydown = event => {
+      if (event.key === 'Escape') {
+        close();
+      }
+    };
+    document.addEventListener('keydown', handleKeydown);
+
     modal.querySelector('.modal-close').addEventListener('click', close);
     modal.addEventListener('click', event => {
       if (event.target === modal) {

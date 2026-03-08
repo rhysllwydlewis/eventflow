@@ -66,7 +66,7 @@
             <span class="nav-icon">📸</span>
             <span class="nav-label">Photos</span>
           </a>
-          <a href="/admin-tickets" class="admin-nav-btn">
+          <a href="/admin-tickets" class="admin-nav-btn active">
             <span class="nav-icon">🎫</span>
             <span class="nav-label">Tickets</span>
           </a>
@@ -179,7 +179,7 @@
         <div class="header-content">
           <div>
             <h1 class="dashboard-title">Support Tickets</h1>
-            <p class="dashboard-subtitle">Manage customer support requests and inquiries</p>
+            <p class="dashboard-subtitle">Manage support requests — tickets are prioritised automatically by account tier (Pro Plus → Urgent, Pro → High, Free → Medium)</p>
           </div>
           <div class="header-actions">
             <button class="btn-secondary" id="backToDashboard">← Back to Dashboard</button>
@@ -195,27 +195,28 @@
               id="ticketSearch"
               placeholder="Search tickets..."
               class="search-input"
+              aria-label="Search tickets"
             />
-            <select id="statusFilter" class="filter-select">
+            <select id="statusFilter" class="filter-select" aria-label="Filter by status">
               <option value="">All Status</option>
               <option value="open">Open</option>
               <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </select>
-            <select id="priorityFilter" class="filter-select">
+            <select id="priorityFilter" class="filter-select" aria-label="Filter by priority">
               <option value="">All Priorities</option>
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
               <option value="urgent">Urgent</option>
             </select>
-            <select id="assignedFilter" class="filter-select">
+            <select id="assignedFilter" class="filter-select" aria-label="Filter by assignment">
               <option value="">All Tickets</option>
               <option value="unassigned">Unassigned</option>
               <option value="assigned">Assigned</option>
             </select>
-            <select id="tierFilter" class="filter-select">
+            <select id="tierFilter" class="filter-select" aria-label="Filter by account tier">
               <option value="">All Tiers</option>
               <option value="pro_plus">Pro Plus</option>
               <option value="pro">Pro</option>
