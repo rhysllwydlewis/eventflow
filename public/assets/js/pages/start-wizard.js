@@ -10,14 +10,11 @@
    * HTML escape utility — defined first so all template literals below can use it.
    */
   function escapeHtml(unsafe) {
-    if (unsafe == null) {
+    if (unsafe === null || unsafe === undefined) {
       return '';
     }
-    if (typeof unsafe !== 'string') {
-      return String(unsafe);
-    }
     const div = document.createElement('div');
-    div.textContent = unsafe;
+    div.textContent = String(unsafe);
     return div.innerHTML;
   }
 
@@ -252,13 +249,15 @@
 
     // Step-specific rendering
     if (stepIndex === STEP_CONFIG.WELCOME) {
-      // Welcome screen (no progress indicator)
+      // Welcome screen — no progress indicator
       html += renderWelcomeScreen();
+    } else if (stepIndex === STEP_CONFIG.SUCCESS) {
+      // Success screen — no progress indicator (it would show "Step 8 of 7")
+      html += renderSuccessScreen();
     } else {
-      // Add progress indicator for all other steps
+      // All wizard steps: show progress indicator then step content
       html += renderProgressIndicator(stepIndex);
 
-      // Render step content
       if (stepIndex === STEP_CONFIG.EVENT_TYPE) {
         html += renderEventTypeStep();
       } else if (stepIndex === STEP_CONFIG.EVENT_BASICS) {
@@ -268,8 +267,6 @@
         html += renderCategoryStep(CATEGORIES[categoryIndex]);
       } else if (stepIndex === STEP_CONFIG.REVIEW) {
         html += renderReviewStep();
-      } else if (stepIndex === STEP_CONFIG.SUCCESS) {
-        html += renderSuccessScreen();
       }
     }
 
@@ -551,12 +548,14 @@
     const selectedPackages = Object.keys(state.selectedPackages || {});
 
     // Build per-category edit links for selected packages
-    const categoryEditLinks = selectedPackages.map(catKey => {
-      const cat = CATEGORIES.find(c => c.key === catKey);
-      const catName = cat ? cat.name : catKey;
-      const stepIdx = STEP_CONFIG.CATEGORY_START + CATEGORIES.findIndex(c => c.key === catKey);
-      return `<a href="#" class="wizard-review-edit" data-step="${stepIdx}">✏️ Edit ${escapeHtml(catName)}</a>`;
-    }).join('');
+    const categoryEditLinks = selectedPackages
+      .map(catKey => {
+        const cat = CATEGORIES.find(c => c.key === catKey);
+        const catName = cat ? cat.name : catKey;
+        const stepIdx = STEP_CONFIG.CATEGORY_START + CATEGORIES.findIndex(c => c.key === catKey);
+        return `<a href="#" class="wizard-review-edit" data-step="${stepIdx}">✏️ Edit ${escapeHtml(catName)}</a>`;
+      })
+      .join('');
 
     return `
       <div class="wizard-card">
@@ -570,7 +569,7 @@
             ${state.eventName ? `<p><strong>Name:</strong> ${escapeHtml(state.eventName)}</p>` : ''}
             ${state.location ? `<p><strong>Location:</strong> ${escapeHtml(state.location)}</p>` : ''}
             ${state.date ? `<p><strong>Date:</strong> ${formatDate(state.date)}</p>` : ''}
-            ${state.guests ? `<p><strong>Guests:</strong> ${state.guests}</p>` : ''}
+            ${state.guests ? `<p><strong>Guests:</strong> ${escapeHtml(state.guests)}</p>` : ''}
             ${state.budget ? `<p><strong>Budget:</strong> ${escapeHtml(state.budget)}</p>` : ''}
             <a href="#" class="wizard-review-edit" data-step="${STEP_CONFIG.EVENT_TYPE}">✏️ Edit event type</a>
             <a href="#" class="wizard-review-edit" data-step="${STEP_CONFIG.EVENT_BASICS}">✏️ Edit details</a>
@@ -601,7 +600,6 @@
    */
   function renderSuccessScreen() {
     const state = window.WizardState.getState();
-    const planLink = savedPlanId ? `/dashboard/customer/plans/${savedPlanId}` : '/dashboard/customer';
 
     return `
       <div class="wizard-card wizard-success">
@@ -631,6 +629,9 @@
       return '';
     }
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
     return date.toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'long',
@@ -689,7 +690,7 @@
       html += `
         <div class="plan-summary-item">
           <span class="small">Guests:</span>
-          <span>${state.guests}</span>
+          <span>${escapeHtml(state.guests)}</span>
         </div>
       `;
     }
@@ -731,9 +732,15 @@
 
     // Build compact one-liner
     const parts = [];
-    if (state.eventType) parts.push(escapeHtml(state.eventType));
-    if (state.location)  parts.push(escapeHtml(state.location));
-    if (selectedCount)   parts.push(`${selectedCount} package${selectedCount !== 1 ? 's' : ''}`);
+    if (state.eventType) {
+      parts.push(escapeHtml(state.eventType));
+    }
+    if (state.location) {
+      parts.push(escapeHtml(state.location));
+    }
+    if (selectedCount) {
+      parts.push(`${selectedCount} package${selectedCount !== 1 ? 's' : ''}`);
+    }
     const compactText = parts.length ? parts.join(' · ') : 'Your Plan';
 
     // Build detailed rows
@@ -751,7 +758,7 @@
       detailsHtml += `<div class="plan-summary-item"><span class="small">Location:</span><span>${escapeHtml(state.location)}</span></div>`;
     }
     if (state.guests) {
-      detailsHtml += `<div class="plan-summary-item"><span class="small">Guests:</span><span>${state.guests}</span></div>`;
+      detailsHtml += `<div class="plan-summary-item"><span class="small">Guests:</span><span>${escapeHtml(state.guests)}</span></div>`;
     }
     if (state.budget) {
       detailsHtml += `<div class="plan-summary-item"><span class="small">Budget:</span><span>${escapeHtml(state.budget)}</span></div>`;
@@ -942,7 +949,9 @@
 
       const viewPlanBtn = document.getElementById('success-view-plan');
       if (viewPlanBtn) {
-        const planLink = savedPlanId ? `/dashboard/customer/plans/${savedPlanId}` : '/dashboard/customer';
+        const planLink = savedPlanId
+          ? `/dashboard/customer/plans/${savedPlanId}`
+          : '/dashboard/customer';
         viewPlanBtn.addEventListener('click', () => {
           location.href = planLink;
         });
@@ -1008,14 +1017,21 @@
         confettiContainer.appendChild(confetti);
 
         // animationend is the primary cleanup; safety timeout as fallback
-        let cleanupTimer;
-        confetti.addEventListener('animationend', () => {
-          clearTimeout(cleanupTimer);
-          if (confetti.parentNode) confetti.remove();
-        }, { once: true });
-        cleanupTimer = setTimeout(() => {
-          if (confetti.parentNode) confetti.remove();
+        const cleanupTimer = setTimeout(() => {
+          if (confetti.parentNode) {
+            confetti.remove();
+          }
         }, 5000);
+        confetti.addEventListener(
+          'animationend',
+          () => {
+            clearTimeout(cleanupTimer);
+            if (confetti.parentNode) {
+              confetti.remove();
+            }
+          },
+          { once: true }
+        );
       }, i * 50);
     }
   }
@@ -1041,7 +1057,7 @@
 
     let html = '<div class="wizard-package-grid" role="listbox" aria-label="Available packages">';
     packages.slice(0, 6).forEach(pkg => {
-      const isSelected = pkg.id === selectedId;
+      const isSelected = String(pkg.id) === String(selectedId);
       const distanceInfo =
         pkg.distance !== undefined && pkg.distance !== null && typeof pkg.distance === 'number'
           ? `<p class="small wizard-package-distance">📍 ${escapeHtml(pkg.distance.toFixed(1))} miles away</p>`
@@ -1129,7 +1145,10 @@
 
       // Enforce validation before advancing (Bug 1.3)
       if (window.WizardValidation) {
-        const validationResult = window.WizardValidation.validateStep(currentStep, stepDataForValidation);
+        const validationResult = window.WizardValidation.validateStep(
+          currentStep,
+          stepDataForValidation
+        );
         if (!validationResult.valid) {
           // Show errors on fields and shake invalid ones
           Object.keys(validationResult.errors).forEach(fieldName => {
@@ -1199,12 +1218,13 @@
       const date = document.getElementById('wizard-date')?.value || '';
       const guests = document.getElementById('wizard-guests')?.value || null;
       const budget = document.getElementById('wizard-budget')?.value || '';
+      const parsedGuests = guests ? parseInt(guests, 10) : null;
 
       window.WizardState.saveStep(currentStep, {
         eventName,
         location,
         date,
-        guests: guests ? parseInt(guests, 10) : null,
+        guests: parsedGuests !== null && !isNaN(parsedGuests) ? parsedGuests : null,
         budget,
       });
     }
@@ -1223,6 +1243,7 @@
     const state = window.WizardState.getState();
     return !!(
       state.eventType ||
+      state.eventName ||
       state.location ||
       state.date ||
       state.guests ||
@@ -1349,7 +1370,7 @@
 
       // Store plan ID (if returned) for the "View Your Plan" link on the success screen
       if (saveResult && saveResult.status !== 401) {
-        savedPlanId = saveResult.plan?._id || saveResult._id || saveResult.id || null;
+        savedPlanId = saveResult.plan?.id || saveResult.plan?._id || saveResult._id || saveResult.id || null;
       }
 
       // Mark wizard as completed and disable beforeunload warning
@@ -1410,7 +1431,7 @@
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Failed to save plan');
+      throw new Error(errorData.message || errorData.error || 'Failed to save plan');
     }
 
     return await response.json();
