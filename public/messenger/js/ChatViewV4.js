@@ -484,8 +484,14 @@ class ChatViewV4 {
 
     // Make avatar + name link to the other user's profile
     const profileLink = this.container.querySelector('#v4HeaderProfileLink');
-    if (profileLink && other.userId) {
-      profileLink.href = `/supplier?id=${encodeURIComponent(other.userId)}`;
+    if (profileLink) {
+      if (other.userId) {
+        profileLink.href = `/supplier?id=${encodeURIComponent(other.userId)}`;
+        profileLink.style.cursor = '';
+      } else {
+        profileLink.removeAttribute('href');
+        profileLink.style.cursor = 'default';
+      }
     }
 
     // Set mark-read/unread toggle button based on conversation state
@@ -758,13 +764,32 @@ class ChatViewV4 {
     if (menuEl) {
       msgEl.appendChild(menuEl);
 
-      // Flip the menu above the button if it would be clipped by the bottom of the scroll container
+      // Position the menu precisely near the ⋮ button using explicit coordinates,
+      // so it appears correctly for both sent (row-reverse) and received messages.
+      const btnRect = btn.getBoundingClientRect();
+      const msgRect = msgEl.getBoundingClientRect();
+      const isSentMsg = msgEl.classList.contains('messenger-v4__message--sent');
+
+      // Horizontal: for received messages align right edge to button's right edge;
+      // for sent messages (button on left) align left edge to button's left edge.
+      if (isSentMsg) {
+        menuEl.style.left = `${btnRect.left - msgRect.left}px`;
+      } else {
+        menuEl.style.right = `${msgRect.right - btnRect.right}px`;
+      }
+
+      // Vertical: open below the button by default
+      menuEl.style.top = `${btnRect.bottom - msgRect.top + 4}px`;
+
+      // Flip upward if the menu would be clipped by the scroll container's bottom edge
       const menuRect = menuEl.getBoundingClientRect();
       const scrollContainer = this.messagesEl;
       const containerRect = scrollContainer ? scrollContainer.getBoundingClientRect() : null;
       const bottomBoundary = containerRect ? containerRect.bottom : window.innerHeight;
+
       if (menuRect.bottom > bottomBoundary) {
         menuEl.classList.add('messenger-v4__context-menu--above');
+        menuEl.style.top = `${btnRect.top - msgRect.top - menuRect.height - 4}px`;
       }
 
       // Trigger the glass slide-in animation defined in messenger-v4-polish.css §14

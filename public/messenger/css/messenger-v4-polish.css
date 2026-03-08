@@ -470,10 +470,7 @@
 }
 
 .messenger-v4__context-menu--above {
-  top: auto;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 4px;
+  /* Vertical position is calculated by JavaScript; this class selects the upward animation */
 }
 
 @keyframes mvContextMenuInAbove {
