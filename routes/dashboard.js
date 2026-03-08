@@ -38,6 +38,28 @@ router.get('/dashboard/customer', apiLimiter, authRequired, async (req, res) => 
 });
 
 /**
+ * GET /dashboard/customer/plans/:id
+ * Serve the customer dashboard with the plan ID embedded in the URL so the
+ * client-side JS can highlight / scroll to the correct plan.
+ */
+router.get('/dashboard/customer/plans/:id', apiLimiter, authRequired, async (req, res) => {
+  try {
+    if (req.user.role !== 'customer') {
+      return res.redirect('/auth');
+    }
+    // Validate the plan ID format (prefix_alphanumeric as produced by uid()).
+    // An invalid format cannot belong to a real plan — redirect to the dashboard.
+    if (!/^[a-z]+_[0-9a-z]+$/i.test(req.params.id)) {
+      return res.redirect('/dashboard/customer');
+    }
+    res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-customer.html'));
+  } catch (error) {
+    logger.error('Error serving customer dashboard (plan detail):', error);
+    return res.status(500).send('Internal server error');
+  }
+});
+
+/**
  * GET /dashboard/supplier
  * Serve supplier dashboard HTML page
  */

@@ -629,6 +629,9 @@
       return '';
     }
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
     return date.toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'long',
@@ -1054,7 +1057,7 @@
 
     let html = '<div class="wizard-package-grid" role="listbox" aria-label="Available packages">';
     packages.slice(0, 6).forEach(pkg => {
-      const isSelected = String(pkg.id) === selectedId;
+      const isSelected = String(pkg.id) === String(selectedId);
       const distanceInfo =
         pkg.distance !== undefined && pkg.distance !== null && typeof pkg.distance === 'number'
           ? `<p class="small wizard-package-distance">📍 ${escapeHtml(pkg.distance.toFixed(1))} miles away</p>`
@@ -1220,7 +1223,7 @@
         eventName,
         location,
         date,
-        guests: guests ? parseInt(guests, 10) : null,
+        guests: guests && !isNaN(parseInt(guests, 10)) ? parseInt(guests, 10) : null,
         budget,
       });
     }
