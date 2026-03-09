@@ -636,7 +636,10 @@ router.post('/verification/submit', authRequired, csrfProtection, async (req, re
     };
 
     const missingFields = Object.entries(requiredFields)
-      .filter(([field]) => !supplier[field] && !req.body[field])
+      .filter(([field]) => {
+        const val = req.body[field] !== undefined ? req.body[field] : supplier[field];
+        return val === undefined || val === null || String(val).trim() === '';
+      })
       .map(([, label]) => label);
 
     if (missingFields.length > 0) {
@@ -653,19 +656,21 @@ router.post('/verification/submit', authRequired, csrfProtection, async (req, re
       updatedAt: now,
     };
 
-    // Apply any profile updates supplied in the body
-    const profileFields = [
-      'name',
-      'category',
-      'email',
-      'phone',
-      'location',
-      'description_short',
-      'description_long',
-    ];
+    // Apply any profile updates supplied in the body (with basic sanitization)
+    const FIELD_MAX_LENGTHS = {
+      name: 120,
+      category: 80,
+      email: 254,
+      phone: 30,
+      location: 200,
+      description_short: 300,
+      description_long: 5000,
+    };
+    const profileFields = Object.keys(FIELD_MAX_LENGTHS);
     for (const field of profileFields) {
       if (req.body[field] !== undefined) {
-        updates[field] = req.body[field];
+        const raw = String(req.body[field]).trim();
+        updates[field] = raw.substring(0, FIELD_MAX_LENGTHS[field]);
       }
     }
 

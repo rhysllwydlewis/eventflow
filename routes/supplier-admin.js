@@ -8,6 +8,7 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
+const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const {
   VERIFICATION_STATES,
   normaliseState,
@@ -154,6 +155,7 @@ router.post(
   applyAuthRequired,
   applyRoleRequired('admin'),
   applyCsrfProtection,
+  writeLimiter,
   async (req, res) => {
     try {
       const all = await dbUnified.read('suppliers');
@@ -207,6 +209,7 @@ router.post(
   applyAuthRequired,
   applyRoleRequired('admin'),
   applyCsrfProtection,
+  writeLimiter,
   async (req, res) => {
     try {
       const all = await dbUnified.read('suppliers');
@@ -268,6 +271,7 @@ router.post(
   applyAuthRequired,
   applyRoleRequired('admin'),
   applyCsrfProtection,
+  writeLimiter,
   async (req, res) => {
     try {
       const all = await dbUnified.read('suppliers');
@@ -326,6 +330,7 @@ router.post(
   applyAuthRequired,
   applyRoleRequired('admin'),
   applyCsrfProtection,
+  writeLimiter,
   async (req, res) => {
     try {
       const all = await dbUnified.read('suppliers');
@@ -383,6 +388,7 @@ router.get(
   '/suppliers/:id/audit',
   applyAuthRequired,
   applyRoleRequired('admin'),
+  apiLimiter,
   async (req, res) => {
     try {
       const supplierId = req.params.id;
