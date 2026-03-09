@@ -48,6 +48,8 @@ function makeStripeMock({ charges = [], subscriptions = [], customers = [], bala
 
 // ─── Mock Stripe charges and subscriptions data ────────────────────────────────
 
+const SECONDS_PER_DAY = 86400;
+
 const MOCK_CHARGES = [
   {
     id: 'ch_001',
@@ -55,7 +57,7 @@ const MOCK_CHARGES = [
     amount_captured: 2999,
     currency: 'gbp',
     status: 'succeeded',
-    created: Math.floor(Date.now() / 1000) - 86400,
+    created: Math.floor(Date.now() / 1000) - SECONDS_PER_DAY,
     description: 'EventFlow Pro subscription',
     customer: 'cus_001',
   },
@@ -65,7 +67,7 @@ const MOCK_CHARGES = [
     amount_captured: 4999,
     currency: 'gbp',
     status: 'succeeded',
-    created: Math.floor(Date.now() / 1000) - 172800,
+    created: Math.floor(Date.now() / 1000) - 2 * SECONDS_PER_DAY,
     description: 'EventFlow Pro+ subscription',
     customer: 'cus_002',
   },
@@ -75,7 +77,7 @@ const MOCK_CHARGES = [
     amount_captured: 0, // refunded
     currency: 'gbp',
     status: 'refunded',
-    created: Math.floor(Date.now() / 1000) - 259200,
+    created: Math.floor(Date.now() / 1000) - 3 * SECONDS_PER_DAY,
     description: 'EventFlow Pro subscription (refunded)',
     customer: 'cus_003',
   },
@@ -284,10 +286,13 @@ describe('Stripe Analytics — Payment Service MRR (mocked dbUnified)', () => {
   });
 
   it('calculateChurnRate detects canceled subscriptions within period', async () => {
+    const DAYS_SINCE_CANCEL = 5;
+    const DAYS_SINCE_CREATED = 60;
+
     const recentCancel = new Date();
-    recentCancel.setDate(recentCancel.getDate() - 5); // 5 days ago
+    recentCancel.setDate(recentCancel.getDate() - DAYS_SINCE_CANCEL);
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 60); // 60 days ago (before cutoff)
+    oldDate.setDate(oldDate.getDate() - DAYS_SINCE_CREATED); // before the 30-day cutoff
 
     mockSubscriptions = [
       {
@@ -457,7 +462,7 @@ describe('Stripe Analytics — Webhook Handler (mocked)', () => {
               { price: { nickname: 'Pro', unit_amount: 2999, recurring: { interval: 'month' } } },
             ],
           },
-          current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+          current_period_end: Math.floor(Date.now() / 1000) + 30 * SECONDS_PER_DAY,
           trial_end: null,
           metadata: { planName: 'pro' },
         },

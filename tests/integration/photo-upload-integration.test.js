@@ -133,7 +133,8 @@ describe('Photo Upload — Input Validation (unit)', () => {
   });
 
   it('rejects buffer exceeding 5 MB with ValidationError', async () => {
-    const bigBuffer = Buffer.alloc(6 * 1024 * 1024, 0xff);
+    const OVER_MAX_FILE_SIZE = 6 * 1024 * 1024; // 6 MB — exceeds the 5 MB limit
+    const bigBuffer = Buffer.alloc(OVER_MAX_FILE_SIZE, 0xff);
     await expect(photoUpload.processAndSaveImage(bigBuffer, 'big.jpg')).rejects.toMatchObject({
       name: 'ValidationError',
       message: expect.stringContaining('too large'),
