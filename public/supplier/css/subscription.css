@@ -911,16 +911,17 @@
 
 .faq-question::after {
   content: '+';
-  font-size: 1.25rem;
-  font-weight: 400;
+  font-size: 1.375rem;
+  font-weight: 300;
   color: #9ca3af;
-  transition: transform 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease;
   flex-shrink: 0;
   margin-left: 1rem;
+  line-height: 1;
 }
 
 details[open] .faq-question::after {
-  transform: rotate(45deg);
+  content: '\2212'; /* Unicode MINUS SIGN − cleaner than rotated + */
   color: #0B8073;
 }
 
@@ -974,17 +975,6 @@ details[open] .faq-question::after {
   display: inline-block;
 }
 
-/* Google Pay Button Container */
-.gpay-button-container {
-  display: flex;
-  justify-content: center;
-}
-
-.gpay-button {
-  width: 100% !important;
-  max-width: 100%;
-}
-
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .subscription-card,
@@ -994,4 +984,15 @@ details[open] .faq-question::after {
   .btn-primary {
     transition: none;
   }
+}
+
+/* Hide default <details> marker — we use custom ::after on .faq-question */
+.faq-item > summary {
+  list-style: none;
+}
+.faq-item > summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item > summary::marker {
+  content: '';
 }
