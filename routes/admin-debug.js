@@ -251,9 +251,6 @@ router.post(
       res.json({
         ok: true,
         message: `Test email sent to ${email}`,
-        // SECURITY NOTE: Test token returned for development/debugging only
-        // In production, ensure this endpoint is only accessible to admins
-        testToken: process.env.NODE_ENV === 'production' ? undefined : testToken,
       });
     } catch (error) {
       logger.error('Email test failed:', error);
