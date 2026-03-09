@@ -32,7 +32,7 @@ describe('Contact Form Endpoint', () => {
     });
 
     it('validates required fields (name, email, message)', () => {
-      expect(miscContent).toContain('Name, email, and message are required');
+      expect(miscContent).toContain('Name, email, subject and message are required');
     });
 
     it('validates email format', () => {

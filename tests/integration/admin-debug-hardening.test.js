@@ -16,14 +16,11 @@ const fs = require('fs');
 const path = require('path');
 
 const DEBUG_ROUTES = path.join(__dirname, '../../routes/admin-debug.js');
-const ADMIN_ROUTES = path.join(__dirname, '../../routes/admin.js');
 
 let debugContent;
-let adminContent;
 
 beforeAll(() => {
   debugContent = fs.readFileSync(DEBUG_ROUTES, 'utf8');
-  adminContent = fs.readFileSync(ADMIN_ROUTES, 'utf8');
 });
 
 // ─── File Existence ───────────────────────────────────────────────────────────
