@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0b8073;stop-opacity:1"/>
+      <stop offset="50%" style="stop-color:#10b981;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#0b8073;stop-opacity:0.85"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.08);stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:rgba(0,0,0,0.18);stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  <!-- Background gradient -->
+  <rect width="1200" height="400" fill="url(#bg)"/>
+  <!-- Subtle overlay -->
+  <rect width="1200" height="400" fill="url(#overlay)"/>
+  <!-- Decorative circles -->
+  <circle cx="980" cy="80" r="200" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="220" cy="350" r="160" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="600" cy="200" r="300" fill="rgba(255,255,255,0.03)"/>
+  <!-- Icon - subtle camera/image shape -->
+  <g transform="translate(540,155)" opacity="0.25">
+    <rect x="0" y="20" width="120" height="90" rx="8" fill="none" stroke="white" stroke-width="4"/>
+    <circle cx="60" cy="65" r="25" fill="none" stroke="white" stroke-width="4"/>
+    <rect x="40" y="10" width="40" height="16" rx="4" fill="none" stroke="white" stroke-width="3"/>
+  </g>
+</svg>

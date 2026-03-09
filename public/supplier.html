@@ -155,14 +155,20 @@
       </ol>
     </nav>
 
+    <!-- Preview Mode Banner — shown dynamically when ?preview=true -->
+    <div id="preview-mode-banner" class="preview-banner" style="display:none;" role="status" aria-live="polite">
+      <span>👁️ You are previewing your supplier profile</span>
+      <a href="/supplier/profile-customization" aria-label="Return to profile customization">← Edit Profile</a>
+    </div>
+
     <!-- Hero Section -->
     <section class="supplier-hero" id="supplier-hero">
       <div class="hero-media">
         <img 
           id="hero-banner" 
-          src="/assets/images/placeholder-banner.jpg" 
+          src="/assets/images/placeholder-banner.svg" 
           alt="Supplier banner"
-          onerror="this.src='/assets/images/placeholder-banner.jpg'"
+          onerror="this.onerror=null;this.src='/assets/images/placeholder-banner.svg'"
         />
         <div class="hero-badges" id="hero-badges">
           <!-- Badges will be dynamically inserted here -->

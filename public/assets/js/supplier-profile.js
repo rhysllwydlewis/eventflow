@@ -106,11 +106,26 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       return;
     }
 
-    // Update banner image
+    // Update banner image — DB field is bannerUrl; coverImage is a legacy alias
     const heroBanner = document.getElementById('hero-banner');
-    if (heroBanner && supplier.coverImage) {
-      heroBanner.src = supplier.coverImage;
-      heroBanner.alt = `${supplier.name} banner`;
+    const bannerUrl = supplier.bannerUrl || supplier.coverImage || null;
+    if (heroBanner) {
+      if (bannerUrl) {
+        heroBanner.src = bannerUrl;
+        heroBanner.alt = `${supplier.name} banner`;
+        heroBanner.style.objectFit = 'cover';
+        heroBanner.style.opacity = '1';
+      } else {
+        // No custom banner — keep the placeholder SVG; apply a tinted overlay via parent section
+        heroBanner.src = '/assets/images/placeholder-banner.svg';
+        heroBanner.alt = `${supplier.name} banner`;
+        heroBanner.style.opacity = '1';
+        // Apply brand theme colour tint to the section if available
+        const heroSection = document.getElementById('supplier-hero');
+        if (heroSection && supplier.themeColor && /^#[0-9A-F]{6}$/i.test(supplier.themeColor)) {
+          heroSection.style.setProperty('--supplier-theme', supplier.themeColor);
+        }
+      }
     }
 
     // Render badges using verification-badges utility (imported at module scope above)
@@ -592,6 +607,16 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     if (!/^sup_[a-zA-Z0-9_-]+$/.test(supplierId)) {
       console.warn('Invalid supplier ID format:', supplierId);
       return;
+    }
+
+    // Show preview-mode banner when ?preview=true
+    if (urlParams.get('preview') === 'true') {
+      const previewBanner = document.getElementById('preview-mode-banner');
+      if (previewBanner) {
+        previewBanner.style.display = 'flex';
+        // Push body down so the fixed banner doesn't overlap content
+        document.body.style.paddingTop = '42px';
+      }
     }
 
     loadSupplierData();

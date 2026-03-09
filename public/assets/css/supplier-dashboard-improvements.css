@@ -5185,3 +5185,62 @@ body.supplier-dashboard-page .sd-two-col > .card {
   color: #9ca3af;
   font-size: 0.8rem;
 }
+
+/* ============================================
+   Profile Customization Page — Layout & Glass
+   ============================================ */
+
+.pc-header-card {
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1px solid rgba(11, 128, 115, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pc-header-card .supplier-page-title {
+  margin-bottom: 0.5rem;
+}
+
+.pc-header-card .supplier-page-subtitle {
+  margin: 0;
+  opacity: 0.75;
+}
+
+.pc-selector-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(11, 128, 115, 0.12);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pc-selector-card .supplier-section-title {
+  margin-top: 0;
+}
+
+.pc-form-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(11, 128, 115, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.pc-section-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0b8073;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(11, 128, 115, 0.15);
+}
+
+.pc-section-heading + .form-row {
+  margin-top: 0;
+}
+
+.pc-section-heading--spaced {
+  margin-top: 2rem;
+}
