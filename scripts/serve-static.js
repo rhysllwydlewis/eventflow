@@ -29,6 +29,7 @@ app.use((req, res, next) => {
 const noindexPatterns = [
   /^\/(auth|reset-password|dashboard|dashboard-customer|dashboard-supplier|messages|guests|checkout|my-marketplace-listings)(\.html)?($|\?)/,
   /^\/(admin)([-/].+)?(\.html)?($|\?)/,
+  /^\/(messenger|chat)(\/.*)?($|\?)/,
 ];
 app.use((req, res, next) => {
   const isNoindex = noindexPatterns.some(pattern => pattern.test(req.path));

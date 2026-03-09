@@ -5,8 +5,12 @@
 
 'use strict';
 
-/** Canonical list of valid conversation types — used by the route validator and service. */
-const CONVERSATION_V4_TYPES = ['direct', 'marketplace', 'enquiry', 'supplier_network', 'support'];
+// Centralised type constants shared with routes and frontend.
+// Define them here so that the model is the single authoritative definition.
+const {
+  CONVERSATION_V4_TYPES,
+  CONVERSATION_CONTEXT_TYPES,
+} = require('../utils/messengerContextTypes');
 
 /**
  * Conversation Schema for MongoDB
@@ -19,7 +23,7 @@ const ConversationV4Schema = {
       properties: {
         type: {
           bsonType: 'string',
-          enum: ['direct', 'marketplace', 'enquiry', 'supplier_network', 'support'],
+          enum: CONVERSATION_V4_TYPES,
           description: 'Type of conversation',
         },
         participants: {
@@ -49,7 +53,7 @@ const ConversationV4Schema = {
           properties: {
             type: {
               bsonType: ['string', 'null'],
-              enum: ['package', 'supplier_profile', 'marketplace_listing', 'find_a_supplier', null],
+              enum: [...CONVERSATION_CONTEXT_TYPES, null],
             },
             referenceId: { bsonType: ['string', 'null'] },
             referenceTitle: { bsonType: ['string', 'null'] },
@@ -250,6 +254,7 @@ function validateMessage(data) {
 
 module.exports = {
   CONVERSATION_V4_TYPES,
+  CONVERSATION_CONTEXT_TYPES,
   ConversationV4Schema,
   createConversationV4Indexes,
   createChatMessagesV4Indexes,

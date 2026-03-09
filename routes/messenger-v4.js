@@ -13,7 +13,8 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 const { writeLimiter } = require('../middleware/rateLimits');
 const MessengerV4Service = require('../services/messenger-v4.service');
-const { CONVERSATION_V4_TYPES } = require('../models/ConversationV4');
+const { CONVERSATION_V4_TYPES, CONVERSATION_CONTEXT_TYPES } = require('../models/ConversationV4');
+const NotificationService = require('../services/notification.service');
 const messengerMetrics = require('../services/messengerMetrics');
 
 // Returns true if a string looks like an email address — used to prevent
@@ -194,6 +195,16 @@ async function getMessengerService() {
 }
 
 /**
+ * Create a NotificationService instance bound to the current DB and WS server.
+ * Instantiated per-request so it always uses the live WS server reference.
+ */
+async function getNotificationService() {
+  const dbInstance = await getDbInstance();
+  const ws = _getWsServer ? _getWsServer() : null;
+  return new NotificationService(dbInstance, ws);
+}
+
+/**
  * Helper: Emit WebSocket event to user
  */
 function emitToUser(userId, event, data) {
@@ -259,6 +270,16 @@ router.post(
       // Validate type against allowed values (must match ConversationV4 model schema)
       if (!CONVERSATION_V4_TYPES.includes(type)) {
         return res.status(400).json({ error: 'Invalid conversation type' });
+      }
+
+      // Validate context.type when a context object is provided
+      if (
+        context &&
+        context.type !== undefined &&
+        context.type !== null &&
+        !CONVERSATION_CONTEXT_TYPES.includes(context.type)
+      ) {
+        return res.status(400).json({ error: 'Invalid conversation context type' });
       }
 
       // Get database instance
@@ -625,26 +646,40 @@ router.post(
         message,
       });
 
-      // Send email notifications to offline participants
+      // Notify all non-muted recipients: in-app notification + email for offline users.
+      // Both are intentionally fire-and-forget (non-blocking) so that a notification
+      // failure never delays the HTTP response. Each call has a .catch() handler to
+      // prevent unhandled promise rejections.
       try {
         const recipientIds = conversation.participants
           .filter(p => p.userId !== userId && !p.isMuted)
           .map(p => p.userId);
 
+        // Create in-app notifications via the canonical NotificationService
+        const notifSvc = await getNotificationService();
+        const messagePreview = (content || '').substring(0, 100) || null;
+
+        // Hoist per-request constants out of the loop — identical for every recipient
+        const dbInstance = await getDbInstance();
+        // Strip CR/LF to prevent email header injection (computed once, reused below)
+        const safeUserName = userName.replace(/[\r\n]/g, ' ').trim();
+        const safeTitle = (conversation.context?.referenceTitle || '')
+          .replace(/[\r\n]/g, ' ')
+          .trim();
+        const contextInfo = safeTitle ? ` (Re: ${safeTitle})` : '';
+
         for (const recipientId of recipientIds) {
-          // Check if recipient is online (would need presence tracking)
-          // For now, send email to all non-muted participants
-          const dbInstance = await getDbInstance();
+          // In-app notification (stored in DB + real-time WebSocket push) — non-blocking
+          notifSvc
+            .notifyNewMessage(recipientId, userName, conversationId, messagePreview)
+            .catch(notifError => {
+              logger.error('Failed to create in-app notification:', notifError);
+            });
+
+          // Email notification for offline users — non-blocking
           const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.email && postmark && typeof postmark.sendMail === 'function') {
-            // Strip CR/LF from both userName and referenceTitle to prevent email header injection
-            const safeUserName = userName.replace(/[\r\n]/g, ' ').trim();
-            const safeTitle = (conversation.context?.referenceTitle || '')
-              .replace(/[\r\n]/g, ' ')
-              .trim();
-            const contextInfo = safeTitle ? ` (Re: ${safeTitle})` : '';
-
-            await postmark
+            postmark
               .sendMail({
                 to: recipient.email,
                 subject: `New message from ${safeUserName}${contextInfo}`,

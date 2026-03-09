@@ -12,21 +12,29 @@
 const fs = require('fs');
 const path = require('path');
 
+const ROOT = path.resolve(__dirname, '..', '..');
+
 /**
- * Parse CONVERSATION_V4_TYPES from the model source without requiring the
- * module (which pulls in mongodb, not installed in this environment).
- * The constant is a simple string-literal array — safe to parse with JSON.
+ * Read CONVERSATION_V4_TYPES from the shared constants utility.
+ * The constants module does not depend on MongoDB so it can be required directly.
  */
 function readModelTypes() {
-  const src = fs.readFileSync(
-    path.resolve(__dirname, '..', '..', 'models', 'ConversationV4.js'),
-    'utf8'
-  );
+  // Prefer reading from the canonical shared-constants file (utils/messengerContextTypes.js).
+  // Falls back to parsing the model source if the utils file is absent (e.g. old branch).
+  const utilsPath = path.join(ROOT, 'utils', 'messengerContextTypes.js');
+  if (fs.existsSync(utilsPath)) {
+    const { CONVERSATION_V4_TYPES } = require(utilsPath);
+    return CONVERSATION_V4_TYPES;
+  }
+
+  // Legacy fallback: parse the inline array from the model source.
+  const src = fs.readFileSync(path.join(ROOT, 'models', 'ConversationV4.js'), 'utf8');
   const match = src.match(/const CONVERSATION_V4_TYPES\s*=\s*(\[[^\]]+\])/);
   if (!match) {
-    throw new Error('CONVERSATION_V4_TYPES not found in ConversationV4.js');
+    throw new Error(
+      'CONVERSATION_V4_TYPES not found in ConversationV4.js or messengerContextTypes.js'
+    );
   }
-  // Replace single quotes with double quotes so JSON.parse works
   return JSON.parse(match[1].replace(/'/g, '"'));
 }
 
@@ -49,10 +57,10 @@ describe('Messenger v4 route — conversation type validation', () => {
 
   // ── Model exports the canonical type list ────────────────────────────────
 
-  it('ConversationV4 defines CONVERSATION_V4_TYPES as an exported array', () => {
+  it('ConversationV4 exports CONVERSATION_V4_TYPES (sourced from shared utils)', () => {
     expect(Array.isArray(modelTypes)).toBe(true);
     expect(modelTypes.length).toBeGreaterThan(0);
-    // Must be exported
+    // Must be exported from the model (re-export from utils is fine)
     expect(modelSrc).toContain('CONVERSATION_V4_TYPES');
     expect(modelSrc).toContain('module.exports');
   });

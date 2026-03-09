@@ -1,6 +1,19 @@
 /**
- * Notification Service
- * Multi-channel notification delivery (in-app, email, push)
+ * Notification Service — Multi-Channel Delivery Pipeline
+ *
+ * @deprecated  Prefer `services/notification.service.js` for new callers.
+ *
+ * This service handles the *delivery* pipeline: email (Postmark), push
+ * (FCM/APNs), and in-app WebSocket emission, plus a persistent retry queue.
+ * It is retained for the WebSocket server initialisation path in server.js
+ * (`wsServerV2.notificationService`).
+ *
+ * For creating and querying in-app notifications via the HTTP API
+ * (`routes/notifications.js`), use `services/notification.service.js`.
+ *
+ * If you are adding new notification flows, prefer the canonical service and
+ * only reach into this module if you specifically need email/push delivery or
+ * the queue processor.
  */
 
 'use strict';
