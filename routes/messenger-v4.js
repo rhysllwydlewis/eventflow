@@ -646,7 +646,10 @@ router.post(
         message,
       });
 
-      // Notify all non-muted recipients: in-app notification + email for offline users
+      // Notify all non-muted recipients: in-app notification + email for offline users.
+      // Both are intentionally fire-and-forget (non-blocking) so that a notification
+      // failure never delays the HTTP response. Each call has a .catch() handler to
+      // prevent unhandled promise rejections.
       try {
         const recipientIds = conversation.participants
           .filter(p => p.userId !== userId && !p.isMuted)
@@ -657,14 +660,14 @@ router.post(
         const messagePreview = (content || '').substring(0, 100) || null;
 
         for (const recipientId of recipientIds) {
-          // In-app notification (stored in DB + real-time WebSocket push)
+          // In-app notification (stored in DB + real-time WebSocket push) — non-blocking
           notifSvc
             .notifyNewMessage(recipientId, userName, conversationId, messagePreview)
             .catch(notifError => {
               logger.error('Failed to create in-app notification:', notifError);
             });
 
-          // Email notification for offline users
+          // Email notification for offline users — non-blocking
           const dbInstance = await getDbInstance();
           const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.email && postmark && typeof postmark.sendMail === 'function') {
