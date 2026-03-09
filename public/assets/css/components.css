@@ -4153,3 +4153,117 @@ body.cookie-prefs-open {
     flex-direction: column;
   }
 }
+
+/* ===========================================
+   TICKET DETAIL / VIEW MODAL
+   Shared classes for customer & supplier ticket modals
+   =========================================== */
+
+/* Ticket create/view modal widths */
+.ticket-create-modal {
+  max-width: 500px;
+}
+
+.ticket-view-modal {
+  max-width: 600px;
+}
+
+/* Ticket detail header block */
+.ticket-detail__header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.ticket-detail__status-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.ticket-detail__subject {
+  margin: 0.5rem 0;
+}
+
+.ticket-detail__message {
+  margin: 0.5rem 0;
+}
+
+.ticket-detail__status-desc {
+  color: #6b7280;
+  margin: 0.5rem 0 0;
+}
+
+.ticket-detail__timestamp {
+  color: #9ca3af;
+  margin: 0.25rem 0 0;
+}
+
+/* Shared response bubble classes */
+.ticket-response {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.ticket-response--admin {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.ticket-response--user {
+  background: #fafafa;
+  border-left: 3px solid #9ca3af;
+}
+
+.ticket-response__header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+}
+
+.ticket-response__timestamp {
+  color: #9ca3af;
+}
+
+.ticket-response__body {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ticket-detail__no-responses {
+  color: #9ca3af;
+}
+
+/* Reply form */
+.ticket-reply-form {
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.ticket-reply-form__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+}
+
+.ticket-reply-form__textarea {
+  width: 100%;
+}
+
+.ticket-reply-form__actions {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Responsive for customer/supplier ticket modals */
+@media (max-width: 600px) {
+  .ticket-create-modal,
+  .ticket-view-modal {
+    max-width: 100%;
+  }
+}

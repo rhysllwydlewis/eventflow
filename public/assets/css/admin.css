@@ -554,3 +554,79 @@ select:focus-visible {
   margin: 10px 0;
   border-radius: 6px;
 }
+
+/* ===========================================
+   RESPONSIVE BREAKPOINTS — TICKETS UI
+   =========================================== */
+
+/* Tablet (768px) */
+@media (max-width: 768px) {
+  /* Ticket manage modal: full-width, scrollable */
+  .ticket-modal {
+    max-width: 100%;
+    margin: 0.5rem;
+  }
+
+  /* Controls grid: single column on tablet */
+  .ticket-modal__controls {
+    grid-template-columns: 1fr;
+  }
+
+  /* Footer: stack vertically */
+  .ticket-modal__footer {
+    flex-direction: column;
+  }
+
+  .ticket-modal__footer-actions {
+    width: 100%;
+  }
+
+  .ticket-modal__footer-actions .btn {
+    flex: 1;
+  }
+
+  /* Summary cards: 2-up grid */
+  .ticket-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Ensure table scrolls horizontally */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+  /* Admin toolbar: stack controls vertically */
+  .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-toolbar .search-input,
+  .admin-toolbar .filter-select {
+    width: 100%;
+    max-width: 100%;
+    flex-basis: auto;
+    min-width: 0;
+  }
+
+  .admin-toolbar .btn-secondary {
+    width: 100%;
+  }
+
+  /* Summary cards: 2-up on small screens */
+  .ticket-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Very small mobile (320px) */
+@media (max-width: 320px) {
+  /* Summary cards: single column on tiny screens */
+  .ticket-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -52,7 +52,9 @@
   }
 
   function isStale(ticket) {
-    if (!isActiveTicket(ticket)) return false;
+    if (!isActiveTicket(ticket)) {
+      return false;
+    }
     const responses = getTicketResponses(ticket);
     // Stale if the last reply was from a non-admin (or there are no replies at all) and
     // it's been more than STALE_HOURS hours since the last update.
@@ -86,7 +88,7 @@
     } catch (error) {
       console.error('Error loading tickets:', error);
       container.innerHTML =
-        '<div class="data-section"><p class="small" style="color:#ef4444;">Failed to load tickets. Please try again.</p></div>';
+        '<div class="data-section"><p class="small text-error">Failed to load tickets. Please try again.</p></div>';
     }
   }
 
@@ -108,14 +110,14 @@
     const proCount = allTickets.filter(t => t.accountTier === 'pro').length;
 
     const cards = [
-      { label: 'Open',               value: open,        mod: 'open' },
-      { label: 'In Progress',        value: inProgress,  mod: 'progress' },
-      { label: 'Resolved',           value: resolved,    mod: 'resolved' },
-      { label: 'Urgent',             value: urgent,      mod: 'urgent' },
-      { label: 'Unassigned (active)',value: unassigned,  mod: 'warning' },
+      { label: 'Open', value: open, mod: 'open' },
+      { label: 'In Progress', value: inProgress, mod: 'progress' },
+      { label: 'Resolved', value: resolved, mod: 'resolved' },
+      { label: 'Urgent', value: urgent, mod: 'urgent' },
+      { label: 'Unassigned (active)', value: unassigned, mod: 'warning' },
       { label: `Stale (>${STALE_HOURS}h)`, value: stale, mod: 'stale' },
-      { label: 'Pro Plus tickets',   value: proPlusCount,mod: 'pro_plus' },
-      { label: 'Pro tickets',        value: proCount,    mod: 'pro' },
+      { label: 'Pro Plus tickets', value: proPlusCount, mod: 'pro_plus' },
+      { label: 'Pro tickets', value: proCount, mod: 'pro' },
     ];
 
     summaryContainer.innerHTML = cards
@@ -186,10 +188,10 @@
     if (!filtered.length) {
       container.innerHTML = `
         <div class="data-section">
-          <div style="text-align:center;padding:4rem 2rem;">
-            <div style="font-size:3.5rem;margin-bottom:1rem;">🎫</div>
-            <h3 style="margin:0 0 0.5rem 0;">No tickets found</h3>
-            <p class="small" style="color:#6b7280;margin:0;">
+          <div class="empty-state">
+            <div class="empty-state-icon">🎫</div>
+            <h3>No tickets found</h3>
+            <p class="small">
               ${allTickets.length === 0 ? 'Support tickets will appear here when users submit them.' : 'No tickets match your current filters.'}
             </p>
           </div>
@@ -203,7 +205,9 @@
       if (sortOrder === 'priority') {
         const rankA = PRIORITY_SORT_RANK[a.priority] || 2;
         const rankB = PRIORITY_SORT_RANK[b.priority] || 2;
-        if (rankB !== rankA) return rankB - rankA;
+        if (rankB !== rankA) {
+          return rankB - rankA;
+        }
         // secondary: newest first
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
@@ -211,7 +215,10 @@
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
       if (sortOrder === 'updated') {
-        return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+        return (
+          new Date(b.updatedAt || b.createdAt).getTime() -
+          new Date(a.updatedAt || a.createdAt).getTime()
+        );
       }
       // newest (default)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -417,16 +424,21 @@
   }
 
   function setupFilterListeners() {
-    ['ticketSearch', 'statusFilter', 'priorityFilter', 'assignedFilter', 'tierFilter', 'sortOrder'].forEach(
-      id => {
-        const element = document.getElementById(id);
-        if (!element) {
-          return;
-        }
-        const eventType = id === 'ticketSearch' ? 'input' : 'change';
-        element.addEventListener(eventType, renderTickets);
+    [
+      'ticketSearch',
+      'statusFilter',
+      'priorityFilter',
+      'assignedFilter',
+      'tierFilter',
+      'sortOrder',
+    ].forEach(id => {
+      const element = document.getElementById(id);
+      if (!element) {
+        return;
       }
-    );
+      const eventType = id === 'ticketSearch' ? 'input' : 'change';
+      element.addEventListener(eventType, renderTickets);
+    });
   }
 
   document.getElementById('backToDashboard')?.addEventListener('click', () => {

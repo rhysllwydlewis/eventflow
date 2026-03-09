@@ -5123,3 +5123,50 @@ body.supplier-dashboard-page .sd-two-col > .card {
   font-size: 0.8125rem;
   margin: 0;
 }
+
+/* ===========================================
+   SUPPLIER TICKET LIST ITEMS
+   =========================================== */
+
+.supplier-ticket-item {
+  border: 1px solid var(--ef-border, #e4e4e7);
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.supplier-ticket-item:hover,
+.supplier-ticket-item:focus-visible {
+  background: #f9fafb;
+  transform: translateX(2px);
+  outline: 2px solid var(--ef-primary, #0b8073);
+  outline-offset: 2px;
+}
+
+.supplier-ticket-item:focus {
+  outline: 2px solid var(--ef-primary, #0b8073);
+  outline-offset: 2px;
+}
+
+.supplier-ticket-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.supplier-ticket-item__badges {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.supplier-ticket-item__preview {
+  color: #6b7280;
+  margin: 0.5rem 0;
+}
+
+.supplier-ticket-item__meta {
+  color: #9ca3af;
+}
