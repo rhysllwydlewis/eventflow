@@ -1,7 +1,16 @@
 /**
- * Admin Dashboard Styles
- * Extracted from inline styles for CSP compliance
- * Updated for modern top navbar layout
+ * Admin Dashboard Styles — Layer 2: Primitives & Layout
+ * ======================================================
+ * Layer loading order:
+ *   1. admin-tokens.css        — CSS custom properties (design tokens)
+ *   2. admin.css               — THIS FILE: base primitives, tables, layout
+ *   3. admin-enhanced.css      — Notifications, modals, stat/metric cards
+ *   4. admin-navbar.css        — Top navigation bar
+ *   5. admin-cards.css         — Reusable card components
+ *   6. admin-ui-improvements.css — Checkboxes, toggles, bulk-action bar
+ *
+ * Do NOT add design values (colours, spacing) here — use admin-tokens.css.
+ * Do NOT add page-specific rules here — use a page-specific CSS file.
  */
 
 /* Improved accessibility and contrast - scoped to admin pages */
@@ -1111,4 +1120,97 @@ button.btn-sm.btn-primary:hover {
 .admin-messenger-status-badge--deleted {
   background: rgba(220, 38, 38, 0.1);
   color: #dc2626;
+}
+
+/* ─── Feature flags status (Settings page) ───────────────────────────────
+   Moved from admin-settings.html inline <style> block for CSP compliance.
+   ──────────────────────────────────────────────────────────────────────── */
+.feature-flags-status {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.feature-flags-status-loading {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.feature-flags-status-saving {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.feature-flags-status-saved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.feature-flags-status-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ─── Supplier page utility classes ──────────────────────────────────────
+   Replaces inline styles on admin-suppliers.html for bulk-actions bar and
+   action buttons. Uses design tokens where applicable.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Brand-coloured utility button (e.g. Import Demo Suppliers) */
+.btn-brand {
+  background: #667eea;
+  color: #ffffff;
+}
+
+/* Supplier bulk-actions bar */
+.supplier-bulk-actions {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  padding: 16px 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Bulk action buttons (light on coloured bar) */
+.btn-bulk-approve {
+  background: #ffffff;
+  color: #667eea;
+}
+
+.btn-bulk-danger {
+  background: #ffffff;
+  color: #ef4444;
+}
+
+.btn-bulk-action {
+  background: #ffffff;
+  color: #667eea;
+}
+
+/* ─── Reduced-motion overrides ────────────────────────────────────────────
+   Individual transition/animation values used in this file are suppressed
+   when the OS "Reduce motion" accessibility preference is active.
+   The global reset lives in admin-tokens.css; these rules handle any cases
+   that need explicit opt-out within this layer.
+   ──────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .btn-secondary,
+  .btn,
+  button {
+    transition: none;
+  }
+
+  .stat-card,
+  .admin-card {
+    transition: none;
+  }
+
+  tr {
+    transition: none;
+  }
 }
