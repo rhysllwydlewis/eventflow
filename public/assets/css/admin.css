@@ -1017,3 +1017,98 @@ button.btn-sm.btn-primary:hover {
 .admin-messenger-state--error {
   color: #dc2626;
 }
+
+/* -----------------------------------------------------------------------
+ * Admin Messenger page — HTML structural classes (toolbar, table, pagination)
+ * ----------------------------------------------------------------------- */
+
+/* Toolbar: search + filter bar at top of messenger card */
+.admin-messenger-toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-messenger-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.admin-messenger-search-btn {
+  min-width: 100px;
+}
+
+/* Results summary line */
+.admin-messenger-summary {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Table wrapper */
+.admin-messenger-table-wrap {
+  overflow-x: auto;
+}
+
+/* Table structure */
+.admin-messenger-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Table header row */
+.admin-messenger-thead-row {
+  background: rgba(11, 128, 115, 0.06);
+  text-align: left;
+}
+
+/* Table header cells */
+.admin-messenger-th {
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  color: #374151;
+}
+
+/* Pagination bar */
+.admin-messenger-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.admin-messenger-page-info {
+  font-size: 0.85rem;
+  color: #6b7280;
+  flex: 1;
+  text-align: center;
+}
+
+/* Status badge pills */
+.admin-messenger-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.admin-messenger-status-badge--active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.admin-messenger-status-badge--archived {
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+}
+
+.admin-messenger-status-badge--deleted {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}

@@ -7,6 +7,18 @@
   let currentStatus = '';
   let totalConversations = 0;
 
+  const TYPE_LABELS = {
+    marketplace_listing: 'Marketplace Listing',
+    supplier_profile: 'Supplier Profile',
+    direct: 'Direct',
+  };
+
+  const STATUS_BADGE_CLASS = {
+    active: 'admin-messenger-status-badge--active',
+    archived: 'admin-messenger-status-badge--archived',
+    deleted: 'admin-messenger-status-badge--deleted',
+  };
+
   function escapeHtml(s) {
     return AdminShared.escapeHtml(s);
   }
@@ -26,6 +38,17 @@
     return participants
       .map(p => escapeHtml(p.displayName || p.businessName || p.email || p.userId || 'Unknown'))
       .join(', ');
+  }
+
+  function formatType(rawType) {
+    const label = TYPE_LABELS[rawType] || rawType;
+    return escapeHtml(label);
+  }
+
+  function formatStatus(rawStatus) {
+    const s = rawStatus || 'active';
+    const modClass = STATUS_BADGE_CLASS[s] || '';
+    return `<span class="admin-messenger-status-badge ${modClass}">${escapeHtml(s)}</span>`;
   }
 
   async function fetchConversations() {
@@ -68,21 +91,21 @@
       tbody.innerHTML = conversations
         .map(conv => {
           const names = getParticipantNames(conv.participants);
-          const type = escapeHtml(conv.type || '—');
+          const type = formatType(conv.type || '—');
           const lastMsg =
             (conv.lastMessage && (conv.lastMessage.content || conv.lastMessage.text)) || '—';
           const preview = escapeHtml(
             lastMsg.length > 80 ? `${lastMsg.substring(0, 80)}…` : lastMsg
           );
           const updated = formatDate(conv.updatedAt);
-          const status = escapeHtml(conv.status || 'active');
+          const statusHtml = formatStatus(conv.status);
           const id = escapeHtml(conv._id || conv.id || '');
           return `<tr class="admin-messenger-row">
           <td class="admin-messenger-cell admin-messenger-cell--participants" title="${names}">${names}</td>
           <td class="admin-messenger-cell"><span class="admin-messenger-type-badge">${type}</span></td>
           <td class="admin-messenger-cell admin-messenger-cell--preview" title="${preview}">${preview}</td>
           <td class="admin-messenger-cell admin-messenger-cell--meta">${updated}</td>
-          <td class="admin-messenger-cell admin-messenger-cell--meta">${status}</td>
+          <td class="admin-messenger-cell">${statusHtml}</td>
           <td class="admin-messenger-cell">
             ${
               id
