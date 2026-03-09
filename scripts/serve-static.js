@@ -11,10 +11,21 @@
 
 const express = require('express');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 4173;
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+
+// Basic rate limiter — limits abusive hammering of the test server
+// (server only listens on 127.0.0.1 so this is defence-in-depth)
+const staticLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 500, // generous limit — E2E test suites issue many requests
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(staticLimiter);
 
 // Disable caching for development/testing
 app.use((req, res, next) => {
@@ -147,8 +158,8 @@ const adminPages = [
 ];
 
 adminPages.forEach(page => {
-  // Serve admin page at clean URL
-  app.get(`/${page}`, (req, res) => {
+  // Serve admin page at clean URL (rate limiter applied globally via app.use above)
+  app.get(`/${page}`, staticLimiter, (req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, `${page}.html`));
   });
   // In static-mode we keep .html paths working too (no redirect) so that
@@ -177,8 +188,7 @@ app.get('/articles/:slug.html', (req, res) => {
 app.use(express.static(PUBLIC_DIR));
 
 // Fallback to index.html for client-side routing
-// Note: No rate-limiting needed - this is only used for E2E testing, not production
-app.get('*', (req, res) => {
+app.get('*', staticLimiter, (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 

@@ -96,7 +96,8 @@ test.describe('Admin Dashboard — Quick Action Buttons', () => {
       await btn.click();
 
       // Canonical URL — no .html extension
-      await expect(page).toHaveURL(new RegExp(`${href.replace(/\//g, '\\/')}$`));
+      // Use pathname check rather than dynamic regex construction
+      await expect(page).toHaveURL(url => new URL(url).pathname === href);
     });
   });
 });
@@ -120,7 +121,8 @@ test.describe('Admin Dashboard — Moderation Queue Buttons', () => {
       await btn.click();
 
       // Must land on canonical clean URL — no .html extension
-      await expect(page).toHaveURL(new RegExp(`${href.replace(/\//g, '\\/')}$`));
+      // Use pathname check rather than dynamic regex construction
+      await expect(page).toHaveURL(url => new URL(url).pathname === href);
     });
   });
 });
