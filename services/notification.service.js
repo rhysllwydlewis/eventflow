@@ -316,7 +316,7 @@ class NotificationService {
       type: 'message',
       title: 'New Message',
       message: messageText,
-      actionUrl: `/messages.html?conversation=${threadId}`,
+      actionUrl: `/messenger/?conversation=${threadId}`,
       actionText: 'View Message',
       priority: 'high',
       metadata: {

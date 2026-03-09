@@ -92,8 +92,8 @@ describe('Messaging-Notification Integration', () => {
           notificationServiceJs.indexOf('async notifyPayment')
       );
 
-      // Should use /messages.html?conversation= format
-      expect(notifyNewMessageFn).toContain('/messages.html?conversation=');
+      // Should use canonical /messenger/?conversation= format (not the legacy /messages.html redirect)
+      expect(notifyNewMessageFn).toContain('/messenger/?conversation=');
     });
   });
 
