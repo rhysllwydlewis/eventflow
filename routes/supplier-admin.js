@@ -7,6 +7,15 @@
 
 const express = require('express');
 const logger = require('../utils/logger');
+const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
+const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
+const postmark = require('../utils/postmark');
+const { FROM_HELLO: POSTMARK_FROM_HELLO } = postmark;
+const {
+  VERIFICATION_STATES,
+  normaliseState,
+  canTransition,
+} = require('../utils/supplierVerificationStateMachine');
 const router = express.Router();
 
 // Dependencies injected by server.js
@@ -79,9 +88,102 @@ function applyCsrfProtection(req, res, next) {
 }
 
 /**
- * GET /api/admin/suppliers
- * List all suppliers with Pro status
+ * Send a verification status notification email to the supplier.
+ * Errors are caught and logged — they must never break the API response.
+ *
+ * @param {{ email: string, name: string }} supplier
+ * @param {'approved'|'rejected'|'needs_changes'|'suspended'} action
+ * @param {string} [notes] - Optional reason / notes for the supplier
  */
+async function sendVerificationEmail(supplier, action, notes) {
+  if (!supplier.email) {
+    return;
+  }
+
+  const BASE_URL = process.env.BASE_URL || process.env.APP_BASE_URL || 'https://event-flow.co.uk';
+  const supplierName = supplier.name || 'Supplier';
+  const dashboardUrl = `${BASE_URL}/dashboard-supplier`;
+
+  const subjects = {
+    approved: '🎉 Your EventFlow supplier profile has been approved',
+    rejected: 'Your EventFlow supplier application — update required',
+    needs_changes: 'Action required: changes needed on your EventFlow supplier profile',
+    suspended: 'Your EventFlow supplier account has been suspended',
+  };
+
+  const bodies = {
+    approved: [
+      `Hi ${supplierName},`,
+      '',
+      'Great news — your supplier profile has been reviewed and approved! 🎉',
+      '',
+      'You can now appear in search results, receive enquiries, and accept bookings on EventFlow.',
+      '',
+      `Visit your dashboard: ${dashboardUrl}`,
+      '',
+      '— The EventFlow Team',
+    ].join('\n'),
+
+    rejected: [
+      `Hi ${supplierName},`,
+      '',
+      "Thank you for applying to join EventFlow. Unfortunately, after review, we're unable to approve your profile at this time.",
+      notes ? `\nReason: ${notes}` : '',
+      '',
+      'You may resubmit your application after addressing the points above.',
+      '',
+      `Visit your dashboard: ${dashboardUrl}`,
+      '',
+      '— The EventFlow Team',
+    ].join('\n'),
+
+    needs_changes: [
+      `Hi ${supplierName},`,
+      '',
+      'We have reviewed your supplier profile and need a few changes before we can approve it.',
+      notes ? `\nWhat we need from you:\n${notes}` : '',
+      '',
+      'Please log in to your dashboard, make the updates, and resubmit for review.',
+      '',
+      `Visit your dashboard: ${dashboardUrl}`,
+      '',
+      '— The EventFlow Team',
+    ].join('\n'),
+
+    suspended: [
+      `Hi ${supplierName},`,
+      '',
+      'Your EventFlow supplier account has been temporarily suspended.',
+      notes ? `\nReason: ${notes}` : '',
+      '',
+      'If you believe this is in error, please contact our support team.',
+      '',
+      '— The EventFlow Team',
+    ].join('\n'),
+  };
+
+  const subject = subjects[action];
+  const text = bodies[action];
+
+  if (!subject || !text) {
+    return;
+  }
+
+  try {
+    await postmark.sendMail({
+      to: supplier.email,
+      from: POSTMARK_FROM_HELLO,
+      subject,
+      text,
+    });
+  } catch (emailErr) {
+    logger.warn('Failed to send verification email to supplier:', {
+      supplierId: supplier.id,
+      action,
+      error: emailErr.message,
+    });
+  }
+}
 router.get('/suppliers', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
   try {
     const raw = await dbUnified.read('suppliers');
@@ -111,7 +213,12 @@ router.get(
     try {
       const suppliers = (await dbUnified.read('suppliers')) || [];
       const pending = suppliers.filter(
-        s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
+        s =>
+          !s.verified &&
+          (!s.verificationStatus ||
+            s.verificationStatus === 'pending' ||
+            s.verificationStatus === VERIFICATION_STATES.UNVERIFIED ||
+            s.verificationStatus === VERIFICATION_STATES.PENDING_REVIEW)
       );
 
       res.json({
@@ -122,6 +229,8 @@ router.get(
           location: s.location,
           ownerUserId: s.ownerUserId,
           createdAt: s.createdAt,
+          verificationStatus: normaliseState(s.verificationStatus, s.verified),
+          submittedAt: s.verificationSubmittedAt || null,
         })),
         count: pending.length,
       });
@@ -134,27 +243,303 @@ router.get(
 
 /**
  * POST /api/admin/suppliers/:id/approve
- * Approve or reject a supplier
+ * Approve a supplier (state machine enforced)
  */
 router.post(
   '/suppliers/:id/approve',
   applyAuthRequired,
   applyRoleRequired('admin'),
   applyCsrfProtection,
+  writeLimiter,
   async (req, res) => {
-    const all = await dbUnified.read('suppliers');
-    const s = all.find(sup => sup.id === req.params.id);
-    if (!s) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-    await dbUnified.updateOne(
-      'suppliers',
-      { id: req.params.id },
-      {
-        $set: { approved: !!(req.body && req.body.approved) },
+    try {
+      const all = await dbUnified.read('suppliers');
+      const s = all.find(sup => sup.id === req.params.id);
+      if (!s) {
+        return res.status(404).json({ error: 'Not found' });
       }
-    );
-    res.json({ ok: true, supplier: { ...s, approved: !!(req.body && req.body.approved) } });
+
+      const currentState = normaliseState(s.verificationStatus, s.verified);
+      const check = canTransition(currentState, VERIFICATION_STATES.APPROVED, 'admin');
+      if (!check.allowed) {
+        return res.status(409).json({ error: check.reason });
+      }
+
+      const now = new Date().toISOString();
+      const updates = {
+        approved: true,
+        verified: true,
+        verificationStatus: VERIFICATION_STATES.APPROVED,
+        verifiedAt: now,
+        verifiedBy: req.user.id,
+        verificationNotes: (req.body && req.body.notes) || s.verificationNotes || '',
+        updatedAt: now,
+      };
+
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: updates });
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.SUPPLIER_APPROVED,
+        targetType: 'supplier',
+        targetId: s.id,
+        details: { name: s.name, notes: updates.verificationNotes },
+      });
+
+      // Non-blocking email notification to supplier
+      sendVerificationEmail(s, 'approved', updates.verificationNotes).catch(() => {});
+
+      res.json({ ok: true, supplier: { ...s, ...updates } });
+    } catch (error) {
+      logger.error('Error approving supplier:', error);
+      res.status(500).json({ error: 'Failed to approve supplier' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/suppliers/:id/reject
+ * Reject a supplier verification (state machine enforced)
+ */
+router.post(
+  '/suppliers/:id/reject',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const all = await dbUnified.read('suppliers');
+      const s = all.find(sup => sup.id === req.params.id);
+      if (!s) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      const currentState = normaliseState(s.verificationStatus, s.verified);
+      const check = canTransition(currentState, VERIFICATION_STATES.REJECTED, 'admin');
+      if (!check.allowed) {
+        return res.status(409).json({ error: check.reason });
+      }
+
+      const reason = (req.body && req.body.reason) || '';
+      if (!reason) {
+        return res.status(400).json({ error: 'A rejection reason is required' });
+      }
+
+      const now = new Date().toISOString();
+      const updates = {
+        approved: false,
+        verified: false,
+        verificationStatus: VERIFICATION_STATES.REJECTED,
+        verifiedAt: null,
+        verifiedBy: null,
+        verificationNotes: reason,
+        rejectedAt: now,
+        rejectedBy: req.user.id,
+        updatedAt: now,
+      };
+
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: updates });
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.SUPPLIER_REJECTED,
+        targetType: 'supplier',
+        targetId: s.id,
+        details: { name: s.name, reason },
+      });
+
+      // Non-blocking email notification to supplier
+      sendVerificationEmail(s, 'rejected', reason).catch(() => {});
+
+      res.json({ ok: true, supplier: { ...s, ...updates } });
+    } catch (error) {
+      logger.error('Error rejecting supplier:', error);
+      res.status(500).json({ error: 'Failed to reject supplier' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/suppliers/:id/request-changes
+ * Request changes from a supplier before approval (state machine enforced)
+ * Body: { reason: string }
+ */
+router.post(
+  '/suppliers/:id/request-changes',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const all = await dbUnified.read('suppliers');
+      const s = all.find(sup => sup.id === req.params.id);
+      if (!s) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      const currentState = normaliseState(s.verificationStatus, s.verified);
+      const check = canTransition(currentState, VERIFICATION_STATES.NEEDS_CHANGES, 'admin');
+      if (!check.allowed) {
+        return res.status(409).json({ error: check.reason });
+      }
+
+      const reason = (req.body && req.body.reason) || '';
+      if (!reason) {
+        return res.status(400).json({ error: 'A reason for requesting changes is required' });
+      }
+
+      const now = new Date().toISOString();
+      const updates = {
+        verificationStatus: VERIFICATION_STATES.NEEDS_CHANGES,
+        verified: false,
+        verificationNotes: reason,
+        changesRequestedAt: now,
+        changesRequestedBy: req.user.id,
+        updatedAt: now,
+      };
+
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: updates });
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.SUPPLIER_NEEDS_CHANGES,
+        targetType: 'supplier',
+        targetId: s.id,
+        details: { name: s.name, reason },
+      });
+
+      // Non-blocking email notification to supplier
+      sendVerificationEmail(s, 'needs_changes', reason).catch(() => {});
+
+      res.json({ ok: true, supplier: { ...s, ...updates } });
+    } catch (error) {
+      logger.error('Error requesting changes from supplier:', error);
+      res.status(500).json({ error: 'Failed to request changes' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/suppliers/:id/suspend
+ * Suspend a previously-approved supplier (state machine enforced)
+ * Body: { reason: string }
+ */
+router.post(
+  '/suppliers/:id/suspend',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const all = await dbUnified.read('suppliers');
+      const s = all.find(sup => sup.id === req.params.id);
+      if (!s) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      const currentState = normaliseState(s.verificationStatus, s.verified);
+      const check = canTransition(currentState, VERIFICATION_STATES.SUSPENDED, 'admin');
+      if (!check.allowed) {
+        return res.status(409).json({ error: check.reason });
+      }
+
+      const reason = (req.body && req.body.reason) || '';
+      if (!reason) {
+        return res.status(400).json({ error: 'A suspension reason is required' });
+      }
+
+      const now = new Date().toISOString();
+      const updates = {
+        verificationStatus: VERIFICATION_STATES.SUSPENDED,
+        verified: false,
+        approved: false,
+        verificationNotes: reason,
+        suspendedAt: now,
+        suspendedBy: req.user.id,
+        updatedAt: now,
+      };
+
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: updates });
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.SUPPLIER_SUSPENDED,
+        targetType: 'supplier',
+        targetId: s.id,
+        details: { name: s.name, reason },
+      });
+
+      // Non-blocking email notification to supplier
+      sendVerificationEmail(s, 'suspended', reason).catch(() => {});
+
+      res.json({ ok: true, supplier: { ...s, ...updates } });
+    } catch (error) {
+      logger.error('Error suspending supplier:', error);
+      res.status(500).json({ error: 'Failed to suspend supplier' });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/suppliers/:id/audit
+ * Retrieve verification audit trail for a specific supplier
+ */
+router.get(
+  '/suppliers/:id/audit',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  apiLimiter,
+  async (req, res) => {
+    try {
+      const supplierId = req.params.id;
+      const suppliers = await dbUnified.read('suppliers');
+      const s = suppliers.find(sup => sup.id === supplierId);
+      if (!s) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      // Read audit log entries for this supplier
+      let auditEntries = [];
+      try {
+        const allAudit = (await dbUnified.read('audit_logs')) || [];
+        auditEntries = allAudit
+          .filter(
+            entry =>
+              (entry.targetId === supplierId ||
+                (entry.resource && entry.resource.id === supplierId)) &&
+              (entry.targetType === 'supplier' ||
+                (entry.resource && entry.resource.type === 'supplier'))
+          )
+          .sort(
+            (a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt)
+          );
+      } catch (_err) {
+        // Audit log collection may not exist yet – return empty list
+      }
+
+      res.json({
+        supplierId,
+        supplierName: s.name,
+        currentState: normaliseState(s.verificationStatus, s.verified),
+        audit: auditEntries.map(entry => ({
+          id: entry._id || entry.id,
+          action: entry.action,
+          actor: entry.adminEmail || (entry.actor && entry.actor.email) || 'system',
+          details: entry.details || {},
+          timestamp: entry.timestamp || entry.createdAt,
+        })),
+      });
+    } catch (error) {
+      logger.error('Error fetching supplier audit:', error);
+      res.status(500).json({ error: 'Failed to fetch audit trail' });
+    }
   }
 );
 

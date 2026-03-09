@@ -18,6 +18,10 @@
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(tab).classList.add('active');
+      // Lazy-load verification audit when that tab is first opened
+      if (tab === 'verification') {
+        loadVerificationAudit();
+      }
     });
   });
 
@@ -45,16 +49,22 @@
     document.getElementById('supplierName').textContent = supplierData.name || 'Unknown Supplier';
 
     let statusHtml = '';
-    if (supplierData.approved) {
-      statusHtml += '<span class="badge badge-success">Approved</span> ';
-    } else {
-      statusHtml += '<span class="badge badge-warning">Pending Approval</span> ';
-    }
+    const vs =
+      supplierData.verificationStatus || (supplierData.verified ? 'approved' : 'unverified');
 
-    if (supplierData.verified) {
-      statusHtml += '<span class="badge badge-info">Verified</span>';
-    } else {
-      statusHtml += '<span class="badge badge-secondary">Unverified</span>';
+    const STATE_BADGE = {
+      unverified: '<span class="badge badge-secondary">Unverified</span>',
+      pending_review: '<span class="badge badge-warning">Pending Review</span>',
+      needs_changes: '<span class="badge badge-warning">Needs Changes</span>',
+      approved: '<span class="badge badge-success">Approved</span>',
+      verified: '<span class="badge badge-success">Approved</span>', // legacy
+      rejected: '<span class="badge badge-danger">Rejected</span>',
+      suspended: '<span class="badge badge-danger">Suspended</span>',
+    };
+    statusHtml += `${STATE_BADGE[vs] || `<span class="badge badge-secondary">${vs}</span>`} `;
+
+    if (supplierData.approved) {
+      statusHtml += '<span class="badge badge-info">Listing Active</span>';
     }
 
     document.getElementById('supplierStatus').innerHTML = statusHtml;
@@ -74,6 +84,10 @@
         }
       </div>
       <div class="supplier-meta-item">
+        <strong>Verification Status:</strong> ${AdminShared.escapeHtml(supplierData.verificationStatus || 'unverified')}
+      </div>
+      ${supplierData.verificationNotes ? `<div class="supplier-meta-item"><strong>Verification Notes:</strong> ${AdminShared.escapeHtml(supplierData.verificationNotes)}</div>` : ''}
+      <div class="supplier-meta-item">
         <strong>Health Score:</strong> ${supplierData.healthScore || 0}/100
       </div>
       <div class="supplier-meta-item">
@@ -82,18 +96,54 @@
     `;
     document.getElementById('supplierMeta').innerHTML = metaHtml;
 
-    // Update verify button state
+    // Update button visibility based on current verification state
+    const stateForButtons =
+      supplierData.verificationStatus || (supplierData.verified ? 'approved' : 'unverified');
+
     const verifyBtn = document.getElementById('verifySupplierBtn');
     if (verifyBtn) {
-      if (supplierData.verified) {
+      if (stateForButtons === 'approved' || stateForButtons === 'verified') {
         verifyBtn.disabled = true;
-        verifyBtn.textContent = 'Already Verified';
-        verifyBtn.title = 'This supplier has already been verified';
+        verifyBtn.textContent = 'Already Approved';
+        verifyBtn.title = 'This supplier has already been approved';
       } else {
         verifyBtn.disabled = false;
         verifyBtn.textContent = 'Verify Supplier';
         verifyBtn.title = "Manually verify this supplier's identity";
       }
+    }
+
+    // Approve button: enabled unless already approved; shows "Reinstate" when suspended
+    const approveBtn = document.getElementById('approveBtn');
+    if (approveBtn) {
+      const canApprove = [
+        'unverified',
+        'pending_review',
+        'needs_changes',
+        'rejected',
+        'suspended',
+        'pending',
+      ].includes(stateForButtons);
+      approveBtn.disabled = !canApprove;
+      approveBtn.textContent = stateForButtons === 'suspended' ? 'Reinstate' : 'Approve';
+    }
+
+    // Request Changes: only from pending_review
+    const reqChangesBtn = document.getElementById('requestChangesBtn');
+    if (reqChangesBtn) {
+      reqChangesBtn.disabled = stateForButtons !== 'pending_review';
+    }
+
+    // Reject: cannot reject if already rejected
+    const rejectBtn = document.getElementById('rejectBtn');
+    if (rejectBtn) {
+      rejectBtn.disabled = stateForButtons === 'rejected';
+    }
+
+    // Suspend: only when approved
+    const suspendBtn = document.getElementById('suspendBtn');
+    if (suspendBtn) {
+      suspendBtn.disabled = stateForButtons !== 'approved' && stateForButtons !== 'verified';
     }
 
     // Business info
@@ -315,42 +365,189 @@
     }
   }
 
-  // Action handlers
-  document.getElementById('approveBtn')?.addEventListener('click', async () => {
-    if (
-      !(await AdminShared.showConfirmModal({
-        title: 'Approve Supplier',
-        message: 'Approve this supplier?',
-        confirmText: 'Approve',
-      }))
-    ) {
+  async function loadVerificationAudit() {
+    const container = document.getElementById('verificationTimeline');
+    if (!container) {
       return;
     }
+
     try {
-      await AdminShared.api(`/api/admin/suppliers/${supplierId}/approve`, 'POST');
-      AdminShared.showToast('Supplier approved', 'success');
+      const data = await AdminShared.api(`/api/admin/suppliers/${supplierId}/audit`);
+      const entries = data.audit || [];
+
+      if (entries.length === 0) {
+        container.innerHTML = '<p class="timeline-empty">No verification events recorded yet.</p>';
+        return;
+      }
+
+      const ACTION_LABELS = {
+        supplier_approved: '✅ Approved',
+        supplier_rejected: '❌ Rejected',
+        supplier_needs_changes: '⚠️ Changes Requested',
+        supplier_suspended: '🚫 Suspended',
+        supplier_reinstated: '🔄 Reinstated',
+        supplier_verified: '✅ Verified',
+        supplier_verification_submitted: '📋 Submitted for Review',
+      };
+
+      const ACTION_CLASS = {
+        supplier_approved: 'entry-approved',
+        supplier_verified: 'entry-approved',
+        supplier_rejected: 'entry-rejected',
+        supplier_needs_changes: 'entry-needs_changes',
+        supplier_suspended: 'entry-suspended',
+        supplier_reinstated: 'entry-approved',
+        supplier_verification_submitted: 'entry-submitted',
+      };
+
+      container.innerHTML = entries
+        .map(entry => {
+          const label = ACTION_LABELS[entry.action] || entry.action.replace(/_/g, ' ');
+          const cls = ACTION_CLASS[entry.action] || '';
+          const ts = entry.timestamp
+            ? new Date(entry.timestamp).toLocaleString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Unknown time';
+
+          const notesText = entry.details?.notes || entry.details?.reason || '';
+          const notesHtml = notesText
+            ? `<div class="timeline-notes">"${AdminShared.escapeHtml(notesText)}"</div>`
+            : '';
+
+          return `
+            <div class="timeline-entry ${cls}">
+              <div class="timeline-action">${label}</div>
+              <div class="timeline-actor">by ${AdminShared.escapeHtml(entry.actor || 'System')} · ${ts}</div>
+              ${notesHtml}
+            </div>
+          `;
+        })
+        .join('');
+    } catch (err) {
+      console.error('Failed to load verification audit:', err);
+      container.innerHTML = '<p class="timeline-empty">Unable to load verification history.</p>';
+    }
+  }
+
+  // Action handlers
+  document.getElementById('approveBtn')?.addEventListener('click', async () => {
+    const isSuspended = supplierData?.verificationStatus === 'suspended';
+    const actionTitle = isSuspended ? 'Reinstate Supplier' : 'Approve Supplier';
+    const actionMessage = isSuspended
+      ? 'Reinstate this supplier? They will be fully approved and visible again.'
+      : 'Approve this supplier? You can add optional notes.';
+    const successMessage = isSuspended ? 'Supplier reinstated' : 'Supplier approved';
+
+    const notesResult = await AdminShared.showInputModal({
+      title: actionTitle,
+      message: actionMessage,
+      label: 'Notes (optional)',
+      placeholder: 'e.g., Documents verified, identity confirmed.',
+      required: false,
+      type: 'textarea',
+    });
+
+    if (!notesResult.confirmed) {
+      return;
+    }
+
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${supplierId}/approve`, 'POST', {
+        notes: notesResult.value || '',
+      });
+      AdminShared.showToast(successMessage, 'success');
       loadSupplier();
     } catch (err) {
-      AdminShared.showToast('Failed to approve supplier', 'error');
+      AdminShared.showToast(`Failed: ${err.message || 'Unknown error'}`, 'error');
     }
   });
 
   document.getElementById('rejectBtn')?.addEventListener('click', async () => {
-    if (
-      !(await AdminShared.showConfirmModal({
-        title: 'Reject Supplier',
-        message: 'Reject this supplier?',
-        confirmText: 'Reject',
-      }))
-    ) {
+    const reasonResult = await AdminShared.showInputModal({
+      title: 'Reject Supplier',
+      message: 'Please provide a reason for rejecting this supplier.',
+      label: 'Rejection Reason',
+      placeholder: 'e.g., Incomplete documentation, failed identity check, etc.',
+      required: true,
+      type: 'textarea',
+    });
+
+    if (!reasonResult.confirmed) {
       return;
     }
+
     try {
-      await AdminShared.api(`/api/admin/suppliers/${supplierId}/reject`, 'POST');
+      await AdminShared.api(`/api/admin/suppliers/${supplierId}/reject`, 'POST', {
+        reason: reasonResult.value,
+      });
       AdminShared.showToast('Supplier rejected', 'success');
       loadSupplier();
     } catch (err) {
-      AdminShared.showToast('Failed to reject supplier', 'error');
+      AdminShared.showToast(
+        `Failed to reject supplier: ${err.message || 'Unknown error'}`,
+        'error'
+      );
+    }
+  });
+
+  document.getElementById('requestChangesBtn')?.addEventListener('click', async () => {
+    const reasonResult = await AdminShared.showInputModal({
+      title: 'Request Changes',
+      message: 'Describe what changes the supplier needs to make before approval.',
+      label: 'Changes Required',
+      placeholder: 'e.g., Please upload proof of insurance and update your business address.',
+      required: true,
+      type: 'textarea',
+    });
+
+    if (!reasonResult.confirmed) {
+      return;
+    }
+
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${supplierId}/request-changes`, 'POST', {
+        reason: reasonResult.value,
+      });
+      AdminShared.showToast('Changes requested from supplier', 'success');
+      loadSupplier();
+    } catch (err) {
+      AdminShared.showToast(
+        `Failed to request changes: ${err.message || 'Unknown error'}`,
+        'error'
+      );
+    }
+  });
+
+  document.getElementById('suspendBtn')?.addEventListener('click', async () => {
+    const reasonResult = await AdminShared.showInputModal({
+      title: 'Suspend Supplier',
+      message: 'Please provide a reason for suspending this supplier.',
+      label: 'Suspension Reason',
+      placeholder: 'e.g., Reported policy violation under investigation.',
+      required: true,
+      type: 'textarea',
+    });
+
+    if (!reasonResult.confirmed) {
+      return;
+    }
+
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${supplierId}/suspend`, 'POST', {
+        reason: reasonResult.value,
+      });
+      AdminShared.showToast('Supplier suspended', 'success');
+      loadSupplier();
+    } catch (err) {
+      AdminShared.showToast(
+        `Failed to suspend supplier: ${err.message || 'Unknown error'}`,
+        'error'
+      );
     }
   });
 
