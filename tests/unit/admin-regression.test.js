@@ -185,3 +185,40 @@ describe('Admin Regression — Route Error Resilience', () => {
     expect(section).toContain('catch');
   });
 });
+
+// ─── Route Ordering — Specific Before Wildcard ────────────────────────────────
+
+describe('Admin Regression — Route ordering (specific before wildcard)', () => {
+  it('GET /suppliers/pending-verification is defined before GET /suppliers/:id', () => {
+    const specificIdx = adminContent.indexOf("'/suppliers/pending-verification'");
+    const wildcardIdx = adminContent.indexOf("'/suppliers/:id'");
+    expect(specificIdx).toBeGreaterThan(-1);
+    expect(wildcardIdx).toBeGreaterThan(-1);
+    // The specific route MUST appear before the wildcard to prevent Express wildcard capture
+    expect(specificIdx).toBeLessThan(wildcardIdx);
+  });
+
+  it('GET /suppliers/pending-verification is a GET route (not POST/PUT/DELETE)', () => {
+    const routePath = "'/suppliers/pending-verification'";
+    const idx = adminContent.indexOf(routePath);
+    // Find the nearest router.<method>( before this path (search backwards from idx)
+    const before = adminContent.substring(0, idx);
+    const lastRouterCall = before.lastIndexOf('router.');
+    expect(lastRouterCall).toBeGreaterThan(-1);
+    const methodDecl = adminContent.substring(lastRouterCall, idx);
+    expect(methodDecl).toContain('router.get');
+  });
+
+  it('GET /suppliers/pending-verification returns suppliers array and count', () => {
+    const routePath = "'/suppliers/pending-verification'";
+    const routeStart = adminContent.indexOf(routePath);
+    // Find the next route definition or end of file
+    const nextRoute = adminContent.indexOf('\nrouter.', routeStart + 1);
+    const section = adminContent.substring(
+      routeStart,
+      nextRoute > -1 ? nextRoute : adminContent.length
+    );
+    expect(section).toContain('suppliers:');
+    expect(section).toContain('count:');
+  });
+});

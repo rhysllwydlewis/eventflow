@@ -571,6 +571,40 @@ router.get('/suppliers', authRequired, roleRequired('admin'), async (_req, res) 
 });
 
 /**
+ * GET /api/admin/suppliers/pending-verification
+ * Get suppliers awaiting verification.
+ * Must be declared BEFORE /suppliers/:id to prevent Express wildcard capture.
+ */
+router.get(
+  '/suppliers/pending-verification',
+  authRequired,
+  roleRequired('admin'),
+  async (_req, res) => {
+    try {
+      const suppliers = (await dbUnified.read('suppliers')) || [];
+      const pending = suppliers.filter(
+        s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
+      );
+
+      res.json({
+        suppliers: pending.map(s => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          location: s.location,
+          ownerUserId: s.ownerUserId,
+          createdAt: s.createdAt,
+        })),
+        count: pending.length,
+      });
+    } catch (error) {
+      logger.error('Error fetching pending verification suppliers:', error);
+      res.status(500).json({ suppliers: [], count: 0, error: 'Failed to fetch pending suppliers' });
+    }
+  }
+);
+
+/**
  * GET /api/admin/suppliers/:id
  * Get details of a specific supplier
  */
