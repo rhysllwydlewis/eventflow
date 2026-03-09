@@ -132,54 +132,89 @@
 <!-- Profile Information Card -->
 <div class="card">
   <h2 style="margin:0 0 1rem 0;font-size:1.5rem;">Profile Information</h2>
-  <form id="profile-form">
+
+  <!-- Avatar Upload Section -->
+  <div id="avatar-section" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid #e5e7eb;">
+    <div style="position:relative;flex-shrink:0;">
+      <img id="avatar-preview" src="/assets/images/default-avatar.svg" alt="Your avatar" 
+           style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;background:#f3f4f6;">
+      <div id="avatar-loading" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:50%;align-items:center;justify-content:center;">
+        <span style="color:#fff;font-size:1.2rem;">⏳</span>
+      </div>
+    </div>
+    <div>
+      <p class="small" style="margin:0 0 0.5rem;color:#374151;font-weight:500;">Profile Photo</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <label for="avatar-upload-input" class="cta secondary" style="cursor:pointer;font-size:0.85rem;padding:0.4rem 0.75rem;display:inline-flex;align-items:center;gap:0.3rem;">
+          📷 Upload Photo
+        </label>
+        <input type="file" id="avatar-upload-input" accept="image/*" style="display:none;" aria-label="Upload profile photo">
+        <button type="button" id="avatar-delete-btn" class="cta secondary" style="font-size:0.85rem;padding:0.4rem 0.75rem;color:#ef4444;border-color:#ef4444;" aria-label="Remove profile photo">
+          🗑 Remove
+        </button>
+      </div>
+      <p class="small" style="margin:0.4rem 0 0;color:#9ca3af;">JPG, PNG or WebP · Max 5 MB</p>
+      <span id="avatar-status" class="small" style="display:block;min-height:1.2em;" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <!-- Loading indicator -->
+  <div id="profile-loading" style="text-align:center;padding:2rem 0;color:#6b7280;">
+    <span style="font-size:1.5rem;display:block;margin-bottom:0.5rem;">⏳</span>
+    Loading profile…
+  </div>
+
+  <form id="profile-form" style="display:none;">
     <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
       <div>
         <label for="profile-firstName">First Name</label>
-        <input type="text" id="profile-firstName" name="firstName" placeholder="John">
+        <input type="text" id="profile-firstName" name="firstName" placeholder="John" maxlength="40">
       </div>
       <div>
         <label for="profile-lastName">Last Name</label>
-        <input type="text" id="profile-lastName" name="lastName" placeholder="Smith">
+        <input type="text" id="profile-lastName" name="lastName" placeholder="Smith" maxlength="40">
       </div>
     </div>
     
     <div class="form-row">
       <label for="profile-name">Display Name</label>
-      <input type="text" id="profile-name" name="name" placeholder="John Smith" required>
+      <input type="text" id="profile-name" name="name" placeholder="John Smith" readonly
+             style="background:#f9fafb;cursor:default;" maxlength="80">
+      <p class="small" style="margin-top:0.25rem;color:#667085;">Auto-generated from your first and last name.</p>
     </div>
     
     <div class="form-row">
       <label for="profile-email">Email Address</label>
-      <input type="email" id="profile-email" name="email" placeholder="john@example.com" required>
-      <p class="small" style="margin-top:0.25rem;color:#667085;">Changing your email will require re-verification.</p>
+      <input type="email" id="profile-email" name="email" placeholder="john@example.com" readonly
+             style="background:#f9fafb;cursor:default;">
+      <p class="small" style="margin-top:0.25rem;color:#667085;">To change your email, please contact support.</p>
     </div>
     
     <div class="form-row">
       <label for="profile-phone">Phone Number</label>
-      <input type="tel" id="profile-phone" name="phone" placeholder="+44 7700 900000">
+      <input type="tel" id="profile-phone" name="phone" placeholder="+44 7700 900000" maxlength="20">
     </div>
     
     <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
       <div>
         <label for="profile-location">Location</label>
-        <input type="text" id="profile-location" name="location" placeholder="London, UK">
+        <input type="text" id="profile-location" name="location" placeholder="London, UK" maxlength="100">
       </div>
       <div>
         <label for="profile-postcode">Postcode</label>
-        <input type="text" id="profile-postcode" name="postcode" placeholder="SW1A 1AA">
+        <input type="text" id="profile-postcode" name="postcode" placeholder="SW1A 1AA" maxlength="10">
       </div>
     </div>
     
     <div class="form-row">
       <label for="profile-company">Company</label>
-      <input type="text" id="profile-company" name="company" placeholder="Company Name">
+      <input type="text" id="profile-company" name="company" placeholder="Company Name" maxlength="100">
     </div>
     
     <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
       <div>
         <label for="profile-jobTitle">Job Title</label>
-        <input type="text" id="profile-jobTitle" name="jobTitle" placeholder="Event Coordinator">
+        <input type="text" id="profile-jobTitle" name="jobTitle" placeholder="Event Coordinator" maxlength="100">
       </div>
       <div>
         <label for="profile-website">Website</label>
@@ -257,7 +292,7 @@
   </div>
 </div>
 
-<div class="card" style="margin-top:16px">
+<div class="card" style="margin-top:1.5rem">
   <h3>Onboarding Tour</h3>
   <p class="small" style="margin-bottom:12px">Restart the interactive tour to learn about EventFlow's features again.</p>
   <button class="cta secondary" id="restart-tour">Restart Tour</button>
@@ -268,7 +303,12 @@
 <script>
   // Load current user profile
   async function loadProfile() {
+    const loadingEl = document.getElementById('profile-loading');
+    const formEl = document.getElementById('profile-form');
     try {
+      if (loadingEl) { loadingEl.style.display = 'block'; }
+      if (formEl) { formEl.style.display = 'none'; }
+
       const response = await fetch('/api/v1/auth/me', { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to load profile');
@@ -294,8 +334,19 @@
       document.getElementById('profile-jobTitle').value = user.jobTitle || '';
       document.getElementById('profile-website').value = user.website || '';
       document.getElementById('notify').checked = user.notify !== false;
+
+      // Update avatar preview
+      const avatarPreview = document.getElementById('avatar-preview');
+      if (avatarPreview && user.avatarUrl) {
+        avatarPreview.src = user.avatarUrl;
+      }
+
+      if (loadingEl) { loadingEl.style.display = 'none'; }
+      if (formEl) { formEl.style.display = 'block'; }
     } catch (error) {
       console.error('Error loading profile:', error);
+      if (loadingEl) { loadingEl.style.display = 'none'; }
+      if (formEl) { formEl.style.display = 'block'; }
       const status = document.getElementById('profile-status');
       if (status) {
         status.textContent = 'Error loading profile';
@@ -319,8 +370,6 @@
       const formData = {
         firstName: document.getElementById('profile-firstName').value.trim(),
         lastName: document.getElementById('profile-lastName').value.trim(),
-        name: document.getElementById('profile-name').value.trim(),
-        email: document.getElementById('profile-email').value.trim(),
         phone: document.getElementById('profile-phone').value.trim(),
         location: document.getElementById('profile-location').value.trim(),
         postcode: document.getElementById('profile-postcode').value.trim(),
@@ -329,7 +378,7 @@
         website: document.getElementById('profile-website').value.trim()
       };
       
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -345,7 +394,7 @@
         throw new Error(data.error || 'Failed to update profile');
       }
       
-      status.textContent = '✓ ' + data.message;
+      status.textContent = '✓ Profile saved successfully';
       status.style.color = '#10b981';
       
       // Reload profile to show updated data
@@ -362,6 +411,71 @@
       submitBtn.textContent = 'Save Profile';
     }
   });
+
+  // ===== AVATAR UPLOAD / DELETE =====
+  (function () {
+    const uploadInput = document.getElementById('avatar-upload-input');
+    const deleteBtn = document.getElementById('avatar-delete-btn');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const avatarStatus = document.getElementById('avatar-status');
+
+    function setAvatarStatus(msg, color) {
+      if (avatarStatus) {
+        avatarStatus.textContent = msg;
+        avatarStatus.style.color = color || '';
+      }
+    }
+
+    if (uploadInput) {
+      uploadInput.addEventListener('change', async function () {
+        const file = this.files[0];
+        if (!file) { return; }
+        setAvatarStatus('Uploading…', '#6b7280');
+        const formData = new FormData();
+        formData.append('avatar', file);
+        try {
+          const resp = await fetch('/api/profile/avatar', {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+            credentials: 'include',
+            body: formData
+          });
+          const result = await resp.json();
+          if (!resp.ok) { throw new Error(result.error || 'Upload failed'); }
+          if (avatarPreview && result.avatarUrl) { avatarPreview.src = result.avatarUrl + '?t=' + Date.now(); }
+          setAvatarStatus('✓ Photo updated', '#10b981');
+          setTimeout(() => setAvatarStatus(''), 3000);
+        } catch (err) {
+          console.error('Avatar upload error:', err);
+          setAvatarStatus('✗ ' + err.message, '#ef4444');
+        } finally {
+          uploadInput.value = '';
+        }
+      });
+    }
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async function () {
+        if (!confirm('Remove your profile photo?')) { return; }
+        setAvatarStatus('Removing…', '#6b7280');
+        try {
+          const resp = await fetch('/api/profile/avatar', {
+            method: 'DELETE',
+            headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+            credentials: 'include'
+          });
+          const result = await resp.json();
+          if (!resp.ok) { throw new Error(result.error || 'Delete failed'); }
+          if (avatarPreview) { avatarPreview.src = '/assets/images/default-avatar.svg'; }
+          setAvatarStatus('✓ Photo removed', '#10b981');
+          setTimeout(() => setAvatarStatus(''), 3000);
+        } catch (err) {
+          console.error('Avatar delete error:', err);
+          setAvatarStatus('✗ ' + err.message, '#ef4444');
+        }
+      });
+    }
+  }());
   
   // Load profile on page load
   loadProfile();

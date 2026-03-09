@@ -5,6 +5,7 @@
 
 'use strict';
 
+const validator = require('validator');
 const { NotFoundError } = require('../errors');
 const logger = require('../utils/logger');
 
@@ -94,7 +95,7 @@ class SettingsService {
       throw new NotFoundError('User not found');
     }
 
-    // Update allowed profile fields
+    // Update allowed profile fields with basic validation
     const allowedFields = [
       'firstName',
       'lastName',
@@ -107,12 +108,87 @@ class SettingsService {
       'avatarUrl',
     ];
 
+    // Field length limits matching backend route
+    const fieldLimits = {
+      firstName: 40,
+      lastName: 40,
+      location: 100,
+      postcode: 10,
+      company: 100,
+      jobTitle: 100,
+    };
+
     const setFields = {};
-    allowedFields.forEach(field => {
-      if (profile[field] !== undefined) {
-        setFields[field] = profile[field];
+    for (const field of allowedFields) {
+      if (profile[field] === undefined) {
+        continue;
       }
-    });
+      const value = profile[field];
+
+      // Apply string length limits
+      if (fieldLimits[field] !== undefined && typeof value === 'string') {
+        setFields[field] = value.trim().slice(0, fieldLimits[field]);
+        continue;
+      }
+
+      // Validate website URL
+      if (field === 'website') {
+        if (!value) {
+          setFields[field] = null;
+        } else if (
+          typeof value === 'string' &&
+          validator.isURL(value.trim(), { require_protocol: false })
+        ) {
+          setFields[field] = value.trim();
+        } else {
+          throw new Error('Invalid website URL');
+        }
+        continue;
+      }
+
+      // Validate socials (each platform URL with per-platform hostname check)
+      if (field === 'socials' && value && typeof value === 'object') {
+        const SOCIAL_PLATFORM_HOSTS = {
+          instagram: ['instagram.com', 'www.instagram.com'],
+          facebook: ['facebook.com', 'www.facebook.com', 'fb.com', 'www.fb.com'],
+          twitter: ['twitter.com', 'www.twitter.com', 'x.com', 'www.x.com'],
+          linkedin: ['linkedin.com', 'www.linkedin.com'],
+        };
+        const sanitizedSocials = {};
+        for (const [platform, url] of Object.entries(value)) {
+          if (!url) {
+            sanitizedSocials[platform] = null;
+          } else if (
+            typeof url === 'string' &&
+            validator.isURL(url.trim(), { require_protocol: false })
+          ) {
+            const trimmed = url.trim();
+            if (SOCIAL_PLATFORM_HOSTS[platform]) {
+              try {
+                const urlWithProtocol = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+                const parsed = new URL(urlWithProtocol);
+                if (!SOCIAL_PLATFORM_HOSTS[platform].includes(parsed.hostname.toLowerCase())) {
+                  throw new Error(
+                    `URL must be a valid ${platform} link (e.g. ${SOCIAL_PLATFORM_HOSTS[platform][0]})`
+                  );
+                }
+              } catch (parseErr) {
+                if (parseErr.message.includes('must be a valid')) {
+                  throw parseErr;
+                }
+              }
+            }
+            sanitizedSocials[platform] = trimmed;
+          } else {
+            throw new Error(`Invalid URL for social platform: ${platform}`);
+          }
+        }
+        setFields[field] = sanitizedSocials;
+        continue;
+      }
+
+      setFields[field] = value;
+    }
 
     // Update full name if firstName/lastName changed
     if (profile.firstName || profile.lastName) {
@@ -148,8 +224,7 @@ class SettingsService {
    * @returns {Promise<Object>} - All user data
    */
   async exportUserData(userId) {
-    const users = await this.db.read('users');
-    const user = users.find(u => u.id === userId);
+    const user = await this.db.findOne('users', { id: userId });
 
     if (!user) {
       throw new NotFoundError('User not found');

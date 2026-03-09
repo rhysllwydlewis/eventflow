@@ -199,7 +199,7 @@
 
         <button 
           class="health-cta" 
-          onclick="window.location.href='/supplier/profile-customization'"
+          data-href="/supplier/profile-customization"
           aria-label="Improve your profile to ${scoreData.percentage}%"
         >
           ${scoreData.percentage === 100 ? '🎉 Profile Complete!' : '✨ Improve Profile'}
@@ -223,6 +223,14 @@
     const widgetHtml = renderHealthWidget(supplier);
     container.innerHTML = widgetHtml;
 
+    // Attach event listener for CTA button (replaces inline onclick)
+    const ctaBtn = container.querySelector('.health-cta[data-href]');
+    if (ctaBtn) {
+      ctaBtn.addEventListener('click', () => {
+        window.location.href = ctaBtn.getAttribute('data-href');
+      });
+    }
+
     // Announce to screen readers
     if (window.announceToSR) {
       const scoreData = calculateHealthScore(supplier);
@@ -236,13 +244,4 @@
     calculate: calculateHealthScore,
     render: renderHealthWidget,
   };
-
-  // Auto-initialize if data is available
-  document.addEventListener('DOMContentLoaded', () => {
-    // Check if we're on supplier dashboard
-    if (window.location.pathname.includes('dashboard-supplier')) {
-      // Wait for supplier data to be loaded by main dashboard script
-      // The main script should call ProfileHealthWidget.init() explicitly
-    }
-  });
 })();
