@@ -10,6 +10,7 @@ const logger = require('../utils/logger');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const postmark = require('../utils/postmark');
+const { FROM_HELLO: POSTMARK_FROM_HELLO } = postmark;
 const {
   VERIFICATION_STATES,
   normaliseState,
@@ -171,7 +172,7 @@ async function sendVerificationEmail(supplier, action, notes) {
   try {
     await postmark.sendMail({
       to: supplier.email,
-      from: process.env.POSTMARK_FROM_HELLO || process.env.POSTMARK_FROM,
+      from: POSTMARK_FROM_HELLO,
       subject,
       text,
     });
