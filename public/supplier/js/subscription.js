@@ -310,53 +310,17 @@ async function loadStripeConfig() {
 
 /**
  * Display current subscription status
+ * Status is now embedded directly within the matching pricing card,
+ * so this section is intentionally left empty.
  */
 function displaySubscriptionStatus(subscription) {
   const statusContainer = document.getElementById('current-subscription-status');
   if (!statusContainer) {
     return;
   }
-
-  if (!subscription) {
-    statusContainer.innerHTML = `
-      <div class="subscription-status-card">
-        <div class="status-badge free">Free Plan</div>
-        <h3>You're currently on the Free plan</h3>
-        <p>Upgrade to unlock premium features and boost your visibility on EventFlow.</p>
-      </div>
-    `;
-    return;
-  }
-
-  const details = subscription.subscriptionDetails;
-  const planName = details.planName || 'Pro Plan';
-  const endDate = new Date(details.currentPeriodEnd);
-  const isCancelling = details.cancelAtPeriodEnd;
-
-  statusContainer.innerHTML = `
-    <div class="subscription-status-card active">
-      <div class="status-badge ${isCancelling ? 'cancelling' : 'active'}">${isCancelling ? 'Cancelling' : 'Active'}</div>
-      <h3>Your Current Plan: ${planName}</h3>
-      <div class="subscription-details">
-        <p><strong>Status:</strong> ${isCancelling ? 'Active until ' : 'Renews on '} ${endDate.toLocaleDateString('en-GB')}</p>
-        <p><strong>Billing:</strong> ${details.interval === 'month' ? 'Monthly' : 'Yearly'}</p>
-        <p><strong>Amount:</strong> £${subscription.amount.toFixed(2)}</p>
-      </div>
-      ${
-        isCancelling
-          ? `
-        <div class="cancellation-notice">
-          <p>⚠️ Your subscription will be cancelled at the end of the current billing period.</p>
-        </div>
-      `
-          : ''
-      }
-      <button class="btn btn-secondary" id="manage-billing-btn">Manage Billing</button>
-    </div>
-  `;
-
-  // Set up manage billing button
-  document.getElementById('manage-billing-btn')?.addEventListener('click', openBillingPortal);
+  // Clear and hide — status is shown inline within the plan cards
+  statusContainer.innerHTML = '';
+  statusContainer.style.display = 'none';
 }
 
 /**
@@ -401,14 +365,30 @@ function renderSubscriptionPlans() {
         ${
           isCurrentPlan
             ? `
-          <button class="btn btn-current" disabled>Your Current Plan</button>
+          <div class="plan-action">
+            <div class="current-plan-indicator">✓ Current Plan</div>
+            ${
+              currentSubscription
+                ? `
+              <button class="btn-manage" onclick="openBillingPortal(event)">Manage Subscription</button>
+              ${
+                currentSubscription.subscriptionDetails?.cancelAtPeriodEnd
+                  ? `<p class="card-cancellation-notice">⚠️ Cancels on ${new Date(currentSubscription.subscriptionDetails.currentPeriodEnd).toLocaleDateString('en-GB')}</p>`
+                  : ''
+              }
+            `
+                : ''
+            }
+          </div>
         `
             : `
-          <button class="btn btn-primary" 
-                  data-plan-id="${plan.id}"
-                  onclick="handleSubscribe('${plan.id}')">
-            ${currentSubscription && currentTier !== 'free' ? 'Switch Plan' : 'Start Free Trial'}
-          </button>
+          <div class="plan-action">
+            <button class="btn-select" 
+                    data-plan-id="${plan.id}"
+                    onclick="handleSubscribe('${plan.id}')">
+              ${currentSubscription && currentTier !== 'free' ? 'Switch Plan' : 'Start Free Trial'}
+            </button>
+          </div>
         `
         }
       </div>
@@ -561,8 +541,11 @@ async function handleSubscribe(planId) {
 
 /**
  * Set up billing portal
+ * Buttons are rendered inside plan cards with inline onclick, so this
+ * function is kept as a no-op guard for any legacy manage-billing-btn.
  */
 function setupBillingPortal() {
+  // Legacy button (retained for safety — primary handler is inline onclick in plan cards)
   const manageBillingBtn = document.getElementById('manage-billing-btn');
   if (manageBillingBtn) {
     manageBillingBtn.addEventListener('click', openBillingPortal);
@@ -626,7 +609,7 @@ async function openBillingPortal(event) {
     if (event && event.target) {
       const button = event.target;
       button.disabled = false;
-      button.textContent = 'Manage Billing';
+      button.textContent = 'Manage Subscription';
     }
   }
 }
