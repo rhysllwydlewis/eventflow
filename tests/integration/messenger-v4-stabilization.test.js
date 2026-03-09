@@ -58,6 +58,26 @@ describe('Notification service consolidation', () => {
     expect(routerSrc).toContain('notifyNewMessage');
   });
 
+  it('email notification strips CR/LF from sender name to prevent header injection', () => {
+    expect(routerSrc).toContain("userName.replace(/[\\r\\n]/g, ' ')");
+  });
+
+  it('email notification strips CR/LF from referenceTitle to prevent header injection', () => {
+    // referenceTitle is used in the Subject line; must be sanitised
+    expect(routerSrc).toContain('referenceTitle');
+    expect(routerSrc).toContain(".replace(/[\\r\\n]/g, ' ')");
+  });
+
+  it('getDbInstance is not called inside the per-recipient loop (hoisted for efficiency)', () => {
+    // The loop body should access the already-resolved dbInstance, not call getDbInstance() again
+    const sendMsgHandler = routerSrc.slice(
+      routerSrc.indexOf('for (const recipientId of recipientIds)')
+    );
+    const loopEnd = sendMsgHandler.indexOf('\n        }');
+    const loopBody = sendMsgHandler.slice(0, loopEnd > 0 ? loopEnd : 500);
+    expect(loopBody).not.toContain('getDbInstance()');
+  });
+
   it('notifyNewMessage actionUrl points to /messenger/ (not legacy /messages.html)', () => {
     const fnStart = svcSrc.indexOf('async notifyNewMessage(');
     const fnEnd = svcSrc.indexOf('async notifyBookingUpdate');
@@ -139,6 +159,12 @@ describe('Route mounts — messenger-v4 is the active production path', () => {
 
   it('messenger-v4 route is initialised via initialize() before mounting', () => {
     expect(routeIndexSrc).toContain('messengerV4.initialize');
+  });
+
+  it('messenger/index.html carries meta robots noindex (private SPA must not be indexed)', () => {
+    const messengerHtml = read('public/messenger/index.html');
+    expect(messengerHtml).toContain('name="robots"');
+    expect(messengerHtml).toContain('noindex');
   });
 });
 

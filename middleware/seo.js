@@ -27,11 +27,19 @@ function noindexMiddleware() {
     '/my-marketplace-listings.html',
   ];
 
+  // Prefix patterns for non-public directory paths
+  const noindexPrefixes = ['/messenger/', '/messenger', '/chat/', '/chat'];
+
   return (req, res, next) => {
     // Check if path matches a noindex page (exact match)
     if (noindexPaths.includes(req.path)) {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');
       logger.info(`X-Robots-Tag noindex applied to ${req.path}`);
+    }
+
+    // Noindex authenticated SPA directories (/messenger/, /chat/)
+    if (noindexPrefixes.some(prefix => req.path === prefix || req.path.startsWith(`${prefix}/`))) {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     }
 
     // Also apply to admin pages (already blocked by middleware, but extra defense)

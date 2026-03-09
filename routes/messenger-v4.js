@@ -659,6 +659,15 @@ router.post(
         const notifSvc = await getNotificationService();
         const messagePreview = (content || '').substring(0, 100) || null;
 
+        // Hoist per-request constants out of the loop — identical for every recipient
+        const dbInstance = await getDbInstance();
+        // Strip CR/LF to prevent email header injection (computed once, reused below)
+        const safeUserName = userName.replace(/[\r\n]/g, ' ').trim();
+        const safeTitle = (conversation.context?.referenceTitle || '')
+          .replace(/[\r\n]/g, ' ')
+          .trim();
+        const contextInfo = safeTitle ? ` (Re: ${safeTitle})` : '';
+
         for (const recipientId of recipientIds) {
           // In-app notification (stored in DB + real-time WebSocket push) — non-blocking
           notifSvc
@@ -668,16 +677,8 @@ router.post(
             });
 
           // Email notification for offline users — non-blocking
-          const dbInstance = await getDbInstance();
           const recipient = await dbInstance.collection('users').findOne({ id: recipientId });
           if (recipient && recipient.email && postmark && typeof postmark.sendMail === 'function') {
-            // Strip CR/LF from both userName and referenceTitle to prevent email header injection
-            const safeUserName = userName.replace(/[\r\n]/g, ' ').trim();
-            const safeTitle = (conversation.context?.referenceTitle || '')
-              .replace(/[\r\n]/g, ' ')
-              .trim();
-            const contextInfo = safeTitle ? ` (Re: ${safeTitle})` : '';
-
             postmark
               .sendMail({
                 to: recipient.email,
