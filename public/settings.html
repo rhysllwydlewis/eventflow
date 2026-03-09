@@ -276,29 +276,6 @@
   outline-offset: 2px;
 }
 
-/* Social links */
-.social-field {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-.social-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 1rem;
-}
-.social-icon-instagram { background: linear-gradient(135deg,#f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
-.social-icon-facebook  { background: #1877f2; }
-.social-icon-twitter   { background: #000; }
-.social-icon-linkedin  { background: #0a66c2; }
-.social-field input { flex: 1; }
-
 /* Tour card polish */
 .tour-card-row {
   display: flex;
@@ -314,7 +291,7 @@
 
 <!-- Profile Information Card -->
 <div class="card">
-  <h2 style="margin:0 0 1.5rem 0;font-size:1.25rem;font-weight:600;">Profile Information</h2>
+  <h2 style="margin:0 0 1.5rem 0;font-size:1.25rem;font-weight:600;">Account Information</h2>
 
   <!-- Avatar Upload Section -->
   <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid #f3f4f6;">
@@ -345,13 +322,13 @@
   <!-- Loading indicator -->
   <div id="profile-loading" class="profile-loading-state">
     <div class="profile-loading-spinner"></div>
-    Loading your profile…
+    Loading your account…
   </div>
 
   <form id="profile-form" style="display:none;">
 
-    <!-- Personal Info -->
-    <p class="settings-section-label">Personal Information</p>
+    <!-- Name -->
+    <p class="settings-section-label">Your Name</p>
     <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
       <div>
         <label for="profile-firstName">First Name</label>
@@ -362,85 +339,39 @@
         <input type="text" id="profile-lastName" name="lastName" placeholder="Smith" maxlength="40" autocomplete="family-name">
       </div>
     </div>
-    
-    <div class="form-row field-readonly">
-      <label for="profile-name">Display Name</label>
-      <input type="text" id="profile-name" name="name" placeholder="John Smith" readonly maxlength="80" tabindex="-1">
-      <p class="small" style="margin-top:0.25rem;color:#9ca3af;">Auto-generated from your first and last name.</p>
-    </div>
 
-    <!-- Contact -->
-    <p class="settings-section-label">Contact</p>
+    <!-- Account Details -->
+    <p class="settings-section-label">Account Details</p>
     <div class="form-row field-readonly">
       <label for="profile-email">Email Address</label>
       <input type="email" id="profile-email" name="email" placeholder="john@example.com" readonly tabindex="-1" autocomplete="email">
       <p class="small" style="margin-top:0.25rem;color:#9ca3af;">To change your email address, please <a href="/contact" style="color:#0B8073;">contact support</a>.</p>
     </div>
-    
+
     <div class="form-row">
       <label for="profile-phone">Phone Number <span style="font-weight:400;color:#9ca3af;font-size:0.8em;">(optional)</span></label>
       <input type="tel" id="profile-phone" name="phone" placeholder="+44 7700 900000" maxlength="20" autocomplete="tel">
     </div>
 
-    <!-- Location -->
-    <p class="settings-section-label">Location</p>
     <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
       <div>
-        <label for="profile-location">City / Town</label>
+        <label for="profile-location">City / Town <span style="font-weight:400;color:#9ca3af;font-size:0.8em;">(optional)</span></label>
         <input type="text" id="profile-location" name="location" placeholder="London, UK" maxlength="100" autocomplete="address-level2">
       </div>
       <div>
-        <label for="profile-postcode">Postcode</label>
+        <label for="profile-postcode">Postcode <span style="font-weight:400;color:#9ca3af;font-size:0.8em;">(optional)</span></label>
         <input type="text" id="profile-postcode" name="postcode" placeholder="SW1A 1AA" maxlength="10" autocomplete="postal-code">
       </div>
     </div>
 
-    <!-- Professional -->
-    <p class="settings-section-label">Professional</p>
-    <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
-      <div>
-        <label for="profile-company">Company <span style="font-weight:400;color:#9ca3af;font-size:0.8em;">(optional)</span></label>
-        <input type="text" id="profile-company" name="company" placeholder="Company Name" maxlength="100" autocomplete="organization">
-      </div>
-      <div>
-        <label for="profile-jobTitle">Job Title <span style="font-weight:400;color:#9ca3af;font-size:0.8em;">(optional)</span></label>
-        <input type="text" id="profile-jobTitle" name="jobTitle" placeholder="Event Coordinator" maxlength="100" autocomplete="organization-title">
-      </div>
-    </div>
-    <div class="form-row">
-      <label for="profile-website">Website <span style="font-weight:400;color:#9ca3af;font-size:0.8em;">(optional)</span></label>
-      <input type="url" id="profile-website" name="website" placeholder="https://example.com" autocomplete="url">
-    </div>
-
-    <!-- Social Media -->
-    <p class="settings-section-label">Social Media <span style="font-weight:400;color:#9ca3af;font-size:0.8em;text-transform:none;letter-spacing:normal;">(optional)</span></p>
-    <div class="social-field">
-      <div class="social-icon social-icon-instagram" aria-hidden="true" title="Instagram">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-      </div>
-      <input type="url" id="profile-instagram" name="instagram" placeholder="https://instagram.com/yourprofile">
-    </div>
-    <div class="social-field">
-      <div class="social-icon social-icon-facebook" aria-hidden="true" title="Facebook">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="1.8"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-      </div>
-      <input type="url" id="profile-facebook" name="facebook" placeholder="https://facebook.com/yourprofile">
-    </div>
-    <div class="social-field">
-      <div class="social-icon social-icon-twitter" aria-hidden="true" title="X / Twitter">
-        <svg width="14" height="14" fill="#fff" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-      </div>
-      <input type="url" id="profile-twitter" name="twitter" placeholder="https://x.com/yourhandle">
-    </div>
-    <div class="social-field">
-      <div class="social-icon social-icon-linkedin" aria-hidden="true" title="LinkedIn">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="1.8"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-      </div>
-      <input type="url" id="profile-linkedin" name="linkedin" placeholder="https://linkedin.com/in/yourprofile">
+    <!-- Supplier callout (shown only for supplier accounts) -->
+    <div id="supplier-profile-callout" style="display:none;margin-top:1rem;padding:0.875rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:0.875rem;color:#166534;">
+      <strong>Supplier?</strong> Manage your business listing, social links, and professional details from your
+      <a href="/dashboard/supplier" style="color:#0B8073;font-weight:600;">Supplier Dashboard →</a>
     </div>
     
     <div class="form-actions" style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #f3f4f6;">
-      <button class="cta" type="submit" id="profile-save-btn">Save Profile</button>
+      <button class="cta" type="submit" id="profile-save-btn">Save Changes</button>
       <span id="profile-status" style="font-size:0.875rem;" role="status" aria-live="polite"></span>
     </div>
   </form>
@@ -528,6 +459,125 @@
   </div>
 </div>
 
+<!-- Danger Zone Card -->
+<div class="card" id="danger-zone-card" style="margin-top:2rem;border:1px solid #fecaca;background:#fff5f5;">
+  <div style="display:flex;align-items:center;gap:0.625rem;margin-bottom:0.875rem;">
+    <svg width="18" height="18" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;color:#dc2626;">Danger Zone</h2>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <div>
+      <p style="margin:0 0 0.25rem;font-weight:600;font-size:0.9rem;color:#111827;">Delete Account</p>
+      <p style="margin:0;font-size:0.82rem;color:#6b7280;">Permanently delete your account and all associated data. This action cannot be undone.</p>
+    </div>
+    <button type="button" id="delete-account-btn"
+      style="flex-shrink:0;font-size:0.85rem;padding:0.5rem 1.125rem;border-radius:6px;border:1.5px solid #dc2626;background:#fff;color:#dc2626;cursor:pointer;font-weight:600;white-space:nowrap;"
+      aria-label="Delete your account permanently">
+      Delete Account
+    </button>
+  </div>
+</div>
+
+<!-- Account Deletion Modal -->
+<div id="delete-account-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:12px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
+    <!-- Step 1: Warning -->
+    <div id="delete-step-1">
+      <div style="padding:1.5rem;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+        <h3 id="delete-modal-title" style="margin:0;font-size:1.1rem;font-weight:700;color:#111827;">Delete Account</h3>
+        <button type="button" id="delete-modal-close" aria-label="Close"
+          style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:0.25rem;">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="padding:1.5rem;">
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:1rem;margin-bottom:1.25rem;">
+          <p style="margin:0 0 0.5rem;font-weight:600;color:#dc2626;font-size:0.9rem;">⚠ This action is permanent and cannot be reversed.</p>
+          <p style="margin:0;font-size:0.85rem;color:#7f1d1d;">Deleting your account will:</p>
+          <ul style="margin:0.5rem 0 0;padding-left:1.25rem;font-size:0.85rem;color:#7f1d1d;line-height:1.6;">
+            <li>Remove your personal data from EventFlow</li>
+            <li>Delete any supplier profiles you've created</li>
+            <li>Cancel all active subscriptions</li>
+            <li>Permanently remove your messages and reviews</li>
+          </ul>
+        </div>
+        <p style="font-size:0.875rem;color:#374151;margin:0 0 1.25rem;">Are you sure you want to continue?</p>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+          <button type="button" id="delete-step1-cancel"
+            style="font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer;">
+            Keep My Account
+          </button>
+          <button type="button" id="delete-step1-next"
+            style="font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:6px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Email Confirmation -->
+    <div id="delete-step-2" style="display:none;">
+      <div style="padding:1.5rem;border-bottom:1px solid #f3f4f6;">
+        <h3 style="margin:0;font-size:1.1rem;font-weight:700;color:#111827;">Confirm Your Identity</h3>
+      </div>
+      <div style="padding:1.5rem;">
+        <p style="font-size:0.875rem;color:#374151;margin:0 0 1.25rem;">
+          To confirm deletion, please type your email address below:
+        </p>
+        <div style="margin-bottom:1.25rem;">
+          <label for="delete-email-input" style="display:block;font-size:0.85rem;font-weight:500;color:#374151;margin-bottom:0.4rem;">
+            Your email address
+          </label>
+          <input type="email" id="delete-email-input"
+            placeholder="Enter your email…"
+            autocomplete="off"
+            style="width:100%;box-sizing:border-box;padding:0.625rem 0.75rem;border:1.5px solid #e5e7eb;border-radius:6px;font-size:0.9rem;outline:none;"
+            aria-describedby="delete-email-hint">
+          <p id="delete-email-hint" style="margin:0.35rem 0 0;font-size:0.78rem;color:#9ca3af;">Must match the email address on your account.</p>
+          <p id="delete-email-error" style="display:none;margin:0.35rem 0 0;font-size:0.82rem;color:#dc2626;" role="alert"></p>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+          <button type="button" id="delete-step2-back"
+            style="font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer;">
+            Back
+          </button>
+          <button type="button" id="delete-step2-next"
+            style="font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:6px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;">
+            Verify &amp; Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Final Confirmation -->
+    <div id="delete-step-3" style="display:none;">
+      <div style="padding:1.5rem;border-bottom:1px solid #f3f4f6;">
+        <h3 style="margin:0;font-size:1.1rem;font-weight:700;color:#dc2626;">Final Confirmation</h3>
+      </div>
+      <div style="padding:1.5rem;">
+        <p style="font-size:0.875rem;color:#374151;margin:0 0 1rem;">
+          You are about to permanently delete your account. <strong>This cannot be undone.</strong>
+        </p>
+        <p style="font-size:0.875rem;color:#374151;margin:0 0 1.5rem;">
+          Click the button below to permanently delete your account.
+        </p>
+        <div id="delete-step3-error" style="display:none;margin-bottom:1rem;padding:0.75rem;background:#fef2f2;border-radius:6px;font-size:0.85rem;color:#dc2626;" role="alert"></div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+          <button type="button" id="delete-step3-back"
+            style="font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer;">
+            Back
+          </button>
+          <button type="button" id="delete-step3-confirm"
+            style="font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:6px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Yes, Permanently Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="/assets/js/app.js"></script>
 <script>window.__EF_PAGE__='settings'</script>
 <script>
@@ -563,6 +613,8 @@
   }());
 
   // ===== LOAD PROFILE =====
+  let _userEmail = ''; // store for deletion confirmation
+
   async function loadProfile() {
     const loadingEl = document.getElementById('profile-loading');
     const formEl = document.getElementById('profile-form');
@@ -580,27 +632,25 @@
         return;
       }
 
+      // Cache email for deletion confirmation
+      _userEmail = (user.email || '').toLowerCase();
+
       // Populate form fields
       document.getElementById('profile-firstName').value = user.firstName || '';
       document.getElementById('profile-lastName').value  = user.lastName  || '';
-      document.getElementById('profile-name').value      = user.name      || '';
       document.getElementById('profile-email').value     = user.email     || '';
       document.getElementById('profile-phone').value     = user.phone     || '';
       document.getElementById('profile-location').value  = user.location  || '';
       document.getElementById('profile-postcode').value  = user.postcode  || '';
-      document.getElementById('profile-company').value   = user.company   || '';
-      document.getElementById('profile-jobTitle').value  = user.jobTitle  || '';
-      document.getElementById('profile-website').value   = user.website   || '';
-
-      // Social fields
-      const socials = user.socials || {};
-      document.getElementById('profile-instagram').value = socials.instagram || '';
-      document.getElementById('profile-facebook').value  = socials.facebook  || '';
-      document.getElementById('profile-twitter').value   = socials.twitter   || '';
-      document.getElementById('profile-linkedin').value  = socials.linkedin  || '';
 
       // Notification
       document.getElementById('notify').checked = user.notify !== false;
+
+      // Show supplier dashboard callout for supplier accounts
+      if (user.role === 'supplier') {
+        const callout = document.getElementById('supplier-profile-callout');
+        if (callout) callout.style.display = 'block';
+      }
 
       // Avatar preview
       const avatarPreview = document.getElementById('avatar-preview');
@@ -608,7 +658,6 @@
         if (user.avatarUrl) {
           avatarPreview.src = user.avatarUrl;
         } else {
-          // Show initials instead
           showInitialsAvatar(getInitials(user.firstName, user.lastName));
         }
       }
@@ -621,7 +670,7 @@
       if (formEl) formEl.style.display = 'block';
       const status = document.getElementById('profile-status');
       if (status) {
-        status.textContent = '✗ Error loading profile';
+        status.textContent = '✗ Error loading account details';
         status.style.color = '#ef4444';
       }
     }
@@ -643,15 +692,6 @@
         phone:     document.getElementById('profile-phone').value.trim(),
         location:  document.getElementById('profile-location').value.trim(),
         postcode:  document.getElementById('profile-postcode').value.trim(),
-        company:   document.getElementById('profile-company').value.trim(),
-        jobTitle:  document.getElementById('profile-jobTitle').value.trim(),
-        website:   document.getElementById('profile-website').value.trim(),
-        socials: {
-          instagram: document.getElementById('profile-instagram').value.trim(),
-          facebook:  document.getElementById('profile-facebook').value.trim(),
-          twitter:   document.getElementById('profile-twitter').value.trim(),
-          linkedin:  document.getElementById('profile-linkedin').value.trim(),
-        },
       };
 
       const response = await fetch('/api/profile', {
@@ -662,9 +702,9 @@
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update profile');
+      if (!response.ok) throw new Error(data.error || 'Failed to update account');
 
-      status.textContent = '✓ Profile saved successfully';
+      status.textContent = '✓ Changes saved';
       status.style.color = '#10b981';
       setTimeout(() => { loadProfile(); }, 1200);
     } catch (error) {
@@ -673,7 +713,7 @@
       status.style.color = '#ef4444';
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Save Profile';
+      submitBtn.textContent = 'Save Changes';
     }
   });
 
@@ -689,10 +729,6 @@
     }
     function setAvatarLoading(on) {
       if (loadingEl) loadingEl.classList.toggle('visible', on);
-    }
-
-    function getOrCreatePreview() {
-      return document.getElementById('avatar-preview');
     }
 
     if (uploadInput) {
@@ -713,7 +749,6 @@
           const result = await resp.json();
           if (!resp.ok) throw new Error(result.error || 'Upload failed');
 
-          // Replace initials placeholder if present
           const wrapper = document.getElementById('avatar-wrapper');
           let imgEl = wrapper && wrapper.querySelector('img');
           if (!imgEl) {
@@ -752,7 +787,6 @@
           const result = await resp.json();
           if (!resp.ok) throw new Error(result.error || 'Delete failed');
 
-          // Show initials again
           const firstName = document.getElementById('profile-firstName')?.value || '';
           const lastName  = document.getElementById('profile-lastName')?.value  || '';
           showInitialsAvatar(getInitials(firstName, lastName));
@@ -856,7 +890,6 @@
     const volume = document.getElementById('notification-volume').value;
     const notify = document.getElementById('notify').checked;
     const status = document.getElementById('settings-status');
-    const btn = this;
     try {
       localStorage.setItem('ef_notification_sound_enabled', soundEnabled);
       localStorage.setItem('ef_notification_volume', volume);
@@ -878,6 +911,123 @@
   });
 
   loadNotificationSettings();
+
+  // ===== ACCOUNT DELETION MODAL =====
+  (function () {
+    const modal       = document.getElementById('delete-account-modal');
+    const step1       = document.getElementById('delete-step-1');
+    const step2       = document.getElementById('delete-step-2');
+    const step3       = document.getElementById('delete-step-3');
+
+    function showStep(n) {
+      step1.style.display = n === 1 ? 'block' : 'none';
+      step2.style.display = n === 2 ? 'block' : 'none';
+      step3.style.display = n === 3 ? 'block' : 'none';
+    }
+
+    function openModal() {
+      showStep(1);
+      document.getElementById('delete-email-input').value = '';
+      document.getElementById('delete-email-error').style.display = 'none';
+      document.getElementById('delete-step3-error').style.display = 'none';
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    // Open modal
+    document.getElementById('delete-account-btn').addEventListener('click', openModal);
+
+    // Close on backdrop click
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) closeModal();
+    });
+
+    // Close button (step 1)
+    document.getElementById('delete-modal-close').addEventListener('click', closeModal);
+
+    // Step 1 → cancel
+    document.getElementById('delete-step1-cancel').addEventListener('click', closeModal);
+
+    // Step 1 → continue
+    document.getElementById('delete-step1-next').addEventListener('click', function () {
+      showStep(2);
+      document.getElementById('delete-email-input').focus();
+    });
+
+    // Step 2 → back
+    document.getElementById('delete-step2-back').addEventListener('click', function () { showStep(1); });
+
+    // Step 2 → verify email
+    document.getElementById('delete-step2-next').addEventListener('click', function () {
+      const inputEmail = (document.getElementById('delete-email-input').value || '').trim().toLowerCase();
+      const errEl = document.getElementById('delete-email-error');
+      if (!inputEmail) {
+        errEl.textContent = 'Please enter your email address.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (inputEmail !== _userEmail) {
+        errEl.textContent = 'That email does not match your account. Please try again.';
+        errEl.style.display = 'block';
+        document.getElementById('delete-email-input').focus();
+        return;
+      }
+      errEl.style.display = 'none';
+      showStep(3);
+    });
+
+    // Also allow pressing Enter in email field to advance
+    document.getElementById('delete-email-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('delete-step2-next').click();
+      }
+    });
+
+    // Step 3 → back
+    document.getElementById('delete-step3-back').addEventListener('click', function () { showStep(2); });
+
+    // Step 3 → final confirm — delete account
+    document.getElementById('delete-step3-confirm').addEventListener('click', async function () {
+      const btn = this;
+      const errEl = document.getElementById('delete-step3-error');
+      btn.disabled = true;
+      btn.textContent = 'Deleting…';
+      errEl.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/profile', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+          credentials: 'include',
+          body: JSON.stringify({ email: _userEmail }),
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || 'Deletion failed');
+
+        // Success — clear session data and redirect
+        closeModal();
+        localStorage.clear();
+        window.location.href = '/?deleted=1';
+      } catch (err) {
+        console.error('Account deletion error:', err);
+        errEl.textContent = err.message || 'An error occurred. Please try again.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Yes, Permanently Delete';
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+    });
+  }());
 </script>
 </div></main>
 <footer class="footer" role="contentinfo">

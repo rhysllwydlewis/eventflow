@@ -358,4 +358,73 @@ router.delete('/avatar', writeLimiter, authRequired, csrfProtection, async (req,
   }
 });
 
+/**
+ * DELETE /api/profile
+ * Permanently delete the authenticated user's account.
+ * Requires the user to supply their email address for confirmation.
+ */
+router.delete('/', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const { email } = req.body || {};
+
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'Email confirmation is required' });
+  }
+
+  try {
+    const users = await dbUnified.read('users');
+    const user = users.find(u => u.id === req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Email must match (case-insensitive)
+    if (email.trim().toLowerCase() !== (user.email || '').toLowerCase()) {
+      return res.status(400).json({ error: 'Email address does not match your account email' });
+    }
+
+    const userId = user.id;
+
+    // Delete associated supplier profiles first
+    try {
+      const suppliers = await dbUnified.read('suppliers');
+      const userSuppliers = suppliers.filter(s => s.ownerUserId === userId);
+      for (const supplier of userSuppliers) {
+        await dbUnified.deleteOne('suppliers', supplier.id);
+      }
+    } catch (suppErr) {
+      logger.warn('Could not delete supplier profiles during account deletion:', suppErr);
+    }
+
+    // Delete avatar if present
+    if (user.avatarUrl) {
+      try {
+        await photoUpload.deleteImage(user.avatarUrl);
+      } catch (avatarErr) {
+        logger.warn('Could not delete avatar during account deletion:', avatarErr);
+      }
+    }
+
+    // Delete the user record
+    await dbUnified.deleteOne('users', userId);
+
+    logger.info(`Account permanently deleted: ${userId}`);
+
+    // Clear session / cookie
+    if (req.session && typeof req.session.destroy === 'function') {
+      req.session.destroy(() => {});
+    }
+    res.clearCookie('token');
+
+    res.json({ ok: true, message: 'Account permanently deleted' });
+  } catch (err) {
+    logger.error('Error deleting account:', err);
+    res.status(500).json({ error: 'Failed to delete account. Please try again.' });
+  }
+});
+
 module.exports = router;

@@ -2798,6 +2798,22 @@ async function initDashSupplier() {
         }
 
         populateSupplierForm(supplierToEdit);
+
+        // Single-profile enforcement: update button label and section heading
+        // A supplier already has a profile — the button should say "Edit Profile"
+        const toggleBtn = document.getElementById('toggle-profile-form');
+        if (toggleBtn) {
+          const labelSpan = toggleBtn.querySelector('.label');
+          if (labelSpan && !formSection?.classList.contains('expanded')) {
+            labelSpan.textContent = 'Edit Profile';
+          }
+        }
+        const sectionHeading = document.querySelector(
+          '#profile-form-section .supplier-section-header'
+        );
+        if (sectionHeading) {
+          sectionHeading.textContent = 'Edit Profile';
+        }
       }
     } catch (err) {
       console.error('Error loading suppliers:', err);
@@ -3530,12 +3546,16 @@ function toggleProfileForm() {
   }
 
   const isExpanded = formSection.classList.contains('expanded');
+  // Determine whether the user already has a profile before any DOM mutations
+  const hasProfile =
+    !!document.getElementById('sup-id')?.value ||
+    !!document.querySelector('#my-suppliers .supplier-card');
 
   if (isExpanded) {
     // Collapse form
     formSection.classList.remove('expanded');
     toggleBtn.setAttribute('aria-expanded', 'false');
-    toggleBtn.querySelector('.label').textContent = 'Create Profile';
+    toggleBtn.querySelector('.label').textContent = hasProfile ? 'Edit Profile' : 'Create Profile';
     toggleBtn.classList.remove('active');
     if (cancelBtn) {
       cancelBtn.style.display = 'none';
@@ -3551,7 +3571,7 @@ function toggleProfileForm() {
     // Reset form heading
     const heading = formSection.querySelector('.supplier-section-header');
     if (heading) {
-      heading.textContent = 'Create / Edit profile';
+      heading.textContent = hasProfile ? 'Edit Profile' : 'Create / Edit profile';
     }
   } else {
     // Expand form
