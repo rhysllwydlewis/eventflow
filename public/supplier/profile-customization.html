@@ -131,8 +131,8 @@
           </a>
         </div>
 
-        <!-- Header -->
-        <div class="card supplier-page-header">
+        <!-- Header — liquid glass card -->
+        <div class="card supplier-page-header pc-header-card">
           <h1 class="supplier-page-title">✨ Profile Customization</h1>
           <p class="supplier-page-subtitle">
             Make your profile stand out with custom branding, highlights, and personalization
@@ -140,7 +140,7 @@
         </div>
 
         <!-- Profile Selection -->
-        <div class="card supplier-section-card">
+        <div class="card supplier-section-card pc-selector-card">
           <h2 class="supplier-section-title">Select Profile to Customize</h2>
           <div id="profile-selector-container">
             <div class="skeleton skeleton-text skeleton-text-long"></div>
@@ -148,9 +148,12 @@
         </div>
 
         <!-- Customization Form -->
-        <div class="card">
+        <div class="card pc-form-card">
           <form id="customization-form" action="#">
             <input type="hidden" id="sup-id" name="id">
+
+            <!-- ── Section: Banner & Identity ─────────────────── -->
+            <h3 class="pc-section-heading">🖼️ Banner &amp; Identity</h3>
 
             <!-- Banner Image Section -->
             <div class="form-row">
@@ -178,6 +181,9 @@
               <p class="form-hint">A catchy tagline that describes your business (max 100 characters)</p>
             </div>
 
+            <!-- ── Section: Highlights & Services ─────────────── -->
+            <h3 class="pc-section-heading pc-section-heading--spaced">✅ Highlights &amp; Services</h3>
+
             <!-- Key Highlights -->
             <div class="form-row">
               <label>Key Highlights <span class="label-optional">(optional)</span></label>
@@ -199,9 +205,10 @@
             </div>
 
             <!-- Brand Theme Color -->
+            <h3 class="pc-section-heading pc-section-heading--spaced">🎨 Brand Theme Color</h3>
             <div class="form-row">
               <label class="form-label">
-                Brand Theme Color 
+                Theme Color 
                 <span class="label-optional">(optional)</span>
               </label>
               
@@ -238,8 +245,9 @@
             </div>
 
             <!-- Social Media Links -->
+            <h3 class="pc-section-heading pc-section-heading--spaced">🔗 Social Media Links</h3>
             <div class="form-row">
-              <label>Social Media Links <span class="label-optional">(optional)</span></label>
+              <label>Social Profiles <span class="label-optional">(optional)</span></label>
               <div class="social-links-grid">
                 <div>
                   <label class="social-label">📘 Facebook</label>

@@ -297,6 +297,15 @@
         >
           🎫 <span class="pill-text">Tickets</span>
         </button>
+        <a
+          href="/settings"
+          class="mobile-nav-pill"
+          data-test="nav-settings"
+          title="Settings"
+          style="text-decoration: none; color: inherit;"
+        >
+          ⚙️ <span class="pill-text">Settings</span>
+        </a>
       </div>
     </nav>
 
@@ -408,7 +417,7 @@
                     <div
                       class="dashboard-stat-card__value stat-number"
                       id="quick-stat-enquiries"
-                      data-target="12"
+                      data-target="0"
                     >
                       0
                     </div>
@@ -437,7 +446,7 @@
                     <div
                       class="dashboard-stat-card__value stat-number"
                       id="quick-stat-profiles"
-                      data-target="4"
+                      data-target="0"
                     >
                       0
                     </div>
@@ -1425,7 +1434,10 @@
             const viewConvBtn = document.getElementById('viewConversationsBtn');
             if (viewConvBtn) {
               viewConvBtn.addEventListener('click', () => {
-                window.location.href = '/messenger/';
+                const threadsSection = document.getElementById('threads-sup');
+                if (threadsSection) {
+                  threadsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
               });
             }
           });
@@ -1514,6 +1526,13 @@
                 }
               } catch (err) {
                 console.error('Error fetching analytics:', err);
+              }
+
+              // Update hero quick-stat cards with real API data
+              const quickStatEnquiries = document.getElementById('quick-stat-enquiries');
+              if (quickStatEnquiries) {
+                quickStatEnquiries.setAttribute('data-target', String(totalEnquiries));
+                quickStatEnquiries.textContent = String(totalEnquiries);
               }
 
               // Create statistics widgets with real data
@@ -2319,11 +2338,27 @@
     <script src="/messenger/js/NotificationBridgeV4.js" defer></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
+        // Helper to hide skeleton loaders inside the threads-sup section
+        function clearThreadsSupSkeleton() {
+          var threadsSup = document.getElementById('threads-sup');
+          if (threadsSup) {
+            threadsSup.querySelectorAll('.skeleton').forEach(function(el) { el.style.display = 'none'; });
+          }
+        }
+
+        // Add a safety timeout to clear the threads-sup skeleton loader
+        // in case the MessengerWidgetV4 fails to render or is slow
+        var skeletonTimeout = setTimeout(clearThreadsSupSkeleton, 10000);
+
         if (typeof MessengerWidgetV4 !== 'undefined') {
           new MessengerWidgetV4('messenger-dashboard-widget-supplier', {
             maxItems: 5,
             // onRendered(allConversations, filteredConversations) – called after each render
             onRendered: function(allConversations, _filteredConversations) {
+              // Clear the threads-sup skeleton loader now that the widget has rendered
+              clearTimeout(skeletonTimeout);
+              clearThreadsSupSkeleton();
+
               // Update the lead quality summary stats block
               var statsEl = document.getElementById('lead-quality-summary-stats');
               if (!statsEl || !allConversations || allConversations.length === 0) {
@@ -2362,6 +2397,10 @@
               if (pctText) pctText.textContent = highPct + '% high-quality leads';
             }
           });
+        } else {
+          // MessengerWidgetV4 not available — clear the skeleton immediately
+          clearTimeout(skeletonTimeout);
+          clearThreadsSupSkeleton();
         }
       });
     </script>

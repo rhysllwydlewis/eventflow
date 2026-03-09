@@ -2634,11 +2634,13 @@ async function initDashSupplier() {
   const proRibbon = document.getElementById('supplier-pro-ribbon');
   let currentIsPro = false;
   let currentEditingSupplierId = null; // Track which supplier is being edited
+  let cachedSuppliers = []; // Cache loaded suppliers for edit lookups
 
   async function loadSuppliers() {
     try {
       const d = await api('/api/me/suppliers');
       const items = d?.items && Array.isArray(d.items) ? d.items : [];
+      cachedSuppliers = items; // Cache for use in editProfile()
       // If this user has at least one Pro supplier, treat them as Pro.
       currentIsPro = items.some(s => !!s.isPro);
 
@@ -2661,7 +2663,20 @@ async function initDashSupplier() {
       if (!items || items.length === 0) {
         supWrap.innerHTML =
           '<div class="sd-empty-state"><div class="sd-empty-state__icon" aria-hidden="true">👤</div><div class="sd-empty-state__body"><p class="sd-empty-state__title">No profiles yet</p><p class="sd-empty-state__desc">Create your first supplier profile to start attracting clients.</p></div></div>';
+        // Update quick-stat-profiles with the real count (0)
+        const quickStatProfiles = document.getElementById('quick-stat-profiles');
+        if (quickStatProfiles) {
+          quickStatProfiles.setAttribute('data-target', '0');
+          quickStatProfiles.textContent = '0';
+        }
         return;
+      }
+
+      // Update quick-stat-profiles with the real profile count
+      const quickStatProfiles = document.getElementById('quick-stat-profiles');
+      if (quickStatProfiles) {
+        quickStatProfiles.setAttribute('data-target', String(items.length));
+        quickStatProfiles.textContent = String(items.length);
       }
       supWrap.innerHTML = items
         .map(s => {
@@ -2712,15 +2727,20 @@ async function initDashSupplier() {
             )
             .join('');
 
-          // Safe access to all fields with defaults
+          // Safe access to all fields with defaults — escape all user-supplied values to prevent XSS
           const supplierId = String(s.id || '').replace(/"/g, '&quot;');
-          const name = String(s.name || 'Unnamed Supplier');
+          const name = escapeHtml(String(s.name || 'Unnamed Supplier'));
           const photos = s.photos && Array.isArray(s.photos) ? s.photos : [];
-          const photoUrl = photos[0] || '/assets/images/collage-venue.svg';
-          const location = String(s.location || 'Location not set');
-          const category = String(s.category || 'Uncategorized');
-          const priceDisplay = s.price_display ? ` · ${s.price_display}` : '';
-          const description = String(s.description_short || '');
+          // Validate photoUrl to allow only safe http/https/relative URLs
+          const rawPhotoUrl = photos[0] || '';
+          const photoUrl =
+            rawPhotoUrl && /^(https?:\/\/|\/[^:])/i.test(rawPhotoUrl)
+              ? escapeHtml(rawPhotoUrl)
+              : '/assets/images/collage-venue.svg';
+          const location = escapeHtml(String(s.location || 'Location not set'));
+          const category = escapeHtml(String(s.category || 'Uncategorized'));
+          const priceDisplay = s.price_display ? ` · ${escapeHtml(String(s.price_display))}` : '';
+          const description = escapeHtml(String(s.description_short || ''));
           const approved = !!s.approved;
 
           return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${supplierId}">
@@ -2745,7 +2765,6 @@ async function initDashSupplier() {
         </details>
         <div class="card-actions">
           <button type="button" class="card-action-btn edit-btn" data-action="edit-profile" data-profile-id="${supplierId}">Edit</button>
-          <button type="button" class="card-action-btn delete-btn" data-action="delete-profile" data-profile-id="${supplierId}">Delete</button>
         </div>
       </div>
     </div>`;
@@ -3607,15 +3626,21 @@ async function editProfile(supplierId) {
 
   // Fetch supplier data and populate form
   try {
-    const response = await fetch(`/api/v1/me/suppliers/${encodeURIComponent(supplierId)}`, {
-      credentials: 'include',
-    });
+    // Look up from the already-loaded suppliers cache to avoid an
+    // extra (potentially missing) API endpoint call
+    let supplier = cachedSuppliers.find(s => s && String(s.id) === String(supplierId));
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch supplier data');
+    if (!supplier) {
+      // Fallback: fetch all suppliers and search again
+      const d = await api('/api/me/suppliers');
+      const items = d?.items && Array.isArray(d.items) ? d.items : [];
+      cachedSuppliers = items;
+      supplier = items.find(s => s && String(s.id) === String(supplierId));
     }
 
-    const supplier = await response.json();
+    if (!supplier) {
+      throw new Error('Supplier not found');
+    }
 
     // Populate form fields
     document.getElementById('sup-id').value = supplier.id || '';
