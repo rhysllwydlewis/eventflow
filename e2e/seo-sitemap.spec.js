@@ -59,7 +59,7 @@ test.describe('Sitemap Content', () => {
 
     // Should include key public pages
     expect(content).toContain('/suppliers');
-    expect(content).toContain('/blog');
+    expect(content).toContain('/guides');
     expect(content).toContain('/pricing');
   });
 

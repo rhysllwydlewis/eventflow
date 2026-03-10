@@ -455,7 +455,7 @@ app.use('/', staticRoutes);
 // Note: These routes let the template middleware handle file rendering
 const canonicalPages = [
   'start',
-  'blog',
+  'guides',
   'pricing',
   'faq',
   'for-suppliers',

@@ -1,6 +1,6 @@
 /**
  * Blog Article Enhancements
- * Applies P3 features to blog articles
+ * Applies P3 features to guide articles
  */
 
 (function () {
@@ -59,7 +59,7 @@
 
     const breadcrumbs = [
       { label: 'Home', url: '/' },
-      { label: 'Guides', url: '/blog' },
+      { label: 'Guides', url: '/guides' },
       { label: title, url: window.location.pathname },
     ];
 

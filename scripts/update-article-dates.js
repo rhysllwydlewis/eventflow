@@ -14,7 +14,7 @@
  *         ISO date strings (protected by the regex lookaround).
  *   - public/assets/data/guides.json
  *       • Every "published" date  →  first day of the current month (YYYY-MM-01)
- *   - public/blog.html
+ *   - public/guides.html
  *       • Stale year numbers in the inline article-title strings
  */
 
@@ -37,7 +37,7 @@ const currentYearMonthFirst = `${currentYear}-${currentMonthNum}-01`;
 const ROOT = path.join(__dirname, '..');
 const ARTICLES_DIR = path.join(ROOT, 'public', 'articles');
 const GUIDES_JSON = path.join(ROOT, 'public', 'assets', 'data', 'guides.json');
-const BLOG_HTML = path.join(ROOT, 'public', 'blog.html');
+const BLOG_HTML = path.join(ROOT, 'public', 'guides.html');
 
 // ─── Year replacement ─────────────────────────────────────────────────────────
 
@@ -101,7 +101,7 @@ function updateGuidesJson() {
   return changed;
 }
 
-// ─── blog.html updater ────────────────────────────────────────────────────────
+// ─── guides.html updater ────────────────────────────────────────────────────────
 
 function updateBlogHtml() {
   const original = fs.readFileSync(BLOG_HTML, 'utf8');

@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
 test.describe('SEO Canonicals', () => {
   const publicPages = [
     { path: '/', canonical: 'https://event-flow.co.uk/' },
-    { path: '/blog', canonical: 'https://event-flow.co.uk/blog' },
+    { path: '/guides', canonical: 'https://event-flow.co.uk/guides' },
     { path: '/suppliers', canonical: 'https://event-flow.co.uk/suppliers' },
     { path: '/marketplace', canonical: 'https://event-flow.co.uk/marketplace' },
     { path: '/pricing', canonical: 'https://event-flow.co.uk/pricing' },

@@ -78,7 +78,7 @@ test.describe('Clean URL redirects for canonical pages', () => {
     'terms',
     'contact',
     'faq',
-    'blog',
+    'guides',
     'start',
     'for-suppliers',
     'payment-success',

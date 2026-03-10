@@ -24,7 +24,7 @@ const STATIC_PAGES = [
   { url: '/suppliers', changefreq: 'daily', priority: '0.9' },
   { url: '/marketplace', changefreq: 'daily', priority: '0.9' },
   { url: '/pricing', changefreq: 'monthly', priority: '0.8' },
-  { url: '/blog', changefreq: 'weekly', priority: '0.8' },
+  { url: '/guides', changefreq: 'weekly', priority: '0.8' },
 
   // Information pages
   { url: '/faq', changefreq: 'monthly', priority: '0.7' },
@@ -125,7 +125,7 @@ function generateSitemap() {
   <!-- Dynamic routes (to be added when available): -->
   <!-- Supplier profiles: /supplier?id={supplierId} -->
   <!-- Package details: /package?id={packageId} -->
-  <!-- Blog posts: /blog?post={postId} -->
+  <!-- Guide articles: /articles/{slug} -->
   <!-- Marketplace items: /marketplace?item={itemId} -->
   <!-- Note: These should be dynamically generated based on actual content in the database -->
   `;

@@ -96,7 +96,7 @@ app.get('/chat/', (req, res) => {
 // Canonical routes for other pages (matching server.js behavior)
 const canonicalPages = [
   'start',
-  'blog',
+  'guides',
   'pricing',
   'faq',
   'for-suppliers',
