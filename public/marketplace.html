@@ -208,6 +208,17 @@
       <!-- =============================================
            MARKETPLACE HERO — Full-bleed redesign
            ============================================= -->
+      <!-- BreadcrumbList structured data — production URLs are intentional for SEO canonical signals -->
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://event-flow.co.uk/" },
+          { "@type": "ListItem", "position": 2, "name": "Marketplace", "item": "https://event-flow.co.uk/marketplace" }
+        ]
+      }
+      </script>
       <section class="mkt-hero" aria-label="Event Marketplace">
         <!-- Decorative background orbs -->
         <div class="mkt-hero__orb mkt-hero__orb--1" aria-hidden="true"></div>
@@ -220,27 +231,36 @@
           <!-- Left: Content -->
           <div class="mkt-hero__content">
             <nav class="mkt-hero__breadcrumb" aria-label="Breadcrumb">
-              <a href="/">Home</a>
-              <span aria-hidden="true">/</span>
-              <span aria-current="page">Marketplace</span>
+              <ol class="mkt-hero__breadcrumb-list">
+                <li>
+                  <a href="/">Home</a>
+                </li>
+                <li aria-hidden="true" class="mkt-hero__breadcrumb-sep">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+                </li>
+                <li>
+                  <span aria-current="page">Marketplace</span>
+                </li>
+              </ol>
             </nav>
 
-            <div class="mkt-hero__overline" aria-hidden="true">
+            <div class="mkt-hero__overline mkt-hero__animate mkt-hero__animate--1" aria-hidden="true">
               <span class="mkt-hero__dot"></span>
               UK Marketplace &nbsp;·&nbsp; Free to use
             </div>
 
-            <h1 class="mkt-hero__title">
+            <h1 class="mkt-hero__title mkt-hero__animate mkt-hero__animate--2">
               Buy &amp; sell
               <span class="mkt-hero__title-accent">pre-loved event&nbsp;items</span>
             </h1>
 
-            <p class="mkt-hero__sub">
+            <p class="mkt-hero__sub mkt-hero__animate mkt-hero__animate--3">
               Zero fees. Direct sales. A trusted community of UK buyers and sellers — no middleman, no commission.
             </p>
 
-            <div class="mkt-hero__actions">
+            <div class="mkt-hero__actions mkt-hero__animate mkt-hero__animate--4">
               <a href="#marketplace-results" class="mkt-hero__btn mkt-hero__btn--primary">
+                <span class="mkt-hero__btn-shimmer" aria-hidden="true"></span>
                 Browse listings
               </a>
               <a href="/auth" class="mkt-hero__btn mkt-hero__btn--secondary">
@@ -249,7 +269,7 @@
               </a>
             </div>
 
-            <div class="mkt-hero__stats" aria-label="Marketplace highlights">
+            <div class="mkt-hero__stats mkt-hero__animate mkt-hero__animate--5" aria-label="Marketplace highlights">
               <div class="mkt-hero__stat">
                 <strong>£0</strong>
                 <span>Listing fees</span>
@@ -265,10 +285,15 @@
                 <span>No middleman</span>
               </div>
             </div>
+
+            <!-- Scroll cue -->
+            <div class="mkt-hero__scroll-cue mkt-hero__animate mkt-hero__animate--6" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+            </div>
           </div>
 
           <!-- Right: Floating illustrative item cards (decorative) -->
-          <div class="mkt-hero__cards" aria-hidden="true">
+          <div class="mkt-hero__cards" aria-hidden="true" id="mkt-hero-cards">
             <div class="mkt-hero__card mkt-hero__card--1">
               <div class="mkt-hero__card-img mkt-hero__card-img--dress">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -324,8 +349,10 @@
           </div>
         </div>
 
-        <!-- Scrolling category ticker -->
+        <!-- Scrolling category ticker with gradient fade masks -->
         <div class="mkt-hero__ticker" aria-hidden="true">
+          <div class="mkt-hero__ticker-fade mkt-hero__ticker-fade--left" aria-hidden="true"></div>
+          <div class="mkt-hero__ticker-fade mkt-hero__ticker-fade--right" aria-hidden="true"></div>
           <div class="mkt-hero__ticker-track">
             <span>👗 Wedding Dresses</span>
             <span class="mkt-hero__ticker-dot">•</span>
@@ -363,6 +390,43 @@
           </div>
         </div>
       </section>
+
+      <!-- Marketplace hero mouse-parallax -->
+      <script>
+        (function () {
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          var hero = document.querySelector('.mkt-hero');
+          var cards = document.querySelectorAll('.mkt-hero__card');
+          if (!hero || !cards.length) return;
+
+          /* Named constants — rotation matches CSS keyframes, parallax factors control depth */
+          var CARD_ROTATIONS = [-4, 1.5, -2.5];
+          var PARALLAX_X     = [10, 16, 6];
+          var PARALLAX_Y     = [8,  12, 5];
+
+          var ticking = false;
+          hero.addEventListener('mousemove', function (e) {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+              var rect = hero.getBoundingClientRect();
+              var cx = (e.clientX - rect.left)  / rect.width  - 0.5;
+              var cy = (e.clientY - rect.top)    / rect.height - 0.5;
+              for (var i = 0; i < cards.length; i++) {
+                cards[i].style.transform =
+                  'rotate(' + CARD_ROTATIONS[i] + 'deg) ' +
+                  'translate(' + (-cx * PARALLAX_X[i]) + 'px,' + (-cy * PARALLAX_Y[i]) + 'px)';
+              }
+              ticking = false;
+            });
+          });
+          hero.addEventListener('mouseleave', function () {
+            for (var i = 0; i < cards.length; i++) {
+              cards[i].style.transform = '';
+            }
+          });
+        }());
+      </script>
 
       <section class="section">
         <div class="container marketplace-container">

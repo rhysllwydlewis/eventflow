@@ -1605,7 +1605,7 @@ textarea:focus:not(:focus-visible) {
    ============================================ */
 
 /* ============================================
-   MARKETPLACE HERO — Full-bleed redesign 2026
+   MARKETPLACE HERO — Full-bleed redesign 2026 (polish pass)
    ============================================ */
 .mkt-hero {
   position: relative;
@@ -1616,7 +1616,7 @@ textarea:focus:not(:focus-visible) {
   color: white;
 }
 
-/* ---- Decorative background orbs ---- */
+/* ---- Decorative background orbs (slow drift) ---- */
 .mkt-hero__orb {
   position: absolute;
   border-radius: 50%;
@@ -1630,6 +1630,7 @@ textarea:focus:not(:focus-visible) {
   background: radial-gradient(circle, rgba(19, 182, 162, 0.4) 0%, transparent 70%);
   top: -260px;
   right: -80px;
+  animation: mkt-orb-1 18s ease-in-out infinite;
 }
 .mkt-hero__orb--2 {
   width: 480px;
@@ -1637,6 +1638,7 @@ textarea:focus:not(:focus-visible) {
   background: radial-gradient(circle, rgba(11, 128, 115, 0.5) 0%, transparent 70%);
   bottom: -120px;
   left: 0;
+  animation: mkt-orb-2 22s ease-in-out infinite;
 }
 .mkt-hero__orb--3 {
   width: 320px;
@@ -1644,6 +1646,21 @@ textarea:focus:not(:focus-visible) {
   background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
   top: 20px;
   left: 28%;
+  animation: mkt-orb-3 26s ease-in-out infinite;
+}
+@keyframes mkt-orb-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-30px, 20px) scale(1.06); }
+  66% { transform: translate(20px, -30px) scale(0.95); }
+}
+@keyframes mkt-orb-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(40px, -25px) scale(1.08); }
+  70% { transform: translate(-20px, 15px) scale(0.97); }
+}
+@keyframes mkt-orb-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(25px, 20px); }
 }
 
 /* ---- Inner two-column grid ---- */
@@ -1659,23 +1676,58 @@ textarea:focus:not(:focus-visible) {
   padding: 56px 40px 44px;
 }
 
+/* ---- Staggered entrance animations ---- */
+@keyframes mkt-enter {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mkt-hero__animate {
+  animation: mkt-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.mkt-hero__animate--1 { animation-delay: 0.08s; }
+.mkt-hero__animate--2 { animation-delay: 0.18s; }
+.mkt-hero__animate--3 { animation-delay: 0.28s; }
+.mkt-hero__animate--4 { animation-delay: 0.38s; }
+.mkt-hero__animate--5 { animation-delay: 0.50s; }
+.mkt-hero__animate--6 { animation-delay: 0.64s; }
+
 /* ---- Breadcrumb ---- */
 .mkt-hero__breadcrumb {
+  margin-bottom: 20px;
+}
+.mkt-hero__breadcrumb-list {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
   font-size: 0.8rem;
-  opacity: 0.72;
-  margin-bottom: 18px;
 }
-.mkt-hero__breadcrumb a {
-  color: white;
+.mkt-hero__breadcrumb-list li {
+  display: flex;
+  align-items: center;
+}
+.mkt-hero__breadcrumb-list a {
+  color: rgba(255, 255, 255, 0.75);
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: color 0.2s;
 }
-.mkt-hero__breadcrumb a:hover {
-  opacity: 1;
+.mkt-hero__breadcrumb-list a:hover {
+  color: white;
   text-decoration: underline;
+}
+.mkt-hero__breadcrumb-list [aria-current="page"] {
+  color: white;
+  font-weight: 600;
+}
+.mkt-hero__breadcrumb-sep {
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 0;
+}
+.mkt-hero__breadcrumb-sep svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* ---- Overline pill ---- */
@@ -1750,7 +1802,9 @@ textarea:focus:not(:focus-visible) {
   padding: 14px 30px;
   text-decoration: none;
   white-space: nowrap;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, color 0.22s ease;
 }
 .mkt-hero__btn--primary {
   background: white;
@@ -1759,9 +1813,30 @@ textarea:focus:not(:focus-visible) {
 }
 .mkt-hero__btn--primary:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
   color: #0a6d61;
   text-decoration: none;
+}
+/* Shimmer sweep on primary button */
+.mkt-hero__btn-shimmer {
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  animation: mkt-shimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes mkt-shimmer {
+  0%   { left: -75%; }
+  40%, 100% { left: 130%; }
 }
 .mkt-hero__btn--secondary {
   background: rgba(255, 255, 255, 0.13);
@@ -1817,6 +1892,28 @@ textarea:focus:not(:focus-visible) {
   flex-shrink: 0;
 }
 
+/* ---- Scroll cue ---- */
+.mkt-hero__scroll-cue {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.45;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mkt-hero__scroll-cue svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  animation: mkt-scroll-bounce 1.8s ease-in-out infinite;
+}
+@keyframes mkt-scroll-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
 /* ---- Floating item cards (right column) ---- */
 .mkt-hero__cards {
   position: relative;
@@ -1831,32 +1928,34 @@ textarea:focus:not(:focus-visible) {
   box-shadow:
     0 24px 64px rgba(0, 0, 0, 0.25),
     0 4px 18px rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.35s ease;
 }
 .mkt-hero__card:hover {
-  box-shadow: 0 32px 72px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.3);
+  /* lift handled via animation override — but also works for parallax-off state */
 }
 /* Staggered positions & rotations */
 .mkt-hero__card--1 {
   left: 0;
   top: 18px;
-  transform: rotate(-4deg);
   z-index: 2;
-  animation: mkt-float-1 4.2s ease-in-out infinite;
+  animation: mkt-float-1 4.2s ease-in-out infinite, mkt-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
 }
 .mkt-hero__card--2 {
   left: 120px;
   top: 48px;
-  transform: rotate(1.5deg);
   z-index: 3;
-  animation: mkt-float-2 4.8s ease-in-out infinite;
+  animation: mkt-float-2 4.8s ease-in-out infinite, mkt-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
 }
 .mkt-hero__card--3 {
   left: 248px;
   top: 110px;
-  transform: rotate(-2.5deg);
   z-index: 2;
-  animation: mkt-float-3 5.4s ease-in-out infinite;
+  animation: mkt-float-3 5.4s ease-in-out infinite, mkt-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.7s both;
+}
+@keyframes mkt-card-in {
+  from { opacity: 0; transform: translateY(30px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes mkt-float-1 {
   0%, 100% { transform: rotate(-4deg) translateY(0); }
@@ -1945,7 +2044,7 @@ textarea:focus:not(:focus-visible) {
   border-radius: 100px;
   box-shadow: 0 4px 16px rgba(11, 128, 115, 0.45);
   white-space: nowrap;
-  animation: mkt-badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s both;
+  animation: mkt-badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both;
 }
 @keyframes mkt-badge-pop {
   from { transform: scale(0) rotate(-15deg); opacity: 0; }
@@ -1960,6 +2059,23 @@ textarea:focus:not(:focus-visible) {
   background: rgba(0, 0, 0, 0.12);
   overflow: hidden;
   padding: 11px 0;
+}
+/* Left/right gradient fade masks */
+.mkt-hero__ticker-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  z-index: 2;
+  pointer-events: none;
+}
+.mkt-hero__ticker-fade--left {
+  left: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, transparent 100%);
+}
+.mkt-hero__ticker-fade--right {
+  right: 0;
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.18) 0%, transparent 100%);
 }
 .mkt-hero__ticker-track {
   display: flex;
@@ -2022,6 +2138,9 @@ textarea:focus:not(:focus-visible) {
     font-size: 1rem;
     max-width: 100%;
   }
+  .mkt-hero__scroll-cue {
+    display: none;
+  }
 }
 
 @media (max-width: 600px) {
@@ -2058,6 +2177,38 @@ textarea:focus:not(:focus-visible) {
   .mkt-hero__overline {
     font-size: 0.65rem;
     padding: 4px 12px;
+  }
+}
+
+/* ---- Accessibility: honour prefers-reduced-motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .mkt-hero__orb,
+  .mkt-hero__animate,
+  .mkt-hero__dot,
+  .mkt-hero__btn-shimmer,
+  .mkt-hero__scroll-cue svg,
+  .mkt-hero__card,
+  .mkt-hero__new-badge,
+  .mkt-hero__ticker-track {
+    animation: none;
+    transition: none;
+  }
+  /* Ensure cards are visible without entrance animation */
+  .mkt-hero__card--1 {
+    transform: rotate(-4deg);
+  }
+  .mkt-hero__card--2 {
+    transform: rotate(1.5deg);
+  }
+  .mkt-hero__card--3 {
+    transform: rotate(-2.5deg);
+  }
+  .mkt-hero__animate {
+    opacity: 1;
+  }
+  .mkt-hero__ticker-track {
+    /* Freeze ticker so it's still readable */
+    animation-play-state: paused;
   }
 }
 
