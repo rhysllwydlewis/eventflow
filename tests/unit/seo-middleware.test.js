@@ -68,7 +68,7 @@ describe('SEO noindex middleware — public pages remain indexable', () => {
     '/marketplace',
     '/pricing',
     '/start',
-    '/blog',
+    '/guides',
     '/faq',
     '/for-suppliers',
     '/contact',

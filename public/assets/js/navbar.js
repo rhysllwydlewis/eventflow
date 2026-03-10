@@ -360,7 +360,7 @@
         return true;
       }
 
-      // Keep key nav sections highlighted on nested routes (e.g. blog post under /blog/*)
+      // Keep key nav sections highlighted on nested routes (e.g. blog post under /guides/*)
       if (linkElement && linkPath !== '/' && currentPath.startsWith(`${linkPath}/`)) {
         return true;
       }

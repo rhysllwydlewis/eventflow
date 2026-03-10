@@ -1210,8 +1210,8 @@ body.has-footer-nav {
 
 @media (max-width: 600px) {
   /* Hide Guides link on mobile in both top and footer nav */
-  .nav.nav-inline .nav-main[href="/blog"],
-  .footer-nav .footer-nav-links .footer-nav-link[href="/blog"] {
+  .nav.nav-inline .nav-main[href="/guides"],
+  .footer-nav .footer-nav-links .footer-nav-link[href="/guides"] {
     display: none !important;
   }
   
