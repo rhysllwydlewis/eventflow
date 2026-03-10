@@ -693,9 +693,16 @@ async function initSuppliersPage() {
     const loadMoreBtn = document.getElementById('load-more-btn');
     loadMoreBtn.addEventListener('click', async () => {
       loadMoreBtn.disabled = true;
+      const originalHTML = loadMoreBtn.innerHTML;
       loadMoreBtn.textContent = 'Loading…';
       currentFilters.page = (currentFilters.page || 1) + 1;
       await renderResults(true);
+      // Button is removed after renderResults appends content, so no need to restore
+      const btn = document.getElementById('load-more-btn');
+      if (btn) {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+      }
     });
   }
 
@@ -743,17 +750,24 @@ async function initSuppliersPage() {
         const card = btn.closest('.sp-card');
         const shortlistBtn = card ? card.querySelector('.btn-shortlist') : null;
 
-        // Get supplier data from card
-        const supplier = {
-          id: supplierId,
-          name: shortlistBtn ? shortlistBtn.dataset.supplierName : '',
-          category: shortlistBtn ? shortlistBtn.dataset.supplierCategory : '',
-        };
+        // Get supplier data from card — prefer shortlist button data-attrs; fall back to heading
+        const supplierName = shortlistBtn
+          ? shortlistBtn.dataset.supplierName
+          : card
+            ? (card.querySelector('.sp-card-name a') || {}).textContent || ''
+            : '';
+        const supplierCategory = shortlistBtn
+          ? shortlistBtn.dataset.supplierCategory
+          : '';
+
+        if (!supplierId) {
+          return;
+        }
 
         // Dispatch event to open quote modal
         window.dispatchEvent(
           new CustomEvent('openQuoteRequestModal', {
-            detail: { items: [supplier] },
+            detail: { items: [{ id: supplierId, name: supplierName, category: supplierCategory }] },
           })
         );
       });

@@ -413,7 +413,7 @@
             btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             section.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
             var iframe = section.querySelector('iframe[data-src]');
-            if(iframe && isOpen && (iframe.src === 'about:blank' || iframe.src === '')){
+            if(iframe && isOpen){
               iframe.src = iframe.getAttribute('data-src');
               iframe.removeAttribute('data-src');
             }
