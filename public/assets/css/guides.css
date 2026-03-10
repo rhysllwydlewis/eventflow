@@ -406,7 +406,7 @@
    3. FEATURED GUIDES
    ============================================================ */
 .guides-section {
-  padding: 60px 0;
+  padding: 28px 0 52px;
 }
 
 .guides-section--alt {
@@ -418,7 +418,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 
@@ -726,7 +726,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 0 14px;
+  padding: 6px 0 8px;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -777,6 +777,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
   transition: transform var(--guides-transition), box-shadow var(--guides-transition), border-color var(--guides-transition);
   box-shadow: 0 2px 12px rgba(11,128,115,0.06);
 }
@@ -902,6 +903,29 @@
 
 .guide-card:hover .guide-card__cta-arrow {
   transform: translateX(3px);
+}
+
+/* Stretched-link: make the "Read guide" anchor cover the whole card */
+.guide-card__cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* Tool links and inner buttons must sit above the stretched link */
+.guide-card__tool-link {
+  position: relative;
+  z-index: 2;
+}
+
+/* Keyboard focus ring: suppress default on anchor, highlight card instead */
+.guide-card__cta:focus-visible {
+  outline: none;
+}
+.guide-card:has(.guide-card__cta:focus-visible) {
+  box-shadow: 0 0 0 3px var(--guides-teal), 0 2px 12px rgba(11,128,115,0.10);
 }
 
 /* Tool link in guide cards — compact version of article-end-cta__tool */
@@ -1149,6 +1173,11 @@
   box-shadow: 0 12px 40px rgba(11,128,115,0.5);
 }
 
+/* Mobile-only hero "All Guides" shortcut — hidden above 480 px */
+.guides-hero__all-guides-mobile {
+  display: none;
+}
+
 /* ============================================================
    10. REDUCED MOTION
    ============================================================ */
@@ -1262,7 +1291,19 @@
     grid-template-columns: 1fr 1fr;
   }
   .guides-section {
-    padding: 44px 0;
+    padding: 16px 0 36px;
+  }
+  /* Compact filter chips on mobile */
+  .guides-chip {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    gap: 3px;
+  }
+  .guides-chip__icon {
+    font-size: 0.72rem;
+  }
+  .guides-filter-bar {
+    padding: 10px 0;
   }
   /* Fix search button on mobile — prevent full-width override */
   .guides-hero__search-wrap {
@@ -1293,31 +1334,61 @@
   .guides-tools__grid {
     grid-template-columns: 1fr;
   }
-  /* Search stacks to column on very small screens */
+  /* Search: input on first row, Search btn + All Guides on second row */
   .guides-hero__search-wrap {
-    flex-direction: column;
+    flex-wrap: wrap;
+    flex-direction: row;
     border-radius: 16px;
-    padding: 12px 14px;
-    gap: 8px;
-    align-items: stretch;
+    padding: 10px 12px;
+    gap: 6px;
+    align-items: center;
   }
   .guides-search-icon {
     display: none;
   }
   .guides-hero__search {
-    padding: 4px 0;
+    flex: 1 1 100%;
+    padding: 6px 0;
     font-size: 1rem;
   }
   .guides-search-clear {
     display: none !important;
   }
   .guides-hero__search-btn {
+    flex: 0 0 auto;
     border-radius: 10px;
-    padding: 11px 16px;
-    width: 100%;
+    padding: 9px 14px;
     min-height: 0;
     min-width: 0;
-    font-size: 0.95rem;
+    width: auto;
+    font-size: 0.83rem;
+  }
+  /* Show the mobile All Guides companion button */
+  .guides-hero__all-guides-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex: 1;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.30);
+    color: #fff;
+    font-size: 0.83rem;
+    font-weight: 700;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background var(--guides-transition);
+    white-space: nowrap;
+  }
+  .guides-hero__all-guides-mobile:hover {
+    background: rgba(255,255,255,0.28);
+  }
+  .guides-hero__all-guides-mobile:focus-visible {
+    outline: 2px solid rgba(255,255,255,0.9);
+    outline-offset: 3px;
   }
 }
 
@@ -1330,7 +1401,6 @@
 .guides-hero__search-btn:focus-visible,
 .guides-hero__cta:focus-visible,
 .featured-card:focus-visible,
-.guide-card:focus-visible,
 .guides-tool-card:focus-visible {
   outline: 2px solid var(--guides-teal);
   outline-offset: 3px;
@@ -1968,4 +2038,178 @@ article > img:first-of-type {
   .article-related__grid { grid-template-columns: 1fr; }
   .article-end-cta { flex-direction: column; }
   .article-end-cta__back, .article-end-cta__tool { text-align: center; justify-content: center; }
+}
+
+/* ============================================================
+   17. AUTH GATE MODAL (tools section)
+   ============================================================ */
+.guides-auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.guides-auth-modal[hidden] {
+  display: none;
+}
+
+.guides-auth-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 18, 32, 0.60);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.guides-auth-modal__panel {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 20px;
+  padding: 36px 32px 28px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(11,128,115,0.18), 0 8px 32px rgba(0,0,0,0.12);
+  animation: guides-modal-in 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes guides-modal-in {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.guides-auth-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(11,128,115,0.08);
+  color: #667085;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--guides-transition), color var(--guides-transition);
+}
+
+.guides-auth-modal__close:hover {
+  background: rgba(11,128,115,0.15);
+  color: var(--guides-teal);
+}
+
+.guides-auth-modal__close:focus-visible {
+  outline: 2px solid var(--guides-teal);
+  outline-offset: 3px;
+}
+
+.guides-auth-modal__icon {
+  font-size: 2.8rem;
+  margin-bottom: 14px;
+  line-height: 1;
+}
+
+.guides-auth-modal__title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0b1220;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+
+.guides-auth-modal__sub {
+  font-size: 0.88rem;
+  color: #667085;
+  line-height: 1.6;
+  margin: 0 0 24px;
+  max-width: 30ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.guides-auth-modal__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.guides-auth-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 24px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all var(--guides-transition);
+}
+
+.guides-auth-modal__btn--primary {
+  background: var(--guides-hero-grad);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(11,128,115,0.28);
+}
+
+.guides-auth-modal__btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(11,128,115,0.38);
+}
+
+.guides-auth-modal__btn--ghost {
+  background: rgba(11,128,115,0.08);
+  color: var(--guides-teal);
+  border: 1.5px solid rgba(11,128,115,0.20);
+}
+
+.guides-auth-modal__btn--ghost:hover {
+  background: rgba(11,128,115,0.14);
+}
+
+.guides-auth-modal__btn:focus-visible {
+  outline: 2px solid var(--guides-teal);
+  outline-offset: 3px;
+}
+
+.guides-auth-modal__skip {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--guides-transition);
+}
+
+.guides-auth-modal__skip:hover {
+  color: #667085;
+}
+
+.guides-auth-modal__skip:focus-visible {
+  outline: 2px solid var(--guides-teal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (max-width: 480px) {
+  .guides-auth-modal__panel {
+    padding: 28px 20px 22px;
+  }
+  .guides-auth-modal__actions {
+    flex-direction: column;
+  }
+  .guides-auth-modal__btn {
+    justify-content: center;
+  }
 }
