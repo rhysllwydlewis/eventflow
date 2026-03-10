@@ -987,7 +987,7 @@
           e.preventDefault();
           const href = el.getAttribute('href') || '/';
 
-          // If AuthStateManager is available wait for it to resolve
+          // If AuthStateManager is available, wait for it to resolve
           if (window.AuthStateManager) {
             try { await window.AuthStateManager.init(); } catch (_) {}
             if (window.AuthStateManager.user) {
