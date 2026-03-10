@@ -48,7 +48,7 @@
   <link rel="stylesheet" href="/assets/css/animations.css?v=18.3.0">
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.3.0">
   <link rel="stylesheet" href="/assets/css/navbar.css?v=18.3.0" />
-  <link rel="stylesheet" href="/assets/css/guides.css?v=19.0.0" />
+  <link rel="stylesheet" href="/assets/css/guides.css?v=19.1.0" />
   <link rel="icon" href="/favicon.svg">
   <script type="application/ld+json">
   {
@@ -201,6 +201,7 @@
       <!-- Left featured card (carousel) -->
       <div class="guides-hero__side guides-hero__side--left">
         <div id="hero-card-left" class="hero-side-card-wrap"></div>
+        <div class="hero-carousel-dots" id="hero-dots-left" aria-hidden="true"></div>
       </div>
 
       <!-- Centre content -->
@@ -222,7 +223,7 @@
           <button class="guides-search-clear" id="guides-search-clear" type="button" aria-label="Clear search">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
-          <button class="guides-hero__search-btn" type="button" aria-label="Search guides">Search</button>
+          <button class="guides-hero__search-btn" type="button">Search</button>
         </div>
 
         <!-- Hero CTAs -->
@@ -245,6 +246,7 @@
       <!-- Right featured card (carousel) -->
       <div class="guides-hero__side guides-hero__side--right">
         <div id="hero-card-right" class="hero-side-card-wrap"></div>
+        <div class="hero-carousel-dots" id="hero-dots-right" aria-hidden="true"></div>
       </div>
 
     </div>
@@ -619,27 +621,46 @@
     // ──────────────────────────────────────────────
     //  HERO CAROUSEL
     // ──────────────────────────────────────────────
-    function buildSideCardHTML(article) {
+    function buildSideCardHTML(article, eager) {
       return `
         <a href="${escHtml(article.link)}" class="hero-side-card" aria-label="Read guide: ${escHtml(article.title)}">
           <div class="hero-side-card__image-wrap">
-            <img src="${escHtml(article.image)}" alt="" class="hero-side-card__image" loading="lazy" width="400" height="260">
+            <img src="${escHtml(article.image)}" alt="" class="hero-side-card__image" loading="${eager ? 'eager' : 'lazy'}" width="400" height="260">
+            <div class="hero-side-card__overlay" aria-hidden="true"></div>
           </div>
           <div class="hero-side-card__body">
             <span class="hero-side-card__category">${categoryEmoji[article.category] || ''} ${escHtml(article.category)}</span>
             <p class="hero-side-card__title">${escHtml(article.title)}</p>
-            <span class="hero-side-card__meta">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              ${article.readTime} min read
+            <span class="hero-side-card__footer">
+              <span class="hero-side-card__meta">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                ${article.readTime} min read
+              </span>
+              <span class="hero-side-card__cta" aria-hidden="true">
+                Read guide
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
             </span>
           </div>
         </a>
       `;
     }
 
+    function buildDots(count, activeIdx, dotsEl) {
+      if (!dotsEl) return;
+      dotsEl.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'hero-carousel-dot' + (i === activeIdx ? ' active' : '');
+        dotsEl.appendChild(dot);
+      }
+    }
+
     function initHeroCarousel() {
       const leftWrap  = document.getElementById('hero-card-left');
       const rightWrap = document.getElementById('hero-card-right');
+      const dotsLeft  = document.getElementById('hero-dots-left');
+      const dotsRight = document.getElementById('hero-dots-right');
       if (!leftWrap || !rightWrap) return;
 
       const featured = articles.filter(a => a.featured)
@@ -650,34 +671,39 @@
       let carouselInterval = null;
       const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-      function showPair() {
-        const left  = featured[idx % featured.length];
-        const right = featured[(idx + 1) % featured.length];
+      function showPair(isFirst) {
+        const leftIdx  = idx % featured.length;
+        const rightIdx = (idx + 1) % featured.length;
+        const left  = featured[leftIdx];
+        const right = featured[rightIdx];
 
-        if (motionQuery.matches) {
-          leftWrap.innerHTML  = buildSideCardHTML(left);
-          rightWrap.innerHTML = buildSideCardHTML(right);
+        if (motionQuery.matches || isFirst) {
+          leftWrap.innerHTML  = buildSideCardHTML(left, isFirst);
+          rightWrap.innerHTML = buildSideCardHTML(right, isFirst);
         } else {
           leftWrap.style.opacity  = '0';
           rightWrap.style.opacity = '0';
           setTimeout(() => {
-            leftWrap.innerHTML  = buildSideCardHTML(left);
-            rightWrap.innerHTML = buildSideCardHTML(right);
+            leftWrap.innerHTML  = buildSideCardHTML(left, false);
+            rightWrap.innerHTML = buildSideCardHTML(right, false);
             leftWrap.style.opacity  = '1';
             rightWrap.style.opacity = '1';
-          }, 300);
+          }, 280);
         }
+
+        buildDots(featured.length, leftIdx,  dotsLeft);
+        buildDots(featured.length, rightIdx, dotsRight);
         idx = (idx + 1) % featured.length;
       }
 
       function startInterval() {
         if (carouselInterval) clearInterval(carouselInterval);
         if (!motionQuery.matches) {
-          carouselInterval = setInterval(showPair, 5000);
+          carouselInterval = setInterval(() => showPair(false), 5000);
         }
       }
 
-      showPair();
+      showPair(true);
       startInterval();
 
       // Respond to live changes in the user's motion preference
