@@ -210,20 +210,29 @@
         <p class="guides-hero__sub">Expert tips, inspiration, and step-by-step advice to help you plan the perfect event — from budget to timeline, venues to photography.</p>
 
         <!-- Search bar -->
-        <div class="guides-hero__search-wrap" role="search">
-          <svg class="guides-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input
-            type="search"
-            id="guides-search-input"
-            class="guides-hero__search"
-            placeholder="Search guides, tips, topics…"
-            aria-label="Search guides"
-            autocomplete="off"
-          />
-          <button class="guides-search-clear" id="guides-search-clear" type="button" aria-label="Clear search">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-          <button class="guides-hero__search-btn" type="button">Search</button>
+        <div class="guides-hero__search-row" role="search">
+          <div class="guides-hero__search-wrap">
+            <svg class="guides-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input
+              type="search"
+              id="guides-search-input"
+              class="guides-hero__search"
+              placeholder="Search guides, tips, topics…"
+              aria-label="Search guides"
+              autocomplete="off"
+            />
+            <button class="guides-search-clear" id="guides-search-clear" type="button" aria-label="Clear search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="guides-hero__search-actions">
+            <button class="guides-hero__search-btn" id="guides-search-btn" type="button" aria-label="Search guides">Search</button>
+            <!-- Mobile-only: All Guides shortcut shares the second row with the Search button -->
+            <a href="#all-guides" class="guides-hero__all-guides-mobile" aria-label="Browse all guides">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              All Guides
+            </a>
+          </div>
         </div>
 
         <!-- Hero CTAs -->
@@ -363,6 +372,26 @@
       </div>
     </div>
   </section>
+
+  <!-- ======================================================
+       AUTH GATE MODAL (tools section)
+       ====================================================== -->
+  <div class="guides-auth-modal" id="guides-auth-modal" role="dialog" aria-modal="true" aria-labelledby="guides-auth-modal-title" hidden>
+    <div class="guides-auth-modal__backdrop" id="guides-auth-modal-backdrop"></div>
+    <div class="guides-auth-modal__panel">
+      <button class="guides-auth-modal__close" id="guides-auth-modal-close" type="button" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="guides-auth-modal__icon" aria-hidden="true">🔐</div>
+      <h2 class="guides-auth-modal__title" id="guides-auth-modal-title">Sign in to use this tool</h2>
+      <p class="guides-auth-modal__sub">EventFlow planning tools save to your account — budgets, timelines, guest lists, and more, all in one place.</p>
+      <div class="guides-auth-modal__actions">
+        <a href="/auth" class="guides-auth-modal__btn guides-auth-modal__btn--primary" id="guides-auth-modal-login">Log in</a>
+        <a href="/auth?action=register" class="guides-auth-modal__btn guides-auth-modal__btn--ghost" id="guides-auth-modal-register">Create account</a>
+      </div>
+      <button class="guides-auth-modal__skip" id="guides-auth-modal-skip" type="button">Continue browsing guides</button>
+    </div>
+  </div>
 
 </main>
 
@@ -760,11 +789,25 @@
       searchInput.addEventListener('input', handleSearch);
       searchInput.addEventListener('keydown', e => {
         if (e.key === 'Escape') { clearSearch(); }
+        if (e.key === 'Enter')  { handleSearch(); scrollToGuides(); }
       });
     }
 
     if (searchClear) {
       searchClear.addEventListener('click', clearSearch);
+    }
+
+    const searchBtn = document.getElementById('guides-search-btn');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', () => {
+        handleSearch();
+        scrollToGuides();
+      });
+    }
+
+    function scrollToGuides() {
+      const section = document.getElementById('all-guides');
+      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function clearSearch() {
@@ -917,6 +960,63 @@
     initHeroCarousel();
     buildChips();
     renderGrid();
+
+    // ──────────────────────────────────────────────
+    //  AUTH GATE FOR PLANNING TOOLS
+    // ──────────────────────────────────────────────
+    (function () {
+      const authModal       = document.getElementById('guides-auth-modal');
+      const authModalClose  = document.getElementById('guides-auth-modal-close');
+      const authModalBg     = document.getElementById('guides-auth-modal-backdrop');
+      const authModalSkip   = document.getElementById('guides-auth-modal-skip');
+      const authModalLogin  = document.getElementById('guides-auth-modal-login');
+      const authModalReg    = document.getElementById('guides-auth-modal-register');
+
+      if (!authModal) return;
+
+      function openAuthModal(targetHref) {
+        // Append redirect so user lands on the tool after signing in
+        const redirect = encodeURIComponent(targetHref);
+        if (authModalLogin)  authModalLogin.href  = `/auth?redirect=${redirect}`;
+        if (authModalReg)    authModalReg.href    = `/auth?action=register&redirect=${redirect}`;
+        authModal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        // Focus the close button for keyboard users
+        authModalClose && authModalClose.focus();
+      }
+
+      function closeAuthModal() {
+        authModal.hidden = true;
+        document.body.style.overflow = '';
+      }
+
+      authModalClose && authModalClose.addEventListener('click', closeAuthModal);
+      authModalBg    && authModalBg.addEventListener('click', closeAuthModal);
+      authModalSkip  && authModalSkip.addEventListener('click', closeAuthModal);
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !authModal.hidden) closeAuthModal();
+      });
+
+      // Intercept clicks on every tool card and the CTA button
+      const toolTargets = document.querySelectorAll('.guides-tool-card, .guides-tools__cta-btn');
+      toolTargets.forEach(function (el) {
+        el.addEventListener('click', async function (e) {
+          e.preventDefault();
+          const href = el.getAttribute('href') || '/';
+
+          // If AuthStateManager is available, wait for it to resolve
+          if (window.AuthStateManager) {
+            try { await window.AuthStateManager.init(); } catch (_) {}
+            if (window.AuthStateManager.user) {
+              window.location.href = href;
+              return;
+            }
+          }
+          openAuthModal(href);
+        });
+      });
+    }());
   });
 </script>
 <script src="/assets/js/cookie-consent.js?v=2.0.0" defer></script>
