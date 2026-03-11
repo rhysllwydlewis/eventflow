@@ -64,7 +64,7 @@ function generateSupplierGradient(name) {
 function createSupplierCard(supplier, position) {
   const supplierInitial = supplier.name ? supplier.name.charAt(0).toUpperCase() : 'S';
 
-  // Build avatar HTML using new sp-card classes
+  // Build avatar HTML
   const avatarHtml = supplier.logo
     ? `<img src="${escapeHtml(supplier.logo)}" alt="${escapeHtml(supplier.name)} logo" class="sp-card-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
        <div class="sp-card-avatar-fallback" style="display:none; background:${generateSupplierGradient(supplier.name)};">${supplierInitial}</div>`
@@ -122,7 +122,7 @@ function createSupplierCard(supplier, position) {
   // Rating display
   const ratingValue = supplier.averageRating || supplier.rating;
   const ratingHtml = ratingValue
-    ? `<span class="sp-card-rating">★ ${Number(ratingValue).toFixed(1)}${supplier.reviewCount ? `<span style="color:#9ca3af;font-weight:400;"> (${supplier.reviewCount})</span>` : ''}</span>`
+    ? `<div class="sp-card-rating">★ ${Number(ratingValue).toFixed(1)}${supplier.reviewCount ? `<span class="sp-card-rating-count"> (${supplier.reviewCount})</span>` : ''}</div>`
     : '';
 
   const priceDisplay = supplier.price_display || 'Contact for quote';
@@ -133,56 +133,83 @@ function createSupplierCard(supplier, position) {
       ? `<span class="sp-badge sp-badge--distance">📍 ${supplier.distanceMiles < 1 ? '< 1' : supplier.distanceMiles.toFixed(1)} mi</span>`
       : '';
 
-  // Meta items
-  const metaParts = [];
-  if (supplier.category) metaParts.push(escapeHtml(supplier.category));
-  if (supplier.location) metaParts.push(escapeHtml(supplier.location));
-
   // Card tier class for avatar ring
   const tierCardClass = tier === 'pro_plus' ? 'sp-card--pro-plus' : tier === 'pro' ? 'sp-card--pro' : '';
 
+  // ── Package carousel ────────────────────────────────────────────────────
+  const packages = Array.isArray(supplier.topPackages) ? supplier.topPackages : [];
+  let carouselHtml;
+
+  if (packages.length === 0) {
+    carouselHtml = `
+      <div class="sp-pkg-empty">
+        <span class="sp-pkg-empty-icon" aria-hidden="true">📦</span>
+        <p class="sp-pkg-empty-text">No packages listed yet</p>
+        <a href="/supplier?id=${encodeURIComponent(supplier.id)}" class="sp-pkg-empty-link">View profile</a>
+      </div>`;
+  } else {
+    const pkgSlides = packages.map((pkg, i) => {
+      const pkgImageHtml = pkg.image
+        ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-img" loading="lazy" onerror="this.parentElement.classList.add('sp-pkg-slide--no-img')">`
+        : '';
+      return `
+        <div class="sp-pkg-slide${i === 0 ? ' sp-pkg-slide--active' : ''}" data-index="${i}">
+          ${pkgImageHtml}
+          <div class="sp-pkg-info">
+            <p class="sp-pkg-title">${escapeHtml(pkg.title)}</p>
+            <p class="sp-pkg-price">${escapeHtml(pkg.price)}</p>
+          </div>
+        </div>`;
+    }).join('');
+
+    const dotsHtml = packages.length > 1
+      ? `<div class="sp-pkg-dots" role="tablist" aria-label="Package slides">
+          ${packages.map((_, i) => `<button class="sp-pkg-dot${i === 0 ? ' sp-pkg-dot--active' : ''}" role="tab" aria-label="Package ${i + 1}" data-slide="${i}"></button>`).join('')}
+        </div>`
+      : '';
+
+    carouselHtml = `
+      <div class="sp-pkg-carousel" data-supplier-id="${escapeHtml(supplier.id)}">
+        ${packages.length > 1 ? `<button class="sp-pkg-arrow sp-pkg-arrow--prev" aria-label="Previous package">‹</button>` : ''}
+        <div class="sp-pkg-track">
+          ${pkgSlides}
+        </div>
+        ${packages.length > 1 ? `<button class="sp-pkg-arrow sp-pkg-arrow--next" aria-label="Next package">›</button>` : ''}
+        ${dotsHtml}
+      </div>`;
+  }
+
   return `
     <article class="sp-card ${tierCardClass}" data-supplier-id="${escapeHtml(supplier.id)}" aria-label="${escapeHtml(supplier.name)}">
-      <div class="sp-card-avatar-wrap">
-        ${avatarHtml}
+
+      <!-- LEFT: Profile info -->
+      <div class="sp-card-profile">
+        <div class="sp-card-avatar-wrap">
+          ${avatarHtml}
+        </div>
+        <h3 class="sp-card-name">
+          <a href="/supplier?id=${encodeURIComponent(supplier.id)}"
+             data-position="${position}"
+             class="sp-card-link">
+            ${escapeHtml(supplier.name)}
+          </a>${tierIcon}
+        </h3>
+        ${supplier.category ? `<p class="sp-card-category">📂 ${escapeHtml(supplier.category)}</p>` : ''}
+        ${supplier.location ? `<p class="sp-card-location">📍 ${escapeHtml(supplier.location)}</p>` : ''}
+        ${ratingHtml}
+        <p class="sp-card-price-tag">${escapeHtml(priceDisplay)}</p>
+        ${badges.length || distanceBadge ? `<div class="sp-card-badges">${badges.slice(0, 3).join('')}${distanceBadge}</div>` : ''}
+        ${supplier.description_short ? `<p class="sp-card-description">${escapeHtml(supplier.description_short)}</p>` : ''}
       </div>
-      <div class="sp-card-content">
-        <div class="sp-card-header">
-          <h3 class="sp-card-name">
-            <a href="/supplier?id=${encodeURIComponent(supplier.id)}"
-               data-position="${position}"
-               class="sp-card-link">
-              ${escapeHtml(supplier.name)}
-            </a>${tierIcon}
-          </h3>
-        </div>
-        <div class="sp-card-meta">
-          ${metaParts.map((p, i) => i === 0 ? p : `<span class="sp-card-meta-dot" aria-hidden="true"></span>${p}`).join('')}
-          ${ratingHtml ? `<span class="sp-card-meta-dot" aria-hidden="true"></span>${ratingHtml}` : ''}
-        </div>
-        <p class="sp-card-description">${escapeHtml(supplier.description_short || '')}</p>
-        <div class="sp-card-badges">
-          ${badges.join('')}${distanceBadge}
-        </div>
-        <div class="sp-card-price">${escapeHtml(priceDisplay)}</div>
+
+      <!-- MIDDLE: Package carousel -->
+      <div class="sp-card-packages">
+        <div class="sp-pkg-label">Packages</div>
+        ${carouselHtml}
       </div>
+
+      <!-- RIGHT: Action buttons -->
       <div class="sp-card-actions">
-        <button class="sp-btn sp-btn--primary btn-quote" data-supplier-id="${escapeHtml(supplier.id)}" aria-label="Request a quote from ${escapeHtml(supplier.name)}">
-          Request Quote
-        </button>
-        ${
-          supplier.ownerUserId
-            ? `<button class="sp-btn sp-btn--secondary btn-contact-supplier"
-                       data-quick-compose="true"
-                       data-recipient-id="${escapeHtml(supplier.ownerUserId)}"
-                       data-context-type="supplier_profile"
-                       data-context-id="${escapeHtml(supplier.id)}"
-                       data-context-title="${escapeHtml(supplier.name)}"
-                       aria-label="Send a message to ${escapeHtml(supplier.name)}">
-                💬 Message
-              </button>`
-            : ''
-        }
         <button class="sp-btn ${shortlistActiveClass} btn-shortlist"
                 data-supplier-id="${escapeHtml(supplier.id)}"
                 data-supplier-name="${escapeHtml(supplier.name)}"
@@ -195,10 +222,27 @@ function createSupplierCard(supplier, position) {
           ${shortlistBtnText}
         </button>
         <a href="/supplier?id=${encodeURIComponent(supplier.id)}"
-           class="sp-btn sp-btn--ghost"
+           class="sp-btn sp-btn--secondary"
            aria-label="View ${escapeHtml(supplier.name)} profile">
           View Profile
         </a>
+        ${
+          supplier.ownerUserId
+            ? `<button class="sp-btn sp-btn--ghost btn-contact-supplier"
+                       data-quick-compose="true"
+                       data-recipient-id="${escapeHtml(supplier.ownerUserId)}"
+                       data-context-type="supplier_profile"
+                       data-context-id="${escapeHtml(supplier.id)}"
+                       data-context-title="${escapeHtml(supplier.name)}"
+                       aria-label="Message ${escapeHtml(supplier.name)}">
+                💬 Message
+              </button>`
+            : `<button class="sp-btn sp-btn--primary btn-quote"
+                       data-supplier-id="${escapeHtml(supplier.id)}"
+                       aria-label="Request a quote from ${escapeHtml(supplier.name)}">
+                Request Quote
+              </button>`
+        }
       </div>
     </article>
   `;
@@ -813,6 +857,41 @@ async function initSuppliersPage() {
         const supplierId = card ? card.dataset.supplierId : '';
         const position = parseInt(link.dataset.position, 10);
         trackResultClick('supplier', supplierId, position);
+      });
+    });
+
+    // Package carousel arrow handlers
+    resultsContainer.querySelectorAll('.sp-pkg-carousel').forEach(carousel => {
+      const track = carousel.querySelector('.sp-pkg-track');
+      const slides = carousel.querySelectorAll('.sp-pkg-slide');
+      const dots = carousel.querySelectorAll('.sp-pkg-dot');
+      if (!track || slides.length < 2) {
+        return;
+      }
+      let current = 0;
+
+      function goTo(index) {
+        slides[current].classList.remove('sp-pkg-slide--active');
+        if (dots[current]) {
+          dots[current].classList.remove('sp-pkg-dot--active');
+        }
+        current = (index + slides.length) % slides.length;
+        slides[current].classList.add('sp-pkg-slide--active');
+        if (dots[current]) {
+          dots[current].classList.add('sp-pkg-dot--active');
+        }
+      }
+
+      const prevBtn = carousel.querySelector('.sp-pkg-arrow--prev');
+      const nextBtn = carousel.querySelector('.sp-pkg-arrow--next');
+      if (prevBtn) {
+        prevBtn.addEventListener('click', e => { e.preventDefault(); goTo(current - 1); });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', e => { e.preventDefault(); goTo(current + 1); });
+      }
+      dots.forEach((dot, i) => {
+        dot.addEventListener('click', e => { e.preventDefault(); goTo(i); });
       });
     });
 
