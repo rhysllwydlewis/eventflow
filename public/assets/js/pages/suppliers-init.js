@@ -22,6 +22,30 @@ function escapeHtml(unsafe) {
   return div.innerHTML;
 }
 
+// Minimal toast helper — shown when a logged-out user tries to save a supplier
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${type === 'error' ? '#dc2626' : type === 'warning' ? '#d97706' : 'rgba(15,23,42,0.95)'};
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    max-width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
 // Generate gradient for supplier avatars
 function generateSupplierGradient(name) {
   const colors = [
@@ -713,6 +737,17 @@ async function initSuppliersPage() {
       btn.addEventListener('click', async e => {
         e.preventDefault();
         const supplierId = btn.dataset.supplierId;
+
+        // Gate behind authentication (Option A)
+        if (!shortlistManager.isAuthenticated) {
+          const returnTo = window.location.pathname + window.location.search;
+          showToast('Please log in to save suppliers to your shortlist.');
+          setTimeout(() => {
+            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}`;
+          }, 800);
+          return;
+        }
+
         const isActive = btn.classList.contains('sp-btn--shortlist-active');
 
         if (isActive) {

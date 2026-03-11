@@ -449,35 +449,44 @@ describe('Client-Side Analytics Safety', () => {
   });
 });
 
-describe('Shortlist Manager Auto-Merge', () => {
-  describe('Merge on Login Behavior', () => {
-    it('should implement mergeLocalStorageOnLogin function', () => {
+describe('Shortlist Manager Auth Requirement', () => {
+  describe('Guest shortlist disabled (Option A)', () => {
+    it('should NOT contain mergeLocalStorageOnLogin (removed in Option A)', () => {
       const managerContent = fs.readFileSync(
         path.join(__dirname, '../../public/assets/js/utils/shortlist-manager.js'),
         'utf8'
       );
 
-      expect(managerContent).toContain('mergeLocalStorageOnLogin');
+      expect(managerContent).not.toContain('mergeLocalStorageOnLogin');
     });
 
-    it('should use merge flag to run only once', () => {
+    it('should gate addItem behind authentication', () => {
       const managerContent = fs.readFileSync(
         path.join(__dirname, '../../public/assets/js/utils/shortlist-manager.js'),
         'utf8'
       );
 
-      expect(managerContent).toContain('eventflow_shortlist_merged');
-      expect(managerContent).toContain('Already merged');
+      expect(managerContent).toContain('requiresAuth');
     });
 
-    it('should prevent duplicates during merge', () => {
+    it('should gate hasItem behind authentication', () => {
       const managerContent = fs.readFileSync(
         path.join(__dirname, '../../public/assets/js/utils/shortlist-manager.js'),
         'utf8'
       );
 
-      expect(managerContent).toContain('existingIds');
-      expect(managerContent).toContain('has(itemKey)');
+      // hasItem returns false when not authenticated
+      expect(managerContent).toContain('isAuthenticated');
+    });
+
+    it('should clear stale localStorage keys via _clearLocalStorage', () => {
+      const managerContent = fs.readFileSync(
+        path.join(__dirname, '../../public/assets/js/utils/shortlist-manager.js'),
+        'utf8'
+      );
+
+      expect(managerContent).toContain('_clearLocalStorage');
+      expect(managerContent).toContain('eventflow_shortlist');
     });
   });
 });
