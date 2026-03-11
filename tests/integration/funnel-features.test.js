@@ -29,21 +29,22 @@ describe('Shortlist API Integration Tests', () => {
       );
 
       expect(routeContent).toContain("router.get('/'");
-      expect(routeContent).toContain('getUserFromCookie');
+      // GET now requires auth — guest shortlist mode is disabled (Option A)
+      expect(routeContent).toContain('authRequired');
     });
 
-    it('should return empty array for unauthenticated users (not 401)', () => {
+    it('should require authentication on GET (no guest shortlist)', () => {
       const routeContent = fs.readFileSync(
         path.join(__dirname, '../../routes/shortlist.js'),
         'utf8'
       );
 
-      // Check that GET endpoint doesn't use authRequired
+      // GET endpoint must use authRequired — no more guest localStorage fallback
       const getRouteMatch = routeContent.match(/router\.get\('\/'.+?(?=router\.)/s);
       expect(getRouteMatch).toBeTruthy();
-      expect(getRouteMatch[0]).not.toContain('authRequired');
-      expect(getRouteMatch[0]).toContain('getUserFromCookie');
-      expect(getRouteMatch[0]).toContain('items: []');
+      expect(getRouteMatch[0]).toContain('authRequired');
+      // Should use findOne to fetch only the authenticated user's shortlist
+      expect(getRouteMatch[0]).toContain('findOne');
     });
 
     it('should define POST / endpoint with auth and CSRF protection', () => {
