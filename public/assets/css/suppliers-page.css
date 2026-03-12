@@ -900,7 +900,7 @@
   box-shadow: 0 3px 12px rgba(11, 128, 115, 0.32);
 }
 
-/* Ghost button (used for Message when ownerUserId present) */
+/* Ghost button — neutral glass style for secondary/fallback actions */
 .sp-btn--ghost {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(8px);

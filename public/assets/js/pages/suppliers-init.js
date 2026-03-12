@@ -226,23 +226,16 @@ function createSupplierCard(supplier, position) {
            aria-label="View ${escapeHtml(supplier.name)} profile">
           View Profile
         </a>
-        ${
-          supplier.ownerUserId
-            ? `<button class="sp-btn sp-btn--ghost btn-contact-supplier"
-                       data-quick-compose="true"
-                       data-recipient-id="${escapeHtml(supplier.ownerUserId)}"
-                       data-context-type="supplier_profile"
-                       data-context-id="${escapeHtml(supplier.id)}"
-                       data-context-title="${escapeHtml(supplier.name)}"
-                       aria-label="Message ${escapeHtml(supplier.name)}">
-                💬 Message
-              </button>`
-            : `<button class="sp-btn sp-btn--primary btn-quote"
-                       data-supplier-id="${escapeHtml(supplier.id)}"
-                       aria-label="Request a quote from ${escapeHtml(supplier.name)}">
-                Request Quote
-              </button>`
-        }
+        <button class="sp-btn sp-btn--primary btn-contact-supplier"
+                data-quick-compose="true"
+                ${supplier.ownerUserId ? `data-recipient-id="${escapeHtml(supplier.ownerUserId)}"` : ''}
+                data-context-type="supplier_profile"
+                data-context-id="${escapeHtml(supplier.id)}"
+                data-context-title="${escapeHtml(supplier.name)}"
+                ${supplier.logo ? `data-context-image="${escapeHtml(supplier.logo)}"` : ''}
+                aria-label="Message ${escapeHtml(supplier.name)}">
+          💬 Message
+        </button>
       </div>
     </article>
   `;
@@ -250,18 +243,23 @@ function createSupplierCard(supplier, position) {
 
 // Skeleton loading cards
 function createSkeletonCards(count = 3) {
-  const colors = ['55%', '45%', '60%'];
+  const widths = ['55%', '45%', '60%'];
   return Array.from({ length: count }, (_, i) => `
-    <div class="sp-card" aria-hidden="true" style="opacity:0.7;">
-      <div class="sp-card-avatar-fallback" style="background:linear-gradient(135deg,#e5e7eb,#d1d5db);width:64px;height:64px;border-radius:10px;"></div>
-      <div class="sp-card-content">
-        <div style="height:16px;background:linear-gradient(135deg,#e5e7eb,#d1d5db);border-radius:4px;width:${colors[i % 3]};margin-bottom:8px;"></div>
-        <div style="height:13px;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);border-radius:4px;width:35%;margin-bottom:6px;"></div>
-        <div style="height:13px;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);border-radius:4px;width:80%;"></div>
+    <div class="sp-card" aria-hidden="true" style="opacity:0.6;">
+      <div class="sp-card-profile" style="align-items:center;gap:8px;">
+        <div style="width:72px;height:72px;border-radius:14px;background:linear-gradient(135deg,#e5e7eb,#d1d5db);margin-bottom:4px;"></div>
+        <div style="height:14px;background:linear-gradient(135deg,#e5e7eb,#d1d5db);border-radius:4px;width:${widths[i % 3]};"></div>
+        <div style="height:11px;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);border-radius:4px;width:60%;"></div>
+        <div style="height:11px;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);border-radius:4px;width:50%;"></div>
       </div>
-      <div class="sp-card-actions" style="opacity:0.3;">
-        <div style="height:32px;background:#e5e7eb;border-radius:6px;"></div>
-        <div style="height:32px;background:#e5e7eb;border-radius:6px;"></div>
+      <div class="sp-card-packages" style="gap:8px;">
+        <div style="height:10px;background:#e5e7eb;border-radius:4px;width:50%;"></div>
+        <div style="flex:1;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);border-radius:10px;min-height:80px;"></div>
+      </div>
+      <div class="sp-card-actions" style="opacity:0.4;">
+        <div style="height:36px;background:#e5e7eb;border-radius:9px;"></div>
+        <div style="height:36px;background:#e5e7eb;border-radius:9px;"></div>
+        <div style="height:36px;background:#e5e7eb;border-radius:9px;"></div>
       </div>
     </div>
   `).join('');
@@ -821,35 +819,6 @@ async function initSuppliersPage() {
       });
     });
 
-    // Quote buttons
-    resultsContainer.querySelectorAll('.btn-quote').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.preventDefault();
-        const supplierId = btn.dataset.supplierId;
-        const card = btn.closest('.sp-card');
-        const shortlistBtn = card?.querySelector('.btn-shortlist') ?? null;
-
-        // Get supplier data — prefer shortlist button data-attrs, fall back to heading text
-        let supplierName = shortlistBtn?.dataset.supplierName ?? '';
-        if (!supplierName && card) {
-          const nameLink = card.querySelector('.sp-card-name a');
-          supplierName = nameLink?.textContent?.trim() ?? '';
-        }
-        const supplierCategory = shortlistBtn?.dataset.supplierCategory ?? '';
-
-        if (!supplierId) {
-          return;
-        }
-
-        // Dispatch event to open quote modal
-        window.dispatchEvent(
-          new CustomEvent('openQuoteRequestModal', {
-            detail: { items: [{ id: supplierId, name: supplierName, category: supplierCategory }] },
-          })
-        );
-      });
-    });
-
     // Track result clicks
     resultsContainer.querySelectorAll('.sp-card-link').forEach(link => {
       link.addEventListener('click', _e => {
@@ -860,44 +829,63 @@ async function initSuppliersPage() {
       });
     });
 
-    // Package carousel arrow handlers
-    resultsContainer.querySelectorAll('.sp-pkg-carousel').forEach(carousel => {
-      const track = carousel.querySelector('.sp-pkg-track');
-      const slides = carousel.querySelectorAll('.sp-pkg-slide');
-      const dots = carousel.querySelectorAll('.sp-pkg-dot');
-      if (!track || slides.length < 2) {
-        return;
-      }
-      let current = 0;
-
-      function goTo(index) {
-        slides[current].classList.remove('sp-pkg-slide--active');
-        if (dots[current]) {
-          dots[current].classList.remove('sp-pkg-dot--active');
-        }
-        current = (index + slides.length) % slides.length;
-        slides[current].classList.add('sp-pkg-slide--active');
-        if (dots[current]) {
-          dots[current].classList.add('sp-pkg-dot--active');
-        }
-      }
-
-      const prevBtn = carousel.querySelector('.sp-pkg-arrow--prev');
-      const nextBtn = carousel.querySelector('.sp-pkg-arrow--next');
-      if (prevBtn) {
-        prevBtn.addEventListener('click', e => { e.preventDefault(); goTo(current - 1); });
-      }
-      if (nextBtn) {
-        nextBtn.addEventListener('click', e => { e.preventDefault(); goTo(current + 1); });
-      }
-      dots.forEach((dot, i) => {
-        dot.addEventListener('click', e => { e.preventDefault(); goTo(i); });
-      });
-    });
+    // Package carousel — delegated listener registered once on first call
+    if (!resultsContainer._carouselDelegated) {
+      resultsContainer.addEventListener('click', _carouselClickHandler);
+      resultsContainer._carouselDelegated = true;
+    }
 
     // Attach QuickComposeV4 to any new compose triggers
     if (window.QuickComposeV4 && typeof window.QuickComposeV4.attachAll === 'function') {
       window.QuickComposeV4.attachAll();
+    }
+  }
+
+  // Delegated carousel click handler — handles all arrow/dot clicks across all cards
+  function _carouselClickHandler(e) {
+    const arrow = e.target.closest('.sp-pkg-arrow');
+    const dot   = e.target.closest('.sp-pkg-dot');
+    if (!arrow && !dot) {
+      return;
+    }
+    e.preventDefault();
+
+    const carousel = (arrow || dot).closest('.sp-pkg-carousel');
+    if (!carousel) {
+      return;
+    }
+
+    const slides = Array.from(carousel.querySelectorAll('.sp-pkg-slide'));
+    const dots   = Array.from(carousel.querySelectorAll('.sp-pkg-dot'));
+    if (slides.length < 2) {
+      return;
+    }
+
+    const currentIndex = slides.findIndex(s => s.classList.contains('sp-pkg-slide--active'));
+    let next = currentIndex;
+
+    if (arrow) {
+      next = arrow.classList.contains('sp-pkg-arrow--prev')
+        ? (currentIndex - 1 + slides.length) % slides.length
+        : (currentIndex + 1) % slides.length;
+    } else if (dot) {
+      const dotIndex = parseInt(dot.dataset.slide, 10);
+      if (!isNaN(dotIndex)) {
+        next = dotIndex;
+      }
+    }
+
+    if (next === currentIndex) {
+      return;
+    }
+
+    slides[currentIndex].classList.remove('sp-pkg-slide--active');
+    if (dots[currentIndex]) {
+      dots[currentIndex].classList.remove('sp-pkg-dot--active');
+    }
+    slides[next].classList.add('sp-pkg-slide--active');
+    if (dots[next]) {
+      dots[next].classList.add('sp-pkg-dot--active');
     }
   }
 
