@@ -4,7 +4,7 @@
  * a contextual notice explaining why the user was redirected to sign in.
  */
 (function () {
-  var MESSAGES = {
+  const MESSAGES = {
     save: {
       title: 'Log in to save suppliers',
       body: "Create an account or log in to save suppliers to your shortlist. After you sign in, we'll take you back to where you were.",
@@ -20,38 +20,32 @@
   };
 
   function init() {
-    var params = new URLSearchParams(window.location.search);
-    var intent = params.get('intent');
-    var redirect = params.get('redirect');
+    const params = new URLSearchParams(window.location.search);
+    const intent = params.get('intent');
+    const redirect = params.get('redirect');
 
     // Only show when both intent and redirect are present and redirect is relative
     if (!intent || !redirect || !redirect.startsWith('/')) {
       return;
     }
 
-    var msg = MESSAGES[intent];
+    const msg = MESSAGES[intent];
     if (!msg) {
       return;
     }
 
-    var notice = document.getElementById('auth-intent-notice');
+    const notice = document.getElementById('auth-intent-notice');
     if (!notice) {
       return;
     }
 
-    notice.innerHTML =
-      '<strong class="auth-intent-title">' +
-      escapeHtml(msg.title) +
-      '</strong>' +
-      '<p class="auth-intent-body">' +
-      escapeHtml(msg.body) +
-      '</p>';
+    notice.innerHTML = `<strong class="auth-intent-title">${escapeHtml(msg.title)}</strong><p class="auth-intent-body">${escapeHtml(msg.body)}</p>`;
     notice.classList.add('is-visible', 'is-info');
     notice.style.display = '';
   }
 
   function escapeHtml(str) {
-    var div = document.createElement('div');
+    const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }

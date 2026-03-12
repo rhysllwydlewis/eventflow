@@ -21,7 +21,7 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 // (server only listens on 127.0.0.1 so this is defence-in-depth)
 const staticLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 500, // generous limit — E2E test suites issue many requests
+  max: 3000, // generous limit — E2E test suites issue many requests per page load
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -53,6 +53,93 @@ app.use((req, res, next) => {
 // Stub /api/health endpoint for Playwright health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', mode: 'static' });
+});
+
+// Stub supplier search API — returns mock suppliers so E2E tests can render cards
+// and exercise the auth-gating logic (Save, Message, Add to plan).
+app.get('/api/v2/search/suppliers', (req, res) => {
+  const mockSuppliers = [
+    {
+      id: 'mock-sup-1',
+      name: 'The Grand Venue',
+      category: 'Venues',
+      location: 'London, UK',
+      description_short: 'Stunning event space in central London with capacity for 500 guests.',
+      logo: '',
+      approved: true,
+      verified: true,
+      rating: 4.8,
+      averageRating: 4.8,
+      reviewCount: 23,
+      subscriptionTier: 'pro',
+      ownerUserId: '',
+      topPackages: [
+        {
+          id: 'mock-pkg-1',
+          title: 'Garden Party Package',
+          price: '£1,200 / event',
+          description: 'Full outdoor garden setup with catering, decorations and staff included.',
+          image: '',
+        },
+        {
+          id: 'mock-pkg-2',
+          title: 'Intimate Dinner',
+          price: '£850 / event',
+          description: 'Intimate dining experience for up to 30 guests.',
+          image: '',
+        },
+      ],
+    },
+    {
+      id: 'mock-sup-2',
+      name: 'Pixel Perfect Photography',
+      category: 'Photography',
+      location: 'Manchester, UK',
+      description_short: 'Award-winning wedding and event photography since 2010.',
+      logo: '',
+      approved: true,
+      subscriptionTier: 'pro_plus',
+      ownerUserId: '',
+      topPackages: [
+        {
+          id: 'mock-pkg-3',
+          title: 'Wedding Full Day',
+          price: '£1,800',
+          description: 'Full day wedding photography from prep to reception.',
+          image: '',
+        },
+      ],
+    },
+    {
+      id: 'mock-sup-3',
+      name: 'Simply Catering Co',
+      category: 'Catering',
+      location: 'Birmingham, UK',
+      description_short: 'Fresh, locally-sourced catering for events of all sizes.',
+      logo: '',
+      approved: true,
+      ownerUserId: '',
+      topPackages: [],
+    },
+  ];
+
+  res.json({
+    data: {
+      results: mockSuppliers,
+      pagination: { total: mockSuppliers.length, page: 1, limit: 20, totalPages: 1 },
+      appliedSort: 'relevance',
+    },
+  });
+});
+
+// Stub shortlist API endpoints (auth-gated in real server; return 401 here)
+app.get('/api/shortlist', (req, res) => {
+  res.status(401).json({ error: 'Unauthorized' });
+});
+
+// Stub auth check — always returns unauthenticated for E2E logged-out tests
+app.get('/api/v1/auth/me', (req, res) => {
+  res.status(401).json({ error: 'Not authenticated' });
 });
 
 // Canonical URL redirects (matching server.js behavior)

@@ -286,38 +286,41 @@ test.describe('Supplier shortlist — unauthenticated (Option A)', () => {
   });
 
   test('auth page shows contextual notice for intent=save', async ({ page }) => {
-    await page.goto('/auth?redirect=%2Fsuppliers&intent=save');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/auth?redirect=%2Fsuppliers&intent=save', { waitUntil: 'domcontentloaded' });
+    // Wait for the auth heading to confirm we're on the auth page
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
 
     const notice = page.locator('#auth-intent-notice');
-    await expect(notice).toBeVisible();
+    await expect(notice).toBeVisible({ timeout: 10000 });
     await expect(notice).toContainText('save suppliers');
     await expect(notice).toContainText("we'll take you back");
   });
 
   test('auth page shows contextual notice for intent=message', async ({ page }) => {
-    await page.goto('/auth?redirect=%2Fsuppliers&intent=message');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/auth?redirect=%2Fsuppliers&intent=message', {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
 
     const notice = page.locator('#auth-intent-notice');
-    await expect(notice).toBeVisible();
+    await expect(notice).toBeVisible({ timeout: 10000 });
     await expect(notice).toContainText('message');
     await expect(notice).toContainText("we'll take you back");
   });
 
   test('auth page shows contextual notice for intent=plan', async ({ page }) => {
-    await page.goto('/auth?redirect=%2Fsuppliers&intent=plan');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/auth?redirect=%2Fsuppliers&intent=plan', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
 
     const notice = page.locator('#auth-intent-notice');
-    await expect(notice).toBeVisible();
+    await expect(notice).toBeVisible({ timeout: 10000 });
     await expect(notice).toContainText('plan');
     await expect(notice).toContainText("we'll take you back");
   });
 
   test('auth page does not show intent notice when no intent param', async ({ page }) => {
-    await page.goto('/auth');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
 
     const notice = page.locator('#auth-intent-notice');
     // Notice element exists but should not be visible (no intent param)
@@ -332,7 +335,14 @@ test.describe('Supplier shortlist — unauthenticated (Option A)', () => {
       localStorage.setItem(
         'eventflow_shortlist',
         JSON.stringify({
-          items: [{ type: 'supplier', id: 'any-supplier-id', name: 'Test', addedAt: new Date().toISOString() }],
+          items: [
+            {
+              type: 'supplier',
+              id: 'any-supplier-id',
+              name: 'Test',
+              addedAt: new Date().toISOString(),
+            },
+          ],
           lastUpdated: new Date().toISOString(),
         })
       );
@@ -340,7 +350,7 @@ test.describe('Supplier shortlist — unauthenticated (Option A)', () => {
 
     // Reload so shortlist-manager picks up localStorage (it should ignore it)
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // No shortlist button should show the "Saved / active" state
     const activeButtons = page.locator('.sp-btn--shortlist-active, .btn-shortlist-active');

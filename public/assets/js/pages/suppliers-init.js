@@ -112,7 +112,9 @@ function createSupplierCard(supplier, position) {
       badges.push('<span class="sp-badge sp-badge--phone badge-phone-verified">✓ Phone</span>');
     }
     if (supplier.verifications.business && supplier.verifications.business.verified) {
-      badges.push('<span class="sp-badge sp-badge--business badge-business-verified">✓ Business</span>');
+      badges.push(
+        '<span class="sp-badge sp-badge--business badge-business-verified">✓ Business</span>'
+      );
     }
   }
 
@@ -144,7 +146,8 @@ function createSupplierCard(supplier, position) {
       : '';
 
   // Card tier class for avatar ring
-  const tierCardClass = tier === 'pro_plus' ? 'sp-card--pro-plus' : tier === 'pro' ? 'sp-card--pro' : '';
+  const tierCardClass =
+    tier === 'pro_plus' ? 'sp-card--pro-plus' : tier === 'pro' ? 'sp-card--pro' : '';
 
   // ── Package mini-cards ──────────────────────────────────────────────────
   const packages = Array.isArray(supplier.topPackages) ? supplier.topPackages : [];
@@ -159,15 +162,17 @@ function createSupplierCard(supplier, position) {
       </div>`;
   } else {
     // Show up to 4 mini-cards — enough to preview key packages without excessive card height
-    const miniCards = packages.slice(0, 4).map(pkg => {
-      const imgHtml = pkg.image
-        ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-mini-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+    const miniCards = packages
+      .slice(0, 4)
+      .map(pkg => {
+        const imgHtml = pkg.image
+          ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-mini-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
            <div class="sp-pkg-mini-img-fallback" style="display:none;" aria-hidden="true">📦</div>`
-        : `<div class="sp-pkg-mini-img-fallback" aria-hidden="true">📦</div>`;
-      const descHtml = pkg.description
-        ? `<p class="sp-pkg-mini-desc">${escapeHtml(pkg.description)}</p>`
-        : '';
-      return `
+          : `<div class="sp-pkg-mini-img-fallback" aria-hidden="true">📦</div>`;
+        const descHtml = pkg.description
+          ? `<p class="sp-pkg-mini-desc">${escapeHtml(pkg.description)}</p>`
+          : '';
+        return `
         <div class="sp-pkg-mini">
           <div class="sp-pkg-mini-thumb">${imgHtml}</div>
           <div class="sp-pkg-mini-body">
@@ -184,7 +189,8 @@ function createSupplierCard(supplier, position) {
             </button>
           </div>
         </div>`;
-    }).join('');
+      })
+      .join('');
 
     packagesHtml = `<div class="sp-pkg-mini-list">${miniCards}</div>`;
   }
@@ -253,7 +259,9 @@ function createSupplierCard(supplier, position) {
 // Skeleton loading cards
 function createSkeletonCards(count = 3) {
   const widths = ['55%', '45%', '60%'];
-  return Array.from({ length: count }, (_, i) => `
+  return Array.from(
+    { length: count },
+    (_, i) => `
     <div class="sp-card" aria-hidden="true" style="opacity:0.6;">
       <div class="sp-card-profile" style="align-items:center;gap:8px;">
         <div style="width:72px;height:72px;border-radius:14px;background:linear-gradient(135deg,#e5e7eb,#d1d5db);margin-bottom:4px;"></div>
@@ -271,7 +279,8 @@ function createSkeletonCards(count = 3) {
         <div style="height:36px;background:#e5e7eb;border-radius:9px;"></div>
       </div>
     </div>
-  `).join('');
+  `
+  ).join('');
 }
 
 // Empty state
@@ -869,8 +878,12 @@ async function initSuppliersPage() {
         const packageId = btn.dataset.packageId;
         const supplierId = btn.dataset.supplierId;
         const query = new URLSearchParams();
-        if (packageId) query.set('packageId', packageId);
-        if (supplierId) query.set('supplierId', supplierId);
+        if (packageId) {
+          query.set('packageId', packageId);
+        }
+        if (supplierId) {
+          query.set('supplierId', supplierId);
+        }
         window.location.href = `/start?${query.toString()}`;
       });
     });
@@ -880,6 +893,7 @@ async function initSuppliersPage() {
       window.QuickComposeV4.attachAll();
     }
   }
+
   function attachEmptyStateHandlers() {
     const clearBtn = document.getElementById('clear-filters-btn');
     if (clearBtn) {
