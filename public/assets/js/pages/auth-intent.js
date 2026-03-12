@@ -7,15 +7,15 @@
   var MESSAGES = {
     save: {
       title: 'Log in to save suppliers',
-      body: 'Create an account or log in to save suppliers to your shortlist. After you sign in, we\u2019ll take you back to where you were.',
+      body: "Create an account or log in to save suppliers to your shortlist. After you sign in, we'll take you back to where you were.",
     },
     message: {
       title: 'Log in to message suppliers',
-      body: 'Create an account or log in to message this supplier. After you sign in, we\u2019ll take you back to where you were.',
+      body: "Create an account or log in to message this supplier. After you sign in, we'll take you back to where you were.",
     },
     plan: {
       title: 'Log in to add packages to your plan',
-      body: 'Create an account or log in to add packages to your event plan. After you sign in, we\u2019ll take you back to where you were.',
+      body: "Create an account or log in to add packages to your event plan. After you sign in, we'll take you back to where you were.",
     },
   };
 

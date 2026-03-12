@@ -158,6 +158,7 @@ function createSupplierCard(supplier, position) {
         <a href="/supplier?id=${encodeURIComponent(supplier.id)}" class="sp-pkg-empty-link">View profile</a>
       </div>`;
   } else {
+    // Show up to 4 mini-cards — enough to preview key packages without excessive card height
     const miniCards = packages.slice(0, 4).map(pkg => {
       const imgHtml = pkg.image
         ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-mini-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
