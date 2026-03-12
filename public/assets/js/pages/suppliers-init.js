@@ -22,9 +22,6 @@ function escapeHtml(unsafe) {
   return div.innerHTML;
 }
 
-// Track which result containers already have the delegated carousel listener
-const _delegatedCarouselContainers = new WeakSet();
-
 // Minimal toast helper — shown when a logged-out user tries to save a supplier
 function showToast(message, type = 'info') {
   const toast = document.createElement('div');
@@ -115,7 +112,9 @@ function createSupplierCard(supplier, position) {
       badges.push('<span class="sp-badge sp-badge--phone badge-phone-verified">✓ Phone</span>');
     }
     if (supplier.verifications.business && supplier.verifications.business.verified) {
-      badges.push('<span class="sp-badge sp-badge--business badge-business-verified">✓ Business</span>');
+      badges.push(
+        '<span class="sp-badge sp-badge--business badge-business-verified">✓ Business</span>'
+      );
     }
   }
 
@@ -147,48 +146,59 @@ function createSupplierCard(supplier, position) {
       : '';
 
   // Card tier class for avatar ring
-  const tierCardClass = tier === 'pro_plus' ? 'sp-card--pro-plus' : tier === 'pro' ? 'sp-card--pro' : '';
+  const tierCardClass =
+    tier === 'pro_plus' ? 'sp-card--pro-plus' : tier === 'pro' ? 'sp-card--pro' : '';
 
-  // ── Package carousel ────────────────────────────────────────────────────
+  // ── Package horizontal carousel ──────────────────────────────────────────
   const packages = Array.isArray(supplier.topPackages) ? supplier.topPackages : [];
-  let carouselHtml;
+  let packagesHtml;
 
   if (packages.length === 0) {
-    carouselHtml = `
+    packagesHtml = `
       <div class="sp-pkg-empty">
         <span class="sp-pkg-empty-icon" aria-hidden="true">📦</span>
         <p class="sp-pkg-empty-text">No packages listed yet</p>
         <a href="/supplier?id=${encodeURIComponent(supplier.id)}" class="sp-pkg-empty-link">View profile</a>
       </div>`;
   } else {
-    const pkgSlides = packages.map((pkg, i) => {
-      const pkgImageHtml = pkg.image
-        ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-img" loading="lazy" onerror="this.parentElement.classList.add('sp-pkg-slide--no-img')">`
-        : '';
-      return `
-        <div class="sp-pkg-slide${i === 0 ? ' sp-pkg-slide--active' : ''}" data-index="${i}">
-          ${pkgImageHtml}
-          <div class="sp-pkg-info">
-            <p class="sp-pkg-title">${escapeHtml(pkg.title)}</p>
-            <p class="sp-pkg-price">${escapeHtml(pkg.price)}</p>
+    // Show up to 4 packages — 2 visible at a time; arrows slide through the rest
+    const miniCards = packages
+      .slice(0, 4)
+      .map(pkg => {
+        const imgHtml = pkg.image
+          ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-mini-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+             <div class="sp-pkg-mini-img-fallback" style="display:none;" aria-hidden="true">📦</div>`
+          : `<div class="sp-pkg-mini-img-fallback" aria-hidden="true">📦</div>`;
+        return `
+        <div class="sp-pkg-mini">
+          <div class="sp-pkg-mini-thumb">${imgHtml}</div>
+          <div class="sp-pkg-mini-body">
+            <p class="sp-pkg-mini-title">${escapeHtml(pkg.title)}</p>
+            <p class="sp-pkg-mini-price">${escapeHtml(pkg.price)}</p>
+            <button class="sp-btn sp-btn--plan btn-add-to-plan"
+                    data-package-id="${escapeHtml(pkg.id || '')}"
+                    data-package-title="${escapeHtml(pkg.title)}"
+                    data-package-price="${escapeHtml(pkg.price)}"
+                    data-supplier-id="${escapeHtml(supplier.id)}"
+                    aria-label="Add ${escapeHtml(pkg.title)} to your plan">
+              Add to plan
+            </button>
           </div>
         </div>`;
-    }).join('');
+      })
+      .join('');
 
-    const dotsHtml = packages.length > 1
-      ? `<div class="sp-pkg-dots" role="tablist" aria-label="Package slides">
-          ${packages.map((_, i) => `<button class="sp-pkg-dot${i === 0 ? ' sp-pkg-dot--active' : ''}" role="tab" aria-label="Package ${i + 1}" data-slide="${i}"></button>`).join('')}
-        </div>`
-      : '';
-
-    carouselHtml = `
-      <div class="sp-pkg-carousel" data-supplier-id="${escapeHtml(supplier.id)}">
-        ${packages.length > 1 ? `<button class="sp-pkg-arrow sp-pkg-arrow--prev" aria-label="Previous package">‹</button>` : ''}
-        <div class="sp-pkg-track">
-          ${pkgSlides}
+    const total = Math.min(packages.length, 4);
+    const nextDisabled = total <= 2 ? ' disabled' : '';
+    packagesHtml = `
+      <div class="sp-pkg-carousel">
+        <button class="sp-pkg-arrow sp-pkg-arrow--prev" aria-label="Show previous packages" disabled>&#8249;</button>
+        <div class="sp-pkg-carousel-viewport">
+          <div class="sp-pkg-carousel-track">
+            ${miniCards}
+          </div>
         </div>
-        ${packages.length > 1 ? `<button class="sp-pkg-arrow sp-pkg-arrow--next" aria-label="Next package">›</button>` : ''}
-        ${dotsHtml}
+        <button class="sp-pkg-arrow sp-pkg-arrow--next" aria-label="Show next packages"${nextDisabled}>&#8250;</button>
       </div>`;
   }
 
@@ -214,10 +224,10 @@ function createSupplierCard(supplier, position) {
         ${supplier.description_short ? `<p class="sp-card-description">${escapeHtml(supplier.description_short)}</p>` : ''}
       </div>
 
-      <!-- MIDDLE: Package carousel -->
+      <!-- MIDDLE: Package mini-cards -->
       <div class="sp-card-packages">
         <div class="sp-pkg-label">Packages</div>
-        ${carouselHtml}
+        ${packagesHtml}
       </div>
 
       <!-- RIGHT: Action buttons -->
@@ -256,7 +266,9 @@ function createSupplierCard(supplier, position) {
 // Skeleton loading cards
 function createSkeletonCards(count = 3) {
   const widths = ['55%', '45%', '60%'];
-  return Array.from({ length: count }, (_, i) => `
+  return Array.from(
+    { length: count },
+    (_, i) => `
     <div class="sp-card" aria-hidden="true" style="opacity:0.6;">
       <div class="sp-card-profile" style="align-items:center;gap:8px;">
         <div style="width:72px;height:72px;border-radius:14px;background:linear-gradient(135deg,#e5e7eb,#d1d5db);margin-bottom:4px;"></div>
@@ -274,7 +286,8 @@ function createSkeletonCards(count = 3) {
         <div style="height:36px;background:#e5e7eb;border-radius:9px;"></div>
       </div>
     </div>
-  `).join('');
+  `
+  ).join('');
 }
 
 // Empty state
@@ -797,7 +810,7 @@ async function initSuppliersPage() {
           const returnTo = window.location.pathname + window.location.search;
           showToast('Please log in to save suppliers to your shortlist.');
           setTimeout(() => {
-            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}`;
+            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}&intent=save`;
           }, 800);
           return;
         }
@@ -841,67 +854,117 @@ async function initSuppliersPage() {
       });
     });
 
-    // Package carousel — delegated listener registered once per container (via WeakSet)
-    if (!_delegatedCarouselContainers.has(resultsContainer)) {
-      resultsContainer.addEventListener('click', _carouselClickHandler);
-      _delegatedCarouselContainers.add(resultsContainer);
-    }
+    // Message button — gate behind authentication before QuickComposeV4 attaches
+    resultsContainer.querySelectorAll('.btn-contact-supplier').forEach(btn => {
+      btn.addEventListener('click', e => {
+        if (!shortlistManager.isAuthenticated) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const returnTo = window.location.pathname + window.location.search;
+          showToast('Please log in to message suppliers.');
+          setTimeout(() => {
+            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}&intent=message`;
+          }, 800);
+        }
+      });
+    });
+
+    // Add to plan — gate behind authentication (delegated on resultsContainer)
+    resultsContainer.querySelectorAll('.btn-add-to-plan').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        if (!shortlistManager.isAuthenticated) {
+          const returnTo = window.location.pathname + window.location.search;
+          showToast('Please log in to add packages to your plan.');
+          setTimeout(() => {
+            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}&intent=plan`;
+          }, 800);
+          return;
+        }
+        // Logged-in: navigate to plan builder with package context
+        const packageId = btn.dataset.packageId;
+        const supplierId = btn.dataset.supplierId;
+        const query = new URLSearchParams();
+        if (packageId) {
+          query.set('packageId', packageId);
+        }
+        if (supplierId) {
+          query.set('supplierId', supplierId);
+        }
+        window.location.href = `/start?${query.toString()}`;
+      });
+    });
 
     // Attach QuickComposeV4 to any new compose triggers
     if (window.QuickComposeV4 && typeof window.QuickComposeV4.attachAll === 'function') {
       window.QuickComposeV4.attachAll();
     }
+
+    // Wire up horizontal package carousels
+    attachCarousels();
   }
 
-  // Delegated carousel click handler — handles all arrow/dot clicks across all cards
-  function _carouselClickHandler(e) {
-    const arrow = e.target.closest('.sp-pkg-arrow');
-    const dot   = e.target.closest('.sp-pkg-dot');
-    if (!arrow && !dot) {
-      return;
-    }
-    e.preventDefault();
+  // Activate left/right navigation on every .sp-pkg-carousel in resultsContainer
+  function attachCarousels() {
+    const VISIBLE = 2; // cards shown at once
 
-    const carousel = (arrow || dot).closest('.sp-pkg-carousel');
-    if (!carousel) {
-      return;
-    }
+    resultsContainer.querySelectorAll('.sp-pkg-carousel').forEach(carousel => {
+      const track = carousel.querySelector('.sp-pkg-carousel-track');
+      const prevBtn = carousel.querySelector('.sp-pkg-arrow--prev');
+      const nextBtn = carousel.querySelector('.sp-pkg-arrow--next');
 
-    const slides = Array.from(carousel.querySelectorAll('.sp-pkg-slide'));
-    const dots   = Array.from(carousel.querySelectorAll('.sp-pkg-dot'));
-    if (slides.length < 2) {
-      return;
-    }
-
-    const currentIndex = slides.findIndex(s => s.classList.contains('sp-pkg-slide--active'));
-    let next = currentIndex;
-
-    if (arrow) {
-      next = arrow.classList.contains('sp-pkg-arrow--prev')
-        ? (currentIndex - 1 + slides.length) % slides.length
-        : (currentIndex + 1) % slides.length;
-    } else if (dot) {
-      const dotIndex = parseInt(dot.dataset.slide, 10);
-      if (!isNaN(dotIndex)) {
-        next = dotIndex;
+      if (!track || !prevBtn || !nextBtn) {
+        return;
       }
-    }
 
-    if (next === currentIndex) {
-      return;
-    }
+      const items = [...track.querySelectorAll('.sp-pkg-mini')];
+      const total = items.length;
 
-    slides[currentIndex].classList.remove('sp-pkg-slide--active');
-    if (dots[currentIndex]) {
-      dots[currentIndex].classList.remove('sp-pkg-dot--active');
-    }
-    slides[next].classList.add('sp-pkg-slide--active');
-    if (dots[next]) {
-      dots[next].classList.add('sp-pkg-dot--active');
-    }
+      if (total <= VISIBLE) {
+        // Nothing to scroll — keep both arrows permanently disabled
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+      }
+
+      let idx = 0;
+      const maxIdx = total - VISIBLE;
+
+      function getStepPx() {
+        const item = items[0];
+        if (!item) {
+          // Fallback matches the CSS --sp-pkg-mini-width custom property (148px) + track gap (6px)
+          return 154;
+        }
+        // Gap between cards comes from the track's column-gap / gap property
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 6;
+        return item.getBoundingClientRect().width + gap;
+      }
+
+      function updateCarousel() {
+        track.style.transform = `translateX(${-idx * getStepPx()}px)`;
+        prevBtn.disabled = idx === 0;
+        nextBtn.disabled = idx >= maxIdx;
+      }
+
+      prevBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (idx > 0) {
+          idx--;
+          updateCarousel();
+        }
+      });
+
+      nextBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (idx < maxIdx) {
+          idx++;
+          updateCarousel();
+        }
+      });
+    });
   }
 
-  // Attach handlers to empty state
   function attachEmptyStateHandlers() {
     const clearBtn = document.getElementById('clear-filters-btn');
     if (clearBtn) {

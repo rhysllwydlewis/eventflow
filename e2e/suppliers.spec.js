@@ -202,6 +202,130 @@ test.describe('Supplier shortlist — unauthenticated (Option A)', () => {
     expect(redirectParam).toContain('/suppliers');
     expect(redirectParam).toContain('category=Venues');
     expect(redirectParam).toContain('q=barn');
+
+    // It should include the intent=save param
+    expect(url.searchParams.get('intent')).toBe('save');
+  });
+
+  test('clicking Message while logged out redirects to /auth with intent=message', async ({
+    page,
+  }) => {
+    await page.goto('/suppliers?category=Venues&q=barn');
+    await page.waitForLoadState('networkidle');
+
+    const msgBtn = page.locator('.btn-contact-supplier').first();
+    if ((await msgBtn.count()) === 0) {
+      test.skip();
+      return;
+    }
+
+    let navigatedTo = '';
+    page.on('framenavigated', frame => {
+      if (frame === page.mainFrame()) {
+        navigatedTo = frame.url();
+      }
+    });
+
+    await msgBtn.click();
+
+    await page.waitForTimeout(1200);
+
+    if (!navigatedTo.includes('/auth')) {
+      await page.waitForURL(url => url.pathname === '/auth', { timeout: 5000 }).catch(() => {});
+      navigatedTo = page.url();
+    }
+
+    const url = new URL(navigatedTo);
+    expect(url.pathname).toBe('/auth');
+
+    const redirectParam = url.searchParams.get('redirect');
+    expect(redirectParam).toBeTruthy();
+    expect(redirectParam.startsWith('/')).toBe(true);
+    expect(redirectParam).toContain('/suppliers');
+
+    // Must carry intent=message
+    expect(url.searchParams.get('intent')).toBe('message');
+  });
+
+  test('clicking Add to plan while logged out redirects to /auth with intent=plan', async ({
+    page,
+  }) => {
+    await page.goto('/suppliers');
+    await page.waitForLoadState('networkidle');
+
+    const planBtn = page.locator('.btn-add-to-plan').first();
+    if ((await planBtn.count()) === 0) {
+      test.skip(); // No packages on cards, skip gracefully
+      return;
+    }
+
+    let navigatedTo = '';
+    page.on('framenavigated', frame => {
+      if (frame === page.mainFrame()) {
+        navigatedTo = frame.url();
+      }
+    });
+
+    await planBtn.click();
+
+    await page.waitForTimeout(1200);
+
+    if (!navigatedTo.includes('/auth')) {
+      await page.waitForURL(url => url.pathname === '/auth', { timeout: 5000 }).catch(() => {});
+      navigatedTo = page.url();
+    }
+
+    const url = new URL(navigatedTo);
+    expect(url.pathname).toBe('/auth');
+
+    const redirectParam = url.searchParams.get('redirect');
+    expect(redirectParam).toBeTruthy();
+    expect(redirectParam.startsWith('/')).toBe(true);
+
+    expect(url.searchParams.get('intent')).toBe('plan');
+  });
+
+  test('auth page shows contextual notice for intent=save', async ({ page }) => {
+    await page.goto('/auth?redirect=%2Fsuppliers&intent=save', { waitUntil: 'domcontentloaded' });
+    // Wait for the auth heading to confirm we're on the auth page
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
+
+    const notice = page.locator('#auth-intent-notice');
+    await expect(notice).toBeVisible({ timeout: 10000 });
+    await expect(notice).toContainText('save suppliers');
+    await expect(notice).toContainText("we'll take you back");
+  });
+
+  test('auth page shows contextual notice for intent=message', async ({ page }) => {
+    await page.goto('/auth?redirect=%2Fsuppliers&intent=message', {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
+
+    const notice = page.locator('#auth-intent-notice');
+    await expect(notice).toBeVisible({ timeout: 10000 });
+    await expect(notice).toContainText('message');
+    await expect(notice).toContainText("we'll take you back");
+  });
+
+  test('auth page shows contextual notice for intent=plan', async ({ page }) => {
+    await page.goto('/auth?redirect=%2Fsuppliers&intent=plan', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
+
+    const notice = page.locator('#auth-intent-notice');
+    await expect(notice).toBeVisible({ timeout: 10000 });
+    await expect(notice).toContainText('plan');
+    await expect(notice).toContainText("we'll take you back");
+  });
+
+  test('auth page does not show intent notice when no intent param', async ({ page }) => {
+    await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.auth-heading', { timeout: 10000 });
+
+    const notice = page.locator('#auth-intent-notice');
+    // Notice element exists but should not be visible (no intent param)
+    const isVisible = await notice.isVisible().catch(() => false);
+    expect(isVisible).toBe(false);
   });
 
   test('logged-out users do not see supplier cards pre-marked as Saved', async ({ page }) => {
@@ -211,7 +335,14 @@ test.describe('Supplier shortlist — unauthenticated (Option A)', () => {
       localStorage.setItem(
         'eventflow_shortlist',
         JSON.stringify({
-          items: [{ type: 'supplier', id: 'any-supplier-id', name: 'Test', addedAt: new Date().toISOString() }],
+          items: [
+            {
+              type: 'supplier',
+              id: 'any-supplier-id',
+              name: 'Test',
+              addedAt: new Date().toISOString(),
+            },
+          ],
           lastUpdated: new Date().toISOString(),
         })
       );
@@ -219,7 +350,7 @@ test.describe('Supplier shortlist — unauthenticated (Option A)', () => {
 
     // Reload so shortlist-manager picks up localStorage (it should ignore it)
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // No shortlist button should show the "Saved / active" state
     const activeButtons = page.locator('.sp-btn--shortlist-active, .btn-shortlist-active');

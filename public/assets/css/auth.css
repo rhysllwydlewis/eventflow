@@ -604,6 +604,24 @@ h1.auth-heading {
   border: 1px solid #93C5FD;
 }
 
+/* Intent notice — contextual redirect message */
+.auth-status--intent {
+  margin-bottom: 1rem;
+}
+
+.auth-status--intent .auth-intent-title {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.auth-status--intent .auth-intent-body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 .auth-status-inline {
   display: block;
   margin-top: 0.5rem;

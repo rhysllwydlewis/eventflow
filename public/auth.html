@@ -219,6 +219,9 @@
               <p class="auth-subtitle">Sign in to your EventFlow account or create a new one to get started.</p>
             </div>
 
+            <!-- Intent-based contextual notice (populated by auth-intent.js) -->
+            <div id="auth-intent-notice" class="auth-status auth-status--intent" role="status" aria-live="polite" aria-atomic="true" style="display:none;"></div>
+
             <!-- Tab switcher — ARIA tablist pattern -->
             <div
               role="tablist"
@@ -938,6 +941,7 @@
     <script src="/assets/js/cookie-consent.js?v=2.0.0" defer></script>
     <script src="/assets/js/keyboard-shortcuts.js" defer></script>
     <script src="/assets/js/pages/auth-slideshow.js" defer></script>
+    <script src="/assets/js/pages/auth-intent.js" defer></script>
 
     <!-- JadeAssist Chat Widget -->
     <script
