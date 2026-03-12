@@ -22,9 +22,6 @@ function escapeHtml(unsafe) {
   return div.innerHTML;
 }
 
-// Track which result containers already have the delegated carousel listener
-const _delegatedCarouselContainers = new WeakSet();
-
 // Minimal toast helper — shown when a logged-out user tries to save a supplier
 function showToast(message, type = 'info') {
   const toast = document.createElement('div');
@@ -149,47 +146,46 @@ function createSupplierCard(supplier, position) {
   // Card tier class for avatar ring
   const tierCardClass = tier === 'pro_plus' ? 'sp-card--pro-plus' : tier === 'pro' ? 'sp-card--pro' : '';
 
-  // ── Package carousel ────────────────────────────────────────────────────
+  // ── Package mini-cards ──────────────────────────────────────────────────
   const packages = Array.isArray(supplier.topPackages) ? supplier.topPackages : [];
-  let carouselHtml;
+  let packagesHtml;
 
   if (packages.length === 0) {
-    carouselHtml = `
+    packagesHtml = `
       <div class="sp-pkg-empty">
         <span class="sp-pkg-empty-icon" aria-hidden="true">📦</span>
         <p class="sp-pkg-empty-text">No packages listed yet</p>
         <a href="/supplier?id=${encodeURIComponent(supplier.id)}" class="sp-pkg-empty-link">View profile</a>
       </div>`;
   } else {
-    const pkgSlides = packages.map((pkg, i) => {
-      const pkgImageHtml = pkg.image
-        ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-img" loading="lazy" onerror="this.parentElement.classList.add('sp-pkg-slide--no-img')">`
+    const miniCards = packages.slice(0, 4).map(pkg => {
+      const imgHtml = pkg.image
+        ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-mini-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+           <div class="sp-pkg-mini-img-fallback" style="display:none;" aria-hidden="true">📦</div>`
+        : `<div class="sp-pkg-mini-img-fallback" aria-hidden="true">📦</div>`;
+      const descHtml = pkg.description
+        ? `<p class="sp-pkg-mini-desc">${escapeHtml(pkg.description)}</p>`
         : '';
       return `
-        <div class="sp-pkg-slide${i === 0 ? ' sp-pkg-slide--active' : ''}" data-index="${i}">
-          ${pkgImageHtml}
-          <div class="sp-pkg-info">
-            <p class="sp-pkg-title">${escapeHtml(pkg.title)}</p>
-            <p class="sp-pkg-price">${escapeHtml(pkg.price)}</p>
+        <div class="sp-pkg-mini">
+          <div class="sp-pkg-mini-thumb">${imgHtml}</div>
+          <div class="sp-pkg-mini-body">
+            <p class="sp-pkg-mini-title">${escapeHtml(pkg.title)}</p>
+            <p class="sp-pkg-mini-price">${escapeHtml(pkg.price)}</p>
+            ${descHtml}
+            <button class="sp-btn sp-btn--plan btn-add-to-plan"
+                    data-package-id="${escapeHtml(pkg.id || '')}"
+                    data-package-title="${escapeHtml(pkg.title)}"
+                    data-package-price="${escapeHtml(pkg.price)}"
+                    data-supplier-id="${escapeHtml(supplier.id)}"
+                    aria-label="Add ${escapeHtml(pkg.title)} to your plan">
+              Add to plan
+            </button>
           </div>
         </div>`;
     }).join('');
 
-    const dotsHtml = packages.length > 1
-      ? `<div class="sp-pkg-dots" role="tablist" aria-label="Package slides">
-          ${packages.map((_, i) => `<button class="sp-pkg-dot${i === 0 ? ' sp-pkg-dot--active' : ''}" role="tab" aria-label="Package ${i + 1}" data-slide="${i}"></button>`).join('')}
-        </div>`
-      : '';
-
-    carouselHtml = `
-      <div class="sp-pkg-carousel" data-supplier-id="${escapeHtml(supplier.id)}">
-        ${packages.length > 1 ? `<button class="sp-pkg-arrow sp-pkg-arrow--prev" aria-label="Previous package">‹</button>` : ''}
-        <div class="sp-pkg-track">
-          ${pkgSlides}
-        </div>
-        ${packages.length > 1 ? `<button class="sp-pkg-arrow sp-pkg-arrow--next" aria-label="Next package">›</button>` : ''}
-        ${dotsHtml}
-      </div>`;
+    packagesHtml = `<div class="sp-pkg-mini-list">${miniCards}</div>`;
   }
 
   return `
@@ -214,10 +210,10 @@ function createSupplierCard(supplier, position) {
         ${supplier.description_short ? `<p class="sp-card-description">${escapeHtml(supplier.description_short)}</p>` : ''}
       </div>
 
-      <!-- MIDDLE: Package carousel -->
+      <!-- MIDDLE: Package mini-cards -->
       <div class="sp-card-packages">
         <div class="sp-pkg-label">Packages</div>
-        ${carouselHtml}
+        ${packagesHtml}
       </div>
 
       <!-- RIGHT: Action buttons -->
@@ -797,7 +793,7 @@ async function initSuppliersPage() {
           const returnTo = window.location.pathname + window.location.search;
           showToast('Please log in to save suppliers to your shortlist.');
           setTimeout(() => {
-            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}`;
+            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}&intent=save`;
           }, 800);
           return;
         }
@@ -841,67 +837,48 @@ async function initSuppliersPage() {
       });
     });
 
-    // Package carousel — delegated listener registered once per container (via WeakSet)
-    if (!_delegatedCarouselContainers.has(resultsContainer)) {
-      resultsContainer.addEventListener('click', _carouselClickHandler);
-      _delegatedCarouselContainers.add(resultsContainer);
-    }
+    // Message button — gate behind authentication before QuickComposeV4 attaches
+    resultsContainer.querySelectorAll('.btn-contact-supplier').forEach(btn => {
+      btn.addEventListener('click', e => {
+        if (!shortlistManager.isAuthenticated) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const returnTo = window.location.pathname + window.location.search;
+          showToast('Please log in to message suppliers.');
+          setTimeout(() => {
+            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}&intent=message`;
+          }, 800);
+        }
+      });
+    });
+
+    // Add to plan — gate behind authentication (delegated on resultsContainer)
+    resultsContainer.querySelectorAll('.btn-add-to-plan').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        if (!shortlistManager.isAuthenticated) {
+          const returnTo = window.location.pathname + window.location.search;
+          showToast('Please log in to add packages to your plan.');
+          setTimeout(() => {
+            window.location.href = `/auth?redirect=${encodeURIComponent(returnTo)}&intent=plan`;
+          }, 800);
+          return;
+        }
+        // Logged-in: navigate to plan builder with package context
+        const packageId = btn.dataset.packageId;
+        const supplierId = btn.dataset.supplierId;
+        const query = new URLSearchParams();
+        if (packageId) query.set('packageId', packageId);
+        if (supplierId) query.set('supplierId', supplierId);
+        window.location.href = `/start?${query.toString()}`;
+      });
+    });
 
     // Attach QuickComposeV4 to any new compose triggers
     if (window.QuickComposeV4 && typeof window.QuickComposeV4.attachAll === 'function') {
       window.QuickComposeV4.attachAll();
     }
   }
-
-  // Delegated carousel click handler — handles all arrow/dot clicks across all cards
-  function _carouselClickHandler(e) {
-    const arrow = e.target.closest('.sp-pkg-arrow');
-    const dot   = e.target.closest('.sp-pkg-dot');
-    if (!arrow && !dot) {
-      return;
-    }
-    e.preventDefault();
-
-    const carousel = (arrow || dot).closest('.sp-pkg-carousel');
-    if (!carousel) {
-      return;
-    }
-
-    const slides = Array.from(carousel.querySelectorAll('.sp-pkg-slide'));
-    const dots   = Array.from(carousel.querySelectorAll('.sp-pkg-dot'));
-    if (slides.length < 2) {
-      return;
-    }
-
-    const currentIndex = slides.findIndex(s => s.classList.contains('sp-pkg-slide--active'));
-    let next = currentIndex;
-
-    if (arrow) {
-      next = arrow.classList.contains('sp-pkg-arrow--prev')
-        ? (currentIndex - 1 + slides.length) % slides.length
-        : (currentIndex + 1) % slides.length;
-    } else if (dot) {
-      const dotIndex = parseInt(dot.dataset.slide, 10);
-      if (!isNaN(dotIndex)) {
-        next = dotIndex;
-      }
-    }
-
-    if (next === currentIndex) {
-      return;
-    }
-
-    slides[currentIndex].classList.remove('sp-pkg-slide--active');
-    if (dots[currentIndex]) {
-      dots[currentIndex].classList.remove('sp-pkg-dot--active');
-    }
-    slides[next].classList.add('sp-pkg-slide--active');
-    if (dots[next]) {
-      dots[next].classList.add('sp-pkg-dot--active');
-    }
-  }
-
-  // Attach handlers to empty state
   function attachEmptyStateHandlers() {
     const clearBtn = document.getElementById('clear-filters-btn');
     if (clearBtn) {
