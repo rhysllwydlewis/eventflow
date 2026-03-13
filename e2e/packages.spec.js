@@ -158,3 +158,73 @@ test.describe('Package Browsing and Booking @backend', () => {
     }
   });
 });
+
+test.describe('Supplier results mini package card navigation', () => {
+  test('clicking a mini package card navigates to the package detail page', async ({ page }) => {
+    // Navigate to the suppliers results page
+    await page.goto('/suppliers.html');
+    await page.waitForLoadState('networkidle');
+
+    // Trigger a search to load supplier cards (submit the search form or wait for default results)
+    const searchBtn = page.locator(
+      'button[type="submit"], button:has-text("Search"), #search-btn'
+    );
+    if ((await searchBtn.count()) > 0) {
+      await searchBtn.first().click();
+      await page.waitForLoadState('networkidle');
+    }
+
+    // Wait for mini-card anchors to appear
+    const miniCard = page.locator('a.sp-pkg-mini').first();
+    if ((await miniCard.count()) === 0) {
+      // No mini cards rendered — skip gracefully (no packages in results)
+      return;
+    }
+
+    // Grab the href before clicking so we can assert the URL changed correctly
+    const href = await miniCard.getAttribute('href');
+    expect(href).toBeTruthy();
+    expect(href).toMatch(/\/package/);
+
+    // Click the card (not the inner button)
+    await miniCard.click();
+    await page.waitForLoadState('networkidle');
+
+    // URL should have changed to the package detail path
+    const currentUrl = page.url();
+    expect(currentUrl).toMatch(/\/package/);
+  });
+
+  test('Add to plan button inside mini card does not navigate to package detail', async ({
+    page,
+  }) => {
+    await page.goto('/suppliers.html');
+    await page.waitForLoadState('networkidle');
+
+    const searchBtn = page.locator(
+      'button[type="submit"], button:has-text("Search"), #search-btn'
+    );
+    if ((await searchBtn.count()) > 0) {
+      await searchBtn.first().click();
+      await page.waitForLoadState('networkidle');
+    }
+
+    const addToPlanBtn = page.locator('.btn-add-to-plan').first();
+    if ((await addToPlanBtn.count()) === 0) {
+      return;
+    }
+
+    const urlBefore = page.url();
+
+    // Click should NOT navigate to /package — it redirects to /auth or /start
+    await addToPlanBtn.click();
+    // Wait for any navigation or redirect triggered by the button
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const urlAfter = page.url();
+    // Should not have gone to a /package route
+    expect(urlAfter).not.toMatch(/\/package(\?|$)/);
+    // Should still be on suppliers page or redirect to auth/start
+    expect(urlAfter).toMatch(/suppliers|auth|start/);
+  });
+});

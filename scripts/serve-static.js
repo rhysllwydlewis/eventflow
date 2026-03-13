@@ -76,6 +76,7 @@ app.get('/api/v2/search/suppliers', (req, res) => {
       topPackages: [
         {
           id: 'mock-pkg-1',
+          slug: 'garden-party-package',
           title: 'Garden Party Package',
           price: '£1,200 / event',
           description: 'Full outdoor garden setup with catering, decorations and staff included.',
@@ -83,6 +84,7 @@ app.get('/api/v2/search/suppliers', (req, res) => {
         },
         {
           id: 'mock-pkg-2',
+          slug: 'intimate-dinner',
           title: 'Intimate Dinner',
           price: '£850 / event',
           description: 'Intimate dining experience for up to 30 guests.',
@@ -103,6 +105,7 @@ app.get('/api/v2/search/suppliers', (req, res) => {
       topPackages: [
         {
           id: 'mock-pkg-3',
+          slug: 'wedding-full-day',
           title: 'Wedding Full Day',
           price: '£1,800',
           description: 'Full day wedding photography from prep to reception.',
