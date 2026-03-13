@@ -204,6 +204,15 @@ class PackageGallery {
         to { opacity: 1; }
       }
 
+      /* ── Desktop: landscape widescreen ratio, capped height ── */
+      @media (min-width: 768px) {
+        .package-gallery-main,
+        .package-gallery-empty {
+          aspect-ratio: 16 / 9;
+          max-height: 460px;
+        }
+      }
+
       /* ── Mobile: taller aspect ratio, smaller thumbnails ── */
       @media (max-width: 767px) {
         .package-gallery-main,

@@ -17,18 +17,9 @@
   let selectedSupplier = null;
 
   const queueElement = document.getElementById('photoQueue');
-  const filterStatus = document.getElementById('filterStatus');
   const searchSupplier = document.getElementById('searchSupplier');
   const supplierNameFilter = document.getElementById('supplierNameFilter');
   const supplierDropdown = document.getElementById('supplierDropdown');
-
-  // Hide batch-action controls — approval workflow has been removed
-  const batchActions = document.getElementById('batchActions');
-  const batchApprove = document.getElementById('batchApprove');
-  const batchReject = document.getElementById('batchReject');
-  if (batchActions) batchActions.style.display = 'none';
-  if (batchApprove) batchApprove.style.display = 'none';
-  if (batchReject) batchReject.style.display = 'none';
 
   // HTML sanitization helper
   function escapeHtml(unsafe) {
@@ -81,16 +72,24 @@
     }
 
     if (filtered.length === 0) {
+      const emptyMsg =
+        searchSupplier && searchSupplier.value.trim()
+          ? 'No photos found matching your search.'
+          : 'No photos have been uploaded yet.';
       queueElement.innerHTML = `
         <div class="photo-queue__empty">
           <div class="photo-queue__empty-icon">📷</div>
-          <div>No photos found</div>
+          <div>${emptyMsg}</div>
         </div>
       `;
       return;
     }
 
-    queueElement.innerHTML = filtered
+    queueElement.innerHTML = `
+      <p class="small" style="margin-bottom: 12px; color: var(--muted);">
+        Showing ${filtered.length} photo${filtered.length !== 1 ? 's' : ''}${photos.length !== filtered.length ? ` (filtered from ${photos.length} total)` : ''}
+      </p>
+    ${filtered
       .map(
         photo => `
       <div class="photo-queue__item" data-photo-id="${escapeHtml(photo.id || '')}">
@@ -110,11 +109,12 @@
       </div>
     `
       )
-      .join('');
+      .join('')}`;
   }
 
-  if (filterStatus) filterStatus.addEventListener('change', renderPhotos);
-  if (searchSupplier) searchSupplier.addEventListener('input', renderPhotos);
+  if (searchSupplier) {
+    searchSupplier.addEventListener('input', renderPhotos);
+  }
 
   // Supplier name autocomplete
   if (supplierNameFilter) {
@@ -122,7 +122,9 @@
       const searchTerm = this.value.toLowerCase().trim();
 
       if (!searchTerm) {
-        if (supplierDropdown) supplierDropdown.style.display = 'none';
+        if (supplierDropdown) {
+          supplierDropdown.style.display = 'none';
+        }
         selectedSupplier = null;
         renderPhotos();
         return;
@@ -131,7 +133,9 @@
       const matched = suppliers.filter(s => (s.name || '').toLowerCase().includes(searchTerm));
 
       if (matched.length === 0) {
-        if (supplierDropdown) supplierDropdown.style.display = 'none';
+        if (supplierDropdown) {
+          supplierDropdown.style.display = 'none';
+        }
         return;
       }
 
@@ -177,7 +181,8 @@
   // Close dropdown when clicking outside
   document.addEventListener('click', e => {
     if (
-      supplierNameFilter && supplierDropdown &&
+      supplierNameFilter &&
+      supplierDropdown &&
       !supplierNameFilter.contains(e.target) &&
       !supplierDropdown.contains(e.target)
     ) {
