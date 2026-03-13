@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { PLACEHOLDER_PACKAGE_IMAGE } = require('../utils/constants');
 const router = express.Router();
 
 // Dependencies injected by server.js
@@ -431,9 +432,8 @@ router.post(
       p.gallery = [];
     }
     p.gallery.push({ url, approved: true, uploadedAt: Date.now() });
-    const PLACEHOLDER = '/assets/images/placeholders/package-event.svg';
     const updateFields = { gallery: p.gallery };
-    if (!p.image || p.image === PLACEHOLDER || p.image === '') {
+    if (!p.image || p.image === PLACEHOLDER_PACKAGE_IMAGE || p.image === '') {
       updateFields.image = url;
     }
     await dbUnified.updateOne('packages', { id: req.params.id }, { $set: updateFields });

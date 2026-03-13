@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { PLACEHOLDER_PACKAGE_IMAGE } = require('../utils/constants');
 const router = express.Router();
 
 // Dependencies injected by server.js
@@ -80,7 +81,7 @@ function isFeaturedPackage(pkg) {
 
 // Helper function to resolve the best available image for a package
 function resolvePackageImage(pkg) {
-  const placeholder = '/assets/images/placeholders/package-event.svg';
+  const placeholder = PLACEHOLDER_PACKAGE_IMAGE;
   // If the main image is set and isn't the placeholder, use it
   if (pkg.image && pkg.image !== placeholder) {
     return pkg.image;
