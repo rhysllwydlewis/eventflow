@@ -124,26 +124,22 @@ function applyPhotoUploadSingle(fieldName) {
 }
 
 /**
- * Helper function to save base64 image
+ * Helper function to save base64 image to MongoDB
+ * @param {string} base64 - Base64 encoded image data URI
+ * @param {string} originalFilename - Original filename hint for content-type detection
+ * @returns {Promise<string|null>} Photo URL (/api/photos/{id}) or null on failure
  */
-function saveImageBase64(base64, ownerType, ownerId) {
+async function saveImageBase64(base64, originalFilename) {
   try {
     const match = base64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!match) {
       return null;
     }
-    const ext = match[1].split('/')[1];
     const buffer = Buffer.from(match[2], 'base64');
-    const UP_ROOT = path.join(DATA_DIR, 'uploads');
-    const folder = path.join(UP_ROOT, ownerType, ownerId);
-    if (!fs.existsSync(folder)) {
-      fs.mkdirSync(folder, { recursive: true });
-    }
-    const filename = `img_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const filePath = path.join(folder, filename);
-    fs.writeFileSync(filePath, buffer);
-    return `/uploads/${ownerType}/${ownerId}/${filename}`;
+    const results = await photoUpload.processAndSaveImage(buffer, originalFilename, 'supplier');
+    return results && results.original ? results.original : null;
   } catch (e) {
+    logger.error('Failed to save base64 image to MongoDB:', e.message);
     return null;
   }
 }
@@ -269,7 +265,7 @@ router.post(
     if (!own) {
       return res.status(403).json({ error: 'Not owner' });
     }
-    const url = saveImageBase64(image, 'packages', req.params.id);
+    const url = await saveImageBase64(image, `package_${req.params.id}_${Date.now()}.jpg`);
     if (!url) {
       return res.status(400).json({ error: 'Invalid image' });
     }

@@ -397,12 +397,8 @@ class SupplierGalleryManager {
 
     try {
       const supplier = await supplierManager.getSupplier(supplierId);
-      if (supplier && supplier.photos) {
-        // Parse photos (assuming they're stored as newline-separated URLs)
-        const photoUrls = supplier.photos.split('\n').filter(url => url.trim());
-
-        // For existing photos, we just need the URLs
-        this.uploadedPhotos = photoUrls.map(url => ({ url }));
+      if (supplier && supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
+        this.uploadedPhotos = supplier.photosGallery.map(p => ({ url: p.url, id: p.id }));
 
         if (isDevelopment) {
           console.log('Loaded existing photos:', this.uploadedPhotos);
