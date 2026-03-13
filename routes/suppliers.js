@@ -94,8 +94,8 @@ function resolvePackageImage(pkg) {
       }
     }
   }
-  // Return whatever image is there (or null)
-  return pkg.image || null;
+  // Return the canonical placeholder instead of null to prevent mismatched fallbacks
+  return pkg.image || placeholder;
 }
 
 // Cache for featured packages

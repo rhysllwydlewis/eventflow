@@ -514,7 +514,12 @@ router.post(
         }
         pkg.gallery.push(photoRecord);
 
-        await dbUnified.updateOne('packages', { id: pkg.id }, { $set: { gallery: pkg.gallery } });
+        const PLACEHOLDER = '/assets/images/placeholders/package-event.svg';
+        const updateFields = { gallery: pkg.gallery };
+        if (!pkg.image || pkg.image === PLACEHOLDER || pkg.image === '') {
+          updateFields.image = photoRecord.url;
+        }
+        await dbUnified.updateOne('packages', { id: pkg.id }, { $set: updateFields });
 
         return res.json({
           success: true,

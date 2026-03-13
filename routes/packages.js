@@ -431,7 +431,12 @@ router.post(
       p.gallery = [];
     }
     p.gallery.push({ url, approved: true, uploadedAt: Date.now() });
-    await dbUnified.updateOne('packages', { id: req.params.id }, { $set: { gallery: p.gallery } });
+    const PLACEHOLDER = '/assets/images/placeholders/package-event.svg';
+    const updateFields = { gallery: p.gallery };
+    if (!p.image || p.image === PLACEHOLDER || p.image === '') {
+      updateFields.image = url;
+    }
+    await dbUnified.updateOne('packages', { id: req.params.id }, { $set: updateFields });
     res.json({ ok: true, url });
   }
 );
@@ -621,7 +626,7 @@ router.post(
       res.json({
         ok: true,
         package: { ...packages[packageIndex], ...imageUpdates },
-        imageUrl: packages[packageIndex].image,
+        imageUrl: imageUpdates.image,
       });
     } catch (error) {
       logger.error('Error uploading package image:', {
