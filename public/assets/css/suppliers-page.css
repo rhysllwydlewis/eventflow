@@ -660,9 +660,9 @@
 .sp-card-packages {
   display: flex;
   flex-direction: column;
-  padding: 10px 8px;
+  padding: 4px 8px;
   min-width: 0;
-  gap: 5px;
+  gap: 3px;
   overflow: hidden;
   justify-content: center;
 }
@@ -741,11 +741,19 @@
   border-radius: 10px;
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .sp-pkg-mini:hover {
   border-color: rgba(11, 128, 115, 0.18);
   box-shadow: 0 2px 8px rgba(11, 128, 115, 0.08);
+}
+
+.sp-pkg-mini:focus-visible {
+  outline: 2px solid #0b8073;
+  outline-offset: 2px;
 }
 
 /* Thumbnail — full-width at top of card */

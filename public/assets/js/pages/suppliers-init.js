@@ -169,8 +169,15 @@ function createSupplierCard(supplier, position) {
           ? `<img src="${escapeHtml(pkg.image)}" alt="${escapeHtml(pkg.title)}" class="sp-pkg-mini-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
              <div class="sp-pkg-mini-img-fallback" style="display:none;" aria-hidden="true">📦</div>`
           : `<div class="sp-pkg-mini-img-fallback" aria-hidden="true">📦</div>`;
+        const pkgHref = pkg.slug
+          ? `/package?slug=${encodeURIComponent(pkg.slug)}`
+          : pkg.id
+            ? `/package?id=${encodeURIComponent(pkg.id)}`
+            : null;
+        const cardTag = pkgHref ? 'a' : 'div';
+        const cardHrefAttr = pkgHref ? ` href="${escapeHtml(pkgHref)}"` : '';
         return `
-        <div class="sp-pkg-mini">
+        <${cardTag} class="sp-pkg-mini"${cardHrefAttr} aria-label="View ${escapeHtml(pkg.title)} package details">
           <div class="sp-pkg-mini-thumb">${imgHtml}</div>
           <div class="sp-pkg-mini-body">
             <p class="sp-pkg-mini-title">${escapeHtml(pkg.title)}</p>
@@ -184,7 +191,7 @@ function createSupplierCard(supplier, position) {
               Add to plan
             </button>
           </div>
-        </div>`;
+        </${cardTag}>`;
       })
       .join('');
 
@@ -887,6 +894,7 @@ async function initSuppliersPage() {
     resultsContainer.querySelectorAll('.btn-add-to-plan').forEach(btn => {
       btn.addEventListener('click', e => {
         e.preventDefault();
+        e.stopPropagation(); // prevent click from bubbling to parent anchor (.sp-pkg-mini)
         if (!shortlistManager.isAuthenticated) {
           const returnTo = window.location.pathname + window.location.search;
           showToast('Please log in to add packages to your plan.');

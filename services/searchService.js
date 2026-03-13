@@ -335,6 +335,7 @@ async function searchSuppliers(query) {
       .slice(0, 3)
       .map(p => ({
         id: p.id,
+        slug: p.slug || '',
         title: p.title || '',
         price: p.price || '',
         image: p.image || null,
