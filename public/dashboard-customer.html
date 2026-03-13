@@ -866,8 +866,8 @@ async function initDashboard() {
   const user = await checkAuth();
   
   if (!user) {
-    // Redirect to login if not authenticated
-    window.location.href = '/auth?redirect=' + encodeURIComponent(window.location.pathname);
+    // Redirect to homepage if not authenticated
+    window.location.href = '/';
     return;
   }
 

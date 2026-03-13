@@ -521,7 +521,23 @@ function renderPackageFallback(container, items) {
       const truncDesc =
         description.length > 100 ? `${description.substring(0, 100)}...` : description;
       const price = escape(formatPrice(item.price_display || item.price));
-      const imgSrc = sanitizeUrl(item.image);
+      // Resolve the best available image: prefer item.image, fall back to gallery
+      const resolvedImage = (() => {
+        const placeholder = '/assets/images/placeholders/package-event.svg';
+        if (item.image && item.image !== placeholder) {
+          return item.image;
+        }
+        if (Array.isArray(item.gallery) && item.gallery.length > 0) {
+          for (const img of item.gallery) {
+            const url = typeof img === 'string' ? img : img.url || img.src || img.path || img.image;
+            if (url && url !== placeholder) {
+              return url;
+            }
+          }
+        }
+        return item.image || null;
+      })();
+      const imgSrc = sanitizeUrl(resolvedImage);
       const slug = encodeURIComponent(validateSlug(item.slug, item.id));
 
       return `
