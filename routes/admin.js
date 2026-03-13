@@ -615,11 +615,15 @@ router.get(
 /**
  * GET /api/admin/suppliers/:id
  * Get details of a specific supplier
+ * NOTE: dbUnified.read() fetches the full collection; use dbUnified.findOne() for efficiency
+ * when the underlying store supports indexed lookups.
  */
 router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const raw = await dbUnified.read('suppliers');
-    const supplier = raw.find(s => s.id === req.params.id);
+    // Prefer findOne (O(1) index lookup) when available; fall back to read+find
+    const supplier = dbUnified.findOne
+      ? await dbUnified.findOne('suppliers', { id: req.params.id })
+      : (await dbUnified.read('suppliers')).find(s => s.id === req.params.id);
 
     if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found' });
@@ -667,7 +671,8 @@ router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtect
 
 /**
  * POST /api/admin/suppliers/:id/approve
- * Approve or reject a supplier
+ * Approve a supplier and optionally record notes in the audit trail.
+ * Body: { approved?: boolean, notes?: string }
  */
 // prettier-ignore
 router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
@@ -677,9 +682,27 @@ router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfP
       if (i < 0) {
         return res.status(404).json({ error: 'Not found' });
       }
-      const approved = !!(req.body && req.body.approved);
-      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: { approved } });
-      res.json({ ok: true, supplier: { ...all[i], approved } });
+      const approved = req.body && req.body.approved !== undefined ? !!(req.body.approved) : true;
+      const notes = (req.body && typeof req.body.notes === 'string') ? req.body.notes.trim() : '';
+      const now = new Date().toISOString();
+      const updates = {
+        approved,
+        // Record when first approved; preserve existing timestamp on re-approval.
+        // Do not clear verifiedAt on unapproval — the record of previous approval is retained.
+        ...(approved ? { verifiedAt: all[i].verifiedAt || now } : {}),
+        ...(notes ? { verificationNotes: notes } : {}),
+      };
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: updates });
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: approved ? (AUDIT_ACTIONS.SUPPLIER_APPROVED || 'supplier_approved') : 'supplier_approval_revoked',
+        targetType: 'supplier',
+        targetId: req.params.id,
+        details: { name: all[i].name, notes },
+        ipAddress: req.ip,
+      });
+      res.json({ ok: true, supplier: { ...all[i], ...updates } });
     } catch (error) {
       logger.error('Error approving supplier:', error);
       res.status(500).json({ error: 'Failed to approve supplier' });
