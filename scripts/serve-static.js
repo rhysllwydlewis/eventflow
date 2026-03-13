@@ -207,8 +207,8 @@ app.get('/package', (req, res) => {
 });
 
 app.get('/package.html', (req, res) => {
-  const qs = req.search ? req.search : '';
-  res.redirect(301, `/package${qs}`);
+  const qs = req.originalUrl.split('?').slice(1).join('?');
+  res.redirect(301, `/package${qs ? `?${qs}` : ''}`);
 });
 
 app.get('/suppliers', (req, res) => {
