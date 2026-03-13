@@ -89,6 +89,10 @@ function applyCsrfProtection(req, res, next) {
 
 /**
  * Sanitise free-text input: trim, strip HTML tags, and enforce max length.
+ * Iterates until no more tags are found to handle nested/malformed markup
+ * (e.g. <script<script>> → <script> → empty string on successive passes).
+ * NOTE: This provides basic protection for stored text rendered in admin UI.
+ * It is not a substitute for context-aware output escaping at render time.
  * @param {string} input
  * @param {number} [maxLength=2000]
  * @returns {string}
@@ -679,8 +683,14 @@ router.put(
         supplierUpdates[field] = req.body[field];
       }
     }
-    // Note: verified and approved are managed by the verification state machine endpoints
-    // (approve, reject, request-changes, suspend). They cannot be set directly here.
+    // Verified and approved are managed by the verification state machine endpoints
+    // (approve, reject, request-changes, suspend). Reject any attempt to set them directly.
+    if ('verified' in req.body || 'approved' in req.body) {
+      return res.status(400).json({
+        error:
+          'verified and approved cannot be set directly. Use the /approve, /reject, /request-changes, or /suspend endpoints.',
+      });
+    }
 
     supplierUpdates.updatedAt = now;
 

@@ -159,11 +159,17 @@
     `;
   }
 
+  // Helper: derive the effective verification status for a supplier,
+  // falling back gracefully for records without a verificationStatus field.
+  function getEffectiveVerificationStatus(supplier) {
+    return supplier.verificationStatus || (supplier.verified ? 'approved' : 'unverified');
+  }
+
   // Update statistics
   function updateStats() {
     const total = allSuppliers.length;
     const pending = allSuppliers.filter(s => {
-      const vs = s.verificationStatus || (s.verified ? 'approved' : 'unverified');
+      const vs = getEffectiveVerificationStatus(s);
       return vs === 'pending_review' || vs === 'unverified';
     }).length;
     const pro = allSuppliers.filter(s => s.subscription?.tier === 'pro_plus').length;
@@ -230,8 +236,7 @@
       const matchesSubscription =
         subscription === 'all' || supplier.subscription?.tier === subscription;
 
-      const supplierVerification =
-        supplier.verificationStatus || (supplier.verified ? 'approved' : 'unverified');
+      const supplierVerification = getEffectiveVerificationStatus(supplier);
       const matchesVerification = verification === 'all' || supplierVerification === verification;
 
       return matchesSearch && matchesApproval && matchesSubscription && matchesVerification;
@@ -277,9 +282,7 @@
           supplier.healthBreakdown
         );
 
-        const verificationBadge = getVerificationBadge(
-          supplier.verificationStatus || (supplier.verified ? 'approved' : 'unverified')
-        );
+        const verificationBadge = getVerificationBadge(getEffectiveVerificationStatus(supplier));
 
         return `
         <tr>
@@ -570,7 +573,7 @@
       s.email || '',
       s.category || '',
       s.approved ? 'Yes' : 'No',
-      s.verificationStatus || (s.verified ? 'approved' : 'unverified'),
+      getEffectiveVerificationStatus(s),
       s.subscription?.tier || 'free',
       s.healthScore || 0,
       s.tags?.join(';') || '',

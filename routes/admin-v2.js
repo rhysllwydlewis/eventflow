@@ -41,7 +41,10 @@ const {
 
 /**
  * Sanitise free-text input: trim, strip HTML tags, and enforce max length.
- * Iterates until no more tags are found to handle nested/malformed markup.
+ * Iterates until no more tags are found to handle nested/malformed markup
+ * (e.g. <script<script>> → <script> → empty string on successive passes).
+ * NOTE: This provides basic protection for stored text rendered in admin UI.
+ * It is not a substitute for context-aware output escaping at render time.
  * @param {string} input
  * @param {number} [maxLength=2000]
  * @returns {string}
@@ -971,6 +974,7 @@ router.post(
         },
         details: {
           name: supplier.name,
+          notes: verificationNotes,
         },
         ipAddress: req.ip,
         userAgent: req.get('user-agent'),
