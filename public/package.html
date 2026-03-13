@@ -718,14 +718,18 @@
   document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const slug = urlParams.get('slug');
+    const id = urlParams.get('id');
 
-    if (!slug) {
+    if (!slug && !id) {
       document.getElementById('package-loading').style.display = 'none';
       document.getElementById('package-error').style.display = 'block';
       return;
     }
 
-    fetch(`/api/packages/${slug}`)
+    // Prefer slug for SEO-friendly URLs; fall back to id-based lookup
+    const lookup = encodeURIComponent(slug || id);
+
+    fetch(`/api/packages/${lookup}`)
       .then(res => {
         if (!res.ok) throw new Error('Package not found');
         return res.json();
