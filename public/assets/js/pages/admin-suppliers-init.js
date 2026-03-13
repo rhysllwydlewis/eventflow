@@ -159,11 +159,31 @@
     `;
   }
 
+  // Helper: derive the effective subscription tier for a supplier.
+  // admin-user-management.js stores subscription.tier (rich model, supports pro_plus).
+  // supplier-admin.js /pro endpoint stores isPro boolean (legacy model).
+  // Both are kept in sync — subscription.tier is the source of truth when present.
+  function getEffectiveSubscriptionTier(supplier) {
+    const tier = supplier.subscription?.tier;
+    if (tier && tier !== 'free' && tier !== 'cancelled') {
+      return tier; // 'pro' or 'pro_plus' from rich model
+    }
+    return supplier.isPro ? 'pro' : 'free';
+  }
+
+  // Helper: falling back gracefully for records without a verificationStatus field.
+  function getEffectiveVerificationStatus(supplier) {
+    return supplier.verificationStatus || (supplier.verified ? 'approved' : 'unverified');
+  }
+
   // Update statistics
   function updateStats() {
     const total = allSuppliers.length;
-    const pending = allSuppliers.filter(s => !s.approved).length;
-    const pro = allSuppliers.filter(s => s.subscription?.tier === 'pro_plus').length;
+    const pending = allSuppliers.filter(s => {
+      const vs = getEffectiveVerificationStatus(s);
+      return vs === 'pending_review' || vs === 'unverified';
+    }).length;
+    const pro = allSuppliers.filter(s => getEffectiveSubscriptionTier(s) !== 'free').length;
     const avgScore = allSuppliers.reduce((sum, s) => sum + (s.healthScore || 0), 0) / total || 0;
 
     document.getElementById('totalSuppliers').textContent = total;
@@ -180,6 +200,7 @@
     // Filters
     document.getElementById('approvalFilter')?.addEventListener('change', handleFilters);
     document.getElementById('subscriptionFilter')?.addEventListener('change', handleFilters);
+    document.getElementById('verificationFilter')?.addEventListener('change', handleFilters);
     document.getElementById('clearFiltersBtn')?.addEventListener('click', clearFilters);
 
     // Bulk actions
@@ -207,6 +228,7 @@
     const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const approval = document.getElementById('approvalFilter')?.value || 'all';
     const subscription = document.getElementById('subscriptionFilter')?.value || 'all';
+    const verification = document.getElementById('verificationFilter')?.value || 'all';
 
     filteredSuppliers = allSuppliers.filter(supplier => {
       const matchesSearch =
@@ -216,13 +238,22 @@
       const matchesApproval =
         approval === 'all' ||
         (approval === 'approved' && supplier.approved) ||
-        (approval === 'pending' && !supplier.approved && !supplier.rejected) ||
-        (approval === 'rejected' && supplier.rejected);
+        (approval === 'pending' &&
+          !supplier.approved &&
+          supplier.verificationStatus !== 'rejected') ||
+        (approval === 'rejected' &&
+          (supplier.rejected || supplier.verificationStatus === 'rejected'));
 
+      const supplierTier = getEffectiveSubscriptionTier(supplier);
       const matchesSubscription =
-        subscription === 'all' || supplier.subscription?.tier === subscription;
+        subscription === 'all' ||
+        (subscription === 'pro' && supplierTier !== 'free') ||
+        (subscription === 'free' && supplierTier === 'free');
 
-      return matchesSearch && matchesApproval && matchesSubscription;
+      const supplierVerification = getEffectiveVerificationStatus(supplier);
+      const matchesVerification = verification === 'all' || supplierVerification === verification;
+
+      return matchesSearch && matchesApproval && matchesSubscription && matchesVerification;
     });
 
     currentPage = 1;
@@ -234,6 +265,7 @@
     document.getElementById('searchInput').value = '';
     document.getElementById('approvalFilter').value = 'all';
     document.getElementById('subscriptionFilter').value = 'all';
+    document.getElementById('verificationFilter').value = 'all';
     handleFilters();
   }
 
@@ -258,19 +290,17 @@
     tbody.innerHTML = pageSuppliers
       .map(supplier => {
         const isSelected = selectedSuppliers.has(supplier.id);
-        const subscriptionBadge = getSubscriptionBadge(supplier.subscription?.tier || 'free');
+        const subscriptionBadge = getSubscriptionBadge(getEffectiveSubscriptionTier(supplier));
         const healthScoreBadge = getHealthScoreBadge(
           supplier.healthScore || 0,
           supplier.healthBreakdown
         );
 
-        const verificationBadge = getVerificationBadge(
-          supplier.verificationStatus || (supplier.verified ? 'approved' : 'unverified')
-        );
+        const verificationBadge = getVerificationBadge(getEffectiveVerificationStatus(supplier));
 
         return `
         <tr>
-          <td><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="window.toggleSupplierSelection('${escapeHtml(supplier.id)}')"></td>
+          <td><input type="checkbox" aria-label="Select ${escapeHtml(supplier.name || 'supplier')}" ${isSelected ? 'checked' : ''} onchange="window.toggleSupplierSelection('${escapeHtml(supplier.id)}')"></td>
           <td><a href="/admin-supplier-detail?id=${escapeHtml(supplier.id)}" style="color: #667eea; font-weight: 500;">${escapeHtml(supplier.name || 'Unknown')}</a></td>
           <td>${escapeHtml(supplier.email || '')}</td>
           <td>${supplier.approved ? '<span style="color: #10b981;">✓ Yes</span>' : '<span style="color: #f59e0b;">Pending</span>'}</td>
@@ -291,13 +321,11 @@
                   <option value="pro">Pro</option>
                   <option value="pro_plus">Pro+</option>
                 </select>
-                <select id="sub-days-${escapeHtml(supplier.id)}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Duration">
-                  <option value="7">7d</option>
-                  <option value="14">14d</option>
-                  <option value="30" selected>30d</option>
-                  <option value="90">90d</option>
-                  <option value="180">180d</option>
-                  <option value="365">1yr</option>
+                <select id="sub-dur-${escapeHtml(supplier.id)}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Duration">
+                  <option value="7">7 days</option>
+                  <option value="30" selected>30 days</option>
+                  <option value="90">90 days</option>
+                  <option value="365">1 year</option>
                 </select>
                 <button onclick="window.grantSubscription('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #667eea; color: white; font-size: 11px;" title="Grant subscription">Grant</button>
                 <button onclick="window.removeSubscription('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #6b7280; color: white; font-size: 11px;" title="Remove subscription">Remove</button>
@@ -542,13 +570,24 @@
 
   // Helper: Convert to CSV
   function convertToCSV(data) {
-    const headers = ['Name', 'Email', 'Approved', 'Subscription', 'Score', 'Tags'];
+    const headers = [
+      'Name',
+      'Email',
+      'Category',
+      'Approved',
+      'Verification',
+      'Subscription',
+      'Health Score',
+      'Tags',
+    ];
     const rows = data.map(s => [
       s.name || '',
       s.email || '',
+      s.category || '',
       s.approved ? 'Yes' : 'No',
-      s.subscription?.tier || 'free',
-      s.score || 0,
+      getEffectiveVerificationStatus(s),
+      getEffectiveSubscriptionTier(s),
+      s.healthScore || 0,
       s.tags?.join(';') || '',
     ]);
 
@@ -625,13 +664,13 @@
 
   window.grantSubscription = async function (id) {
     const tierSel = document.getElementById(`sub-tier-${id}`);
-    const daysSel = document.getElementById(`sub-days-${id}`);
-    if (!tierSel || !daysSel) {
+    const durSel = document.getElementById(`sub-dur-${id}`);
+    if (!tierSel || !durSel) {
       showToast('Could not find subscription controls', 'error');
       return;
     }
     const tier = tierSel.value;
-    const days = parseInt(daysSel.value, 10);
+    const days = parseInt(durSel.value, 10);
     const tierName = tier === 'pro_plus' ? 'Pro+' : 'Pro';
     const confirmed = await AdminShared.showConfirmModal({
       title: 'Grant Subscription',

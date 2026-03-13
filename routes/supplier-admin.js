@@ -88,6 +88,35 @@ function applyCsrfProtection(req, res, next) {
 }
 
 /**
+ * Sanitise free-text input: trim, strip HTML tags, and enforce max length.
+ * Iterates until no more tags are found to handle nested/malformed markup
+ * (e.g. <script<script>> → <script> → empty string on successive passes).
+ * Any lone `<` remaining after tag-stripping is removed to prevent unclosed
+ * tags (e.g. a bare `<script` with no `>`) from leaking into stored text.
+ * NOTE: This provides basic protection for stored text rendered in admin UI.
+ * It is not a substitute for context-aware output escaping at render time.
+ * @param {string} input
+ * @param {number} [maxLength=2000]
+ * @returns {string}
+ */
+function sanitiseText(input, maxLength = 2000) {
+  if (typeof input !== 'string') {
+    return '';
+  }
+  let text = input;
+  let prev;
+  let iterations = 0;
+  const MAX_ITERATIONS = 20; // guard against adversarial deeply-nested tag input
+  do {
+    prev = text;
+    text = text.replace(/<[^>]*>/g, '');
+  } while (text !== prev && ++iterations < MAX_ITERATIONS);
+  // Remove any remaining lone `<` (unclosed tags such as `<script` with no `>`)
+  text = text.replace(/</g, '');
+  return text.trim().slice(0, maxLength);
+}
+
+/**
  * Send a verification status notification email to the supplier.
  * Errors are caught and logged — they must never break the API response.
  *
@@ -272,7 +301,7 @@ router.post(
         verificationStatus: VERIFICATION_STATES.APPROVED,
         verifiedAt: now,
         verifiedBy: req.user.id,
-        verificationNotes: (req.body && req.body.notes) || s.verificationNotes || '',
+        verificationNotes: sanitiseText((req.body && req.body.notes) || s.verificationNotes || ''),
         updatedAt: now,
       };
 
@@ -288,7 +317,9 @@ router.post(
       });
 
       // Non-blocking email notification to supplier
-      sendVerificationEmail(s, 'approved', updates.verificationNotes).catch(() => {});
+      sendVerificationEmail(s, 'approved', updates.verificationNotes).catch(emailErr => {
+        logger.warn('Verification email delivery failed', { error: emailErr.message });
+      });
 
       res.json({ ok: true, supplier: { ...s, ...updates } });
     } catch (error) {
@@ -322,7 +353,7 @@ router.post(
         return res.status(409).json({ error: check.reason });
       }
 
-      const reason = (req.body && req.body.reason) || '';
+      const reason = sanitiseText((req.body && req.body.reason) || '');
       if (!reason) {
         return res.status(400).json({ error: 'A rejection reason is required' });
       }
@@ -352,7 +383,9 @@ router.post(
       });
 
       // Non-blocking email notification to supplier
-      sendVerificationEmail(s, 'rejected', reason).catch(() => {});
+      sendVerificationEmail(s, 'rejected', reason).catch(emailErr => {
+        logger.warn('Verification email delivery failed', { error: emailErr.message });
+      });
 
       res.json({ ok: true, supplier: { ...s, ...updates } });
     } catch (error) {
@@ -387,7 +420,7 @@ router.post(
         return res.status(409).json({ error: check.reason });
       }
 
-      const reason = (req.body && req.body.reason) || '';
+      const reason = sanitiseText((req.body && req.body.reason) || '');
       if (!reason) {
         return res.status(400).json({ error: 'A reason for requesting changes is required' });
       }
@@ -414,7 +447,9 @@ router.post(
       });
 
       // Non-blocking email notification to supplier
-      sendVerificationEmail(s, 'needs_changes', reason).catch(() => {});
+      sendVerificationEmail(s, 'needs_changes', reason).catch(emailErr => {
+        logger.warn('Verification email delivery failed', { error: emailErr.message });
+      });
 
       res.json({ ok: true, supplier: { ...s, ...updates } });
     } catch (error) {
@@ -449,7 +484,7 @@ router.post(
         return res.status(409).json({ error: check.reason });
       }
 
-      const reason = (req.body && req.body.reason) || '';
+      const reason = sanitiseText((req.body && req.body.reason) || '');
       if (!reason) {
         return res.status(400).json({ error: 'A suspension reason is required' });
       }
@@ -477,7 +512,9 @@ router.post(
       });
 
       // Non-blocking email notification to supplier
-      sendVerificationEmail(s, 'suspended', reason).catch(() => {});
+      sendVerificationEmail(s, 'suspended', reason).catch(emailErr => {
+        logger.warn('Verification email delivery failed', { error: emailErr.message });
+      });
 
       res.json({ ok: true, supplier: { ...s, ...updates } });
     } catch (error) {
@@ -553,68 +590,76 @@ router.post(
   applyRoleRequired('admin'),
   applyCsrfProtection,
   async (req, res) => {
-    const { mode, duration } = req.body || {};
-    const all = await dbUnified.read('suppliers');
-    const s = all.find(sup => sup.id === req.params.id);
-    if (!s) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-
-    const now = Date.now();
-    const proUpdates = {};
-
-    if (mode === 'cancel') {
-      proUpdates.isPro = false;
-      proUpdates.proExpiresAt = null;
-    } else if (mode === 'duration') {
-      let ms = 0;
-      switch (duration) {
-        case '1d':
-          ms = 1 * 24 * 60 * 60 * 1000;
-          break;
-        case '7d':
-          ms = 7 * 24 * 60 * 60 * 1000;
-          break;
-        case '1m':
-          ms = 30 * 24 * 60 * 60 * 1000;
-          break;
-        case '1y':
-          ms = 365 * 24 * 60 * 60 * 1000;
-          break;
-        default:
-          return res.status(400).json({ error: 'Invalid duration' });
-      }
-      proUpdates.isPro = true;
-      proUpdates.proExpiresAt = new Date(now + ms).toISOString();
-    } else {
-      return res.status(400).json({ error: 'Invalid mode' });
-    }
-
-    // Optionally mirror Pro flag to the owning user, if present.
     try {
-      if (s.ownerUserId) {
-        await dbUnified.updateOne(
-          'users',
-          { id: s.ownerUserId },
-          { $set: { isPro: !!proUpdates.isPro } }
-        );
+      const { mode, duration } = req.body || {};
+      const all = await dbUnified.read('suppliers');
+      const s = all.find(sup => sup.id === req.params.id);
+      if (!s) {
+        return res.status(404).json({ error: 'Not found' });
       }
-    } catch (_e) {
-      // ignore errors from user store
+
+      const now = Date.now();
+      const proUpdates = {};
+
+      if (mode === 'cancel') {
+        proUpdates.isPro = false;
+        proUpdates.proExpiresAt = null;
+      } else if (mode === 'duration') {
+        let ms = 0;
+        switch (duration) {
+          case '1d':
+            ms = 1 * 24 * 60 * 60 * 1000;
+            break;
+          case '7d':
+            ms = 7 * 24 * 60 * 60 * 1000;
+            break;
+          case '1m':
+            ms = 30 * 24 * 60 * 60 * 1000;
+            break;
+          case '1y':
+            ms = 365 * 24 * 60 * 60 * 1000;
+            break;
+          default:
+            return res.status(400).json({ error: 'Invalid duration' });
+        }
+        proUpdates.isPro = true;
+        proUpdates.proExpiresAt = new Date(now + ms).toISOString();
+      } else {
+        return res.status(400).json({ error: 'Invalid mode' });
+      }
+
+      // Optionally mirror Pro flag to the owning user, if present.
+      try {
+        if (s.ownerUserId) {
+          await dbUnified.updateOne(
+            'users',
+            { id: s.ownerUserId },
+            { $set: { isPro: !!proUpdates.isPro } }
+          );
+        }
+      } catch (_e) {
+        // ignore errors from user store
+      }
+
+      await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: proUpdates });
+      const updatedSupplier = { ...s, ...proUpdates };
+
+      const active = await supplierIsProActive(updatedSupplier);
+      res.json({
+        ok: true,
+        supplier: {
+          ...updatedSupplier,
+          isPro: active,
+          proExpiresAt: updatedSupplier.proExpiresAt || null,
+        },
+      });
+    } catch (error) {
+      logger.error('Error updating supplier Pro status', {
+        error: error.message,
+        id: req.params.id,
+      });
+      res.status(500).json({ error: 'Failed to update supplier Pro status' });
     }
-
-    await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: proUpdates });
-    const updatedSupplier = { ...s, ...proUpdates };
-
-    const active = await supplierIsProActive(updatedSupplier);
-    res.json({
-      ok: true,
-      supplier: {
-        ...updatedSupplier,
-        isPro: active,
-        proExpiresAt: updatedSupplier.proExpiresAt || null,
-      },
-    });
   }
 );
 
@@ -660,11 +705,13 @@ router.put(
         supplierUpdates[field] = req.body[field];
       }
     }
-    if (typeof req.body.approved === 'boolean') {
-      supplierUpdates.approved = req.body.approved;
-    }
-    if (typeof req.body.verified === 'boolean') {
-      supplierUpdates.verified = req.body.verified;
+    // Verified and approved are managed by the verification state machine endpoints
+    // (approve, reject, request-changes, suspend). Reject any attempt to set them directly.
+    if ('verified' in req.body || 'approved' in req.body) {
+      return res.status(400).json({
+        error:
+          'verified and approved cannot be set directly. Use the /approve, /reject, /request-changes, or /suspend endpoints.',
+      });
     }
 
     supplierUpdates.updatedAt = now;

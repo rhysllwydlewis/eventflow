@@ -136,11 +136,11 @@
       <div class="stat-value" id="totalSuppliers" aria-live="polite">—</div>
     </div>
     <div class="stat-card-mini">
-      <div class="stat-label">Pending Approval</div>
+      <div class="stat-label">Awaiting Verification</div>
       <div class="stat-value" id="pendingSuppliers" aria-live="polite">—</div>
     </div>
     <div class="stat-card-mini">
-      <div class="stat-label">Pro+ Subscribers</div>
+      <div class="stat-label">Pro Subscribers</div>
       <div class="stat-value" id="proSuppliers" aria-live="polite">—</div>
     </div>
     <div class="stat-card-mini">
@@ -155,18 +155,27 @@
       <label for="searchInput" class="sr-only">Search suppliers</label>
       <input type="text" id="searchInput" placeholder="Search suppliers..." aria-label="Search suppliers" style="flex: 1; min-width: 250px; padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
       <label for="approvalFilter" class="sr-only">Filter by approval status</label>
-      <select id="approvalFilter" aria-label="Filter by approval status" style="padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+      <select id="approvalFilter" class="filter-select" aria-label="Filter by approval status">
         <option value="all">All Approval Status</option>
         <option value="approved">Approved</option>
         <option value="pending">Pending</option>
         <option value="rejected">Rejected</option>
       </select>
       <label for="subscriptionFilter" class="sr-only">Filter by subscription</label>
-      <select id="subscriptionFilter" aria-label="Filter by subscription" style="padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+      <select id="subscriptionFilter" class="filter-select" aria-label="Filter by subscription">
         <option value="all">All Subscriptions</option>
         <option value="free">Free</option>
         <option value="pro">Pro</option>
-        <option value="pro_plus">Pro+</option>
+      </select>
+      <label for="verificationFilter" class="sr-only">Filter by verification status</label>
+      <select id="verificationFilter" class="filter-select" aria-label="Filter by verification status">
+        <option value="all">All Verification</option>
+        <option value="unverified">Unverified</option>
+        <option value="pending_review">Pending Review</option>
+        <option value="needs_changes">Needs Changes</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="suspended">Suspended</option>
       </select>
       <button id="clearFiltersBtn" class="btn-sm">Clear Filters</button>
     </div>
@@ -202,7 +211,7 @@
         </thead>
         <tbody id="suppliersTableBody">
           <tr>
-            <td colspan="8" style="text-align: center; padding: 40px; color: #9ca3af;">Loading suppliers...</td>
+            <td colspan="9" style="text-align: center; padding: 40px; color: #9ca3af;">Loading suppliers...</td>
           </tr>
         </tbody>
       </table>
