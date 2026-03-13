@@ -83,10 +83,13 @@ router.post('/', authRequired, csrfProtection, reportLimiter, async (req, res) =
       targetExists = !!targetData;
       break;
     case 'photo': {
-      // Photos are embedded in suppliers, need to check differently
+      // Photos are embedded in suppliers' photosGallery
       const suppliers = await dbUnified.read('suppliers');
       for (const supplier of suppliers) {
-        if (supplier.photos && supplier.photos.some(p => p.id === targetId)) {
+        if (
+          supplier.photosGallery &&
+          supplier.photosGallery.some(p => p.id === targetId || p.url === targetId)
+        ) {
           targetExists = true;
           targetData = { supplierId: supplier.id };
           break;

@@ -1,14 +1,17 @@
 /**
- * Test for photo-upload directory creation
- * Verifies that the upload directories are created properly
+ * Test for photo upload storage configuration
+ * Verifies MongoDB-only storage is configured and legacy upload directories
+ * exist in the repo for backward-compatible static serving of old /uploads/ URLs
  */
 
 const fs = require('fs');
 const path = require('path');
 
-describe('Photo Upload Directory Creation', () => {
-  test('should create all upload directories on module load', () => {
-    // Import the module to trigger directory creation
+describe('Photo Upload Storage Configuration', () => {
+  test('upload directories exist in repo for legacy /uploads/ URL backward-compatibility serving', () => {
+    // These directories are committed to the repo so express.static('/uploads') can serve
+    // any legacy /uploads/ URLs that existed before the MongoDB-only migration.
+    // Note: the photo-upload module no longer creates these — they're static assets in the repo.
     require('../../photo-upload');
 
     const uploadDirs = [
@@ -39,5 +42,22 @@ describe('Photo Upload Directory Creation', () => {
     gitkeepFiles.forEach(file => {
       expect(fs.existsSync(file)).toBe(true);
     });
+  });
+
+  test('photo-upload module uses MongoDB-only storage (no STORAGE_TYPE or saveToLocal)', () => {
+    // Read the module source to confirm MongoDB-only storage architecture
+    const moduleSource = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'photo-upload.js'),
+      'utf8'
+    );
+
+    // Should NOT contain local filesystem fallback code
+    expect(moduleSource).not.toContain('STORAGE_TYPE');
+    expect(moduleSource).not.toContain('saveToLocal');
+    expect(moduleSource).not.toContain('UPLOAD_DIRS');
+
+    // MUST contain MongoDB save functions
+    expect(moduleSource).toContain('saveToMongoDB');
+    expect(moduleSource).toContain("collection('photos')");
   });
 });

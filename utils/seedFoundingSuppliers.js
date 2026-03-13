@@ -552,6 +552,13 @@ async function seedFoundingSuppliers() {
           }
         }
 
+        // Convert flat URL array to photosGallery structured format
+        const photosGallery = photos.map(url => ({
+          url,
+          approved: true,
+          uploadedAt: Date.now(),
+        }));
+
         // Create supplier with complete data
         const supplier = {
           id: supplierId,
@@ -569,7 +576,7 @@ async function seedFoundingSuppliers() {
             category === 'Venues' ? `LIC-${Math.floor(Math.random() * 900000) + 100000}` : '',
           amenities: supplierData.amenities || [],
           maxGuests: supplierData.maxGuests || null,
-          photos: photos,
+          photosGallery,
           description_short: supplierData.description_short,
           description_long: supplierData.description_long,
           approved: true,
@@ -655,6 +662,13 @@ async function seedFoundingSuppliers() {
         }
       }
 
+      // Convert flat URL array to photosGallery structured format
+      const photosGallery = photos.map(url => ({
+        url,
+        approved: true,
+        uploadedAt: Date.now(),
+      }));
+
       const supplier = {
         id: supplierId,
         ownerUserId: null,
@@ -673,7 +687,7 @@ async function seedFoundingSuppliers() {
             : '',
         amenities: supplierData.amenities || [],
         maxGuests: supplierData.maxGuests || null,
-        photos: photos,
+        photosGallery,
         description_short: supplierData.description_short,
         description_long: supplierData.description_long,
         approved: true,

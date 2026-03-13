@@ -236,10 +236,10 @@ describe('Photo Upload — Admin Route Structure (contract)', () => {
     expect(block).toContain('rejectionReason');
   });
 
-  it('approve route adds photo URL to supplier.photos array', () => {
+  it('approve route adds photo URL to supplier photosGallery array', () => {
     const approveIdx = adminContent.indexOf("'/photos/:id/approve'");
     const block = adminContent.substring(approveIdx, approveIdx + 2000);
-    expect(block).toContain('suppliers[supplierIndex].photos');
+    expect(block).toContain('suppliers[supplierIndex].photosGallery');
     expect(block).toContain('photo.url');
   });
 
