@@ -727,9 +727,9 @@
     }
 
     // Prefer slug for SEO-friendly URLs; fall back to id-based lookup
-    const lookup = encodeURIComponent(slug || id);
+    const slugOrId = encodeURIComponent(slug || id);
 
-    fetch(`/api/packages/${lookup}`)
+    fetch(`/api/packages/${slugOrId}`)
       .then(res => {
         if (!res.ok) throw new Error('Package not found');
         return res.json();
