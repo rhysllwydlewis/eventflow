@@ -280,6 +280,19 @@
   transform: translateY(-1px);
 }
 
+.sp-shortcut-btn.active {
+  background: rgba(11, 128, 115, 0.18);
+  border-color: rgba(11, 128, 115, 0.5);
+  color: #0b6e64;
+  font-weight: 600;
+  box-shadow: inset 0 1px 2px rgba(11, 128, 115, 0.1);
+}
+
+.sp-shortcut-btn.active:hover {
+  background: rgba(11, 128, 115, 0.24);
+  border-color: rgba(11, 128, 115, 0.6);
+}
+
 .sp-clear-btn {
   display: inline-flex;
   align-items: center;
@@ -1487,6 +1500,10 @@
   font-weight: 500 !important;
   border-radius: 20px !important;
   min-height: 30px !important;
+}
+
+.sp-shortcut-btn.active {
+  font-weight: 600 !important;
 }
 
 .sp-clear-btn {

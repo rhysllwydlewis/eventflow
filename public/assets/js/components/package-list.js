@@ -353,24 +353,33 @@ class PackageList {
     card.className = 'package-card';
     card.setAttribute('role', 'article');
     card.setAttribute('tabindex', '0');
+    if (pkg.title) {
+      card.setAttribute('aria-label', `View ${pkg.title} package details`);
+    }
 
-    // Make card keyboard accessible
+    // Navigate to package detail page
+    function navigateToPackage() {
+      if (pkg.slug) {
+        window.location.href = `/package?slug=${encodeURIComponent(pkg.slug)}`;
+      } else if (pkg.id) {
+        // Fallback: use id if slug is missing (e.g. legacy packages)
+        window.location.href = `/package?slug=${encodeURIComponent(String(pkg.id))}`;
+      }
+    }
+
+    // Make card clickable
     card.addEventListener('click', e => {
       // Don't navigate if clicking on supplier link
       if (e.target.closest('.package-card-supplier-link')) {
         return;
       }
-      // Properly encode slug for URL to prevent XSS
-      const safeSlug = encodeURIComponent(pkg.slug || '');
-      window.location.href = `/package?slug=${safeSlug}`;
+      navigateToPackage();
     });
 
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        // Properly encode slug for URL to prevent XSS
-        const safeSlug = encodeURIComponent(pkg.slug || '');
-        window.location.href = `/package?slug=${safeSlug}`;
+        navigateToPackage();
       }
     });
 
