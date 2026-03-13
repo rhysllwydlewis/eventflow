@@ -153,8 +153,8 @@
 <main id="main-content" class="section admin-main-content">
   <div class="container-max">
     <div style="margin-bottom: 1rem;">
-      <a href="/admin" class="link-white">
-        <span>←</span> Back to Dashboard
+      <a href="/admin-suppliers" class="link-white">
+        <span>←</span> Back to Suppliers
       </a>
     </div>
 
@@ -173,6 +173,8 @@
           <button class="btn btn-secondary" id="suspendBtn" title="Suspend this approved supplier">Suspend</button>
           <div class="verification-actions-divider"></div>
           <button class="btn btn-info" id="verifySupplierBtn" title="Manually verify this supplier's identity">Verify Supplier</button>
+          <div class="verification-actions-divider"></div>
+          <button class="btn btn-danger" id="deleteSupplierBtn" title="Permanently delete this supplier">Delete</button>
         </div>
       </div>
       <div class="supplier-meta" id="supplierMeta"></div>
@@ -266,6 +268,7 @@
 
   </div>
 </main>
+<footer>
   <div class="container flex-between">
     <div><strong>EventFlow</strong><br><span class="small">Admin Panel</span></div>
     <div class="small"><a href="/admin">Dashboard</a> · <a href="/legal">Legal Hub</a> · <button type="button" data-cookie-prefs>Cookie preferences</button></div>

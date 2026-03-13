@@ -9,6 +9,7 @@
   }
 
   let supplierData = null;
+  let verificationAuditLoaded = false;
 
   // Tab switching
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -17,9 +18,12 @@
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById(tab).classList.add('active');
-      // Lazy-load verification audit when that tab is first opened
-      if (tab === 'verification') {
+      const tabEl = document.getElementById(tab);
+      tabEl.classList.add('active');
+      // Smooth scroll to top of tab content area
+      tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Lazy-load verification audit only once
+      if (tab === 'verification' && !verificationAuditLoaded) {
         loadVerificationAudit();
       }
     });
@@ -27,6 +31,10 @@
 
   // Load supplier data
   async function loadSupplier() {
+    const header = document.getElementById('supplierHeader');
+    if (header) {
+      header.classList.add('is-loading');
+    }
     try {
       const response = await AdminShared.api(`/api/admin/suppliers/${supplierId}`);
       supplierData = response.supplier || response;
@@ -38,6 +46,14 @@
     } catch (err) {
       console.error('Failed to load supplier:', err);
       AdminShared.showToast('Failed to load supplier details', 'error');
+      if (header) {
+        header.innerHTML =
+          '<p class="empty-state-card"><span class="empty-icon">⚠️</span><br>Failed to load supplier. <a href="" onclick="location.reload()">Retry</a></p>';
+      }
+    } finally {
+      if (header) {
+        header.classList.remove('is-loading');
+      }
     }
   }
 
@@ -71,11 +87,12 @@
 
     const metaHtml = `
       <div class="supplier-meta-item">
-        <strong>ID:</strong> ${supplierData.id || supplierData._id}
+        <strong>ID:</strong> ${AdminShared.escapeHtml(String(supplierData.id || supplierData._id || ''))}
       </div>
       <div class="supplier-meta-item">
-        <strong>Email:</strong> <a href="mailto:${supplierData.email}">${supplierData.email}</a>
+        <strong>Email:</strong> <a href="mailto:${AdminShared.escapeHtml(supplierData.email || '')}">${AdminShared.escapeHtml(supplierData.email || 'Not provided')}</a>
       </div>
+      ${supplierData.description_short || supplierData.blurb ? `<div class="supplier-meta-item supplier-meta-description"><strong>Description:</strong> ${AdminShared.escapeHtml(supplierData.description_short || supplierData.blurb || '')}</div>` : ''}
       <div class="supplier-meta-item">
         <strong>Verified:</strong> ${
           supplierData.verified
@@ -91,7 +108,7 @@
         <strong>Health Score:</strong> ${supplierData.healthScore || 0}/100
       </div>
       <div class="supplier-meta-item">
-        <strong>Pro Plan:</strong> ${supplierData.proPlan || 'None'}
+        <strong>Pro Plan:</strong> ${AdminShared.escapeHtml(supplierData.proPlan || 'None')}
       </div>
     `;
     document.getElementById('supplierMeta').innerHTML = metaHtml;
@@ -162,7 +179,7 @@
       </div>
       <div class="info-field">
         <label>Website</label>
-        <value>${supplierData.website ? `<a href="${supplierData.website}" target="_blank">${supplierData.website}</a>` : 'Not provided'}</value>
+        <value>${supplierData.website && /^https?:\/\//i.test(supplierData.website) ? `<a href="${AdminShared.escapeHtml(supplierData.website)}" target="_blank" rel="noopener noreferrer">${AdminShared.escapeHtml(supplierData.website)}</a>` : AdminShared.escapeHtml(supplierData.website || 'Not provided')}</value>
       </div>
       <div class="info-field">
         <label>Tags</label>
@@ -179,7 +196,7 @@
     const contactHtml = `
       <div class="info-field">
         <label>Email</label>
-        <value><a href="mailto:${supplierData.email}">${supplierData.email}</a></value>
+        <value><a href="mailto:${AdminShared.escapeHtml(supplierData.email || '')}">${AdminShared.escapeHtml(supplierData.email || 'Not provided')}</a></value>
       </div>
       <div class="info-field">
         <label>Phone</label>
@@ -246,7 +263,8 @@
       const packages = response.items || [];
 
       if (packages.length === 0) {
-        document.getElementById('packageList').innerHTML = '<p class="small">No packages yet</p>';
+        document.getElementById('packageList').innerHTML =
+          '<div class="empty-state-card"><span class="empty-icon">📦</span><p>No packages yet</p></div>';
         return;
       }
 
@@ -271,7 +289,7 @@
     } catch (err) {
       console.error('Failed to load packages:', err);
       document.getElementById('packageList').innerHTML =
-        '<p class="small">Failed to load packages</p>';
+        '<div class="empty-state-card"><span class="empty-icon">⚠️</span><p>Failed to load packages</p></div>';
     }
   }
 
@@ -281,27 +299,31 @@
       const photos = response.photos || [];
 
       if (photos.length === 0) {
-        document.getElementById('photoGallery').innerHTML = '<p class="small">No photos yet</p>';
+        document.getElementById('photoGallery').innerHTML =
+          '<div class="empty-state-card"><span class="empty-icon">📸</span><p>No photos yet</p></div>';
         return;
       }
 
       const html = photos
-        .map(
-          photo => `
+        .map(photo => {
+          // Sanitise photo URL — only allow http/https URLs
+          const safeUrl =
+            photo.url && /^https?:\/\//i.test(photo.url) ? AdminShared.escapeHtml(photo.url) : '';
+          return `
         <div class="photo-item">
-          <img src="${photo.url}" alt="Photo">
+          ${safeUrl ? `<img src="${safeUrl}" alt="Supplier photo" loading="lazy">` : '<div class="photo-placeholder">No image</div>'}
           <div class="photo-actions">
-            <button class="btn btn-small btn-danger" data-action="deletePhoto" data-id="${photo.id}">Delete</button>
+            <button class="btn btn-small btn-danger" data-action="deletePhoto" data-id="${AdminShared.escapeHtml(String(photo.id || ''))}">Delete</button>
           </div>
         </div>
-      `
-        )
+      `;
+        })
         .join('');
       document.getElementById('photoGallery').innerHTML = html;
     } catch (err) {
       console.error('Failed to load photos:', err);
       document.getElementById('photoGallery').innerHTML =
-        '<p class="small">No photos available</p>';
+        '<div class="empty-state-card"><span class="empty-icon">⚠️</span><p>Failed to load photos</p></div>';
     }
   }
 
@@ -311,31 +333,35 @@
       const reviews = response.reviews || [];
 
       if (reviews.length === 0) {
-        document.getElementById('reviewsList').innerHTML = '<p class="small">No reviews yet</p>';
+        document.getElementById('reviewsList').innerHTML =
+          '<div class="empty-state-card"><span class="empty-icon">⭐</span><p>No reviews yet</p></div>';
         return;
       }
 
       const html = reviews
-        .map(
-          review => `
+        .map(review => {
+          const rating = Math.min(5, Math.max(0, Math.round(review.rating || 0)));
+          const starsHtml =
+            '★'.repeat(rating) + '<span style="opacity:0.25">★</span>'.repeat(5 - rating);
+          return `
         <div class="border-bottom-pad">
           <div class="flex-between-start">
             <div>
               <strong>${AdminShared.escapeHtml(review.userName || 'Anonymous')}</strong>
               <span class="small"> • ${new Date(review.createdAt).toLocaleDateString()}</span>
             </div>
-            <div class="stars-gold">★★★★★</div>
+            <div class="stars-gold" aria-label="${rating} out of 5 stars">${starsHtml}</div>
           </div>
           <p>${AdminShared.escapeHtml(review.comment || '')}</p>
         </div>
-      `
-        )
+      `;
+        })
         .join('');
       document.getElementById('reviewsList').innerHTML = html;
     } catch (err) {
       console.error('Failed to load reviews:', err);
       document.getElementById('reviewsList').innerHTML =
-        '<p class="small">No reviews available</p>';
+        '<div class="empty-state-card"><span class="empty-icon">⚠️</span><p>Failed to load reviews</p></div>';
     }
   }
 
@@ -348,7 +374,7 @@
     document.getElementById('healthScore').textContent = supplierData?.healthScore || '—';
 
     // Add a note below the analytics section if it exists
-    const analyticsSection = document.querySelector('.analytics-grid');
+    const analyticsSection = document.querySelector('.stats-grid');
     if (analyticsSection && !analyticsSection.querySelector('.analytics-note')) {
       const note = document.createElement('p');
       note.className = 'analytics-note small';
@@ -364,6 +390,8 @@
     if (!container) {
       return;
     }
+
+    verificationAuditLoaded = true;
 
     try {
       const data = await AdminShared.api(`/api/admin/suppliers/${supplierId}/audit`);
@@ -429,6 +457,171 @@
   }
 
   // Action handlers
+
+  // Edit Details handler — opens a modal to edit key supplier fields
+  document.getElementById('editSupplierBtn')?.addEventListener('click', async () => {
+    if (!supplierData) {
+      AdminShared.showToast('Supplier data not loaded yet', 'error');
+      return;
+    }
+
+    const EDITABLE_FIELDS = [
+      { key: 'name', label: 'Business Name' },
+      { key: 'category', label: 'Category' },
+      { key: 'location', label: 'Location' },
+      { key: 'price_display', label: 'Price Display' },
+      { key: 'website', label: 'Website URL' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'description_short', label: 'Short Description' },
+    ];
+
+    const currentField = EDITABLE_FIELDS[0];
+    const fieldList = EDITABLE_FIELDS.map(f => `• ${f.label}`).join('\n');
+
+    const fieldResult = await AdminShared.showInputModal({
+      title: 'Edit Supplier — Select Field',
+      message: `Which field would you like to edit?\n\n${fieldList}\n\nType the field name exactly as listed above (e.g. "Business Name").`,
+      label: 'Field name',
+      placeholder: 'e.g. Business Name',
+      required: true,
+      type: 'text',
+    });
+
+    if (!fieldResult.confirmed) {
+      return;
+    }
+
+    const matched = EDITABLE_FIELDS.find(
+      f => f.label.toLowerCase() === fieldResult.value.trim().toLowerCase()
+    );
+    if (!matched) {
+      AdminShared.showToast(`Unknown field: "${fieldResult.value}"`, 'error');
+      return;
+    }
+
+    const valueResult = await AdminShared.showInputModal({
+      title: `Edit — ${matched.label}`,
+      message: `Enter a new value for "${matched.label}":`,
+      label: matched.label,
+      initialValue: AdminShared.escapeHtml(String(supplierData[matched.key] || '')),
+      placeholder: `New ${matched.label}`,
+      required: false,
+      type: matched.key === 'description_short' ? 'textarea' : 'text',
+    });
+
+    if (!valueResult.confirmed) {
+      return;
+    }
+
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${supplierId}`, 'PUT', {
+        [matched.key]: valueResult.value,
+      });
+      AdminShared.showToast(`${matched.label} updated successfully`, 'success');
+      loadSupplier();
+    } catch (err) {
+      AdminShared.showToast(`Failed to update: ${err.message || 'Unknown error'}`, 'error');
+    }
+  });
+
+  // Add New Package handler — navigate to admin packages page
+  document.getElementById('addPackageBtn')?.addEventListener('click', () => {
+    window.location.href = `/admin-packages?supplierId=${encodeURIComponent(supplierId)}`;
+  });
+
+  // Upload Photo handler — navigate to admin photos page
+  document.getElementById('uploadPhotoBtn')?.addEventListener('click', () => {
+    window.location.href = `/admin-photos?supplierId=${encodeURIComponent(supplierId)}`;
+  });
+
+  // Delete Supplier handler — double-confirm before deleting
+  document.getElementById('deleteSupplierBtn')?.addEventListener('click', async () => {
+    const name = supplierData ? supplierData.name || 'this supplier' : 'this supplier';
+
+    const first = await AdminShared.showConfirmModal({
+      title: '⚠️ Delete Supplier',
+      message: `Are you sure you want to permanently delete "${AdminShared.escapeHtml(name)}"? This cannot be undone.`,
+      confirmText: 'Yes, delete',
+      cancelText: 'Cancel',
+    });
+    if (!first) {
+      return;
+    }
+
+    const second = await AdminShared.showConfirmModal({
+      title: '🚨 Final Confirmation',
+      message: `This will permanently delete all data for "${AdminShared.escapeHtml(name)}". There is NO recovery. Proceed?`,
+      confirmText: 'Delete permanently',
+      cancelText: 'Cancel',
+    });
+    if (!second) {
+      return;
+    }
+
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${supplierId}`, 'DELETE');
+      AdminShared.showToast('Supplier deleted successfully', 'success');
+      setTimeout(() => (window.location.href = '/admin-suppliers'), 1500);
+    } catch (err) {
+      AdminShared.showToast(
+        `Failed to delete supplier: ${err.message || 'Unknown error'}`,
+        'error'
+      );
+    }
+  });
+
+  // Delegated handler for package and photo action buttons
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) {
+      return;
+    }
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+
+    if (action === 'editPackage') {
+      window.location.href = `/admin-packages?id=${encodeURIComponent(id)}`;
+    } else if (action === 'approvePackage') {
+      if (
+        !(await AdminShared.showConfirmModal({
+          title: 'Approve Package',
+          message: 'Approve this package so it becomes publicly visible?',
+          confirmText: 'Approve',
+        }))
+      ) {
+        return;
+      }
+      try {
+        await AdminShared.api(`/api/admin/packages/${id}/approve`, 'POST', { approved: true });
+        AdminShared.showToast('Package approved', 'success');
+        loadPackages();
+      } catch (err) {
+        AdminShared.showToast(
+          `Failed to approve package: ${err.message || 'Unknown error'}`,
+          'error'
+        );
+      }
+    } else if (action === 'deletePhoto') {
+      if (
+        !(await AdminShared.showConfirmModal({
+          title: 'Delete Photo',
+          message: 'Permanently delete this photo? This cannot be undone.',
+          confirmText: 'Delete',
+        }))
+      ) {
+        return;
+      }
+      try {
+        await AdminShared.api(`/api/admin/photos/${id}`, 'DELETE');
+        AdminShared.showToast('Photo deleted', 'success');
+        loadPhotos();
+      } catch (err) {
+        AdminShared.showToast(`Failed to delete photo: ${err.message || 'Unknown error'}`, 'error');
+      }
+    }
+  });
+
   document.getElementById('approveBtn')?.addEventListener('click', async () => {
     const isSuspended = supplierData?.verificationStatus === 'suspended';
     const actionTitle = isSuspended ? 'Reinstate Supplier' : 'Approve Supplier';
