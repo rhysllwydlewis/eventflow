@@ -78,6 +78,26 @@ function isFeaturedPackage(pkg) {
   return pkg.featured === true || pkg.isFeatured === true;
 }
 
+// Helper function to resolve the best available image for a package
+function resolvePackageImage(pkg) {
+  const placeholder = '/assets/images/placeholders/package-event.svg';
+  // If the main image is set and isn't the placeholder, use it
+  if (pkg.image && pkg.image !== placeholder) {
+    return pkg.image;
+  }
+  // Fall back to the first gallery image
+  if (Array.isArray(pkg.gallery) && pkg.gallery.length > 0) {
+    for (const img of pkg.gallery) {
+      const url = typeof img === 'string' ? img : img.url || img.src || img.path || img.image;
+      if (url && url !== placeholder) {
+        return url;
+      }
+    }
+  }
+  // Return whatever image is there (or null)
+  return pkg.image || null;
+}
+
 // Cache for featured packages
 let featuredPackagesCache = null;
 let featuredPackagesCacheTime = 0;
@@ -312,6 +332,7 @@ router.get('/packages/featured', async (_req, res) => {
 
       items = packages.map(pkg => ({
         ...pkg,
+        image: resolvePackageImage(pkg),
         supplier_name: suppliersMap.get(pkg.supplierId)?.name || null,
       }));
     } else {
@@ -329,6 +350,7 @@ router.get('/packages/featured', async (_req, res) => {
           const supplier = suppliersMap.get(pkg.supplierId);
           return {
             ...pkg,
+            image: resolvePackageImage(pkg),
             supplier_name: supplier ? supplier.name : null,
           };
         });
@@ -426,6 +448,7 @@ router.get('/packages/spotlight', async (_req, res) => {
       const supplier = suppliersMap.get(pkg.supplierId);
       return {
         ...pkg,
+        image: resolvePackageImage(pkg),
         supplier_name: supplier ? supplier.name : null,
       };
     });

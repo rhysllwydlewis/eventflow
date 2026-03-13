@@ -358,7 +358,23 @@ class Carousel {
         : rawDesc;
     const description = escapeHtml(truncatedRawDesc);
     const price = escapeHtml(formatPrice(item.price_display || item.price));
-    const image = sanitizeUrl(item.image);
+    // Resolve the best available image: prefer item.image, fall back to gallery
+    const resolvedImage = (() => {
+      const placeholder = '/assets/images/placeholders/package-event.svg';
+      if (item.image && item.image !== placeholder) {
+        return item.image;
+      }
+      if (Array.isArray(item.gallery) && item.gallery.length > 0) {
+        for (const img of item.gallery) {
+          const url = typeof img === 'string' ? img : img.url || img.src || img.path || img.image;
+          if (url && url !== placeholder) {
+            return url;
+          }
+        }
+      }
+      return item.image || null;
+    })();
+    const image = sanitizeUrl(resolvedImage);
     const slug = validateSlug(item.slug, item.id);
 
     return `
