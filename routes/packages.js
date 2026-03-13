@@ -61,6 +61,22 @@ function initializeDependencies(deps) {
 }
 
 /**
+ * Generate a URL-safe slug from a title
+ * @param {string} title - The title to convert to a slug
+ * @returns {string} URL-safe slug
+ */
+function generateSlug(title) {
+  if (!title) {
+    return '';
+  }
+  return String(title)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
  * Deferred middleware wrappers
  * These are safe to reference in route definitions at require() time
  * because they defer the actual middleware call to request time,
@@ -221,13 +237,18 @@ router.post(
       });
     }
 
+    const pkgId = uid('pkg');
+    const baseSlug = generateSlug(title);
+    const slug = baseSlug ? `${baseSlug}-${pkgId.slice(-6)}` : pkgId;
+
     const pkg = {
-      id: uid('pkg'),
+      id: pkgId,
       supplierId,
       title: String(title).slice(0, 120),
       description: String(description || '').slice(0, 1500),
       price: String(price || '').slice(0, 60),
       image: image || '',
+      slug,
       primaryCategoryKey: String(primaryCategoryKey),
       eventTypes: validEventTypes,
       approved: false,

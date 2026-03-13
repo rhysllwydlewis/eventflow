@@ -499,7 +499,8 @@ router.get('/packages/search', async (req, res) => {
 router.get('/packages/:slug', async (req, res) => {
   try {
     const packages = await dbUnified.read('packages');
-    const pkg = packages.find(p => p.slug === req.params.slug && p.approved);
+    const param = req.params.slug;
+    const pkg = packages.find(p => (p.slug === param || p.id === param) && p.approved);
 
     if (!pkg) {
       return res.status(404).json({ error: 'Package not found' });
