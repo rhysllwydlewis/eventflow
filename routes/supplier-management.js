@@ -198,12 +198,6 @@ router.post(
       }
     }
 
-    const photos = (
-      b.photos ? (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/)) : []
-    )
-      .map(x => String(x).trim())
-      .filter(Boolean);
-
     const amenities = (b.amenities ? String(b.amenities).split(',') : [])
       .map(x => x.trim())
       .filter(Boolean);
@@ -221,7 +215,7 @@ router.post(
       maxGuests: parseInt(b.maxGuests || 0, 10),
       description_short: String(b.description_short || '').slice(0, 220),
       description_long: String(b.description_long || '').slice(0, 2000),
-      photos: photos.length ? photos : [],
+      photosGallery: [],
       email: ((await dbUnified.read('users')).find(u => u.id === req.user.id) || {}).email || '',
       approved: false,
     };
@@ -378,14 +372,6 @@ router.patch(
     // eslint-disable-next-line eqeqeq
     if (b.maxGuests != null) {
       supplierPatch.maxGuests = parseInt(b.maxGuests, 10) || 0;
-    }
-    if (b.photos) {
-      const photos = (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/))
-        .map(x => String(x).trim())
-        .filter(Boolean);
-      if (photos.length) {
-        supplierPatch.photos = photos;
-      }
     }
     supplierPatch.approved = false;
     await dbUnified.updateOne('suppliers', { id: req.params.id }, { $set: supplierPatch });

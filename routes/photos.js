@@ -456,7 +456,7 @@ router.post(
         large: images.large,
         original: images.original,
         approved: true,
-        uploadedAt: Date.now(),
+        uploadedAt: new Date().toISOString(),
         uploadedBy: req.user.id,
         metadata: metadata,
       };
@@ -690,7 +690,7 @@ router.post(
             large: images.large,
             original: images.original,
             approved: true,
-            uploadedAt: Date.now(),
+            uploadedAt: new Date().toISOString(),
             uploadedBy: req.user.id,
             metadata: metadata,
           };
@@ -944,7 +944,10 @@ router.post(
   applyRoleRequired('admin'),
   applyCsrfProtection,
   (req, res) => {
-    res.json({ success: true, message: 'Photo approval is no longer required. Photos are auto-approved on upload.' });
+    res.json({
+      success: true,
+      message: 'Photo approval is no longer required. Photos are auto-approved on upload.',
+    });
   }
 );
 
@@ -983,9 +986,20 @@ router.post('/photos/crop', applyAuthRequired, applyCsrfProtection, async (req, 
  * Get pending photos for moderation (deprecated — photos are now auto-approved on upload)
  * GET /api/photos/pending
  */
-router.get('/photos/pending', apiLimiter, applyAuthRequired, applyRoleRequired('admin'), (req, res) => {
-  res.json({ success: true, count: 0, photos: [], message: 'Photo approval is no longer required. Photos are auto-approved on upload.' });
-});
+router.get(
+  '/photos/pending',
+  apiLimiter,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  (req, res) => {
+    res.json({
+      success: true,
+      count: 0,
+      photos: [],
+      message: 'Photo approval is no longer required. Photos are auto-approved on upload.',
+    });
+  }
+);
 
 /**
  * PUT /api/photos/:id
@@ -1228,20 +1242,27 @@ router.post(
       { $set: { status: photo.status, approvedAt: photo.approvedAt, approvedBy: photo.approvedBy } }
     );
 
-    // Add photo to supplier's photos array if not already there
+    // Add photo to supplier's photosGallery if not already there
     const suppliers = await dbUnified.read('suppliers');
     const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
 
     if (supplierIndex !== -1) {
-      if (!suppliers[supplierIndex].photos) {
-        suppliers[supplierIndex].photos = [];
+      if (!suppliers[supplierIndex].photosGallery) {
+        suppliers[supplierIndex].photosGallery = [];
       }
-      if (!suppliers[supplierIndex].photos.includes(photo.url)) {
-        suppliers[supplierIndex].photos.push(photo.url);
+      const alreadyInGallery = suppliers[supplierIndex].photosGallery.some(
+        p => p.url === photo.url
+      );
+      if (!alreadyInGallery) {
+        suppliers[supplierIndex].photosGallery.push({
+          url: photo.url,
+          approved: true,
+          uploadedAt: photo.uploadedAt || new Date().toISOString(),
+        });
         await dbUnified.updateOne(
           'suppliers',
           { id: suppliers[supplierIndex].id },
-          { $set: { photos: suppliers[supplierIndex].photos } }
+          { $set: { photosGallery: suppliers[supplierIndex].photosGallery } }
         );
       }
     }

@@ -254,16 +254,7 @@ class SupplierGalleryManager {
         // Upload pending photos now that we have a valid supplier ID
         if (this.pendingUploads.length > 0 && supplierId) {
           await this.uploadPendingPhotos(supplierId);
-
-          // Update the photos field in the form with uploaded photo URLs
-          const photosField = document.getElementById('sup-photos');
-          if (photosField) {
-            const allPhotoUrls = this.uploadedPhotos.map(p => p.url);
-            photosField.value = allPhotoUrls.join('\n');
-
-            // Update the payload with photo URLs
-            payload.photos = allPhotoUrls.join('\n');
-          }
+          // Photos are persisted in photosGallery by uploadPendingPhotos — no extra payload update needed
         }
 
         // Now update the supplier with photo URLs if this was a new supplier
@@ -397,12 +388,8 @@ class SupplierGalleryManager {
 
     try {
       const supplier = await supplierManager.getSupplier(supplierId);
-      if (supplier && supplier.photos) {
-        // Parse photos (assuming they're stored as newline-separated URLs)
-        const photoUrls = supplier.photos.split('\n').filter(url => url.trim());
-
-        // For existing photos, we just need the URLs
-        this.uploadedPhotos = photoUrls.map(url => ({ url }));
+      if (supplier && supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
+        this.uploadedPhotos = supplier.photosGallery.map(p => ({ url: p.url, id: p.id }));
 
         if (isDevelopment) {
           console.log('Loaded existing photos:', this.uploadedPhotos);

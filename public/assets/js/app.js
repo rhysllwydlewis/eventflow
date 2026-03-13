@@ -631,7 +631,9 @@ async function initSupplier() {
   } catch (error) {
     console.error('Error fetching supplier packages:', error);
   }
-  const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
+  const img =
+    (s.photosGallery && s.photosGallery[0] && s.photosGallery[0].url) ||
+    '/assets/images/hero-venue.svg';
 
   // Use custom banner if available, otherwise use first photo or default
   const bannerImg = s.bannerUrl || img;
@@ -640,8 +642,8 @@ async function initSupplier() {
   const themeColor = s.themeColor && hexColorRegex.test(s.themeColor) ? s.themeColor : '#0B8073';
   const themeColorDark = adjustColorBrightness(themeColor, -10);
 
-  // Create lightbox gallery HTML for photos
-  const galleryPhotos = s.photos || [];
+  // Create lightbox gallery HTML for photos (photosGallery is canonical — array of {url, approved, uploadedAt})
+  const galleryPhotos = s.photosGallery ? s.photosGallery.map(p => p.url) : [];
   const gallery =
     galleryPhotos.length > 1
       ? galleryPhotos
@@ -2700,7 +2702,8 @@ async function initDashSupplier() {
           }
 
           // Calculate profile completeness checklist with safe property access
-          const hasPhotos = s.photos && Array.isArray(s.photos) && s.photos.length > 0;
+          const hasPhotos =
+            s.photosGallery && Array.isArray(s.photosGallery) && s.photosGallery.length > 0;
           const hasDescription =
             s.description_long &&
             typeof s.description_long === 'string' &&
@@ -2730,9 +2733,10 @@ async function initDashSupplier() {
           // Safe access to all fields with defaults — escape all user-supplied values to prevent XSS
           const supplierId = String(s.id || '').replace(/"/g, '&quot;');
           const name = escapeHtml(String(s.name || 'Unnamed Supplier'));
-          const photos = s.photos && Array.isArray(s.photos) ? s.photos : [];
+          const galleryItems =
+            s.photosGallery && Array.isArray(s.photosGallery) ? s.photosGallery : [];
           // Validate photoUrl to allow only safe http/https/relative URLs
-          const rawPhotoUrl = photos[0] || '';
+          const rawPhotoUrl = (galleryItems[0] && galleryItems[0].url) || '';
           const photoUrl =
             rawPhotoUrl && /^(https?:\/\/|\/[^:])/i.test(rawPhotoUrl)
               ? escapeHtml(rawPhotoUrl)

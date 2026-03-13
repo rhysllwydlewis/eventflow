@@ -19,9 +19,6 @@ let photoUpload;
 let uploadValidation;
 let logger;
 let uid;
-let path;
-let fs;
-let DATA_DIR;
 
 /**
  * Initialize dependencies from server.js
@@ -44,9 +41,6 @@ function initializeDependencies(deps) {
     'uploadValidation',
     'logger',
     'uid',
-    'path',
-    'fs',
-    'DATA_DIR',
   ];
 
   const missing = required.filter(key => deps[key] === undefined);
@@ -64,9 +58,6 @@ function initializeDependencies(deps) {
   uploadValidation = deps.uploadValidation;
   logger = deps.logger;
   uid = deps.uid;
-  path = deps.path;
-  fs = deps.fs;
-  DATA_DIR = deps.DATA_DIR;
 }
 
 /**
@@ -124,28 +115,31 @@ function applyPhotoUploadSingle(fieldName) {
 }
 
 /**
- * Helper function to save base64 image
+ * Save a base64-encoded image to MongoDB via photo upload pipeline.
+ * Derives the correct file extension from the data URI MIME type.
+ * @param {string} base64 - Base64 data URI (data:image/...;base64,...)
+ * @param {string} namePrefix - Filename prefix (e.g. "package_id_1234")
+ * @returns {Promise<string>} Stored photo URL in /api/photos/{id} format
+ * @throws {Error} If the base64 data is invalid or storage fails
  */
-function saveImageBase64(base64, ownerType, ownerId) {
-  try {
-    const match = base64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-    if (!match) {
-      return null;
-    }
-    const ext = match[1].split('/')[1];
-    const buffer = Buffer.from(match[2], 'base64');
-    const UP_ROOT = path.join(DATA_DIR, 'uploads');
-    const folder = path.join(UP_ROOT, ownerType, ownerId);
-    if (!fs.existsSync(folder)) {
-      fs.mkdirSync(folder, { recursive: true });
-    }
-    const filename = `img_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const filePath = path.join(folder, filename);
-    fs.writeFileSync(filePath, buffer);
-    return `/uploads/${ownerType}/${ownerId}/${filename}`;
-  } catch (e) {
-    return null;
+async function saveImageBase64(base64, namePrefix) {
+  const match = base64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) {
+    const err = new Error('Invalid base64 image format');
+    err.name = 'InvalidImageError';
+    throw err;
   }
+  const mimeSubtype = match[1].split('/')[1] || 'jpg';
+  const ext = mimeSubtype === 'jpeg' ? 'jpg' : mimeSubtype;
+  const filename = `${namePrefix}.${ext}`;
+  const buffer = Buffer.from(match[2], 'base64');
+  const results = await photoUpload.processAndSaveImage(buffer, filename, 'supplier');
+  if (!results || !results.original) {
+    const err = new Error('Image processing returned no URL');
+    err.name = 'ImageProcessingError';
+    throw err;
+  }
+  return results.original;
 }
 
 /**
@@ -269,9 +263,15 @@ router.post(
     if (!own) {
       return res.status(403).json({ error: 'Not owner' });
     }
-    const url = saveImageBase64(image, 'packages', req.params.id);
-    if (!url) {
-      return res.status(400).json({ error: 'Invalid image' });
+    let url;
+    try {
+      url = await saveImageBase64(image, `package_${req.params.id}_${Date.now()}`);
+    } catch (e) {
+      logger.error('Package photo upload failed:', e.message);
+      if (e.name === 'InvalidImageError' || e.name === 'ValidationError') {
+        return res.status(400).json({ error: 'Invalid image', details: e.message });
+      }
+      return res.status(503).json({ error: 'Photo storage unavailable', details: e.message });
     }
     if (!p.gallery) {
       p.gallery = [];

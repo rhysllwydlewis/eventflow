@@ -141,7 +141,6 @@ const supplierSchema = {
         maxGuests: { bsonType: 'int', description: 'Maximum guest capacity' },
         description_short: { bsonType: 'string', description: 'Short description' },
         description_long: { bsonType: 'string', description: 'Detailed description' },
-        photos: { bsonType: 'array', items: { bsonType: 'string' }, description: 'Photo URLs' },
         photosGallery: {
           bsonType: 'array',
           items: {
