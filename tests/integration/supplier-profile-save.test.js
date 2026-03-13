@@ -138,6 +138,27 @@ describe('Supplier Profile Save Fixes', () => {
       expect(apiFunction).toBeTruthy();
       expect(apiFunction[0]).toContain("credentials: opts.credentials || 'include'");
     });
+
+    it('should inject X-CSRF-Token header for write methods in api()', () => {
+      // The api() function inside initDashSupplier() must add CSRF token for POST/PUT/PATCH/DELETE
+      const apiFunction = appJsContent.match(
+        /async function api\(path, opts[\s\S]*?\}\s*\n\s*const supWrap/
+      );
+      expect(apiFunction).toBeTruthy();
+      expect(apiFunction[0]).toContain("'POST', 'PUT', 'PATCH', 'DELETE'");
+      expect(apiFunction[0]).toContain('ensureCsrfToken');
+      expect(apiFunction[0]).toContain("'X-CSRF-Token'");
+    });
+
+    it('should retry once with refreshed CSRF token on 403 CSRF error', () => {
+      // The api() function must clear the cached token and retry on 403 CSRF error
+      const apiFunction = appJsContent.match(
+        /async function api\(path, opts[\s\S]*?\}\s*\n\s*const supWrap/
+      );
+      expect(apiFunction).toBeTruthy();
+      expect(apiFunction[0]).toContain('window.__CSRF_TOKEN__ = null');
+      expect(apiFunction[0]).toContain('/csrf/i.test');
+    });
   });
 
   describe('Supplier Gallery Updates', () => {
