@@ -172,7 +172,7 @@
       const vs = getEffectiveVerificationStatus(s);
       return vs === 'pending_review' || vs === 'unverified';
     }).length;
-    const pro = allSuppliers.filter(s => s.subscription?.tier === 'pro_plus').length;
+    const pro = allSuppliers.filter(s => s.isPro).length;
     const avgScore = allSuppliers.reduce((sum, s) => sum + (s.healthScore || 0), 0) / total || 0;
 
     document.getElementById('totalSuppliers').textContent = total;
@@ -234,7 +234,9 @@
           (supplier.rejected || supplier.verificationStatus === 'rejected'));
 
       const matchesSubscription =
-        subscription === 'all' || supplier.subscription?.tier === subscription;
+        subscription === 'all' ||
+        (subscription === 'pro' && supplier.isPro) ||
+        (subscription === 'free' && !supplier.isPro);
 
       const supplierVerification = getEffectiveVerificationStatus(supplier);
       const matchesVerification = verification === 'all' || supplierVerification === verification;
@@ -276,7 +278,7 @@
     tbody.innerHTML = pageSuppliers
       .map(supplier => {
         const isSelected = selectedSuppliers.has(supplier.id);
-        const subscriptionBadge = getSubscriptionBadge(supplier.subscription?.tier || 'free');
+        const subscriptionBadge = getSubscriptionBadge(supplier.isPro ? 'pro' : 'free');
         const healthScoreBadge = getHealthScoreBadge(
           supplier.healthScore || 0,
           supplier.healthBreakdown
@@ -286,7 +288,7 @@
 
         return `
         <tr>
-          <td><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="window.toggleSupplierSelection('${escapeHtml(supplier.id)}')"></td>
+          <td><input type="checkbox" aria-label="Select ${escapeHtml(supplier.name || 'supplier')}" ${isSelected ? 'checked' : ''} onchange="window.toggleSupplierSelection('${escapeHtml(supplier.id)}')"></td>
           <td><a href="/admin-supplier-detail?id=${escapeHtml(supplier.id)}" style="color: #667eea; font-weight: 500;">${escapeHtml(supplier.name || 'Unknown')}</a></td>
           <td>${escapeHtml(supplier.email || '')}</td>
           <td>${supplier.approved ? '<span style="color: #10b981;">✓ Yes</span>' : '<span style="color: #f59e0b;">Pending</span>'}</td>
@@ -303,19 +305,13 @@
                 <button onclick="window.deleteSupplier('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #ef4444; color: white;" title="Delete">🗑️</button>
               </div>
               <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                <select id="sub-tier-${escapeHtml(supplier.id)}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Subscription tier">
-                  <option value="pro">Pro</option>
-                  <option value="pro_plus">Pro+</option>
+                <select id="sub-dur-${escapeHtml(supplier.id)}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Duration">
+                  <option value="1d">1 day</option>
+                  <option value="7d" selected>7 days</option>
+                  <option value="1m">1 month</option>
+                  <option value="1y">1 year</option>
                 </select>
-                <select id="sub-days-${escapeHtml(supplier.id)}" class="btn-xs" style="padding: 2px 4px; font-size: 11px;" title="Duration">
-                  <option value="7">7d</option>
-                  <option value="14">14d</option>
-                  <option value="30" selected>30d</option>
-                  <option value="90">90d</option>
-                  <option value="180">180d</option>
-                  <option value="365">1yr</option>
-                </select>
-                <button onclick="window.grantSubscription('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #667eea; color: white; font-size: 11px;" title="Grant subscription">Grant</button>
+                <button onclick="window.grantSubscription('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #667eea; color: white; font-size: 11px;" title="Grant Pro subscription">Grant Pro</button>
                 <button onclick="window.removeSubscription('${escapeHtml(supplier.id)}')" class="btn-xs" style="background: #6b7280; color: white; font-size: 11px;" title="Remove subscription">Remove</button>
               </div>
             </div>
@@ -574,7 +570,7 @@
       s.category || '',
       s.approved ? 'Yes' : 'No',
       getEffectiveVerificationStatus(s),
-      s.subscription?.tier || 'free',
+      s.isPro ? 'pro' : 'free',
       s.healthScore || 0,
       s.tags?.join(';') || '',
     ]);
@@ -651,26 +647,27 @@
   };
 
   window.grantSubscription = async function (id) {
-    const tierSel = document.getElementById(`sub-tier-${id}`);
-    const daysSel = document.getElementById(`sub-days-${id}`);
-    if (!tierSel || !daysSel) {
+    const durSel = document.getElementById(`sub-dur-${id}`);
+    if (!durSel) {
       showToast('Could not find subscription controls', 'error');
       return;
     }
-    const tier = tierSel.value;
-    const days = parseInt(daysSel.value, 10);
-    const tierName = tier === 'pro_plus' ? 'Pro+' : 'Pro';
+    const duration = durSel.value;
+    const durationLabel = durSel.options[durSel.selectedIndex]?.text || duration;
     const confirmed = await AdminShared.showConfirmModal({
-      title: 'Grant Subscription',
-      message: `Grant ${tierName} subscription for ${days} day(s) to this supplier?`,
+      title: 'Grant Pro Subscription',
+      message: `Grant Pro subscription for ${durationLabel} to this supplier?`,
       confirmText: 'Grant',
     });
     if (!confirmed) {
       return;
     }
     try {
-      await AdminShared.api(`/api/admin/suppliers/${id}/subscription`, 'POST', { tier, days });
-      showToast(`${tierName} subscription granted for ${days} day(s)`, 'success');
+      await AdminShared.api(`/api/admin/suppliers/${id}/pro`, 'POST', {
+        mode: 'duration',
+        duration,
+      });
+      showToast(`Pro subscription granted for ${durationLabel}`, 'success');
       await loadSuppliers();
       renderTable();
     } catch (error) {
@@ -682,14 +679,14 @@
   window.removeSubscription = async function (id) {
     const confirmed = await AdminShared.showConfirmModal({
       title: 'Remove Subscription',
-      message: "Remove this supplier's subscription? They will lose Pro/Pro+ features immediately.",
+      message: "Remove this supplier's Pro subscription? They will lose Pro features immediately.",
       confirmText: 'Remove',
     });
     if (!confirmed) {
       return;
     }
     try {
-      await AdminShared.api(`/api/admin/suppliers/${id}/subscription`, 'DELETE');
+      await AdminShared.api(`/api/admin/suppliers/${id}/pro`, 'POST', { mode: 'cancel' });
       showToast('Subscription removed', 'success');
       await loadSuppliers();
       renderTable();

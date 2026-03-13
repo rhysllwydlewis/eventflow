@@ -43,6 +43,8 @@ const {
  * Sanitise free-text input: trim, strip HTML tags, and enforce max length.
  * Iterates until no more tags are found to handle nested/malformed markup
  * (e.g. <script<script>> → <script> → empty string on successive passes).
+ * Any lone `<` remaining after tag-stripping is removed to prevent unclosed
+ * tags (e.g. a bare `<script` with no `>`) from leaking into stored text.
  * NOTE: This provides basic protection for stored text rendered in admin UI.
  * It is not a substitute for context-aware output escaping at render time.
  * @param {string} input
@@ -59,6 +61,8 @@ function sanitiseText(input, maxLength = 2000) {
     prev = text;
     text = text.replace(/<[^>]*>/g, '');
   } while (text !== prev);
+  // Remove any remaining lone `<` (unclosed tags such as `<script` with no `>`)
+  text = text.replace(/</g, '');
   return text.trim().slice(0, maxLength);
 }
 
