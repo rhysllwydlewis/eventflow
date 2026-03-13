@@ -2614,12 +2614,51 @@ async function initDashSupplier() {
 
   async function api(path, opts = {}) {
     try {
+      const method = (opts.method || 'GET').toUpperCase();
+      const isWriteMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+      const headers = { ...(opts.headers || {}) };
+
+      // Inject CSRF token for state-changing methods
+      if (isWriteMethod) {
+        try {
+          const token = await ensureCsrfToken();
+          if (token) {
+            headers['X-CSRF-Token'] = token;
+          }
+        } catch (e) {
+          console.warn('Unable to ensure CSRF token before API request:', e);
+        }
+      }
+
       // Always include credentials for cookie-based auth
       const options = {
         ...opts,
+        headers,
         credentials: opts.credentials || 'include',
       };
-      const r = await fetch(path, options);
+      let r = await fetch(path, options);
+
+      // On 403 with a CSRF error, refresh the token and retry once
+      if (isWriteMethod && r.status === 403) {
+        const data = await r.clone().json().catch(() => ({}));
+        if (/csrf/i.test(data?.error || '')) {
+          try {
+            window.__CSRF_TOKEN__ = null;
+            window.csrfToken = null;
+            const freshToken = await ensureCsrfToken();
+            if (freshToken) {
+              r = await fetch(path, {
+                ...options,
+                headers: { ...headers, 'X-CSRF-Token': freshToken },
+              });
+            }
+          } catch (e) {
+            console.warn('Unable to refresh CSRF token after 403:', e);
+          }
+        }
+      }
+
       if (!r.ok) {
         const errorData = await r.json().catch(() => ({ error: 'Request failed' }));
         throw new Error(errorData.error || `HTTP ${r.status}`);
