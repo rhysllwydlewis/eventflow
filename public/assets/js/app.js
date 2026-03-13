@@ -2642,7 +2642,10 @@ async function initDashSupplier() {
       // On 403 with a CSRF error, refresh the token and retry once
       if (isWriteMethod && r.status === 403) {
         // Clone the response before reading its body so the original stays intact if no retry occurs
-        const data = await r.clone().json().catch(() => ({}));
+        const data = await r
+          .clone()
+          .json()
+          .catch(() => ({}));
         if (/csrf/i.test(data?.error || '')) {
           try {
             window.__CSRF_TOKEN__ = null;
@@ -2682,7 +2685,8 @@ async function initDashSupplier() {
     try {
       const d = await api('/api/me/suppliers');
       const items = d?.items && Array.isArray(d.items) ? d.items : [];
-      cachedSuppliers = items; // Cache for use in editProfile()
+      cachedSuppliers = items; // Cache for use within initDashSupplier scope
+      window._efCachedSuppliers = items; // Expose globally for editProfile()
       // If this user has at least one Pro supplier, treat them as Pro.
       currentIsPro = items.some(s => !!s.isPro);
 
@@ -3033,6 +3037,10 @@ async function initDashSupplier() {
       previewBtn.style.display = 'inline-block';
     }
   }
+
+  // Expose populateSupplierForm globally so editProfile() (defined outside this
+  // closure) can delegate to it and benefit from the complete field population logic
+  window._efPopulateSupplierForm = populateSupplierForm;
 
   async function loadPackages() {
     try {
@@ -3681,22 +3689,31 @@ async function editProfile(supplierId) {
     formSection.classList.add('expanded');
     if (toggleBtn) {
       toggleBtn.setAttribute('aria-expanded', 'true');
-      toggleBtn.querySelector('.label').textContent = 'Cancel';
+      const labelEl = toggleBtn.querySelector('.label');
+      if (labelEl) {
+        labelEl.textContent = 'Cancel';
+      }
       toggleBtn.classList.add('active');
     }
   }
 
   // Fetch supplier data and populate form
   try {
-    // Look up from the already-loaded suppliers cache to avoid an
-    // extra (potentially missing) API endpoint call
-    let supplier = cachedSuppliers.find(s => s && String(s.id) === String(supplierId));
+    // Look up from the globally-exposed suppliers cache to avoid an
+    // extra API call (window._efCachedSuppliers is set by initDashSupplier)
+    let supplier = (window._efCachedSuppliers || []).find(
+      s => s && String(s.id) === String(supplierId)
+    );
 
     if (!supplier) {
-      // Fallback: fetch all suppliers and search again
-      const d = await api('/api/me/suppliers');
+      // Fallback: fetch all suppliers directly (avoids dependency on closure-scoped api())
+      const r = await fetch('/api/me/suppliers', { credentials: 'include' });
+      if (!r.ok) {
+        throw new Error(`Failed to fetch suppliers: ${r.status} ${r.statusText}`);
+      }
+      const d = await r.json();
       const items = d?.items && Array.isArray(d.items) ? d.items : [];
-      cachedSuppliers = items;
+      window._efCachedSuppliers = items;
       supplier = items.find(s => s && String(s.id) === String(supplierId));
     }
 
@@ -3704,34 +3721,48 @@ async function editProfile(supplierId) {
       throw new Error('Supplier not found');
     }
 
-    // Populate form fields
-    document.getElementById('sup-id').value = supplier.id || '';
-    document.getElementById('sup-name').value = supplier.name || '';
-    document.getElementById('sup-category').value = supplier.category || '';
-    document.getElementById('sup-location').value = supplier.location || '';
-    document.getElementById('sup-price').value = supplier.price_display || '';
-    document.getElementById('sup-short').value = supplier.description_short || '';
-    document.getElementById('sup-long').value = supplier.description_long || '';
-    document.getElementById('sup-website').value = supplier.website || '';
-    document.getElementById('sup-license').value = supplier.license || '';
-    document.getElementById('sup-amenities').value = supplier.amenities || '';
-    document.getElementById('sup-max').value = supplier.maxGuests || '';
-
-    if (supplier.venuePostcode) {
-      document.getElementById('sup-venue-postcode').value = supplier.venuePostcode;
+    // Delegate form population to the comprehensive helper from initDashSupplier.
+    // This populates all fields (basic, banner, tagline, theme, highlights, social links, etc.)
+    // and keeps the internal currentEditingSupplierId in sync.
+    if (typeof window._efPopulateSupplierForm === 'function') {
+      window._efPopulateSupplierForm(supplier);
+    } else {
+      // Fallback: populate basic fields manually if helper is not yet available
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = val || '';
+        }
+      };
+      setVal('sup-id', supplier.id);
+      setVal('sup-name', supplier.name);
+      setVal('sup-category', supplier.category);
+      setVal('sup-location', supplier.location);
+      setVal('sup-price', supplier.price_display);
+      setVal('sup-short', supplier.description_short);
+      setVal('sup-long', supplier.description_long);
+      setVal('sup-website', supplier.website);
+      setVal('sup-license', supplier.license);
+      setVal('sup-amenities', supplier.amenities);
+      setVal('sup-max', supplier.maxGuests);
+      if (supplier.venuePostcode) {
+        setVal('sup-venue-postcode', supplier.venuePostcode);
+      }
     }
 
     // Update form heading with truncated name if necessary
-    const heading = formSection.querySelector('.supplier-section-header');
-    if (heading) {
-      // Truncate supplier name if too long to prevent UI issues
-      const MAX_DISPLAY_NAME_LENGTH = 50;
-      const TRUNCATE_SUFFIX_LENGTH = 3; // for "..."
-      const displayName =
-        supplier.name && supplier.name.length > MAX_DISPLAY_NAME_LENGTH
-          ? `${supplier.name.substring(0, MAX_DISPLAY_NAME_LENGTH - TRUNCATE_SUFFIX_LENGTH)}...`
-          : supplier.name || 'Unknown';
-      heading.textContent = `Edit profile: ${displayName}`;
+    if (formSection) {
+      const heading = formSection.querySelector('.supplier-section-header');
+      if (heading) {
+        // Truncate supplier name if too long to prevent UI issues
+        const MAX_DISPLAY_NAME_LENGTH = 50;
+        const TRUNCATE_SUFFIX_LENGTH = 3; // for "..."
+        const displayName =
+          supplier.name && supplier.name.length > MAX_DISPLAY_NAME_LENGTH
+            ? `${supplier.name.substring(0, MAX_DISPLAY_NAME_LENGTH - TRUNCATE_SUFFIX_LENGTH)}...`
+            : supplier.name || 'Unknown';
+        heading.textContent = `Edit profile: ${displayName}`;
+      }
     }
 
     // Store the editing supplier ID for later use
@@ -3739,7 +3770,9 @@ async function editProfile(supplierId) {
 
     // Scroll to form
     setTimeout(() => {
-      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (formSection) {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }, 100);
   } catch (e) {
     console.error('Error loading supplier for edit:', e);
