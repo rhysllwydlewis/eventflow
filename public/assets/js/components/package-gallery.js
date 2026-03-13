@@ -40,8 +40,8 @@ class PackageGallery {
       .package-gallery-main {
         position: relative;
         width: 100%;
-        aspect-ratio: 16 / 7;
-        min-height: 320px;
+        aspect-ratio: 4 / 3;
+        min-height: 240px;
         border-radius: 12px;
         overflow: hidden;
         background-color: #f8f9fa;
@@ -186,8 +186,8 @@ class PackageGallery {
         align-items: center;
         justify-content: center;
         gap: 12px;
-        aspect-ratio: 16 / 7;
-        min-height: 320px;
+        aspect-ratio: 4 / 3;
+        min-height: 240px;
         background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f5 100%);
         border-radius: 12px;
         border: 2px dashed #a7f3e4;
