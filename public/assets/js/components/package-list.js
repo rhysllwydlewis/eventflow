@@ -42,7 +42,7 @@ class PackageList {
         display: grid;
         grid-template-columns: 1fr;
         gap: clamp(16px, 3vw, 24px);
-        margin-top: clamp(16px, 3vw, 24px);
+        margin-top: 0;
         contain: layout style;
       }
 
@@ -527,7 +527,7 @@ class PackageList {
         ${supplierHtml}
         <div class="package-card-meta">
           <div class="package-card-price">${price}</div>
-          ${location ? `<div class="package-card-location"><span aria-hidden="true">📍</span> ${location}</div>` : ''}
+          ${location ? `<div class="package-card-location"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${location}</div>` : ''}
         </div>
       </div>
     `;
