@@ -77,19 +77,23 @@ class PackageGallery {
         background: #e5e7eb url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>') center center no-repeat;
       }
 
-      /* ── Nav arrows: edge-flush tabs, small but visible ── */
+      /* ── Nav arrows: edge-flush tabs, visible against any image ── */
       .package-gallery-nav {
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        /* Semi-transparent pill flush to the edge — visible against any image */
-        background-color: rgba(0, 0, 0, 0.42);
-        color: white;
+        /* Dark pill flush to the edge with a white inner shadow for contrast on light images */
+        background-color: rgba(0, 0, 0, 0.55);
+        color: #fff;
         border: none;
+        /* Inner white border so the button is legible on both dark and light photos */
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
         padding: 0;
         cursor: pointer;
         font-size: 20px;
+        font-weight: 700;
         width: 32px;
+        margin-top: 0;
         height: 56px;
         display: flex;
         align-items: center;
@@ -101,7 +105,7 @@ class PackageGallery {
 
       .package-gallery-nav:hover,
       .package-gallery-nav:focus-visible {
-        background-color: rgba(0, 0, 0, 0.65);
+        background-color: rgba(0, 0, 0, 0.72);
         width: 38px;
         outline: none;
       }
@@ -116,7 +120,7 @@ class PackageGallery {
         border-radius: 8px 0 0 8px;
       }
 
-      /* Fade arrows slightly during swipe gesture */
+      /* Fade arrows during swipe gesture */
       .package-gallery-main.swiping .package-gallery-nav {
         opacity: 0.3;
         pointer-events: none;
@@ -244,6 +248,14 @@ class PackageGallery {
           width: 60px;
           height: 44px;
         }
+      }
+
+      /* ── Reset global touch-target min-width for gallery arrows ──
+         ui-ux-fixes.css @media (pointer: coarse) sets button { min-width: 44px }
+         with specificity (0,0,1). Our class selector (0,1,0) wins cleanly. */
+      .package-gallery-nav {
+        min-width: 0;
+        min-height: 0;
       }
     `;
     document.head.appendChild(style);

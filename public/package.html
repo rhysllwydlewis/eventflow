@@ -31,7 +31,8 @@
     #package-content .card h3,
     #package-content .card p,
     #package-content .card span:not(#package-price) { color: #212529; }
-    #package-content .card a { color: inherit; }
+    /* Exclude .sp-btn anchor elements so their brand colours are not overridden */
+    #package-content .card a:not(.sp-btn) { color: inherit; }
     /* Keep the teal accent on the price element */
     #package-price { color: var(--accent, #13B6A2) !important; }
 
