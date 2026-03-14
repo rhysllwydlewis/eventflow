@@ -181,8 +181,11 @@
 
     // Add event listeners to manage subscription buttons
     document.querySelectorAll('[data-manage-subscription]').forEach(btn => {
-      btn.addEventListener('click', async e => {
-        const userId = e.target.getAttribute('data-manage-subscription');
+      btn.addEventListener('click', async () => {
+        // Use btn directly from the closure rather than e.target, which can point to a child
+        // element (e.g. a badge or icon inside the button) on some browsers/renderings and
+        // would then lack the data attribute, silently preventing the modal from opening.
+        const userId = btn.getAttribute('data-manage-subscription');
         if (userId) {
           openSubscriptionModal(userId);
         }
@@ -191,8 +194,8 @@
 
     // Add event listeners to resend buttons
     document.querySelectorAll('[data-resend-verification]').forEach(btn => {
-      btn.addEventListener('click', async e => {
-        const userId = e.target.getAttribute('data-resend-verification');
+      btn.addEventListener('click', async () => {
+        const userId = btn.getAttribute('data-resend-verification');
         if (!userId) {
           return;
         }

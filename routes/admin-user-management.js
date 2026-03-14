@@ -92,6 +92,25 @@ function validateJWTSecret() {
 }
 
 /**
+ * Find a user by their `id` field, falling back to matching the MongoDB `_id` string.
+ * Admin accounts created before the `id` field was standardised may only carry a MongoDB
+ * `_id` ObjectId; the GET /users endpoint now surfaces that as `id`, but the URL param
+ * arriving at subscription/management endpoints should still resolve correctly.
+ *
+ * @param {string} id - User id string (explicit `id` field or _id.toString())
+ * @returns {Promise<Object|null>} The matched user document or null
+ */
+async function findUserByIdOrObjectId(id) {
+  // Primary lookup: explicit `id` field (all freshly created users)
+  let user = await dbUnified.findOne('users', { id });
+  // Fallback: match against the stringified MongoDB _id for older records
+  if (!user) {
+    user = await dbUnified.findOne('users', u => u._id && u._id.toString() === id);
+  }
+  return user || null;
+}
+
+/**
  * GET /api/admin/users
  * List all users (without password hashes)
  */
@@ -99,7 +118,10 @@ router.get('/users', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const allUsers = await dbUnified.read('users');
     const users = (allUsers || []).map(u => ({
-      id: u.id,
+      // Fall back to the MongoDB _id string so users created without an explicit `id`
+      // field (e.g. older admin accounts) still receive a non-empty identifier that the
+      // "Manage Subscription" button can use as its data attribute value.
+      id: u.id || (u._id ? u._id.toString() : undefined),
       name: u.name,
       email: u.email,
       role: u.role,
@@ -2438,11 +2460,15 @@ router.post(
           .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
       }
 
-      const user = await dbUnified.findOne('users', { id });
+      // Use robust lookup so admin accounts without an explicit `id` field are found too
+      const user = await findUserByIdOrObjectId(id);
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
+
+      // Resolve the filter key that will match this document in updateOne
+      const effectiveId = user.id || (user._id ? user._id.toString() : id);
 
       const now = new Date();
       const startDate = now.toISOString();
@@ -2499,10 +2525,11 @@ router.post(
         },
       ];
 
-      // Save updated user
+      // Save updated user – use effectiveId so the filter matches whether the record
+      // was found via its explicit `id` field or its MongoDB _id.
       await dbUnified.updateOne(
         'users',
-        { id },
+        { id: effectiveId },
         {
           $set: {
             subscription: user.subscription,
@@ -2518,7 +2545,7 @@ router.post(
         adminEmail: req.user.email,
         action: 'USER_SUBSCRIPTION_GRANTED',
         targetType: 'user',
-        targetId: id,
+        targetId: effectiveId,
         details: { tier, duration, reason, endDate },
       });
 
@@ -2549,7 +2576,8 @@ router.delete(
       const { id } = req.params;
       const { reason } = req.body;
 
-      const user = await dbUnified.findOne('users', { id });
+      // Use robust lookup so admin accounts without an explicit `id` field are found too
+      const user = await findUserByIdOrObjectId(id);
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -2559,6 +2587,7 @@ router.delete(
         return res.status(400).json({ error: 'User has no active subscription to remove' });
       }
 
+      const effectiveId = user.id || (user._id ? user._id.toString() : id);
       const previousTier = user.subscription.tier;
       const now = new Date().toISOString();
 
@@ -2589,10 +2618,10 @@ router.delete(
         },
       ];
 
-      // Save updated user
+      // Save updated user – use effectiveId to match whether the user was found by `id` or `_id`
       await dbUnified.updateOne(
         'users',
-        { id },
+        { id: effectiveId },
         {
           $set: { subscription: newSubscription, subscriptionHistory, updatedAt: now },
         }
@@ -2604,7 +2633,7 @@ router.delete(
         adminEmail: req.user.email,
         action: 'USER_SUBSCRIPTION_REMOVED',
         targetType: 'user',
-        targetId: id,
+        targetId: effectiveId,
         details: { previousTier, reason },
       });
 
@@ -2631,7 +2660,8 @@ router.get(
     try {
       const { id } = req.params;
 
-      const user = await dbUnified.findOne('users', { id });
+      // Use robust lookup so admin accounts without an explicit `id` field are found too
+      const user = await findUserByIdOrObjectId(id);
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });

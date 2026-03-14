@@ -321,3 +321,82 @@ describe('Admin Regression — Route ordering (specific before wildcard)', () =>
     expect(specificIdx).toBeLessThan(wildcardIdx);
   });
 });
+
+// ─── Subscription Management Button – Admin User Fix ─────────────────────────
+
+describe('Admin Regression — Subscription management button works for admin-role users', () => {
+  let userMgmtContent;
+
+  beforeAll(() => {
+    userMgmtContent = fs.readFileSync(
+      path.join(__dirname, '../../routes/admin-user-management.js'),
+      'utf8'
+    );
+  });
+
+  it('admin-users-init click handler uses btn (closure) not e.target to read data attribute', () => {
+    // Using e.target instead of the closure variable `btn` is a common source of silent
+    // failures: if e.target happens to be a child element it lacks the data attribute and
+    // getAttribute() returns null, making the modal never open ("button does nothing").
+    // Verify the fix: btn.getAttribute should appear in the subscription button handler and
+    // e.target.getAttribute should NOT appear in that same handler.
+
+    // Find the event listener setup section (not the template string where the attribute is set)
+    const listenerSetupIdx = usersInitContent.indexOf(
+      "querySelectorAll('[data-manage-subscription]')"
+    );
+    expect(listenerSetupIdx).toBeGreaterThan(-1);
+
+    // Check the block of code around and after the listener setup
+    const listenerSection = usersInitContent.substring(
+      listenerSetupIdx,
+      listenerSetupIdx + 600
+    );
+    // The click handler must read from btn (the closure variable), not e.target
+    expect(listenerSection).toContain('btn.getAttribute(');
+    expect(listenerSection).not.toContain('e.target.getAttribute(');
+  });
+
+  it('GET /users endpoint returns _id as fallback id for users without explicit id field', () => {
+    // Admin accounts created before the `id` field was standardised may only have _id.
+    // Without this fallback the button renders with an empty data attribute and clicking
+    // it silently does nothing (if (userId) check is falsy).
+    const getUsersSection = userMgmtContent.match(
+      /router\.get\('\/users',[\s\S]*?res\.json\(\s*\{[\s\S]*?\}\s*\);/
+    )?.[0];
+    expect(getUsersSection).toBeTruthy();
+    expect(getUsersSection).toContain('u._id');
+    expect(getUsersSection).toContain('u.id ||');
+  });
+
+  it('POST /users/:id/subscription uses findUserByIdOrObjectId (handles admin users without id)', () => {
+    // Admin users without an explicit id field must still be found by the subscription
+    // endpoint, otherwise the grant silently succeeds on the wire but the update is never
+    // applied (updateOne with a wrong filter matches nothing).
+    expect(userMgmtContent).toContain('findUserByIdOrObjectId');
+    const helperIdx = userMgmtContent.indexOf('async function findUserByIdOrObjectId');
+    expect(helperIdx).toBeGreaterThan(-1);
+    // Helper must fall back to _id comparison
+    const helperSection = userMgmtContent.substring(helperIdx, helperIdx + 600);
+    expect(helperSection).toContain('_id.toString()');
+  });
+
+  it('subscription POST updateOne uses effectiveId not the raw URL param id', () => {
+    // When a user only has _id, the updateOne filter { id } would match nothing and the
+    // change would be silently dropped.  Using effectiveId ensures the right document is
+    // updated regardless of how the user was originally created.
+    const postSubscriptionIdx = userMgmtContent.indexOf("'/users/:id/subscription',");
+    expect(postSubscriptionIdx).toBeGreaterThan(-1);
+    // Find the matching router.delete for subscription (comes after the POST)
+    const deleteSubscriptionIdx = userMgmtContent.indexOf(
+      "'/users/:id/subscription',",
+      postSubscriptionIdx + 1
+    );
+    const postSection = userMgmtContent.substring(
+      postSubscriptionIdx,
+      deleteSubscriptionIdx > -1 ? deleteSubscriptionIdx : postSubscriptionIdx + 3000
+    );
+    expect(postSection).toContain('effectiveId');
+    expect(postSection).toContain('{ id: effectiveId }');
+  });
+});
