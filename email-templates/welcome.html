@@ -5,76 +5,87 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to EventFlow!</title>
 </head>
-<body style="margin:0;padding:0;background-color:#F2FBF9;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2FBF9;">
+<body style="margin:0;padding:0;background-color:#EBF7F5;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EBF7F5;">
     <tr>
       <td align="center" style="padding:40px 16px;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(11,128,115,0.10);">
-          <!-- Top accent bar -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(11,128,115,0.13);">
+
+          <!-- ── Gradient Header ─────────────────────────────── -->
           <tr>
-            <td style="background:linear-gradient(135deg,#0B8073,#13B6A2);height:6px;font-size:0;line-height:0;">&nbsp;</td>
-          </tr>
-          <!-- Header -->
-          <tr>
-            <td align="center" style="padding:36px 40px 28px;">
-              <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px;color:#0B8073;">EventFlow</div>
-              <div style="font-size:13px;color:#667085;margin-top:4px;">Operated by VEXI</div>
+            <td style="background:linear-gradient(135deg,#0B8073 0%,#13B6A2 100%);padding:40px 40px 32px;text-align:center;">
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px auto;">
+                <tr>
+                  <td style="width:52px;height:52px;background:rgba(255,255,255,0.18);border-radius:14px;text-align:center;vertical-align:middle;font-size:20px;font-weight:900;color:#ffffff;letter-spacing:-1px;line-height:52px;">EF</td>
+                </tr>
+              </table>
+              <div style="font-size:24px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:5px;">EventFlow</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.72);letter-spacing:0.3px;">Operated by VEXI</div>
             </td>
           </tr>
-          <!-- Divider -->
-          <tr><td style="border-top:1px solid #E7EAF0;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <!-- Body -->
+
+          <!-- ── Body ────────────────────────────────────────── -->
           <tr>
-            <td style="padding:36px 40px;">
-              <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0B1220;line-height:1.3;">Welcome to EventFlow! 🎉</h1>
-              <p style="margin:0 0 20px;font-size:15px;color:#334155;line-height:1.7;">Hi {{name}},</p>
-              <p style="margin:0 0 24px;font-size:15px;color:#334155;line-height:1.7;">Your account is ready — you're all set to start planning your perfect event. Here's what you can do right now:</p>
-              <!-- Feature cards -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+            <td style="background-color:#ffffff;padding:40px 40px 32px;">
+              <p style="margin:0 0 4px;font-size:28px;text-align:center;">🎉</p>
+              <h1 style="margin:0 0 20px;font-size:22px;font-weight:700;color:#0B1220;line-height:1.35;">Welcome to EventFlow!</h1>
+              <p style="margin:0 0 16px;font-size:15px;color:#334155;line-height:1.75;">Hi {{name}},</p>
+              <p style="margin:0 0 28px;font-size:15px;color:#334155;line-height:1.75;">Your account is ready. You're all set to start planning your perfect event. Here's what you can do right away:</p>
+
+              <!-- Feature list -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
                 <tr>
-                  <td style="background-color:#F2FBF9;border-radius:10px;padding:16px 20px;border-left:4px solid #13B6A2;">
-                    <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#0B8073;">🔍 Discover Suppliers</p>
-                    <p style="margin:0;font-size:14px;color:#334155;line-height:1.6;">Browse verified venues, caterers, photographers, and more — filtered by location, price, and ratings.</p>
+                  <td style="background-color:#F2FBF9;border-left:4px solid #13B6A2;border-radius:0 10px 10px 0;padding:14px 18px 14px 16px;">
+                    <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:#0B8073;">🔍 Discover Suppliers</p>
+                    <p style="margin:0;font-size:13px;color:#334155;line-height:1.6;">Browse verified venues, caterers, photographers and more — filtered by location, price and reviews.</p>
                   </td>
                 </tr>
               </table>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
                 <tr>
-                  <td style="background-color:#F2FBF9;border-radius:10px;padding:16px 20px;border-left:4px solid #13B6A2;">
-                    <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#0B8073;">📋 Create Your Plan</p>
-                    <p style="margin:0;font-size:14px;color:#334155;line-height:1.6;">Build your event checklist, track tasks, and manage your budget all in one place.</p>
+                  <td style="background-color:#F2FBF9;border-left:4px solid #13B6A2;border-radius:0 10px 10px 0;padding:14px 18px 14px 16px;">
+                    <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:#0B8073;">📋 Build Your Plan</p>
+                    <p style="margin:0;font-size:13px;color:#334155;line-height:1.6;">Create your event checklist, track tasks and manage your budget all in one place.</p>
                   </td>
                 </tr>
               </table>
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
                 <tr>
-                  <td style="background-color:#F2FBF9;border-radius:10px;padding:16px 20px;border-left:4px solid #13B6A2;">
-                    <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#0B8073;">💬 Connect with Suppliers</p>
-                    <p style="margin:0;font-size:14px;color:#334155;line-height:1.6;">Message suppliers directly, request quotes, and manage conversations without leaving the platform.</p>
+                  <td style="background-color:#F2FBF9;border-left:4px solid #13B6A2;border-radius:0 10px 10px 0;padding:14px 18px 14px 16px;">
+                    <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:#0B8073;">💬 Message Suppliers</p>
+                    <p style="margin:0;font-size:13px;color:#334155;line-height:1.6;">Request quotes, ask questions and manage conversations — without leaving the platform.</p>
                   </td>
                 </tr>
               </table>
-              <!-- CTA -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+              <!-- CTA button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
                 <tr>
-                  <td align="center" style="padding:4px 0 24px;">
-                    <a href="{{baseUrl}}/start" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0B8073,#13B6A2);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">Start Planning</a>
+                  <td align="center">
+                    <a href="{{baseUrl}}/start" style="display:inline-block;padding:15px 40px;background:linear-gradient(135deg,#0B8073,#13B6A2);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.2px;">Start Planning</a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:0;font-size:13px;color:#667085;line-height:1.6;">Need help getting started? Visit our <a href="{{baseUrl}}/faq" style="color:#0B8073;text-decoration:none;">FAQ</a> or contact us at <a href="mailto:hello@event-flow.co.uk" style="color:#0B8073;text-decoration:none;">hello@event-flow.co.uk</a>.</p>
+
+              <p style="margin:0;font-size:13px;color:#667085;line-height:1.7;text-align:center;">Need help? Visit our <a href="{{baseUrl}}/faq" style="color:#0B8073;text-decoration:none;">FAQ</a> or email <a href="mailto:hello@event-flow.co.uk" style="color:#0B8073;text-decoration:none;">hello@event-flow.co.uk</a></p>
             </td>
           </tr>
-          <!-- Divider -->
-          <tr><td style="border-top:1px solid #E7EAF0;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <!-- Footer -->
+
+          <!-- ── Footer ───────────────────────────────────────── -->
           <tr>
-            <td style="padding:24px 40px;background-color:#F2FBF9;" align="center">
-              <p style="margin:0 0 6px;font-size:13px;color:#667085;">© 2025–2026 EventFlow. All rights reserved.</p>
-              <p style="margin:0 0 6px;font-size:13px;color:#667085;">Operated by VEXI</p>
-              <p style="margin:0;font-size:13px;"><a href="{{baseUrl}}" style="color:#0B8073;text-decoration:none;">{{baseUrl}}</a></p>
+            <td style="background-color:#F2FBF9;padding:24px 40px;text-align:center;border-top:1px solid #D9F0EC;">
+              <p style="margin:0 0 8px;font-size:13px;color:#667085;">© 2025–2026 EventFlow. All rights reserved. &nbsp;·&nbsp; Operated by VEXI</p>
+              <p style="margin:0 0 8px;font-size:12px;color:#98A2B3;">
+                <a href="{{baseUrl}}/privacy" style="color:#0B8073;text-decoration:none;">Privacy Policy</a>
+                &nbsp;·&nbsp;
+                <a href="{{baseUrl}}/terms" style="color:#0B8073;text-decoration:none;">Terms of Service</a>
+                &nbsp;·&nbsp;
+                <a href="{{baseUrl}}/contact" style="color:#0B8073;text-decoration:none;">Contact Us</a>
+              </p>
+              <p style="margin:0;font-size:12px;color:#98A2B3;"><a href="{{baseUrl}}" style="color:#0B8073;text-decoration:none;">event-flow.co.uk</a></p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>
