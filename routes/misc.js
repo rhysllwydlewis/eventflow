@@ -178,7 +178,7 @@ router.get('/venues/near', async (req, res) => {
 
 // ---------- ALTCHA Challenge ----------
 
-router.get('/altcha/challenge', async (req, res) => {
+router.get('/altcha/challenge', applyWriteLimiter, async (req, res) => {
   try {
     if (!process.env.ALTCHA_HMAC_KEY) {
       // In development, return a dummy challenge so the widget can still render

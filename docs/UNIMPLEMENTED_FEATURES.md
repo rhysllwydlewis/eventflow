@@ -48,7 +48,7 @@ Based on review of FUTURE_IMPROVEMENTS.md, ROADMAP_PROGRESS.md, ADMIN_DASHBOARD_
 
 - ✅ ALTCHA widget added to `public/auth.html` registration form
 - ✅ ALTCHA widget added to `public/contact.html` contact form
-- ✅ Server-side verification via `verifyHCaptcha()` in `routes/auth.js` (register) and `routes/misc.js` (contact)
+- ✅ Server-side verification via `verifyAltcha()` in `routes/auth.js` (register) and `routes/misc.js` (contact)
 - ✅ Lead scoring already penalises `captchaPassed: false` (`-50` pts) in `utils/leadScoring.js`
 - ✅ Sitekey read from `ALTCHA_HMAC_KEY` env var via `<meta name="altcha-sitekey">` or `/api/v1/config`
 - ✅ Enquiry threads (`routes/threads.js`) already integrate captcha + lead scoring

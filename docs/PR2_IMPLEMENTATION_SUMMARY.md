@@ -115,7 +115,7 @@ const verificationSectionHTML = renderVerificationSection(supplier);
 #### Frontend (Implementation Guide):
 
 - ✅ Created comprehensive **`ALTCHA_IMPLEMENTATION_GUIDE.md`**
-- ✅ Added `ALTCHA_HMAC_KEY` and `ALTCHA_HMAC_KEY` to `.env.example`
+- ✅ Added `ALTCHA_HMAC_KEY` to `.env.example`
 
 #### Implementation Guide Includes:
 
