@@ -625,7 +625,7 @@
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .guides-filter-chips {
@@ -1287,13 +1287,23 @@
     margin-bottom: 18px;
   }
   .guides-filter-bar {
-    top: 56px;
+    top: 64px;
   }
   .guides-filter-bar__inner {
-    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .guides-filter-chips {
+    order: 1;
+    width: 100%;
   }
   .guides-filter-controls {
+    order: 2;
     flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
   .guides-section__header {
     flex-direction: column;
