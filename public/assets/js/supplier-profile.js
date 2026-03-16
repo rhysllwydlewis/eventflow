@@ -38,7 +38,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       supplier.openGraphImage ||
       supplier.coverImage ||
       supplier.logo ||
-      'https://event-flow.co.uk/assets/images/eventflow-og-image.jpg';
+      'https://event-flow.co.uk/assets/images/eventflow-og-image.png';
     const url = `https://event-flow.co.uk/supplier.html?id=${supplier.id}`;
 
     // Update page title
