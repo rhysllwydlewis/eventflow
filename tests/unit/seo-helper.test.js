@@ -7,17 +7,47 @@
 
 'use strict';
 
-// Provide a minimal browser-like environment so seo-helper.js can be required
-const { JSDOM } = require('jsdom');
-const dom = new JSDOM('<!DOCTYPE html><html><head><title></title></head><body></body></html>', {
-  url: 'https://event-flow.co.uk',
-});
-global.window = dom.window;
-global.document = dom.window.document;
+// Minimal DOM stub — Jest runs in Node (testEnvironment: 'node') so we mock
+// only the document APIs that seo-helper.js actually touches.
+let _title = '';
+const _metaStore = {};
+
+global.window = {
+  location: { hostname: 'localhost', origin: 'https://event-flow.co.uk' },
+  EF_CANONICAL_BASE: 'https://event-flow.co.uk',
+};
+
+global.document = {
+  get title() { return _title; },
+  set title(v) { _title = v; },
+  querySelector: (sel) => {
+    // Return a minimal meta stub or null
+    const key = sel.replace(/^meta\[property="(.+)"\]$/, '$1')
+                   .replace(/^meta\[name="(.+)"\]$/, '$1')
+                   .replace(/^link\[rel="canonical"\]$/, '__canonical__');
+    return _metaStore[key] || null;
+  },
+  createElement: (tag) => {
+    const el = { tagName: tag, _attrs: {}, textContent: '' };
+    el.setAttribute = (k, v) => { el._attrs[k] = v; };
+    el.getAttribute = (k) => el._attrs[k] || null;
+    return el;
+  },
+  head: {
+    appendChild: (el) => {
+      // Track created meta tags by property/name
+      const key = el._attrs && (el._attrs.property || el._attrs.name);
+      if (key) _metaStore[key] = el;
+    },
+  },
+};
 
 const SEOHelper = require('../../public/assets/js/utils/seo-helper');
 
 function makeHelper() {
+  // Reset title and meta store for each helper
+  _title = '';
+  Object.keys(_metaStore).forEach(k => delete _metaStore[k]);
   return new SEOHelper();
 }
 
