@@ -5,9 +5,10 @@
  * @returns {string}
  */
 function mapBudgetToLabel(amount) {
+  // eslint-disable-next-line eqeqeq
   if (amount == null || isNaN(Number(amount))) {
     return '';
-  } // eslint-disable-line eqeqeq
+  }
   const n = Number(amount);
   if (n <= 1000) {
     return 'Up to £1,000';
