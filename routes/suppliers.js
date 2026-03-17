@@ -545,7 +545,7 @@ router.get('/packages/:slug', async (req, res) => {
       .filter(Boolean);
 
     res.json({
-      package: pkg,
+      package: { ...pkg, image: resolvePackageImage(pkg) },
       supplier,
       categories: packageCategories,
     });

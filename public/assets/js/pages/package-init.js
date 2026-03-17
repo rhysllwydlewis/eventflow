@@ -38,13 +38,33 @@ document.addEventListener('DOMContentLoaded', () => {
               `<a href="/category?slug=${encodeURIComponent(c.slug)}" style="text-decoration:none;color:inherit;">${c.name}</a>`
           )
           .join(' · ');
+        // Show the category segment (hidden by default to avoid 'Home › › Package')
+        const catGroup = document.getElementById('breadcrumb-category-group');
+        if (catGroup) {
+          catGroup.style.display = '';
+        }
       }
       document.getElementById('breadcrumb-package').textContent = pkg.title;
 
-      // Gallery
+      // Gallery — filter out entries with empty or placeholder URLs so the gallery
+      // only contains items that can actually be displayed as real images.
       const rawGallery = pkg.gallery || [];
+      const PLACEHOLDER_PATH = '/assets/images/placeholders/';
+      const validGalleryImages = rawGallery.filter(img => {
+        if (!img) {
+          return false;
+        }
+        const url =
+          typeof img === 'string' ? img : img.url || img.src || img.path || img.image || '';
+        return url && !url.includes(PLACEHOLDER_PATH);
+      });
+      // Use filtered gallery; if empty, fall back to pkg.image (already normalised by API).
       const galleryImages =
-        rawGallery.length > 0 ? rawGallery : pkg.image ? [{ url: pkg.image }] : [];
+        validGalleryImages.length > 0
+          ? validGalleryImages
+          : pkg.image && !pkg.image.includes(PLACEHOLDER_PATH)
+            ? [{ url: pkg.image }]
+            : [];
       if (galleryImages.length > 0 && typeof PackageGallery !== 'undefined') {
         new PackageGallery('package-gallery-container', galleryImages);
       }
