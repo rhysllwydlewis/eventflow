@@ -338,7 +338,7 @@ class PackageGallery {
         typeof img === 'object' && img.alt
           ? img.alt
           : `Gallery image ${index + 1} of ${this.images.length}`;
-      image.loading = 'lazy'; // Enable native lazy loading
+      image.loading = index === 0 ? 'eager' : 'lazy'; // Eager for first (visible) image to avoid browser lazy-load intervention
 
       // Add loading state
       image.addEventListener('loadstart', () => {
