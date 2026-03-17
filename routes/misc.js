@@ -170,7 +170,7 @@ router.get('/venues/near', async (req, res) => {
     logger.error('Venue proximity search error:', error);
     res.status(500).json({
       error: 'Failed to search venues',
-      details: error.message,
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined,
     });
   }
 });
