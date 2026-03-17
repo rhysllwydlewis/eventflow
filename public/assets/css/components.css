@@ -435,6 +435,7 @@
 
 .toast-content {
   flex: 1;
+  min-width: 0;
 }
 
 .toast-title {
@@ -886,6 +887,7 @@ html[data-theme='dark'] .badge.subtle {
 
 .alert-content {
   flex: 1;
+  min-width: 0;
 }
 
 .alert-title {
@@ -1585,6 +1587,7 @@ html[data-theme='dark'] .footer-theme-btn .theme-icon-moon {
 
 .cookie-consent-message {
   flex: 1;
+  min-width: 0;
 }
 
 .cookie-consent-message p {
@@ -1684,6 +1687,9 @@ html[data-theme='dark'] .footer-theme-btn .theme-icon-moon {
 @media (max-width: 767px) {
   .cookie-consent-banner {
     padding: 1.25rem 1rem;
+    /* Sit above the fixed bottom navigation bar (~64px) */
+    bottom: 64px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 
   .cookie-consent-message p {
@@ -3579,6 +3585,7 @@ html[data-theme='dark'] .skeleton-card {
 
 .ef-feature__content {
   flex: 1;
+  min-width: 0;
 }
 
 .ef-feature__title {
@@ -3608,7 +3615,7 @@ html[data-theme='dark'] .skeleton-card {
 
 .ef-newsletter-form__input {
   flex: 1;
-  min-width: 250px;
+  min-width: 200px;
   padding: var(--ef-space-4, 16px) var(--ef-space-5, 24px);
   border: none;
   border-radius: var(--ef-radius-md, 10px);
