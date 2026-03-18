@@ -60,50 +60,57 @@
 
   let currentTestimonial = 0;
   let carouselInterval = null;
-  const testimonials = document.querySelectorAll('.ef-testimonial');
-  const dots = document.querySelectorAll('.ef-testimonial-dot');
 
-  function showTestimonial(index) {
-    // Hide all testimonials
-    testimonials.forEach(t => {
-      t.classList.remove('active');
-      t.setAttribute('aria-hidden', 'true');
+  function initTestimonialsCarousel() {
+    // Re-query elements each time so dynamic API content is picked up
+    const testimonials = document.querySelectorAll('.ef-testimonial');
+    const dots = document.querySelectorAll('.ef-testimonial-dot');
+
+    if (testimonials.length === 0 || dots.length === 0) {
+      return;
+    }
+
+    // Stop any existing auto-rotation before re-wiring
+    if (carouselInterval) {
+      clearInterval(carouselInterval);
+      carouselInterval = null;
+    }
+    currentTestimonial = 0;
+
+    function showTestimonial(index) {
+      testimonials.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-hidden', 'true');
+      });
+
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+        dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
+      });
+
+      testimonials[index].classList.add('active');
+      testimonials[index].setAttribute('aria-hidden', 'false');
+      currentTestimonial = index;
+    }
+
+    // Dot click handlers (re-attach to new dot elements)
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', () => {
+        showTestimonial(index);
+        if (carouselInterval) {
+          clearInterval(carouselInterval);
+        }
+        startAutoRotation();
+      });
     });
 
-    // Update dots
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('active', i === index);
-      dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
-    });
+    function startAutoRotation() {
+      carouselInterval = setInterval(() => {
+        currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+        showTestimonial(currentTestimonial);
+      }, 5000);
+    }
 
-    // Show selected testimonial
-    testimonials[index].classList.add('active');
-    testimonials[index].setAttribute('aria-hidden', 'false');
-    currentTestimonial = index;
-  }
-
-  // Dot click handlers
-  dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => {
-      showTestimonial(index);
-      // Reset interval on manual interaction
-      if (carouselInterval) {
-        clearInterval(carouselInterval);
-      }
-      startAutoRotation();
-    });
-  });
-
-  // Auto-rotate testimonials every 5 seconds
-  function startAutoRotation() {
-    carouselInterval = setInterval(() => {
-      currentTestimonial = (currentTestimonial + 1) % testimonials.length;
-      showTestimonial(currentTestimonial);
-    }, 5000);
-  }
-
-  // Start auto-rotation on load
-  if (testimonials.length > 0 && dots.length > 0) {
     startAutoRotation();
 
     // Pause rotation when section is not visible (Intersection Observer)
@@ -128,6 +135,14 @@
       }
     }
   }
+
+  // Initial carousel setup using static HTML testimonials
+  initTestimonialsCarousel();
+
+  // Re-initialise if home-init.js replaces the carousel content with API data
+  document.addEventListener('testimonialsUpdated', () => {
+    initTestimonialsCarousel();
+  });
 
   // ========================================
   // INITIALIZE ON DOM READY
