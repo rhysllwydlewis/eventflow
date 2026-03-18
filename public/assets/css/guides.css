@@ -1373,8 +1373,8 @@
     gap: 8px;
   }
   .guides-hero__cta {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: 120px;
     justify-content: center;
     padding: 10px 12px;
     font-size: 0.85rem;
