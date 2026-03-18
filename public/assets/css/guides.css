@@ -660,6 +660,7 @@
   transition: all var(--guides-transition);
   white-space: nowrap;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .guides-chip:hover {
