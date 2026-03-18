@@ -3049,7 +3049,6 @@ function updateStatsUI(stats) {
   // Update stat counters with real data
   const statItems = document.querySelectorAll('.ef-stat');
   if (statItems.length >= 4) {
-    // Update counters with real data
     const counters = [
       { value: stats.suppliersVerified, suffix: '+' },
       { value: stats.packagesApproved, suffix: '+' },
@@ -3060,8 +3059,25 @@ function updateStatsUI(stats) {
     statItems.forEach((item, index) => {
       const counterEl = item.querySelector('.ef-stat__number');
       if (counterEl && counters[index]) {
-        counterEl.setAttribute('data-counter', counters[index].value);
-        counterEl.setAttribute('data-suffix', counters[index].suffix);
+        const newValue = counters[index].value;
+        const suffix = counters[index].suffix;
+
+        // Update the data attributes regardless
+        counterEl.setAttribute('data-counter', newValue);
+        counterEl.setAttribute('data-suffix', suffix);
+
+        if (newValue > 0) {
+          if (counterEl.dataset.counted) {
+            // The IntersectionObserver already ran an animation with fallback
+            // values — update the displayed text directly to show real data
+            // without starting a conflicting animation.
+            counterEl.textContent = `${newValue.toLocaleString()}${suffix}`;
+          } else {
+            // Counter hasn't run yet; mark it so the IntersectionObserver
+            // picks up the updated data-counter value when the section scrolls
+            // into view (already handles this via data-counter attribute).
+          }
+        }
       }
     });
   }
@@ -3346,20 +3362,21 @@ async function fetchGuides() {
 
 async function fetchTestimonials() {
   const section = document.getElementById('testimonials-section');
-  const container = document.getElementById('testimonials-carousel');
+  // Correct container ID matches the HTML element id="ef-testimonials-carousel"
+  const container = document.getElementById('ef-testimonials-carousel');
 
   if (!container || !section) {
+    // Static HTML testimonials are already in place — nothing to do
     return;
   }
 
   try {
-    const response = await fetch('/api/v1/reviews?limit=6&sort=rating');
+    const response = await fetch('/api/v1/reviews?limit=3&sort=rating');
 
     if (!response.ok) {
-      // Gracefully hide section if endpoint fails
-      section.style.display = 'none';
+      // Keep the static HTML testimonials as fallback instead of hiding the section
       if (isDevelopmentEnvironment()) {
-        console.log('[Testimonials] API returned non-ok status, hiding section');
+        console.log('[Testimonials] API returned non-ok status, showing static testimonials');
       }
       return;
     }
@@ -3368,9 +3385,9 @@ async function fetchTestimonials() {
     const reviews = data.reviews || [];
 
     if (reviews.length === 0) {
-      section.style.display = 'none';
+      // Keep the static HTML testimonials as fallback
       if (isDevelopmentEnvironment()) {
-        console.log('[Testimonials] No reviews available, hiding section');
+        console.log('[Testimonials] No reviews from API, showing static testimonials');
       }
       return;
     }
@@ -3382,42 +3399,44 @@ async function fetchTestimonials() {
       return div.innerHTML;
     };
 
-    // Render testimonials in a grid
-    container.innerHTML = `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
-        ${reviews
-          .slice(0, 3)
-          .map(
-            review => `
-          <div class="card" style="padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-              ${'⭐'.repeat(review.rating || 5)}
-            </div>
-            <p style="font-style: italic; color: #374151; margin-bottom: 16px; line-height: 1.6;">
-              "${escape((review.comment || '').substring(0, 150))}${(review.comment || '').length > 150 ? '...' : ''}"
-            </p>
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--ink, #0b8073); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
-                ${escape((review.customerName || 'A').charAt(0).toUpperCase())}
-              </div>
-              <div>
-                <div style="font-weight: 600; color: #111827;">${escape(review.customerName || 'Anonymous')}</div>
-                <div class="small" style="color: #6b7280;">${escape(review.supplierName || '')}</div>
-              </div>
-            </div>
+    // Render real reviews using the ef-testimonial carousel CSS classes so
+    // the existing carousel JS in home.js and homepage-enhancements.css styles apply.
+    const displayed = reviews.slice(0, 3);
+    container.innerHTML = displayed
+      .map(
+        (review, i) => `
+      <div class="ef-testimonial${i === 0 ? ' active' : ''}" aria-hidden="${i === 0 ? 'false' : 'true'}">
+        <div class="ef-testimonial-content">
+          <div class="ef-testimonial-stars" aria-label="${review.rating || 5} out of 5 stars">${'★'.repeat(review.rating || 5)}${'☆'.repeat(5 - (review.rating || 5))}</div>
+          <p class="ef-testimonial-quote">"${escape((review.comment || '').substring(0, 200))}${(review.comment || '').length > 200 ? '...' : ''}"</p>
+          <div class="ef-testimonial-author">
+            <strong>${escape(review.customerName || 'Anonymous')}</strong>
+            <span class="ef-testimonial-event">${escape(review.supplierName || '')}</span>
           </div>
-        `
-          )
-          .join('')}
+        </div>
       </div>
-    `;
+    `
+      )
+      .join('');
 
-    section.style.display = 'block';
+    // Update dot navigation to match the number of rendered reviews
+    const dotsContainer = document.querySelector('.ef-testimonials-dots');
+    if (dotsContainer && displayed.length !== dotsContainer.querySelectorAll('.ef-testimonial-dot').length) {
+      dotsContainer.innerHTML = displayed
+        .map(
+          (_, i) =>
+            `<button type="button" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}" aria-label="View testimonial ${i + 1}" data-testimonial="${i}" class="ef-testimonial-dot${i === 0 ? ' active' : ''}"></button>`
+        )
+        .join('');
+    }
+
+    // Dispatch event so home.js can reinitialise its carousel references
+    section.dispatchEvent(new CustomEvent('testimonialsUpdated', { bubbles: true }));
   } catch (error) {
     if (isDevelopmentEnvironment()) {
       console.error('[Testimonials] Failed to load:', error);
     }
-    section.style.display = 'none';
+    // Keep static HTML testimonials on error — do not hide the section
   }
 }
 

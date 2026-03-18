@@ -419,6 +419,10 @@ a:hover {
   .collage .frame:hover,
   .card:hover,
   .pack:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}
 
 /* ========================================
    TESTIMONIALS CAROUSEL STYLES
