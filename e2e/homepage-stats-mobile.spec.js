@@ -97,11 +97,18 @@ test.describe('Homepage Stats Section - Mobile Layout', () => {
     const count = await statItems.count();
     expect(count).toBeGreaterThan(0);
 
+    // Sub-pixel rounding from the browser layout engine can cause getBoundingClientRect()
+    // to report values that are off by up to 1–2px. Allow a small tolerance so the test
+    // doesn't flake on fractional pixel values.
+    const OVERFLOW_TOLERANCE_PX = 2;
+
     for (let i = 0; i < count; i++) {
       const itemBox = await statItems.nth(i).boundingBox();
       if (itemBox) {
-        // Item right edge must not exceed section right edge (with 2px tolerance)
-        expect(itemBox.x + itemBox.width).toBeLessThanOrEqual(sectionBox.x + sectionBox.width + 2);
+        // Item right edge must not exceed section right edge
+        expect(itemBox.x + itemBox.width).toBeLessThanOrEqual(
+          sectionBox.x + sectionBox.width + OVERFLOW_TOLERANCE_PX
+        );
       }
     }
   });
