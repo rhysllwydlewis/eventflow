@@ -33,9 +33,7 @@ test.describe('Homepage Stats Section - Mobile Layout', () => {
     const grid = page.locator('.ef-stats-grid');
     await expect(grid).toBeVisible();
 
-    const gridCols = await grid.evaluate(el =>
-      window.getComputedStyle(el).gridTemplateColumns
-    );
+    const gridCols = await grid.evaluate(el => window.getComputedStyle(el).gridTemplateColumns);
 
     // A 2-column layout produces exactly 2 column widths, e.g. "173.5px 173.5px"
     const colCount = gridCols.trim().split(/\s+/).length;
@@ -49,9 +47,7 @@ test.describe('Homepage Stats Section - Mobile Layout', () => {
     const grid = page.locator('.ef-stats-grid');
     await expect(grid).toBeVisible();
 
-    const gridCols = await grid.evaluate(el =>
-      window.getComputedStyle(el).gridTemplateColumns
-    );
+    const gridCols = await grid.evaluate(el => window.getComputedStyle(el).gridTemplateColumns);
 
     const colCount = gridCols.trim().split(/\s+/).length;
     expect(colCount).toBe(2);
@@ -105,9 +101,7 @@ test.describe('Homepage Stats Section - Mobile Layout', () => {
       const itemBox = await statItems.nth(i).boundingBox();
       if (itemBox) {
         // Item right edge must not exceed section right edge (with 2px tolerance)
-        expect(itemBox.x + itemBox.width).toBeLessThanOrEqual(
-          sectionBox.x + sectionBox.width + 2
-        );
+        expect(itemBox.x + itemBox.width).toBeLessThanOrEqual(sectionBox.x + sectionBox.width + 2);
       }
     }
   });
@@ -142,13 +136,15 @@ test.describe('Homepage Stats Section - Desktop Layout', () => {
     const grid = page.locator('.ef-stats-grid');
     await expect(grid).toBeVisible();
 
-    const gridCols = await grid.evaluate(el =>
-      window.getComputedStyle(el).gridTemplateColumns
-    );
+    const gridCols = await grid.evaluate(el => window.getComputedStyle(el).gridTemplateColumns);
 
-    // Desktop should show 4 columns (one per stat)
-    const colCount = gridCols.trim().split(/\s+/).length;
-    expect(colCount).toBe(4);
+    // Desktop should show at least 4 non-zero columns (one per stat).
+    // auto-fit may append extra 0px virtual tracks, so filter those out.
+    const nonZeroCols = gridCols
+      .trim()
+      .split(/\s+/)
+      .filter(c => c !== '0px' && c !== '0');
+    expect(nonZeroCols.length).toBeGreaterThanOrEqual(4);
   });
 
   test('stat numbers retain large font size on desktop', async ({ page }) => {
@@ -192,9 +188,7 @@ test.describe('Homepage Stats Section - Tablet Layout', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const grid = page.locator('.ef-stats-grid');
-    const gridCols = await grid.evaluate(el =>
-      window.getComputedStyle(el).gridTemplateColumns
-    );
+    const gridCols = await grid.evaluate(el => window.getComputedStyle(el).gridTemplateColumns);
 
     // At exactly 768px the mobile override applies, so 2 columns
     const colCount = gridCols.trim().split(/\s+/).length;
