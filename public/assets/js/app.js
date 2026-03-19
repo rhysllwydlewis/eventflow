@@ -10,14 +10,9 @@
  */
 function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
   // Maximum allowed file size (5 MB — matches the server-side upload validation limit)
-  var MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-  // Strictly allowed image MIME types
-  var ALLOWED_TYPES = {
-    'image/jpeg': true,
-    'image/png': true,
-    'image/webp': true,
-    'image/gif': true,
-  };
+  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+  // Strictly allowed image MIME types (mirrors KNOWN_PLACEHOLDERS_SERVER pattern server-side)
+  const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
   const drop = document.getElementById(dropId);
   if (!drop) {
@@ -33,9 +28,9 @@ function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
   /** Format a byte count as a human-readable string (e.g. "4.2MB" or "512KB"). */
   function formatBytes(bytes) {
     if (bytes >= 1024 * 1024) {
-      return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+      return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
     }
-    return Math.round(bytes / 1024) + 'KB';
+    return `${Math.round(bytes / 1024)}KB`;
   }
 
   /** Show a brief inline error message below the drop zone. */
@@ -50,9 +45,9 @@ function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
     }
     const err = document.createElement('p');
     err.className = 'photo-drop-error';
-    err.textContent = '\u26a0\ufe0f ' + message;
+    err.textContent = `\u26a0\ufe0f ${message}`;
     parent.insertBefore(err, drop.nextSibling);
-    setTimeout(function () {
+    setTimeout(() => {
       if (err.parentNode) {
         err.remove();
       }
@@ -81,7 +76,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
       return;
     }
     const wrapper = document.createElement('div');
-    wrapper.className = 'photo-preview-item' + (errorMsg ? ' photo-preview-failed' : '');
+    wrapper.className = `photo-preview-item${errorMsg ? ' photo-preview-failed' : ''}`;
 
     if (dataUrl) {
       const img = document.createElement('img');
@@ -103,7 +98,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
     removeBtn.className = 'photo-preview-remove';
     removeBtn.setAttribute('aria-label', 'Remove image');
     removeBtn.textContent = '\u2715';
-    removeBtn.addEventListener('click', function () {
+    removeBtn.addEventListener('click', () => {
       wrapper.remove();
       // For successful (non-failed) items, also notify the caller so it can
       // clear the underlying input value or remove the URL from storage.
@@ -122,8 +117,10 @@ function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
     }
     Array.prototype.slice.call(files).forEach(file => {
       // Validate MIME type
-      if (!file.type || !ALLOWED_TYPES[file.type]) {
-        showError(`\u201c${file.name}\u201d is not a supported image type. Please use JPEG, PNG, WebP or GIF.`);
+      if (!file.type || !ALLOWED_TYPES.has(file.type)) {
+        showError(
+          `\u201c${file.name}\u201d is not a supported image type. Please use JPEG, PNG, WebP or GIF.`
+        );
         addPreviewItem(null, 'Invalid file type');
         return;
       }
@@ -3110,14 +3107,28 @@ async function initDashSupplier() {
         // Create image element safely to avoid XSS
         const imgDiv = document.createElement('div');
         imgDiv.className = 'photo-preview-item';
-        imgDiv.style.cssText = 'width:100%;height:150px;border-radius:8px;overflow:hidden;';
+        imgDiv.style.cssText = 'width:100%;height:150px;border-radius:8px;position:relative;';
 
         const img = document.createElement('img');
         img.src = supplier.bannerUrl; // Browser automatically sanitizes
         img.alt = 'Banner preview';
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:8px;';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'photo-preview-remove';
+        removeBtn.setAttribute('aria-label', 'Remove banner image');
+        removeBtn.textContent = '\u2715';
+        removeBtn.addEventListener('click', () => {
+          imgDiv.remove();
+          const bannerInput = document.getElementById('sup-banner');
+          if (bannerInput) {
+            bannerInput.value = '';
+          }
+        });
 
         imgDiv.appendChild(img);
+        imgDiv.appendChild(removeBtn);
         bannerPreview.innerHTML = ''; // Clear existing content
         bannerPreview.appendChild(imgDiv);
       }
