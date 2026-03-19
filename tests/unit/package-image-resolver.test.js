@@ -41,7 +41,24 @@ describe('isPlaceholderImage', () => {
   it('returns false for an absolute https URL', () => {
     expect(isPlaceholderImage('https://example.com/photo.jpg')).toBe(false);
   });
-});
+
+  it('returns true for a data: URL (too large / sanitized away by clients)', () => {
+    expect(isPlaceholderImage('data:image/jpeg;base64,/9j/4AAQSkZJRgAB')).toBe(true);
+  });
+
+  it('returns true for a data: URL with mixed case protocol', () => {
+    expect(isPlaceholderImage('DATA:image/png;base64,iVBORw0KGgo=')).toBe(true);
+  });
+
+  it('returns true for a whitespace-only string', () => {
+    expect(isPlaceholderImage('   ')).toBe(true);
+  });
+
+  it('returns false for a Cloudinary https URL (absolute URL must not be mangled)', () => {
+    expect(
+      isPlaceholderImage('https://res.cloudinary.com/eventflow/image/upload/v123/photo.jpg')
+    ).toBe(false);
+  });
 
 // ─── resolvePackageImage ───────────────────────────────────────────────────
 
@@ -176,6 +193,48 @@ describe('resolvePackageImage', () => {
 
     it('returns placeholder when gallery is not an array', () => {
       expect(resolvePackageImage({ gallery: 'not-an-array' })).toBe(PLACEHOLDER_PACKAGE_IMAGE);
+    });
+  });
+
+  describe('data: URL handling', () => {
+    it('skips pkg.image data: URL and falls back to gallery', () => {
+      const pkg = {
+        image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgAB',
+        gallery: ['/uploads/packages/gallery1.jpg'],
+      };
+      expect(resolvePackageImage(pkg)).toBe('/uploads/packages/gallery1.jpg');
+    });
+
+    it('returns placeholder when pkg.image is a data: URL and gallery is empty', () => {
+      const pkg = { image: 'data:image/png;base64,iVBORw0KGgo=', gallery: [] };
+      expect(resolvePackageImage(pkg)).toBe(PLACEHOLDER_PACKAGE_IMAGE);
+    });
+
+    it('skips data: URLs inside gallery array', () => {
+      const pkg = {
+        gallery: [
+          'data:image/jpeg;base64,/9j/AAAB',
+          '/uploads/packages/real.jpg',
+        ],
+      };
+      expect(resolvePackageImage(pkg)).toBe('/uploads/packages/real.jpg');
+    });
+  });
+
+  describe('absolute https:// URL handling', () => {
+    it('returns a Cloudinary https URL directly (must not be corrupted)', () => {
+      const cdnUrl = 'https://res.cloudinary.com/eventflow/image/upload/v123/photo.jpg';
+      const pkg = { image: cdnUrl };
+      expect(resolvePackageImage(pkg)).toBe(cdnUrl);
+    });
+
+    it('falls back to Cloudinary gallery URL when pkg.image is placeholder', () => {
+      const cdnUrl = 'https://res.cloudinary.com/eventflow/image/upload/v123/gallery.jpg';
+      const pkg = {
+        image: PLACEHOLDER_PACKAGE_IMAGE,
+        gallery: [{ url: cdnUrl }],
+      };
+      expect(resolvePackageImage(pkg)).toBe(cdnUrl);
     });
   });
 });

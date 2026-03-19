@@ -482,12 +482,20 @@ function renderPackageFallback(container, items) {
     if (!url) {
       return '/assets/images/placeholders/package-event.svg';
     }
-    const urlStr = String(url);
-    // Block javascript:, data:, vbscript:, and file: URLs
+    const urlStr = String(url).trim();
+    if (!urlStr) {
+      return '/assets/images/placeholders/package-event.svg';
+    }
+    // Block dangerous protocols to prevent XSS.
+    // NOTE: do NOT call escape() here — it percent-encodes the colon in "https:"
+    // turning "https://cdn.example.com/photo.jpg" into "https%3A//cdn.example.com/photo.jpg"
+    // which the browser cannot load, causing every absolute-URL image to fall back to
+    // the placeholder (the root cause of the "always shows placeholder" bug).
     if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
       return '/assets/images/placeholders/package-event.svg';
     }
-    return escape(urlStr);
+    // Safe for use in <img src>: protocol validated above, no further encoding needed.
+    return urlStr;
   };
 
   // Validate slug for URL safety
@@ -515,14 +523,18 @@ function renderPackageFallback(container, items) {
 
   container.innerHTML = items
     .map(item => {
-      const title = escape(item.title || 'Untitled Package');
-      const supplierName = escape(item.supplier_name || '');
-      const description = escape(item.description || '');
+      // Use escapeHtml (defined in app.js) for safe HTML text content.
+      // Using the native escape() would URL-encode the strings (e.g. "&" → "%26"),
+      // producing garbled visible text and incorrect alt attributes.
+      const _esc = typeof escapeHtml === 'function' ? escapeHtml : s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const title = _esc(item.title || 'Untitled Package');
+      const supplierName = _esc(item.supplier_name || '');
+      const description = _esc(item.description || '');
       const truncDesc =
         description.length > 100 ? `${description.substring(0, 100)}...` : description;
       const rawPrice = formatPrice(item.price_display || item.price);
       const price = rawPrice
-        ? escape(rawPrice)
+        ? _esc(rawPrice)
         : '<span class="price-not-set">Price not set</span>';
       // Resolve the best available image via the shared utility when loaded,
       // otherwise fall back to the same inline strategy for resilience.
