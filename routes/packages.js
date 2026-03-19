@@ -438,6 +438,7 @@ router.post(
       updateFields.image = url;
     }
     await dbUnified.updateOne('packages', { id: req.params.id }, { $set: updateFields });
+    suppliersRouter.invalidatePackageCaches();
     res.json({ ok: true, url });
   }
 );
