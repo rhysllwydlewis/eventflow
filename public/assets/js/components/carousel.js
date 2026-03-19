@@ -337,7 +337,7 @@ class Carousel {
     // Format price with £ symbol if it's a number
     const formatPrice = priceDisplay => {
       if (!priceDisplay) {
-        return 'Contact for pricing';
+        return 'Price not set';
       }
       const priceStr = String(priceDisplay);
       // If it's a plain number (integer or decimal), format as £X

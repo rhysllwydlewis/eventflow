@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? /^\d+(\.\d+)?$/.test(String(rawPrice))
           ? `£${rawPrice}`
           : rawPrice
-        : 'Contact for price';
+        : 'Price not set';
       document.getElementById('package-price').textContent = formatted;
       if (pkg.location) {
         document.getElementById('package-location').innerHTML = `📍 ${pkg.location}`;

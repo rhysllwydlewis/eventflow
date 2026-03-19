@@ -80,7 +80,8 @@ function isFeaturedPackage(pkg) {
 }
 
 /**
- * All known placeholder image paths (server-side mirror of the client-side set).
+ * All known placeholder image paths (server-side mirror of the client-side KNOWN_PLACEHOLDERS
+ * set in public/assets/js/utils/package-image-resolver.js).
  * Extend this set if additional placeholder variants are added to the repo.
  * @type {Set<string>}
  */

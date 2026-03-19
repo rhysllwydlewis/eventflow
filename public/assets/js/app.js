@@ -11,7 +11,8 @@
 function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
   // Maximum allowed file size (5 MB — matches the server-side upload validation limit)
   const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-  // Strictly allowed image MIME types (mirrors KNOWN_PLACEHOLDERS_SERVER pattern server-side)
+  // Strictly allowed image MIME types. Extend here to support new formats.
+  // client-side mirror of the server-side allowed-types list in routes/packages.js
   const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
   const drop = document.getElementById(dropId);
@@ -178,7 +179,8 @@ function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
   drop.addEventListener('click', () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/jpeg,image/png,image/webp,image/gif';
+    // Derive accept from ALLOWED_TYPES so there's a single source of truth
+    input.accept = Array.from(ALLOWED_TYPES).join(',');
     input.multiple = true;
     input.addEventListener('change', () => {
       handleFiles(input.files);
@@ -3506,6 +3508,10 @@ async function initDashSupplier() {
       }
       if (!payload.eventTypes || payload.eventTypes.length === 0) {
         alert('Please select at least one event type (Wedding or Other)');
+        return;
+      }
+      if (!payload.price || !String(payload.price).trim()) {
+        alert('Please enter a price for this package. A specific price is required.');
         return;
       }
 

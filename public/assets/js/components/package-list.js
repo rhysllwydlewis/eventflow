@@ -442,7 +442,7 @@ class PackageList {
     const title = escapeHtml(pkg.title);
     const description = escapeHtml(pkg.description || '');
     // Use price_display as primary source, fallback to price for consistency across all views
-    const priceValue = pkg.price_display || pkg.price || 'Contact for price';
+    const priceValue = pkg.price_display || pkg.price || 'Price not set';
     const price = escapeHtml(priceValue);
     const location = pkg.location ? escapeHtml(pkg.location) : '';
 
