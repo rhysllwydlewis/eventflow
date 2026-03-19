@@ -1,4 +1,14 @@
-function efSetupPhotoDropZone(dropId, previewId, onImage) {
+/**
+ * Set up a photo drag-and-drop zone with validation, preview, and removal support.
+ *
+ * @param {string}        dropId    - ID of the drop-zone element.
+ * @param {string|null}   previewId - ID of the preview container element (optional).
+ * @param {Function}      onImage   - Called with (dataUrl, file) when a valid file is selected.
+ * @param {Function|null} onRemove  - Optional. Called with (dataUrl) when a preview item's ✕
+ *                                    button is clicked for a successfully loaded image, allowing
+ *                                    callers to clear the underlying input/storage.
+ */
+function efSetupPhotoDropZone(dropId, previewId, onImage, onRemove) {
   // Maximum allowed file size (5 MB — matches the server-side upload validation limit)
   var MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
   // Strictly allowed image MIME types
@@ -40,7 +50,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
     }
     const err = document.createElement('p');
     err.className = 'photo-drop-error';
-    err.textContent = message;
+    err.textContent = '\u26a0\ufe0f ' + message;
     parent.insertBefore(err, drop.nextSibling);
     setTimeout(function () {
       if (err.parentNode) {
@@ -76,6 +86,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
     if (dataUrl) {
       const img = document.createElement('img');
       img.src = dataUrl;
+      img.alt = '';
       wrapper.appendChild(img);
     }
 
@@ -94,6 +105,11 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
     removeBtn.textContent = '\u2715';
     removeBtn.addEventListener('click', function () {
       wrapper.remove();
+      // For successful (non-failed) items, also notify the caller so it can
+      // clear the underlying input value or remove the URL from storage.
+      if (!errorMsg && dataUrl && typeof onRemove === 'function') {
+        onRemove(dataUrl);
+      }
     });
     wrapper.appendChild(removeBtn);
 
@@ -3523,37 +3539,73 @@ async function initDashSupplier() {
   }
 
   // Drag & drop photo uploads
-  efSetupPhotoDropZone('sup-photo-drop', 'sup-photo-preview', dataUrl => {
-    const area = document.getElementById('sup-photos');
-    if (!area) {
-      return;
+  efSetupPhotoDropZone(
+    'sup-photo-drop',
+    'sup-photo-preview',
+    dataUrl => {
+      const area = document.getElementById('sup-photos');
+      if (!area) {
+        return;
+      }
+      const current = (area.value || '')
+        .split(/\r?\n/)
+        .map(x => {
+          return x.trim();
+        })
+        .filter(Boolean);
+      current.push(dataUrl);
+      area.value = current.join('\n');
+    },
+    dataUrl => {
+      // Remove this specific data URL from the multiline textarea
+      const area = document.getElementById('sup-photos');
+      if (!area || !dataUrl) {
+        return;
+      }
+      const updated = (area.value || '')
+        .split(/\r?\n/)
+        .map(x => x.trim())
+        .filter(x => x && x !== dataUrl);
+      area.value = updated.join('\n');
     }
-    const current = (area.value || '')
-      .split(/\r?\n/)
-      .map(x => {
-        return x.trim();
-      })
-      .filter(Boolean);
-    current.push(dataUrl);
-    area.value = current.join('\n');
-  });
+  );
 
   // Banner image upload
-  efSetupPhotoDropZone('sup-banner-drop', 'sup-banner-preview', dataUrl => {
-    const input = document.getElementById('sup-banner');
-    if (!input) {
-      return;
+  efSetupPhotoDropZone(
+    'sup-banner-drop',
+    'sup-banner-preview',
+    dataUrl => {
+      const input = document.getElementById('sup-banner');
+      if (!input) {
+        return;
+      }
+      input.value = dataUrl;
+    },
+    () => {
+      const input = document.getElementById('sup-banner');
+      if (input) {
+        input.value = '';
+      }
     }
-    input.value = dataUrl;
-  });
+  );
 
-  efSetupPhotoDropZone('pkg-photo-drop', 'pkg-photo-preview', dataUrl => {
-    const input = document.getElementById('pkg-image');
-    if (!input) {
-      return;
+  efSetupPhotoDropZone(
+    'pkg-photo-drop',
+    'pkg-photo-preview',
+    dataUrl => {
+      const input = document.getElementById('pkg-image');
+      if (!input) {
+        return;
+      }
+      input.value = dataUrl;
+    },
+    () => {
+      const input = document.getElementById('pkg-image');
+      if (input) {
+        input.value = '';
+      }
     }
-    input.value = dataUrl;
-  });
+  );
 
   // Supplier billing card
   (async () => {

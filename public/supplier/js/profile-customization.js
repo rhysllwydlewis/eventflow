@@ -352,12 +352,22 @@
     // Initialize banner upload drop zone
     // efSetupPhotoDropZone is defined in app.js which is loaded before this script
     if (typeof window.efSetupPhotoDropZone === 'function') {
-      window.efSetupPhotoDropZone('sup-banner-drop', 'sup-banner-preview', dataUrl => {
-        const input = document.getElementById('sup-banner');
-        if (input) {
-          input.value = dataUrl;
+      window.efSetupPhotoDropZone(
+        'sup-banner-drop',
+        'sup-banner-preview',
+        dataUrl => {
+          const input = document.getElementById('sup-banner');
+          if (input) {
+            input.value = dataUrl;
+          }
+        },
+        () => {
+          const input = document.getElementById('sup-banner');
+          if (input) {
+            input.value = '';
+          }
         }
-      });
+      );
     }
 
     // Initialize Pexels stock photo selector
