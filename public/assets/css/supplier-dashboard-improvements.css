@@ -5880,3 +5880,10 @@ body:not(.supplier-dashboard-page) .section > .container {
   color: #fff;
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
 }
+
+/* ── "Price not set" muted text style ───────────────────────────────────── */
+.price-not-set {
+  color: var(--ef-text-muted, #667085);
+  font-weight: 400;
+  font-style: italic;
+}

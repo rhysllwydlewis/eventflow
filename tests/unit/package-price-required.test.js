@@ -160,27 +160,33 @@ describe('POST /me/packages/:id/photos — auto-sync pkg.image', () => {
 
 describe('Display components — "Price not set" fallback', () => {
   it('carousel.js shows "Price not set" when price is missing', () => {
-    expect(carouselContent).toContain("return 'Price not set'");
+    // Now rendered as a styled span rather than bare text
+    expect(carouselContent).toContain('Price not set');
+    expect(carouselContent).toContain('price-not-set');
     expect(carouselContent).not.toContain('Contact for pricing');
   });
 
   it('package-list.js falls back to "Price not set"', () => {
-    expect(packageListContent).toContain("'Price not set'");
+    expect(packageListContent).toContain('Price not set');
+    expect(packageListContent).toContain('price-not-set');
     expect(packageListContent).not.toContain('Contact for price');
   });
 
   it('home-init.js shows "Price not set" when price is missing', () => {
-    expect(homeInitContent).toContain("return 'Price not set'");
+    expect(homeInitContent).toContain('Price not set');
+    expect(homeInitContent).toContain('price-not-set');
     expect(homeInitContent).not.toContain('Contact for pricing');
   });
 
   it('package-init.js shows "Price not set" when price is missing', () => {
     expect(packageInitContent).toContain("'Price not set'");
+    expect(packageInitContent).toContain('price-not-set');
     expect(packageInitContent).not.toContain('Contact for price');
   });
 
   it('start-wizard.js shows "Price not set" when price is missing', () => {
-    expect(startWizardContent).toContain("'Price not set'");
+    expect(startWizardContent).toContain('Price not set');
+    expect(startWizardContent).toContain('price-not-set');
     expect(startWizardContent).not.toContain('Contact for pricing');
   });
 });
@@ -195,6 +201,16 @@ describe('dashboard-supplier.html — price input required attribute', () => {
 
   it('price label marks the field as required with an asterisk indicator', () => {
     expect(dashboardHtml).toContain('form-required');
+  });
+
+  it('pkg-title input has required attribute', () => {
+    // Title is server-side required — the HTML field should also prevent empty submission.
+    expect(dashboardHtml).toMatch(/id="pkg-title"[^>]*required|required[^>]*id="pkg-title"/);
+  });
+
+  it('title label marks the field as required with an asterisk indicator', () => {
+    // The label for pkg-title should include form-required for the *
+    expect(dashboardHtml).toMatch(/pkg-title[\s\S]{0,200}form-required/);
   });
 });
 

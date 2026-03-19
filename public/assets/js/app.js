@@ -3511,7 +3511,7 @@ async function initDashSupplier() {
         return;
       }
       if (!payload.price || !String(payload.price).trim()) {
-        alert('Please enter a price for this package. A specific price is required.');
+        alert('Please enter a price for this package.');
         return;
       }
 
