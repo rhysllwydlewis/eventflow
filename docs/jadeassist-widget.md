@@ -238,10 +238,42 @@ The teaser bubble:
 - Can be clicked to open the chat (opens chat and dismisses teaser)
 - Supports keyboard navigation: **Enter/Space** opens chat, **Escape** dismisses
 - Emits analytics custom events (see [Analytics Integration](#analytics-integration))
-- Auto-dismisses after 15 s
-- Dismissal state persists for 1 day in localStorage
+- **Auto-dismisses after 10 s** if the user does not interact with it
+- **Dismissal persists for 1 day** in `localStorage` — teaser will not reappear for 24 h after it is dismissed or after the chat is opened
+- Disappears immediately when the chat opens (via any path: teaser click, widget icon click, or programmatic open)
 - Mobile-friendly copy (shorter text on screens <768 px)
 - Safe-area inset support for iOS notch/Dynamic Island devices
+
+#### How dismissal works
+
+When the user:
+
+1. **Clicks the teaser** — teaser is dismissed and chat opens
+2. **Clicks the widget launcher icon** — teaser is dismissed immediately (handled by `openChat()` and a background watcher that polls for chat open state every 500 ms)
+3. **Presses Escape on the teaser** — teaser is dismissed, chat stays closed
+4. **Clicks the "×" close button** — teaser is dismissed, chat stays closed
+5. **Waits 10 s without interacting** — teaser auto-dismisses
+
+All dismissal paths store a timestamp in `localStorage` under the key `jadeassist-teaser-dismissed`. The teaser is not shown again until that timestamp is more than 24 h old.
+
+#### Testing teaser behavior
+
+To reset the dismissal state and see the teaser again:
+
+```javascript
+// In browser DevTools console:
+localStorage.removeItem('jadeassist-teaser-dismissed');
+location.reload();
+```
+
+To test a specific A/B variant:
+
+```javascript
+// Set variant (A, B, or C)
+localStorage.setItem('jadeassist-teaser-variant', 'B');
+localStorage.removeItem('jadeassist-teaser-dismissed');
+location.reload();
+```
 
 ## Widget Library (Self-Hosted)
 
@@ -340,9 +372,12 @@ If the chat opens on page load unexpectedly:
    - [ ] Avatar image loads successfully
    - [ ] Chat is closed initially
    - [ ] Teaser appears after ~500ms (if not dismissed recently)
-   - [ ] Clicking launcher opens chat
+   - [ ] Teaser has EventFlow brand styling (teal left border, matching font)
+   - [ ] Teaser auto-dismisses after ~10 s
+   - [ ] Clicking launcher opens chat **and teaser disappears**
    - [ ] Clicking teaser opens chat
    - [ ] Clicking teaser "×" dismisses without opening chat
+   - [ ] After dismissal, teaser does not reappear for 24 h
    - [ ] Tab to teaser → Enter/Space opens chat
    - [ ] Tab to teaser → Escape dismisses
    - [ ] Tab to teaser → Tab again → close button focused → Enter dismisses
@@ -390,12 +425,13 @@ This verifies:
 ### Key Constants
 
 ```javascript
-MAX_RETRIES: 50; // Widget load retry attempts (5 seconds @ 100ms interval)
-RETRY_INTERVAL: 100; // Time between retries (ms)
-INIT_DELAY: 2000; // Delay before first init attempt (ms)
-TEASER_DELAY: 500; // Delay before showing teaser after init (ms)
-TEASER_EXPIRY_DAYS: 1; // How long dismissal persists
-MOBILE_BREAKPOINT: 768; // px — switches to mobile teaser copy below this width
+MAX_RETRIES: 50;               // Widget load retry attempts (5 seconds @ 100ms interval)
+RETRY_INTERVAL: 100;           // Time between retries (ms)
+INIT_DELAY: 2000;              // Delay before first init attempt (ms)
+TEASER_DELAY: 500;             // Delay before showing teaser after init (ms)
+TEASER_AUTO_DISMISS_MS: 10000; // Auto-dismiss teaser after 10 s of inactivity
+TEASER_EXPIRY_DAYS: 1;         // How long dismissal persists (1 day = 24 h)
+MOBILE_BREAKPOINT: 768;        // px — switches to mobile teaser copy below this width
 ```
 
 ## Support
