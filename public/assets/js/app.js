@@ -3209,27 +3209,22 @@ async function initDashSupplier() {
         }
       }
 
-      // If at limit on free plan, gently disable the form
+      // Track whether the free tier package limit is reached.
+      // Only block *creating* new packages — editing existing ones must remain allowed.
       const pkgForm = document.getElementById('package-form');
       const pkgStatus = document.getElementById('pkg-status');
       const atLimit = !currentIsPro && count >= freeLimit;
+      // Expose globally so togglePackageForm() and editPackage() can reference it.
+      window._pkgAtLimit = atLimit;
+
       if (pkgForm) {
-        const inputs = pkgForm.querySelectorAll('input, textarea, select, button[type="submit"]');
-        inputs.forEach(el => {
-          if (el.type === 'submit') {
-            el.disabled = atLimit;
-          } else {
-            el.disabled = atLimit;
-          }
-        });
-        if (pkgStatus) {
-          if (atLimit) {
-            pkgStatus.textContent =
-              'You have reached the package limit on the free plan. Upgrade to Pro to add more.';
-          } else {
-            pkgStatus.textContent = '';
-          }
-        }
+        // Determine whether the form is currently in edit mode (has a package ID).
+        const editingId = document.getElementById('pkg-id-hidden')?.value;
+        const isEditMode = !!editingId;
+
+        // Only apply the limit restriction when in create mode.
+        const shouldDisable = atLimit && !isEditMode;
+        setPkgFormDisabled(shouldDisable);
       }
 
       if (!items || items.length === 0) {
@@ -3530,6 +3525,15 @@ async function initDashSupplier() {
       const path = id ? `/api/me/packages/${encodeURIComponent(id)}` : '/api/me/packages';
       const method = id ? 'PUT' : 'POST';
 
+      // Belt-and-suspenders: block *creation* if free tier package limit is reached.
+      // Although the submit button is already disabled by setPkgFormDisabled(), this
+      // guard also prevents programmatic form submissions from bypassing the limit.
+      // Editing an existing package (id is set) always bypasses this check.
+      if (window._pkgAtLimit && !id) {
+        alert(PKG_LIMIT_MESSAGE);
+        return;
+      }
+
       const saveBtn = pkgForm.querySelector('button[type="submit"]');
       const origLabel = saveBtn ? saveBtn.textContent : '';
       if (saveBtn) {
@@ -3566,11 +3570,22 @@ async function initDashSupplier() {
         if (galleryRow) {
           galleryRow.style.display = 'none';
         }
+
+        // Form has been reset to create mode. Re-apply limit restrictions if needed
+        // so the user cannot immediately attempt to create a new package over the limit.
+        if (window._pkgAtLimit) {
+          setPkgFormDisabled(true);
+        }
       } catch (err) {
         alert(`Error saving package: ${err.message || 'Please try again'}`);
       } finally {
         if (saveBtn) {
-          saveBtn.disabled = false;
+          // Restore button label. Only re-enable if NOT at the package limit:
+          // pkgForm.reset() already cleared pkg-id-hidden, returning to create mode,
+          // and setPkgFormDisabled(true) above re-applied the limit restriction.
+          if (!window._pkgAtLimit) {
+            saveBtn.disabled = false;
+          }
           saveBtn.textContent = origLabel;
         }
       }
@@ -3724,6 +3739,31 @@ async function initDashSupplier() {
 }
 
 // Package Form Toggle, Edit, and Delete Functions
+
+/** Message shown in #pkg-status when the free-tier package limit is reached. */
+const PKG_LIMIT_MESSAGE =
+  'You have reached the package limit on the free plan. Upgrade to Pro to add more.';
+
+/**
+ * Enable or disable all inputs / the submit button in #package-form and update
+ * the #pkg-status message accordingly.
+ *
+ * @param {boolean} disable - true to disable (limit reached), false to enable.
+ */
+function setPkgFormDisabled(disable) {
+  const form = document.getElementById('package-form');
+  if (!form) {
+    return;
+  }
+  form.querySelectorAll('input, textarea, select, button[type="submit"]').forEach(el => {
+    el.disabled = disable;
+  });
+  const status = document.getElementById('pkg-status');
+  if (status) {
+    status.textContent = disable ? PKG_LIMIT_MESSAGE : '';
+  }
+}
+
 function togglePackageForm() {
   const formSection = document.getElementById('package-form-section');
   const toggleBtn = document.getElementById('toggle-package-form');
@@ -3771,6 +3811,11 @@ function togglePackageForm() {
     const galleryRowReset = document.getElementById('pkg-gallery-row');
     if (galleryRowReset) {
       galleryRowReset.style.display = 'none';
+    }
+
+    // Form is returning to create mode — re-apply package limit restrictions if needed.
+    if (window._pkgAtLimit) {
+      setPkgFormDisabled(true);
     }
   } else {
     // Expand form
@@ -3821,6 +3866,10 @@ function editPackage(packageId) {
       document.getElementById('pkg-desc').value = pkg.description || '';
       document.getElementById('pkg-category').value = pkg.primaryCategoryKey || '';
       document.getElementById('pkg-image').value = pkg.image || '';
+
+      // Package limit only blocks *creation*. Re-enable all form inputs for editing
+      // (they may have been disabled by the create-mode limit check in loadPackages).
+      setPkgFormDisabled(false);
 
       // Set supplier select if available
       const supplierSelect = document.getElementById('pkg-supplier');
