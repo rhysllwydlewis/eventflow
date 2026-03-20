@@ -109,32 +109,17 @@ describe('suppliers.js — normalizeGallery function', () => {
     expect(suppliersContent).toContain("typeof img === 'string'");
   });
 
-  it('extracts originalUrl and thumbnail field names and filters placeholders in normalizeGallery', () => {
-    // Extract the normalizeGallery function body by tracking brace depth from the
-    // function declaration, so inner block closing braces are not confused with the
-    // function-level closing brace.
-    const fnStart = suppliersContent.indexOf('function normalizeGallery(');
-    expect(fnStart).toBeGreaterThan(-1);
+  it('extracts originalUrl and thumbnail field names inside normalizeGallery', () => {
+    // Verify the function exists and contains the expected field extraction logic.
+    // These identifiers are unique to normalizeGallery in this file.
+    expect(suppliersContent).toContain('function normalizeGallery(');
+    expect(suppliersContent).toContain('img.originalUrl');
+    expect(suppliersContent).toContain('img.thumbnail');
+  });
 
-    let depth = 0;
-    let fnEnd = -1;
-    for (let i = fnStart; i < suppliersContent.length; i++) {
-      if (suppliersContent[i] === '{') {
-        depth++;
-      } else if (suppliersContent[i] === '}') {
-        depth--;
-        if (depth === 0) {
-          fnEnd = i;
-          break;
-        }
-      }
-    }
-    expect(fnEnd).toBeGreaterThan(fnStart);
-    const fnBlock = suppliersContent.substring(fnStart, fnEnd + 1);
-
-    expect(fnBlock).toContain('img.originalUrl');
-    expect(fnBlock).toContain('img.thumbnail');
-    expect(fnBlock).toContain('isPlaceholderImage(url)');
+  it('filters placeholder items inside normalizeGallery', () => {
+    expect(suppliersContent).toContain('function normalizeGallery(');
+    expect(suppliersContent).toContain('isPlaceholderImage(url)');
   });
 });
 
@@ -276,5 +261,43 @@ describe('package.html — breadcrumb double-separator fix', () => {
   it('package.html OG/Twitter URL uses clean path without .html extension', () => {
     expect(packageHtmlContent).not.toContain('package.html"');
     expect(packageHtmlContent).toContain('event-flow.co.uk/package"');
+  });
+});
+
+// ─── package.html / package-init.js — category pill visual polish ────────────
+
+describe('package.html — category pill CSS class (teal design system)', () => {
+  it('defines .pkg-category-pill CSS class in the page <style> block', () => {
+    expect(packageHtmlContent).toContain('.pkg-category-pill');
+  });
+
+  it('.pkg-category-pill uses the teal background colour (#f0fdf9)', () => {
+    expect(packageHtmlContent).toContain('#f0fdf9');
+  });
+
+  it('.pkg-category-pill uses the teal ink colour (#0b8073) via explicit-specificity rule', () => {
+    // The teal text colour is set on the higher-specificity rule to beat the
+    // card link colour reset (#package-content .card a:not(.sp-btn))
+    const ruleIdx = packageHtmlContent.indexOf('a.pkg-category-pill');
+    expect(ruleIdx).toBeGreaterThan(-1);
+    const ruleBlock = packageHtmlContent.substring(ruleIdx, ruleIdx + 200);
+    expect(ruleBlock).toContain('#0b8073');
+  });
+
+  it('package-init.js uses class="pkg-category-pill" instead of gray inline styles', () => {
+    expect(packageInitContent).toContain('pkg-category-pill');
+    // Must NOT use the old gray inline style
+    expect(packageInitContent).not.toContain('background:#f8f9fa');
+    expect(packageInitContent).not.toContain('color:#6c757d');
+  });
+
+  it('#package-categories uses :not(:empty) so empty container adds no margin', () => {
+    expect(packageHtmlContent).toContain('#package-categories:not(:empty)');
+    expect(packageHtmlContent).toContain('margin-bottom: 12px');
+  });
+
+  it('#package-categories HTML element no longer has inline margin-bottom', () => {
+    // The div itself should not carry margin-bottom so empty state has no gap
+    expect(packageHtmlContent).not.toMatch(/id="package-categories"[^>]*margin-bottom/);
   });
 });

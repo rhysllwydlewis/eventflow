@@ -92,11 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (categories && categories.length > 0) {
         document.getElementById('package-categories').innerHTML = categories
           .map(
-            c => `<a href="/category?slug=${encodeURIComponent(c.slug)}"
-                style="background:#f8f9fa;color:#6c757d;padding:5px 12px;border-radius:16px;
-                       font-size:0.82rem;font-weight:500;text-decoration:none;display:inline-block;">
-              ${c.icon || ''} ${c.name}
-            </a>`
+            c =>
+              `<a href="/category?slug=${encodeURIComponent(c.slug)}" class="pkg-category-pill">${c.icon || ''} ${c.name}</a>`
           )
           .join('');
       }
