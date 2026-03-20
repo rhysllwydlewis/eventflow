@@ -3209,26 +3209,29 @@ async function initDashSupplier() {
         }
       }
 
-      // If at limit on free plan, gently disable the form
+      // Track whether the free tier package limit is reached.
+      // Only block *creating* new packages — editing existing ones must remain allowed.
       const pkgForm = document.getElementById('package-form');
       const pkgStatus = document.getElementById('pkg-status');
       const atLimit = !currentIsPro && count >= freeLimit;
+      // Expose globally so togglePackageForm() and editPackage() can reference it.
+      window._pkgAtLimit = atLimit;
+
       if (pkgForm) {
+        // Determine whether the form is currently in edit mode (has a package ID).
+        const editingId = document.getElementById('pkg-id-hidden')?.value;
+        const isEditMode = !!editingId;
+
+        // Only apply the limit restriction when in create mode.
+        const shouldDisable = atLimit && !isEditMode;
         const inputs = pkgForm.querySelectorAll('input, textarea, select, button[type="submit"]');
         inputs.forEach(el => {
-          if (el.type === 'submit') {
-            el.disabled = atLimit;
-          } else {
-            el.disabled = atLimit;
-          }
+          el.disabled = shouldDisable;
         });
         if (pkgStatus) {
-          if (atLimit) {
-            pkgStatus.textContent =
-              'You have reached the package limit on the free plan. Upgrade to Pro to add more.';
-          } else {
-            pkgStatus.textContent = '';
-          }
+          pkgStatus.textContent = shouldDisable
+            ? 'You have reached the package limit on the free plan. Upgrade to Pro to add more.'
+            : '';
         }
       }
 
@@ -3530,6 +3533,13 @@ async function initDashSupplier() {
       const path = id ? `/api/me/packages/${encodeURIComponent(id)}` : '/api/me/packages';
       const method = id ? 'PUT' : 'POST';
 
+      // Belt-and-suspenders: block *creation* if free tier package limit is reached.
+      // Editing an existing package (id is set) bypasses this check.
+      if (window._pkgAtLimit && !id) {
+        alert('You have reached the package limit on the free plan. Upgrade to Pro to add more.');
+        return;
+      }
+
       const saveBtn = pkgForm.querySelector('button[type="submit"]');
       const origLabel = saveBtn ? saveBtn.textContent : '';
       if (saveBtn) {
@@ -3772,6 +3782,21 @@ function togglePackageForm() {
     if (galleryRowReset) {
       galleryRowReset.style.display = 'none';
     }
+
+    // Form is returning to create mode — re-apply package limit restrictions if needed.
+    if (window._pkgAtLimit) {
+      const formForLimit = document.getElementById('package-form');
+      if (formForLimit) {
+        formForLimit.querySelectorAll('input, textarea, select, button[type="submit"]').forEach(el => {
+          el.disabled = true;
+        });
+        const pkgStatusLimit = document.getElementById('pkg-status');
+        if (pkgStatusLimit) {
+          pkgStatusLimit.textContent =
+            'You have reached the package limit on the free plan. Upgrade to Pro to add more.';
+        }
+      }
+    }
   } else {
     // Expand form
     formSection.classList.add('expanded');
@@ -3821,6 +3846,19 @@ function editPackage(packageId) {
       document.getElementById('pkg-desc').value = pkg.description || '';
       document.getElementById('pkg-category').value = pkg.primaryCategoryKey || '';
       document.getElementById('pkg-image').value = pkg.image || '';
+
+      // Package limit only blocks *creation*. Re-enable all form inputs for editing
+      // (they may have been disabled by the create-mode limit check in loadPackages).
+      const pkgFormEdit = document.getElementById('package-form');
+      if (pkgFormEdit) {
+        pkgFormEdit.querySelectorAll('input, textarea, select, button[type="submit"]').forEach(el => {
+          el.disabled = false;
+        });
+        const pkgStatusEdit = document.getElementById('pkg-status');
+        if (pkgStatusEdit) {
+          pkgStatusEdit.textContent = '';
+        }
+      }
 
       // Set supplier select if available
       const supplierSelect = document.getElementById('pkg-supplier');
