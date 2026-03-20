@@ -9,15 +9,25 @@
  * is set, every request must present the correct key; when it is unset the
  * endpoints are publicly accessible (suitable for development/staging).
  *
- * Rate limiting: uses the shared `searchLimiter` (30 req/min) which is
- * appropriate for a machine-to-machine integration.
+ * Caching strategy:
+ *   - List responses (/suppliers, /venues) are cached server-side via
+ *     `services/catalogCache.js` with a TTL of `CATALOG_CACHE_TTL_SECONDS`
+ *     (default 5 minutes).
+ *   - The cache is automatically invalidated by `catalogCache.invalidate()`
+ *     whenever a supplier is approved, rejected, suspended, or has its
+ *     profile edited.  See `routes/supplier-admin.js` and
+ *     `routes/supplier-management.js`.
+ *   - `Cache-Control` response headers inform downstream proxies/CDNs.
+ *
+ * Rate limiting: uses `apiLimiter` (100 req / 15 min) — appropriate for a
+ * machine-to-machine integration that may batch multiple category/page calls.
  *
  * Routes mounted at `/api/catalog`:
- *   GET /suppliers         - paginated supplier list with filters
- *   GET /suppliers/:id     - single supplier by ID
- *   GET /venues            - paginated venue list (suppliers with category='Venues')
- *   GET /venues/:id        - single venue by ID
  *   GET /categories        - list of valid supplier categories
+ *   GET /suppliers         - paginated supplier list with filters
+ *   GET /supplier/:id      - single supplier by ID
+ *   GET /venues            - paginated venue list (suppliers with category='Venues')
+ *   GET /venue/:id         - single venue by ID
  */
 
 'use strict';
@@ -25,8 +35,9 @@
 const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
-const { searchLimiter } = require('../middleware/rateLimits');
+const { apiLimiter } = require('../middleware/rateLimits');
 const logger = require('../utils/logger');
+const catalogCache = require('../services/catalogCache');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -110,20 +121,21 @@ function parseIntParam(value, defaultVal, min, max) {
 }
 
 /**
- * Build a simple case-insensitive text filter for MongoDB queries.
- * Returns undefined when the query string is empty/absent so callers can
- * skip appending an empty filter object.
+ * Build a case-insensitive text-search RegExp for in-memory filtering.
+ * Returns `null` when `q` is absent / blank so callers can skip the filter.
  *
- * @param {string} q - Search term from req.query.q.
- * @returns {Object|undefined}
+ * The RegExp is returned directly (not wrapped in a MongoDB query object)
+ * so it can be tested against multiple fields without fragile property access.
+ *
+ * @param {string|undefined} q - Raw search term from req.query.q.
+ * @returns {RegExp|null}
  */
-function buildTextFilter(q) {
+function buildSearchRegex(q) {
   if (!q || typeof q !== 'string' || !q.trim()) {
-    return undefined;
+    return null;
   }
   const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(escaped, 'i');
-  return { $or: [{ name: re }, { description: re }, { location: re }] };
+  return new RegExp(escaped, 'i');
 }
 
 // ─── Auth middleware ───────────────────────────────────────────────────────────
@@ -150,7 +162,7 @@ function catalogApiKeyAuth(req, res, next) {
 
 // Apply auth check and rate limiter to every catalog route
 router.use(catalogApiKeyAuth);
-router.use(searchLimiter);
+router.use(apiLimiter);
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
@@ -168,6 +180,10 @@ router.get('/categories', (_req, res) => {
  * GET /api/catalog/suppliers
  * Paginated list of approved, active suppliers with optional filters.
  *
+ * The full approved-and-published supplier list is cached server-side.
+ * Filtering, sorting, and pagination are applied in-memory after the
+ * cache hit so per-query results are always accurate.
+ *
  * Query params:
  *   q         {string}  Free-text search across name/description/location.
  *   category  {string}  Filter to a specific category (e.g. "Photography").
@@ -180,45 +196,49 @@ router.get('/suppliers', async (req, res) => {
     const limit = parseIntParam(req.query.limit, DEFAULT_LIMIT, 1, MAX_LIMIT);
     const offset = parseIntParam(req.query.offset, 0, 0, 100000);
 
-    // Base filter: only return approved, published suppliers
-    const baseFilter = { approved: true, status: 'published' };
+    // ── Serve all approved/published suppliers (cached) ───────────────────
+    const CACHE_KEY = 'suppliers:all';
+    let allSuppliers = await catalogCache.get(CACHE_KEY);
+    if (!allSuppliers) {
+      allSuppliers = await dbUnified.find('suppliers', { approved: true, status: 'published' });
+      await catalogCache.set(CACHE_KEY, allSuppliers);
+      logger.info('[catalog] suppliers cache miss — populated from DB');
+    }
+
+    let suppliers = allSuppliers;
+
+    // ── Apply filters ──────────────────────────────────────────────────────
 
     // Category filter
     if (req.query.category) {
       const cat = String(req.query.category).trim();
       if (VALID_CATEGORIES.includes(cat)) {
-        baseFilter.category = cat;
+        suppliers = suppliers.filter(s => s.category === cat);
       }
     }
 
     // Location filter (substring match)
     if (req.query.location) {
-      const loc = String(req.query.location)
-        .trim()
-        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      if (loc) {
-        baseFilter.location = new RegExp(loc, 'i');
+      const locRe = buildSearchRegex(String(req.query.location));
+      if (locRe) {
+        suppliers = suppliers.filter(s => locRe.test(s.location || ''));
       }
     }
 
-    // Fetch matching documents
-    let suppliers = await dbUnified.find('suppliers', baseFilter);
-
-    // Post-filter: free-text search (applied in-memory for portability)
+    // Free-text search across name / description / location
     if (req.query.q) {
-      const textFilter = buildTextFilter(String(req.query.q));
-      if (textFilter) {
-        const re = textFilter.$or[0].name; // shared RegExp for all fields
+      const qRe = buildSearchRegex(String(req.query.q));
+      if (qRe) {
         suppliers = suppliers.filter(
-          s => re.test(s.name || '') || re.test(s.description || '') || re.test(s.location || '')
+          s => qRe.test(s.name || '') || qRe.test(s.description || '') || qRe.test(s.location || '')
         );
       }
     }
 
     const total = suppliers.length;
 
-    // Sort: Pro suppliers first, then by name
-    suppliers.sort((a, b) => {
+    // ── Sort: Pro suppliers first, then by name ────────────────────────────
+    const sorted = suppliers.slice().sort((a, b) => {
       if (a.isPro && !b.isPro) {
         return -1;
       }
@@ -228,16 +248,11 @@ router.get('/suppliers', async (req, res) => {
       return (a.name || '').localeCompare(b.name || '');
     });
 
-    // Pagination
-    const page = suppliers.slice(offset, offset + limit).map(toPublicSupplier);
+    // ── Pagination ─────────────────────────────────────────────────────────
+    const page = sorted.slice(offset, offset + limit).map(toPublicSupplier);
 
-    res.setHeader('Cache-Control', 'public, max-age=60'); // 1 minute
-    res.json({
-      suppliers: page,
-      total,
-      limit,
-      offset,
-    });
+    res.setHeader('Cache-Control', `public, max-age=${catalogCache.getTtl()}`);
+    res.json({ suppliers: page, total, limit, offset });
   } catch (error) {
     logger.error('[catalog] GET /suppliers error:', error.message);
     res.status(500).json({ error: 'Failed to fetch suppliers.' });
@@ -258,7 +273,7 @@ router.get('/supplier/:id', async (req, res) => {
     if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found.' });
     }
-    res.setHeader('Cache-Control', 'public, max-age=120'); // 2 minutes
+    res.setHeader('Cache-Control', `public, max-age=${catalogCache.getTtl()}`);
     res.json({ supplier: toPublicSupplier(supplier) });
   } catch (error) {
     logger.error('[catalog] GET /supplier/:id error:', error.message);
@@ -269,6 +284,9 @@ router.get('/supplier/:id', async (req, res) => {
 /**
  * GET /api/catalog/venues
  * Paginated list of approved venues (suppliers where category === 'Venues').
+ *
+ * The full venues list is cached server-side.  Filtering, sorting, and
+ * pagination are applied in-memory after the cache hit.
  *
  * Query params:
  *   q           {string}  Free-text search.
@@ -283,28 +301,37 @@ router.get('/venues', async (req, res) => {
     const limit = parseIntParam(req.query.limit, DEFAULT_LIMIT, 1, MAX_LIMIT);
     const offset = parseIntParam(req.query.offset, 0, 0, 100000);
 
-    // Venues are suppliers with category 'Venues'
-    const baseFilter = { approved: true, status: 'published', category: 'Venues' };
+    // ── Serve all approved/published venues (cached) ───────────────────────
+    const CACHE_KEY = 'venues:all';
+    let allVenues = await catalogCache.get(CACHE_KEY);
+    if (!allVenues) {
+      allVenues = await dbUnified.find('suppliers', {
+        approved: true,
+        status: 'published',
+        category: 'Venues',
+      });
+      await catalogCache.set(CACHE_KEY, allVenues);
+      logger.info('[catalog] venues cache miss — populated from DB');
+    }
+
+    let venues = allVenues;
+
+    // ── Apply filters ──────────────────────────────────────────────────────
 
     // Location filter
     if (req.query.location) {
-      const loc = String(req.query.location)
-        .trim()
-        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      if (loc) {
-        baseFilter.location = new RegExp(loc, 'i');
+      const locRe = buildSearchRegex(String(req.query.location));
+      if (locRe) {
+        venues = venues.filter(v => locRe.test(v.location || ''));
       }
     }
 
-    let venues = await dbUnified.find('suppliers', baseFilter);
-
-    // Free-text search (in-memory)
+    // Free-text search
     if (req.query.q) {
-      const textFilter = buildTextFilter(String(req.query.q));
-      if (textFilter) {
-        const re = textFilter.$or[0].name;
+      const qRe = buildSearchRegex(String(req.query.q));
+      if (qRe) {
         venues = venues.filter(
-          v => re.test(v.name || '') || re.test(v.description || '') || re.test(v.location || '')
+          v => qRe.test(v.name || '') || qRe.test(v.description || '') || qRe.test(v.location || '')
         );
       }
     }
@@ -325,8 +352,8 @@ router.get('/venues', async (req, res) => {
 
     const total = venues.length;
 
-    // Sort: Pro first, then by capacity (desc), then name
-    venues.sort((a, b) => {
+    // ── Sort: Pro first, then by capacity (desc), then name ─────────────────
+    const sorted = venues.slice().sort((a, b) => {
       if (a.isPro && !b.isPro) {
         return -1;
       }
@@ -340,15 +367,11 @@ router.get('/venues', async (req, res) => {
       return (a.name || '').localeCompare(b.name || '');
     });
 
-    const page = venues.slice(offset, offset + limit).map(toPublicSupplier);
+    // ── Pagination ─────────────────────────────────────────────────────────
+    const page = sorted.slice(offset, offset + limit).map(toPublicSupplier);
 
-    res.setHeader('Cache-Control', 'public, max-age=60');
-    res.json({
-      venues: page,
-      total,
-      limit,
-      offset,
-    });
+    res.setHeader('Cache-Control', `public, max-age=${catalogCache.getTtl()}`);
+    res.json({ venues: page, total, limit, offset });
   } catch (error) {
     logger.error('[catalog] GET /venues error:', error.message);
     res.status(500).json({ error: 'Failed to fetch venues.' });
@@ -370,7 +393,7 @@ router.get('/venue/:id', async (req, res) => {
     if (!venue) {
       return res.status(404).json({ error: 'Venue not found.' });
     }
-    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.setHeader('Cache-Control', `public, max-age=${catalogCache.getTtl()}`);
     res.json({ venue: toPublicSupplier(venue) });
   } catch (error) {
     logger.error('[catalog] GET /venue/:id error:', error.message);

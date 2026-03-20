@@ -36,6 +36,15 @@ jest.mock('../../utils/logger', () => ({
 // Rate-limiter is a no-op in tests (avoids 429s from repeated calls)
 jest.mock('../../middleware/rateLimits', () => ({
   searchLimiter: (_req, _res, next) => next(),
+  apiLimiter: (_req, _res, next) => next(),
+}));
+
+// Catalog cache is a no-op in tests
+jest.mock('../../services/catalogCache', () => ({
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn().mockResolvedValue(undefined),
+  invalidate: jest.fn().mockResolvedValue(undefined),
+  getTtl: jest.fn().mockReturnValue(300),
 }));
 
 const dbUnified = require('../../db-unified');
