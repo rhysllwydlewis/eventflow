@@ -858,7 +858,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
             <div class="review-controls" role="search" aria-label="Filter and sort reviews">
               <div class="review-filter-group">
-                <label class="review-filter-label" for="filter-min-rating">Minimum Rating:</label>
+                <label class="review-filter-label" for="filter-min-rating">Rating:</label>
                 <select id="filter-min-rating" class="review-filter-select" aria-label="Filter by minimum rating">
                   <option value="">All Ratings</option>
                   <option value="5">5 Stars</option>
@@ -1251,8 +1251,12 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       supplierData = await supplierResp.value.json();
       let packages = [];
       if (packagesResp.status === 'fulfilled' && packagesResp.value.ok) {
-        const pkgData = await packagesResp.value.json();
-        packages = pkgData.items || pkgData.packages || [];
+        try {
+          const pkgData = await packagesResp.value.json();
+          packages = pkgData.items || pkgData.packages || [];
+        } catch (_) {
+          // packages endpoint returned non-JSON (e.g. HTML fallback); use empty list
+        }
       }
 
       // Render all sections

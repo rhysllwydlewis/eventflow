@@ -328,6 +328,40 @@ app.get('/api/suppliers/:id', (req, res) => {
   res.json(MOCK_SUPPLIER_PROFILE);
 });
 
+app.get('/api/suppliers/:id/packages', (req, res) => {
+  res.json({
+    items: [
+      {
+        id: 'pkg-1',
+        slug: 'wedding-package',
+        title: 'Wedding Package',
+        price_display: '£4,500',
+        description:
+          'Full day wedding hire with catering coordination and dedicated event coordinator.',
+        image: '/assets/images/placeholder-banner.svg',
+      },
+      {
+        id: 'pkg-2',
+        slug: 'corporate-day',
+        title: 'Corporate Day',
+        price_display: '£1,800',
+        description:
+          'Half-day or full-day corporate event hire with AV equipment and on-site support.',
+        image: '/assets/images/placeholder-banner.svg',
+      },
+      {
+        id: 'pkg-3',
+        slug: 'private-celebration',
+        title: 'Private Celebration',
+        price_display: '£2,200',
+        description:
+          'Birthdays, anniversaries and milestone events — fully tailored to your needs.',
+        image: '/assets/images/placeholder-banner.svg',
+      },
+    ],
+  });
+});
+
 app.get('/api/v1/suppliers/:id/packages', (req, res) => {
   res.json({
     items: [
