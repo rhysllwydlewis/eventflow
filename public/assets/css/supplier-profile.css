@@ -791,6 +791,38 @@
   border-radius: var(--sp-card-radius-sm);
 }
 
+/* Empty state when supplier has no gallery photos */
+.sp-gallery-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.sp-gallery-empty__icon {
+  opacity: 0.3;
+  color: var(--sp-primary);
+  margin-bottom: 0.25rem;
+}
+
+.sp-gallery-empty__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--sp-text-muted);
+  margin: 0;
+}
+
+.sp-gallery-empty__text {
+  font-size: 0.8125rem;
+  color: var(--sp-text-light);
+  max-width: 380px;
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* ============================================
    Package Cards — premium shoppable cards
    ============================================ */

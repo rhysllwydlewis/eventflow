@@ -351,22 +351,6 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       };
     }
 
-    // Message
-    const btnMsg = document.getElementById('btn-message-supplier');
-    if (btnMsg && supplier.ownerUserId) {
-      btnMsg.setAttribute('data-quick-compose', 'true');
-      btnMsg.setAttribute('data-recipient-id', supplier.ownerUserId);
-      btnMsg.setAttribute('data-context-type', 'supplier_profile');
-      btnMsg.setAttribute('data-context-id', supplier.id);
-      btnMsg.setAttribute('data-context-title', supplier.name);
-      btnMsg.removeAttribute('data-messenger-action');
-      if (window.QuickComposeV4?.attachAll) {
-        window.QuickComposeV4.attachAll();
-      }
-    } else if (btnMsg) {
-      btnMsg.style.display = 'none';
-    }
-
     // Call
     const btnCall = document.getElementById('btn-call');
     if (btnCall && supplier.phone) {
@@ -654,9 +638,22 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       ? supplier.photosGallery.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean)
       : [];
 
-    // Hide section if no photos
+    // Show polished empty state if no photos uploaded yet
     if (photos.length === 0) {
-      container.style.display = 'none';
+      container.innerHTML = `
+        <div class="sp-card sp-card--gallery sp-fade-in">
+          <h2 class="sp-card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Photo Gallery
+          </h2>
+          <div class="sp-gallery-empty">
+            <svg class="sp-gallery-empty__icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <p class="sp-gallery-empty__title">No photos uploaded yet</p>
+            <p class="sp-gallery-empty__text">This supplier hasn't added any gallery photos yet. Check back soon, or contact them directly for more examples of their work.</p>
+          </div>
+        </div>
+      `;
+      container.style.display = '';
       return;
     }
 
@@ -965,11 +962,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         <div class="sp-cta-card__name">Get in touch with</div>
         <div class="sp-cta-card__title">${supplierName}</div>
         <div class="sp-cta-card__actions">
-          <button class="sp-cta-btn sp-cta-btn--primary" id="sidebar-btn-enquiry" aria-label="Send enquiry to ${supplierName}">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Send Enquiry
-          </button>
-          <button class="sp-cta-btn sp-cta-btn--secondary" id="sidebar-btn-message" aria-label="Message ${supplierName}">
+          <button class="sp-cta-btn sp-cta-btn--primary" id="sidebar-btn-enquiry" aria-label="Message ${supplierName}">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Message
           </button>
@@ -978,23 +971,13 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       </div>
     `;
 
-    // Wire sidebar CTA buttons
+    // Wire sidebar CTA button
     const sidebarEnquiry = document.getElementById('sidebar-btn-enquiry');
     if (sidebarEnquiry) {
       sidebarEnquiry.addEventListener('click', () => {
         const heroEnquiry = document.getElementById('btn-enquiry');
         if (heroEnquiry) {
           heroEnquiry.click();
-        }
-      });
-    }
-
-    const sidebarMsg = document.getElementById('sidebar-btn-message');
-    if (sidebarMsg) {
-      sidebarMsg.addEventListener('click', () => {
-        const heroMsg = document.getElementById('btn-message-supplier');
-        if (heroMsg) {
-          heroMsg.click();
         }
       });
     }
