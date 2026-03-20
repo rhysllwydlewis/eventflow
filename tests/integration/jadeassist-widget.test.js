@@ -132,6 +132,13 @@ describe('JadeAssist Widget Pinning', () => {
       expect(v2Content).toContain("'Escape'");
     });
 
+    it('should not force close button to be unreachable via keyboard', () => {
+      // The close button is a <button> element (naturally focusable).
+      // We must NOT set tabindex="-1" on it — that would make it unreachable
+      // for keyboard-only users who want to dismiss without opening the chat.
+      expect(v2Content).not.toContain('tabindex="-1"');
+    });
+
     it('should emit analytics custom events', () => {
       expect(v2Content).toContain('jadeassist:teaser-clicked');
       expect(v2Content).toContain('jadeassist:widget-opened');

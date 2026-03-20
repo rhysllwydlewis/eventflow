@@ -345,7 +345,7 @@
     teaserElement.innerHTML = `
       <div class="jade-teaser-content">
         <span class="jade-teaser-text">${message}</span>
-        <button class="jade-teaser-close" aria-label="Dismiss message" tabindex="-1">×</button>
+        <button class="jade-teaser-close" aria-label="Dismiss message">×</button>
       </div>
     `;
     document.body.appendChild(teaserElement);
