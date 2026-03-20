@@ -511,6 +511,7 @@ const canonicalPages = [
   'messages',
   'category',
   'package',
+  'supplier',
 ];
 
 canonicalPages.forEach(page => {
