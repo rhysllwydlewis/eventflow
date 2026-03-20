@@ -52,11 +52,21 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       const d = new Date(date);
       const now = new Date();
       const diffDays = Math.floor(Math.abs(now - d) / (1000 * 60 * 60 * 24));
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Yesterday';
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+      if (diffDays === 0) {
+        return 'Today';
+      }
+      if (diffDays === 1) {
+        return 'Yesterday';
+      }
+      if (diffDays < 7) {
+        return `${diffDays} days ago`;
+      }
+      if (diffDays < 30) {
+        return `${Math.floor(diffDays / 7)} weeks ago`;
+      }
+      if (diffDays < 365) {
+        return `${Math.floor(diffDays / 30)} months ago`;
+      }
       return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short' });
     } catch (_) {
       return '';
@@ -67,7 +77,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
    * Clamp years-active to at least 1
    */
   function yearsActive(createdAt) {
-    if (!createdAt) return null;
+    if (!createdAt) {
+      return null;
+    }
     const years = Math.floor(
       (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
     );
@@ -98,7 +110,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
    * true SEO/social preview support.
    */
   function updateMetaTags(supplier) {
-    if (!supplier) return;
+    if (!supplier) {
+      return;
+    }
 
     const title = `${supplier.name} — EventFlow`;
     const description =
@@ -117,11 +131,15 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
     const setContent = (id, value) => {
       const el = document.getElementById(id);
-      if (el) el.setAttribute('content', value);
+      if (el) {
+        el.setAttribute('content', value);
+      }
     };
     const setText = (id, value) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = value;
+      if (el) {
+        el.textContent = value;
+      }
     };
 
     setText('page-title', title);
@@ -139,7 +157,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
   // ─── Hero Section ────────────────────────────────────────────────────────────
 
   function renderHeroSection(supplier) {
-    if (!supplier) return;
+    if (!supplier) {
+      return;
+    }
 
     // Banner image
     const heroBanner = document.getElementById('hero-banner');
@@ -155,7 +175,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         const heroSection = document.getElementById('supplier-hero');
         if (heroSection && supplier.themeColor && /^#[0-9A-F]{6}$/i.test(supplier.themeColor)) {
           const heroMedia = heroSection.querySelector('.hero-media');
-          if (heroMedia) heroMedia.style.setProperty('--supplier-theme', supplier.themeColor);
+          if (heroMedia) {
+            heroMedia.style.setProperty('--supplier-theme', supplier.themeColor);
+          }
         }
       }
     }
@@ -165,7 +187,10 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     if (badgesContainer) {
       // Use verification-badges utility if available
       if (typeof renderVerificationBadges === 'function') {
-        badgesContainer.innerHTML = renderVerificationBadges(supplier, { size: 'normal', limit: 3 });
+        badgesContainer.innerHTML = renderVerificationBadges(supplier, {
+          size: 'normal',
+          maxBadges: 3,
+        });
       } else {
         const heroBadges = _buildHeroBadges(supplier);
         badgesContainer.innerHTML = heroBadges.slice(0, 3).join('');
@@ -182,7 +207,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         const iconFn =
           (typeof EFTierIcon !== 'undefined' && EFTierIcon.render) ||
           (typeof renderTierIcon === 'function' && renderTierIcon);
-        if (iconFn) tierIconEl.innerHTML = iconFn(supplier);
+        if (iconFn) {
+          tierIconEl.innerHTML = iconFn(supplier);
+        }
       }
     }
 
@@ -253,9 +280,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     const badges = [];
 
     // Tier — highest priority
-    const tier =
-      supplier.subscription?.tier ||
-      (supplier.isPro ? 'pro' : 'free');
+    const tier = supplier.subscription?.tier || (supplier.isPro ? 'pro' : 'free');
     if (tier === 'pro_plus') {
       badges.push('<span class="badge badge-pro-plus" aria-label="Pro Plus">Pro+</span>');
     } else if (tier === 'pro') {
@@ -264,12 +289,16 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
     // Founding
     if (supplier.isFoundingSupplier || supplier.isFounding || supplier.founding) {
-      badges.push('<span class="badge badge-founding" aria-label="Founding supplier">Founding</span>');
+      badges.push(
+        '<span class="badge badge-founding" aria-label="Founding supplier">Founding</span>'
+      );
     }
 
     // Featured
     if (supplier.featured || supplier.featuredSupplier) {
-      badges.push('<span class="badge badge-featured" aria-label="Featured supplier">Featured</span>');
+      badges.push(
+        '<span class="badge badge-featured" aria-label="Featured supplier">Featured</span>'
+      );
     }
 
     // Verified (only if no other badge used the slot)
@@ -277,7 +306,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       badges.length < 3 &&
       (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified)
     ) {
-      badges.push('<span class="badge badge-email-verified" aria-label="Verified">✓ Verified</span>');
+      badges.push(
+        '<span class="badge badge-email-verified" aria-label="Verified">✓ Verified</span>'
+      );
     }
 
     return badges;
@@ -292,7 +323,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     if (btnEnquiry) {
       btnEnquiry.onclick = () => {
         if (!supplier.ownerUserId) {
-          window.EventFlowNotifications?.info('This supplier cannot receive messages at this time.');
+          window.EventFlowNotifications?.info(
+            'This supplier cannot receive messages at this time.'
+          );
           return;
         }
         const safeName = (supplier.name || 'Supplier').replace(/[<>'"&]/g, '').trim() || 'Supplier';
@@ -327,7 +360,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       btnMsg.setAttribute('data-context-id', supplier.id);
       btnMsg.setAttribute('data-context-title', supplier.name);
       btnMsg.removeAttribute('data-messenger-action');
-      if (window.QuickComposeV4?.attachAll) window.QuickComposeV4.attachAll();
+      if (window.QuickComposeV4?.attachAll) {
+        window.QuickComposeV4.attachAll();
+      }
     } else if (btnMsg) {
       btnMsg.style.display = 'none';
     }
@@ -392,8 +427,13 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
           url: window.location.href,
         };
         if (navigator.share) {
-          try { await navigator.share(shareData); }
-          catch (e) { if (e.name !== 'AbortError') console.error(e); }
+          try {
+            await navigator.share(shareData);
+          } catch (e) {
+            if (e.name !== 'AbortError') {
+              console.error(e);
+            }
+          }
         } else {
           await navigator.clipboard.writeText(window.location.href);
           window.EventFlowNotifications?.success('Link copied to clipboard!');
@@ -406,15 +446,24 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function renderAboutSection(supplier) {
     const container = document.getElementById('sp-section-about');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     // Remove loading skeleton
     container.innerHTML = '';
 
-    const hasDescription = !!(supplier.description_long || supplier.description_short || supplier.description);
+    const hasDescription = !!(
+      supplier.description_long ||
+      supplier.description_short ||
+      supplier.description
+    );
     const hasHighlights = Array.isArray(supplier.highlights) && supplier.highlights.length > 0;
-    const hasFeaturedServices = Array.isArray(supplier.featuredServices) && supplier.featuredServices.length > 0;
-    const hasSocialLinks = supplier.socialLinks && Object.keys(supplier.socialLinks).filter(k => supplier.socialLinks[k]).length > 0;
+    const hasFeaturedServices =
+      Array.isArray(supplier.featuredServices) && supplier.featuredServices.length > 0;
+    const hasSocialLinks =
+      supplier.socialLinks &&
+      Object.keys(supplier.socialLinks).filter(k => supplier.socialLinks[k]).length > 0;
     const hasTrust = _hasTrustItems(supplier);
     const hasStats = _hasStats(supplier);
 
@@ -431,33 +480,38 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     const highlightsHtml = hasHighlights ? _renderHighlights(supplier.highlights) : '';
 
     // Description
-    const descText = supplier.description_long || supplier.description_short || supplier.description || '';
-    const descHtml = descText
-      ? `<p class="sp-about__description">${escapeHtml(descText)}</p>`
-      : '';
+    const descText =
+      supplier.description_long || supplier.description_short || supplier.description || '';
+    const descHtml = descText ? `<p class="sp-about__description">${escapeHtml(descText)}</p>` : '';
 
     // About meta (phone, website, etc.)
     const metaParts = [];
     if (supplier.website) {
-      metaParts.push(`<a href="${escapeHtml(supplier.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(supplier.website)}</a>`);
+      metaParts.push(
+        `<a href="${escapeHtml(supplier.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(supplier.website)}</a>`
+      );
     }
     if (supplier.phone) {
-      metaParts.push(`<a href="tel:${escapeHtml(supplier.phone)}">${escapeHtml(supplier.phone)}</a>`);
+      metaParts.push(
+        `<a href="tel:${escapeHtml(supplier.phone)}">${escapeHtml(supplier.phone)}</a>`
+      );
     }
     if (supplier.maxGuests) {
       metaParts.push(`Max ${escapeHtml(String(supplier.maxGuests))} guests`);
     }
-    const aboutMetaHtml = metaParts.length > 0
-      ? `<p class="sp-about__meta">${metaParts.join(' · ')}</p>`
-      : '';
+    const aboutMetaHtml =
+      metaParts.length > 0 ? `<p class="sp-about__meta">${metaParts.join(' · ')}</p>` : '';
 
     // Amenities
-    const amenitiesHtml = Array.isArray(supplier.amenities) && supplier.amenities.length > 0
-      ? `<div class="sp-services" style="margin-top:0.75rem;"><div class="sp-services__list">${supplier.amenities.map(a => `<span class="sp-service-tag">${escapeHtml(a)}</span>`).join('')}</div></div>`
-      : '';
+    const amenitiesHtml =
+      Array.isArray(supplier.amenities) && supplier.amenities.length > 0
+        ? `<div class="sp-services" style="margin-top:0.75rem;"><div class="sp-services__list">${supplier.amenities.map(a => `<span class="sp-service-tag">${escapeHtml(a)}</span>`).join('')}</div></div>`
+        : '';
 
     // Featured services
-    const servicesHtml = hasFeaturedServices ? _renderFeaturedServices(supplier.featuredServices) : '';
+    const servicesHtml = hasFeaturedServices
+      ? _renderFeaturedServices(supplier.featuredServices)
+      : '';
 
     // Social links
     const socialHtml = hasSocialLinks ? _renderSocialLinks(supplier.socialLinks) : '';
@@ -498,36 +552,54 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
   }
 
   function _hasStats(supplier) {
-    return !!(supplier.completedEvents || supplier.createdAt || supplier.avgResponseTime || supplier.reviewCount);
+    return !!(
+      supplier.completedEvents ||
+      supplier.createdAt ||
+      supplier.avgResponseTime ||
+      supplier.reviewCount
+    );
   }
 
   function _renderStatsStrip(supplier) {
     const items = [];
 
     if (supplier.completedEvents) {
-      items.push(`<div class="sp-stat"><div class="sp-stat__value">${escapeHtml(String(supplier.completedEvents))}</div><div class="sp-stat__label">Events</div></div>`);
+      items.push(
+        `<div class="sp-stat"><div class="sp-stat__value">${escapeHtml(String(supplier.completedEvents))}</div><div class="sp-stat__label">Events</div></div>`
+      );
     }
 
     const yrs = yearsActive(supplier.createdAt);
     if (yrs) {
-      items.push(`<div class="sp-stat"><div class="sp-stat__value">${yrs}</div><div class="sp-stat__label">Years Active</div></div>`);
+      items.push(
+        `<div class="sp-stat"><div class="sp-stat__value">${yrs}</div><div class="sp-stat__label">Years Active</div></div>`
+      );
     }
 
     if (supplier.avgResponseTime) {
-      items.push(`<div class="sp-stat"><div class="sp-stat__value">${Math.round(supplier.avgResponseTime)}h</div><div class="sp-stat__label">Response</div></div>`);
+      items.push(
+        `<div class="sp-stat"><div class="sp-stat__value">${Math.round(supplier.avgResponseTime)}h</div><div class="sp-stat__label">Response</div></div>`
+      );
     }
 
     if (supplier.reviewCount) {
-      items.push(`<div class="sp-stat"><div class="sp-stat__value">${escapeHtml(String(supplier.reviewCount))}</div><div class="sp-stat__label">Reviews</div></div>`);
+      items.push(
+        `<div class="sp-stat"><div class="sp-stat__value">${escapeHtml(String(supplier.reviewCount))}</div><div class="sp-stat__label">Reviews</div></div>`
+      );
     }
 
-    if (items.length === 0) return '';
+    if (items.length === 0) {
+      return '';
+    }
     return `<div class="sp-stats sp-fade-in">${items.join('')}</div>`;
   }
 
   function _renderHighlights(highlights) {
     const items = highlights
-      .map(h => `<div class="sp-highlight-item"><span class="sp-highlight-check" aria-hidden="true">✓</span><span>${escapeHtml(h)}</span></div>`)
+      .map(
+        h =>
+          `<div class="sp-highlight-item"><span class="sp-highlight-check" aria-hidden="true">✓</span><span>${escapeHtml(h)}</span></div>`
+      )
       .join('');
     return `
       <div class="sp-highlights sp-fade-in">
@@ -538,9 +610,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
   }
 
   function _renderFeaturedServices(services) {
-    const tags = services
-      .map(s => `<span class="sp-service-tag">${escapeHtml(s)}</span>`)
-      .join('');
+    const tags = services.map(s => `<span class="sp-service-tag">${escapeHtml(s)}</span>`).join('');
     return `
       <div class="sp-services">
         <div class="sp-services__title">Featured Services</div>
@@ -551,12 +621,12 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function _renderSocialLinks(socialLinks) {
     const platforms = {
-      facebook:  { label: 'Facebook',  icon: '📘', cls: 'facebook' },
+      facebook: { label: 'Facebook', icon: '📘', cls: 'facebook' },
       instagram: { label: 'Instagram', icon: '📷', cls: 'instagram' },
-      twitter:   { label: 'Twitter/X', icon: '𝕏',  cls: 'twitter' },
-      linkedin:  { label: 'LinkedIn',  icon: '💼', cls: 'linkedin' },
-      youtube:   { label: 'YouTube',   icon: '▶',  cls: 'youtube' },
-      tiktok:    { label: 'TikTok',    icon: '🎵', cls: 'tiktok' },
+      twitter: { label: 'Twitter/X', icon: '𝕏', cls: 'twitter' },
+      linkedin: { label: 'LinkedIn', icon: '💼', cls: 'linkedin' },
+      youtube: { label: 'YouTube', icon: '▶', cls: 'youtube' },
+      tiktok: { label: 'TikTok', icon: '🎵', cls: 'tiktok' },
     };
 
     const links = Object.entries(platforms)
@@ -566,7 +636,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="sp-social-link sp-social-link--${p.cls}" aria-label="${p.label}">${p.icon} ${p.label}</a>`;
       });
 
-    if (links.length === 0) return '';
+    if (links.length === 0) {
+      return '';
+    }
     return `<div class="sp-social-links">${links.join('')}</div>`;
   }
 
@@ -574,7 +646,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function renderGallerySection(supplier) {
     const container = document.getElementById('sp-section-gallery');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const photos = Array.isArray(supplier.photosGallery)
       ? supplier.photosGallery.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean)
@@ -593,14 +667,17 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       const extra = photos.length > 5 ? photos.length - 5 : 0;
       const visible = photos.slice(0, 5);
 
-      const thumbs = visible.slice(1).map((url, idx) => {
-        const isLast = idx === 3 && extra > 0;
-        return `
+      const thumbs = visible
+        .slice(1)
+        .map((url, idx) => {
+          const isLast = idx === 3 && extra > 0;
+          return `
           <div class="sp-gallery__thumb" role="img" aria-label="Gallery photo ${idx + 2}" tabindex="0">
             <img loading="lazy" src="${escapeHtml(url)}" alt="${escapeHtml(supplier.name)} — photo ${idx + 2}">
             ${isLast ? `<div class="sp-gallery__more-overlay">+${extra} more</div>` : `<div class="sp-gallery__overlay" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>`}
           </div>`;
-      }).join('');
+        })
+        .join('');
 
       galleryHtml = `
         <div class="sp-gallery">
@@ -612,11 +689,15 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         </div>`;
     } else {
       // Simple compact grid for 1-2 photos
-      const items = photos.map((url, idx) => `
+      const items = photos
+        .map(
+          (url, idx) => `
         <div class="sp-gallery__${idx === 0 ? 'featured' : 'thumb'}" role="img" aria-label="Gallery photo ${idx + 1}" tabindex="0">
           <img ${idx > 0 ? 'loading="lazy"' : ''} src="${escapeHtml(url)}" alt="${escapeHtml(supplier.name)} — photo ${idx + 1}">
           <div class="sp-gallery__overlay" aria-hidden="true">🔍</div>
-        </div>`).join('');
+        </div>`
+        )
+        .join('');
 
       galleryHtml = `<div class="sp-gallery--compact">${items}</div>`;
     }
@@ -660,7 +741,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function renderPackagesSection(packages) {
     const container = document.getElementById('sp-section-packages');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     if (!packages || packages.length === 0) {
       container.style.display = 'none';
@@ -741,7 +824,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function renderReviewsSection(suppId, supplier) {
     const container = document.getElementById('sp-section-reviews');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const supplierName = escapeHtml(supplier ? supplier.name : 'this supplier');
 
@@ -817,7 +902,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     if (writeBtn) {
       writeBtn.addEventListener('click', () => {
         const widget = document.getElementById('reviews-widget');
-        if (widget) widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (widget) {
+          widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       });
     }
 
@@ -867,7 +954,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function _renderSidebarEnquiry(supplier) {
     const container = document.getElementById('sp-sidebar-enquiry');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const supplierName = escapeHtml(supplier.name || 'this supplier');
 
@@ -894,7 +983,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     if (sidebarEnquiry) {
       sidebarEnquiry.addEventListener('click', () => {
         const heroEnquiry = document.getElementById('btn-enquiry');
-        if (heroEnquiry) heroEnquiry.click();
+        if (heroEnquiry) {
+          heroEnquiry.click();
+        }
       });
     }
 
@@ -902,31 +993,45 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     if (sidebarMsg) {
       sidebarMsg.addEventListener('click', () => {
         const heroMsg = document.getElementById('btn-message-supplier');
-        if (heroMsg) heroMsg.click();
+        if (heroMsg) {
+          heroMsg.click();
+        }
       });
     }
   }
 
   function _renderSidebarTrust(supplier) {
     const container = document.getElementById('sp-sidebar-trust');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const items = [];
 
     if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {
-      items.push(`<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Email verified</span></div>`);
+      items.push(
+        `<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Email verified</span></div>`
+      );
     }
     if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
-      items.push(`<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Phone verified</span></div>`);
+      items.push(
+        `<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Phone verified</span></div>`
+      );
     }
     if (supplier.businessVerified || supplier.verifications?.business?.verified) {
-      items.push(`<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Business verified</span></div>`);
+      items.push(
+        `<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Business verified</span></div>`
+      );
     }
     if (supplier.insurance) {
-      items.push(`<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Insured</span></div>`);
+      items.push(
+        `<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Insured</span></div>`
+      );
     }
     if (supplier.license) {
-      items.push(`<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Licensed</span></div>`);
+      items.push(
+        `<div class="sp-trust-item"><span class="sp-trust-icon" aria-hidden="true">✓</span><span>Licensed</span></div>`
+      );
     }
 
     if (items.length === 0) {
@@ -945,7 +1050,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function _renderSidebarDetails(supplier) {
     const container = document.getElementById('sp-sidebar-details');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const rows = [];
 
@@ -970,7 +1077,11 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     }
 
     if (supplier.avgResponseTime) {
-      rows.push({ icon: '⚡', label: 'Response', value: `~${Math.round(supplier.avgResponseTime)}h` });
+      rows.push({
+        icon: '⚡',
+        label: 'Response',
+        value: `~${Math.round(supplier.avgResponseTime)}h`,
+      });
     }
 
     if (rows.length === 0) {
@@ -979,12 +1090,14 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     }
 
     const rowsHtml = rows
-      .map(r => `
+      .map(
+        r => `
         <div class="sp-detail-row">
           <span class="sp-detail-row__icon" aria-hidden="true">${r.icon}</span>
           <span class="sp-detail-row__label">${r.label}</span>
           <span class="sp-detail-row__value">${r.value}</span>
-        </div>`)
+        </div>`
+      )
       .join('');
 
     container.innerHTML = `
@@ -1000,7 +1113,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
   function renderBadgesSection(supplier) {
     const container = document.getElementById('sp-section-badges');
-    if (!container || !supplier) return;
+    if (!container || !supplier) {
+      return;
+    }
 
     const sections = [];
 
@@ -1017,7 +1132,9 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       tierBadges.push('<span class="badge badge-pro" aria-label="Pro">Pro</span>');
     }
     if (tierBadges.length > 0) {
-      sections.push(`<p class="sp-badges-group-label">Subscription</p><div class="sp-badges-row">${tierBadges.join('')}</div>`);
+      sections.push(
+        `<p class="sp-badges-group-label">Subscription</p><div class="sp-badges-row">${tierBadges.join('')}</div>`
+      );
     }
 
     // Earned badges (from badgeDetails, excluding tier/verif/founder)
@@ -1027,43 +1144,61 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       : [];
     if (earned.length > 0) {
       const cards = earned
-        .map(b => `
+        .map(
+          b => `
           <div class="sp-badge-card">
             <div class="sp-badge-card__icon" aria-hidden="true">${b.icon || '🏅'}</div>
             <div class="sp-badge-card__body">
               <div class="sp-badge-card__name">${escapeHtml(b.name)}</div>
               ${b.description ? `<div class="sp-badge-card__desc">${escapeHtml(b.description)}</div>` : ''}
             </div>
-          </div>`)
+          </div>`
+        )
         .join('');
-      sections.push(`<p class="sp-badges-group-label">Earned Achievements</p><div class="sp-badge-cards-grid">${cards}</div>`);
+      sections.push(
+        `<p class="sp-badges-group-label">Earned Achievements</p><div class="sp-badge-cards-grid">${cards}</div>`
+      );
     }
 
     // Recognition: founding + featured
     const honorBadges = [];
     if (supplier.isFoundingSupplier || supplier.isFounding || supplier.founding) {
-      honorBadges.push('<span class="badge badge-founding" aria-label="Founding supplier">Founding</span>');
+      honorBadges.push(
+        '<span class="badge badge-founding" aria-label="Founding supplier">Founding</span>'
+      );
     }
     if (supplier.featured || supplier.featuredSupplier) {
-      honorBadges.push('<span class="badge badge-featured" aria-label="Featured supplier">Featured</span>');
+      honorBadges.push(
+        '<span class="badge badge-featured" aria-label="Featured supplier">Featured</span>'
+      );
     }
     if (honorBadges.length > 0) {
-      sections.push(`<p class="sp-badges-group-label">Recognition</p><div class="sp-badges-row">${honorBadges.join('')}</div>`);
+      sections.push(
+        `<p class="sp-badges-group-label">Recognition</p><div class="sp-badges-row">${honorBadges.join('')}</div>`
+      );
     }
 
     // Verification
     const verifyBadges = [];
     if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {
-      verifyBadges.push('<span class="badge badge-email-verified" aria-label="Email verified">Email</span>');
+      verifyBadges.push(
+        '<span class="badge badge-email-verified" aria-label="Email verified">Email</span>'
+      );
     }
     if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
-      verifyBadges.push('<span class="badge badge-phone-verified" aria-label="Phone verified">Phone</span>');
+      verifyBadges.push(
+        '<span class="badge badge-phone-verified" aria-label="Phone verified">Phone</span>'
+      );
     }
     if (supplier.businessVerified || supplier.verifications?.business?.verified) {
-      verifyBadges.push('<span class="badge badge-business-verified" aria-label="Business verified">Business</span>');
+      verifyBadges.push(
+        '<span class="badge badge-business-verified" aria-label="Business verified">Business</span>'
+      );
     }
     if (verifyBadges.length > 0) {
-      sections.push(`<p class="sp-badges-group-label">Verification</p><div class="sp-badges-row">${verifyBadges.join('')}</div>`);
+      sections.push(
+        `<p class="sp-badges-group-label">Verification</p><div class="sp-badges-row">${verifyBadges.join('')}</div>`
+      );
     }
 
     if (sections.length === 0) {
@@ -1103,20 +1238,26 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         </div>
       `;
       const retryBtn = aboutSection.querySelector('#sp-retry-btn');
-      if (retryBtn) retryBtn.addEventListener('click', loadAllData);
+      if (retryBtn) {
+        retryBtn.addEventListener('click', loadAllData);
+      }
     }
   }
 
   // ─── Data loading ─────────────────────────────────────────────────────────────
 
   async function loadAllData() {
-    if (!supplierId) return;
+    if (!supplierId) {
+      return;
+    }
 
     try {
       // Fetch supplier data and packages in parallel
       const [supplierResp, packagesResp] = await Promise.allSettled([
         fetch(`/api/suppliers/${encodeURIComponent(supplierId)}`, { credentials: 'include' }),
-        fetch(`/api/suppliers/${encodeURIComponent(supplierId)}/packages`, { credentials: 'include' }),
+        fetch(`/api/suppliers/${encodeURIComponent(supplierId)}/packages`, {
+          credentials: 'include',
+        }),
       ]);
 
       // Supplier data is required
@@ -1140,7 +1281,6 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       renderReviewsSection(supplierId, supplierData);
       renderSidebarSection(supplierData);
       renderBadgesSection(supplierData);
-
     } catch (error) {
       console.error('Error loading supplier profile:', error);
       showPageError();
@@ -1158,8 +1298,8 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
       return;
     }
 
-    // Validate format
-    if (!/^sup_[a-zA-Z0-9_-]+$/.test(supplierId)) {
+    // Validate format — allow any alphanumeric/dash/underscore ID up to 128 chars
+    if (!/^[a-zA-Z0-9_-]{1,128}$/.test(supplierId)) {
       console.warn('[supplier-profile] Invalid supplier ID format:', supplierId);
       return;
     }

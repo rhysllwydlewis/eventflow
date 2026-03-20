@@ -73,6 +73,12 @@
   gap: var(--sp-section-gap);
 }
 
+/* sp-section: transparent wrapper used on each section mount point */
+.sp-section {
+  /* No visual styling — just a layout anchor.
+     Visual styling is applied to the .sp-card inside. */
+}
+
 /* Sidebar: sticky scroll behaviour */
 .sp-page-aside {
   min-width: 0;
@@ -141,12 +147,12 @@
   overflow: hidden;
   border-radius: 0 0 var(--sp-card-radius) var(--sp-card-radius);
   box-shadow: var(--sp-shadow-lg);
-  /* Default gradient background when no banner */
+  /* Default gradient background when no banner — safe two-stop gradient */
   --supplier-theme: #0b8073;
   background: linear-gradient(
     135deg,
     var(--supplier-theme, #0b8073) 0%,
-    color-mix(in srgb, var(--supplier-theme, #0b8073) 80%, #10b981) 100%
+    #10b981 100%
   );
 }
 
