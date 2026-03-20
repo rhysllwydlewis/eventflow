@@ -110,7 +110,7 @@ describe('PUT /me/packages/:id — base64 image pipeline', () => {
 
   it('falls back gracefully when saveImageBase64 throws on update', () => {
     expect(packagesContent).toContain(
-      "logger.warn('Package update: image processing failed, keeping existing image:'"
+      "'Package update: image processing failed, keeping existing image:'"
     );
   });
 

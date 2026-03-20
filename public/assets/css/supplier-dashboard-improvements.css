@@ -3593,9 +3593,10 @@ textarea:focus-visible {
   margin-bottom: 0;
 }
 
+/* Event Types checkboxes — compact to keep the form tidy */
 #package-form .checkbox-group {
   padding-top: 2px;
-  gap: 10px;
+  gap: 10px; /* reduced from 12px to suit the smaller 14px checkboxes */
 }
 
 /* Event Types checkboxes are ~20% smaller than the default 18px size */
