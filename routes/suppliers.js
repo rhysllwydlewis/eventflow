@@ -6,7 +6,6 @@
 'use strict';
 
 const express = require('express');
-const { PLACEHOLDER_PACKAGE_IMAGE } = require('../utils/constants');
 const router = express.Router();
 
 // Dependencies injected by server.js

@@ -6,7 +6,7 @@
 'use strict';
 
 const express = require('express');
-const { PLACEHOLDER_PACKAGE_IMAGE } = require('../utils/constants');
+const { PLACEHOLDER_PACKAGE_IMAGE, isPlaceholderImage } = require('../utils/packageImageUtils');
 const suppliersRouter = require('./suppliers');
 const router = express.Router();
 
@@ -727,7 +727,22 @@ router.put(
       pkgUpdates.price_display = req.body.price_display;
     }
     if (req.body.image) {
-      pkgUpdates.image = req.body.image;
+      const newImage = req.body.image;
+      pkgUpdates.image = newImage;
+      // Sync to gallery so the detail view resolvedGallery reflects the new image
+      if (!isPlaceholderImage(newImage)) {
+        const existingGallery = pkg.gallery || [];
+        const alreadyInGallery = existingGallery.some(item => {
+          const u = typeof item === 'string' ? item : item.url || '';
+          return u === newImage;
+        });
+        if (!alreadyInGallery) {
+          pkgUpdates.gallery = [
+            { url: newImage, approved: true, uploadedAt: Date.now() },
+            ...existingGallery,
+          ];
+        }
+      }
     }
     if (typeof req.body.approved === 'boolean') {
       pkgUpdates.approved = req.body.approved;
@@ -803,12 +818,28 @@ router.post(
         'supplier'
       );
 
+      const pkg = packages[packageIndex];
+      const uploadedUrl = imageData.optimized || imageData.large;
+
+      // Build update: always set pkg.image; also prepend to gallery so the
+      // detail-view resolvedGallery reflects the newly uploaded image.
+      const existingGallery = pkg.gallery || [];
+      const alreadyInGallery = existingGallery.some(item => {
+        const u = typeof item === 'string' ? item : item.url || '';
+        return u === uploadedUrl;
+      });
+      const updatedGallery = alreadyInGallery
+        ? existingGallery
+        : [{ url: uploadedUrl, approved: true, uploadedAt: Date.now() }, ...existingGallery];
+
       // Update package with new image URL
       const imageUpdates = {
-        image: imageData.optimized || imageData.large,
+        image: uploadedUrl,
+        gallery: updatedGallery,
         updatedAt: new Date().toISOString(),
       };
       await dbUnified.updateOne('packages', { id: packageId }, { $set: imageUpdates });
+      suppliersRouter.invalidatePackageCaches();
 
       logger.info(`Package image uploaded successfully for package ${packageId}`);
 
