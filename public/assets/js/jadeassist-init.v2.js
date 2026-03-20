@@ -8,6 +8,7 @@
  * - Debug mode via ?jade-debug query param (works in any environment)
  * - Safe-area inset support for iOS notched devices
  * - Double-init guard
+ * - Configurable backend API URL (via window.JADEASSIST_CONFIG or built-in default)
  */
 
 (function () {
@@ -21,6 +22,17 @@
   window.__JADE_WIDGET_INITIALIZED__ = true;
 
   // ─── Configuration ────────────────────────────────────────────────────────
+
+  // Backend API base URL for JadeAssist.
+  // Override by setting window.JADEASSIST_CONFIG = { apiBaseUrl: 'https://...' } before this
+  // script loads (e.g. from a config snippet), or by changing JADEASSIST_API_BASE_URL in the
+  // server environment (served via /api/config and injected into window.JADEASSIST_CONFIG).
+  // Default points to the Railway-hosted backend service.
+  // Keep this default in sync with the default in routes/system.js (/api/config).
+  const API_BASE_URL =
+    (window.JADEASSIST_CONFIG && window.JADEASSIST_CONFIG.apiBaseUrl) ||
+    'https://jadeassistbackend-production.up.railway.app';
+
   const MAX_RETRIES = 50; // Maximum retry attempts (5 seconds with 100ms interval)
   const RETRY_INTERVAL = 100; // Retry interval in milliseconds
   const INIT_DELAY = 2000; // Delay before init attempt (ms) — prioritize page content first
@@ -564,6 +576,7 @@
       if (debug) {
         verifyAvatarLoad(avatarUrl);
         console.log('[JadeAssist] Init config:', {
+          apiBaseUrl: API_BASE_URL,
           primaryColor: '#00B2A9',
           assistantName: 'Jade',
           avatarUrl,
@@ -580,6 +593,9 @@
       applyCustomStyles();
 
       window.JadeWidget.init({
+        // Backend API (Railway-hosted JadeAssist service)
+        apiBaseUrl: API_BASE_URL,
+
         // Brand colors
         primaryColor: '#00B2A9',
         accentColor: '#008C85',

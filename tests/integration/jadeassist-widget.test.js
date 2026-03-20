@@ -190,6 +190,21 @@ describe('JadeAssist Widget Pinning', () => {
       expect(v2Content).toMatch(/function openChat\s*\(\s*\)[^}]*dismissTeaser\s*\(\s*\)/s);
     });
 
+    it('should configure apiBaseUrl pointing to the Railway backend', () => {
+      // The Railway backend URL must be set in the init script so the widget
+      // can talk to the JadeAssist backend service, not run in demo mode.
+      expect(v2Content).toContain('jadeassistbackend-production.up.railway.app');
+      // apiBaseUrl must be passed to JadeWidget.init()
+      expect(v2Content).toContain('apiBaseUrl:');
+      // Must use the API_BASE_URL constant (not a literal string inline)
+      expect(v2Content).toContain('API_BASE_URL');
+    });
+
+    it('should support window.JADEASSIST_CONFIG override for apiBaseUrl', () => {
+      // Allows the Railway URL to be overridden without changing this script
+      expect(v2Content).toContain('window.JADEASSIST_CONFIG');
+    });
+
     it('should disable native greetingTooltipText to avoid duplicate teaser', () => {
       expect(v2Content).toContain("greetingTooltipText: ''");
     });
