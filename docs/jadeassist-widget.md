@@ -8,14 +8,32 @@ The JadeAssist widget is a chat assistant that helps users find venues and suppl
 
 ## Configuration Files
 
-The widget is configured through two initialization scripts:
+- **`public/assets/js/jadeassist-init.v2.js`** — **Current version** used across all pages. Features teaser bubble with A/B testing, full keyboard accessibility, analytics events, safe-area inset support, and debug diagnostics.
+- **`public/assets/js/jadeassist-init.js`** — Legacy version kept for reference. Not loaded by any HTML page.
 
-- **`public/assets/js/jadeassist-init.v2.js`** - Current version used across all pages
-- **`public/assets/js/jadeassist-init.js`** - Legacy version kept for backwards compatibility
+## Debug Mode
 
-Both scripts are kept in sync to ensure consistent behavior.
+Append `?jade-debug` to any page URL to enable diagnostic logs in the browser console. This works in **all environments** (production, staging, localhost).
 
-## Avatar Image
+### What debug mode logs
+
+- Init config summary (colours, avatar URL, positioning offsets, scale)
+- Avatar load success or failure with the full URL tested
+- Widget initialized successfully ✅
+- Teaser triggered (method + variant + mobile flag)
+- Auto-dismiss timing
+
+### Enabling debug mode
+
+```
+# Any page, any environment
+https://www.event-flow.co.uk/?jade-debug
+
+# Specific page
+https://www.event-flow.co.uk/plan?jade-debug
+```
+
+Debug mode is also automatically enabled on `localhost`, `127.0.0.1`, `*.local`, `dev.*`, and `staging.*` hostnames.
 
 ### Current Avatar
 
@@ -189,7 +207,7 @@ The widget is **closed by default** when the page loads:
 
 - The launcher button (avatar) is visible
 - The chat panel is closed
-- A teaser bubble may appear after 500ms (if not recently dismissed)
+- A teaser bubble appears after 500 ms (if not dismissed within the last day), or immediately after the user scrolls 25% down the page — whichever is first
 
 This is enforced defensively with:
 
@@ -206,16 +224,22 @@ setTimeout(() => {
 Users can open the widget by:
 
 1. **Clicking the launcher button** (avatar icon)
-2. **Clicking the teaser bubble** (which also dismisses the teaser)
+2. **Clicking the teaser bubble** (opens chat and dismisses the teaser)
+3. **Pressing Enter or Space** while the teaser bubble is focused
 
 ### Teaser Behavior
 
 The teaser bubble:
 
-- Shows after 500ms if not recently dismissed
+- Shows after 500 ms if not recently dismissed **or** when the user scrolls 25% down the page (whichever comes first)
 - Can be dismissed by clicking the "×" button (doesn't open chat)
 - Can be clicked to open the chat (opens chat and dismisses teaser)
+- Supports keyboard navigation: **Enter/Space** opens chat, **Escape** dismisses
+- Emits analytics custom events (see [Analytics Integration](#analytics-integration))
+- Auto-dismisses after 15 s
 - Dismissal state persists for 1 day in localStorage
+- Mobile-friendly copy (shorter text on screens <768 px)
+- Safe-area inset support for iOS notch/Dynamic Island devices
 
 ## CDN and Widget Library
 
@@ -362,11 +386,12 @@ This verifies:
 ### Key Constants
 
 ```javascript
-MAX_RETRIES: 50; // Widget load retry attempts (5 seconds)
-RETRY_INTERVAL: 100; // Time between retries (100ms)
-INIT_DELAY: 1000; // Delay before first init attempt (1s)
-TEASER_DELAY: 500; // Delay before showing teaser (500ms)
+MAX_RETRIES: 50; // Widget load retry attempts (5 seconds @ 100ms interval)
+RETRY_INTERVAL: 100; // Time between retries (ms)
+INIT_DELAY: 2000; // Delay before first init attempt (ms)
+TEASER_DELAY: 500; // Delay before showing teaser after init (ms)
 TEASER_EXPIRY_DAYS: 1; // How long dismissal persists
+MOBILE_BREAKPOINT: 768; // px — switches to mobile teaser copy below this width
 ```
 
 ## Support
