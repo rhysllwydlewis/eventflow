@@ -1,18 +1,26 @@
 /**
  * Package Detail Image Fix – Unit Tests
  *
- * Verifies the three changes made to fix intermittent placeholder images
+ * Verifies the changes made to fix intermittent placeholder images
  * on package detail pages:
  *
  *  1. routes/suppliers.js – GET /packages/:slug now returns
- *     `image: resolvePackageImage(pkg)` instead of the raw database value.
+ *     `image: resolvePackageImage(pkg)` instead of the raw database value,
+ *     plus a `resolvedGallery` array with normalised {url} objects and
+ *     optional `_debug` diagnostics when ?debugImages=1.
  *
  *  2. public/assets/js/pages/package-init.js – gallery items with empty or
  *     placeholder URLs are filtered out before being passed to PackageGallery.
+ *     URL extraction now includes originalUrl and thumbnail field names.
+ *     resolvedGallery from the API is preferred over raw gallery.
  *
- *  3. public/assets/js/components/package-gallery.js – the first (immediately
- *     visible) gallery image uses loading="eager" to avoid the Chrome lazy-load
- *     browser intervention that can replace it with a placeholder.
+ *  3. public/assets/js/components/package-gallery.js – URL extraction now
+ *     includes originalUrl and thumbnail field names in both the main image
+ *     and thumbnail rendering paths.
+ *     The first (immediately visible) gallery image uses loading="eager".
+ *
+ *  4. public/package.html – loads package-image-resolver.js before the
+ *     gallery and page-init scripts.
  */
 
 'use strict';
@@ -26,15 +34,30 @@ const PACKAGE_GALLERY = path.join(
   __dirname,
   '../../public/assets/js/components/package-gallery.js'
 );
+const PACKAGE_HTML = path.join(__dirname, '../../public/package.html');
+const PACKAGE_IMAGE_UTILS = path.join(__dirname, '../../utils/packageImageUtils.js');
+const SEARCH_SERVICE = path.join(__dirname, '../../services/searchService.js');
+const SUPPLIERS_HTML = path.join(__dirname, '../../public/suppliers.html');
+const SUPPLIERS_INIT = path.join(__dirname, '../../public/assets/js/pages/suppliers-init.js');
 
 let suppliersContent;
 let packageInitContent;
 let packageGalleryContent;
+let packageHtmlContent;
+let packageImageUtilsContent;
+let searchServiceContent;
+let suppliersHtmlContent;
+let suppliersInitContent;
 
 beforeAll(() => {
   suppliersContent = fs.readFileSync(SUPPLIERS_ROUTES, 'utf8');
   packageInitContent = fs.readFileSync(PACKAGE_INIT, 'utf8');
   packageGalleryContent = fs.readFileSync(PACKAGE_GALLERY, 'utf8');
+  packageHtmlContent = fs.readFileSync(PACKAGE_HTML, 'utf8');
+  packageImageUtilsContent = fs.readFileSync(PACKAGE_IMAGE_UTILS, 'utf8');
+  searchServiceContent = fs.readFileSync(SEARCH_SERVICE, 'utf8');
+  suppliersHtmlContent = fs.readFileSync(SUPPLIERS_HTML, 'utf8');
+  suppliersInitContent = fs.readFileSync(SUPPLIERS_INIT, 'utf8');
 });
 
 // ─── API route image normalisation ───────────────────────────────────────────
@@ -64,6 +87,66 @@ describe('GET /packages/:slug — image field normalisation', () => {
 
     // Should not use `package: pkg` without spreading/normalising
     expect(block).not.toMatch(/package:\s*pkg[,\s}]/);
+  });
+
+  it('includes resolvedGallery in the package detail response', () => {
+    const marker = "router.get('/packages/:slug'";
+    const start = suppliersContent.indexOf(marker);
+    const afterStart = suppliersContent.indexOf('\nrouter.', start + marker.length);
+    const block = suppliersContent.substring(start, afterStart === -1 ? undefined : afterStart);
+
+    expect(block).toContain('resolvedGallery');
+    expect(block).toContain('normalizeGallery(');
+  });
+
+  it('includes ?debugImages=1 diagnostic support in the detail endpoint', () => {
+    const marker = "router.get('/packages/:slug'";
+    const start = suppliersContent.indexOf(marker);
+    const afterStart = suppliersContent.indexOf('\nrouter.', start + marker.length);
+    const block = suppliersContent.substring(start, afterStart === -1 ? undefined : afterStart);
+
+    expect(block).toContain('debugImages');
+    expect(block).toContain('_debug');
+  });
+});
+
+// ─── normalizeGallery helper (now in utils/packageImageUtils.js) ─────────────
+
+describe('utils/packageImageUtils.js — normalizeGallery function', () => {
+  it('defines a normalizeGallery function', () => {
+    expect(packageImageUtilsContent).toContain('function normalizeGallery(');
+  });
+
+  it('handles string gallery items in normalizeGallery', () => {
+    expect(packageImageUtilsContent).toContain("typeof img === 'string'");
+  });
+
+  it('extracts originalUrl and thumbnail field names inside normalizeGallery', () => {
+    expect(packageImageUtilsContent).toContain('function normalizeGallery(');
+    expect(packageImageUtilsContent).toContain('img.originalUrl');
+    expect(packageImageUtilsContent).toContain('img.thumbnail');
+  });
+
+  it('filters placeholder items inside normalizeGallery', () => {
+    expect(packageImageUtilsContent).toContain('function normalizeGallery(');
+    expect(packageImageUtilsContent).toContain('isPlaceholderImage(url)');
+  });
+
+  it('exports resolvePackageImage and isPlaceholderImage', () => {
+    expect(packageImageUtilsContent).toContain('resolvePackageImage');
+    expect(packageImageUtilsContent).toContain('isPlaceholderImage');
+    expect(packageImageUtilsContent).toContain('module.exports');
+  });
+});
+
+describe('routes/suppliers.js — delegates to utils/packageImageUtils.js', () => {
+  it('imports resolvePackageImage from the shared utility', () => {
+    expect(suppliersContent).toContain('packageImageUtils');
+    expect(suppliersContent).toContain('resolvePackageImage');
+  });
+
+  it('no longer defines its own KNOWN_PLACEHOLDERS_SERVER Set', () => {
+    expect(suppliersContent).not.toContain('KNOWN_PLACEHOLDERS_SERVER');
   });
 });
 
@@ -106,6 +189,46 @@ describe('package-init.js — gallery item filtering', () => {
         : packageInitContent.substring(idx, nextSemi + 1);
     expect(galleryImagesBlock).toContain('validGalleryImages');
   });
+
+  it('prefers resolvedGallery from API over raw gallery', () => {
+    expect(packageInitContent).toContain('pkg.resolvedGallery');
+    // rawGallery must prefer resolvedGallery
+    const rawIdx = packageInitContent.indexOf('const rawGallery');
+    expect(rawIdx).toBeGreaterThan(-1);
+    const rawLine = packageInitContent.substring(rawIdx, rawIdx + 100);
+    expect(rawLine).toContain('pkg.resolvedGallery');
+  });
+
+  it('extracts originalUrl field from gallery items', () => {
+    expect(packageInitContent).toContain('img.originalUrl');
+  });
+
+  it('extracts thumbnail field from gallery items', () => {
+    expect(packageInitContent).toContain('img.thumbnail');
+  });
+});
+
+// ─── package-gallery.js URL extraction ───────────────────────────────────────
+
+describe('PackageGallery — URL field extraction', () => {
+  it('extracts originalUrl from gallery items in main image rendering', () => {
+    expect(packageGalleryContent).toContain('img.originalUrl');
+  });
+
+  it('extracts thumbnail from gallery items in main image rendering', () => {
+    // Verify the main image render (first occurrence of originalUrl) also has thumbnail
+    const firstOrigIdx = packageGalleryContent.indexOf('img.originalUrl');
+    expect(firstOrigIdx).toBeGreaterThan(-1);
+    const block = packageGalleryContent.substring(firstOrigIdx, firstOrigIdx + 100);
+    expect(block).toContain('img.thumbnail');
+  });
+
+  it('extracts originalUrl from gallery items in thumbnail rendering', () => {
+    // Verify the second occurrence (thumbnail strip) also extracts originalUrl
+    const firstOrigIdx = packageGalleryContent.indexOf('img.originalUrl');
+    const secondOrigIdx = packageGalleryContent.indexOf('img.originalUrl', firstOrigIdx + 1);
+    expect(secondOrigIdx).toBeGreaterThan(-1);
+  });
 });
 
 // ─── package-gallery.js eager loading for first image ────────────────────────
@@ -125,16 +248,33 @@ describe('PackageGallery — first image uses eager loading', () => {
   });
 });
 
+// ─── package.html script loading ─────────────────────────────────────────────
+
+describe('package.html — script loading order', () => {
+  it('loads package-image-resolver.js', () => {
+    expect(packageHtmlContent).toContain('package-image-resolver.js');
+  });
+
+  it('loads package-image-resolver.js before package-gallery.js', () => {
+    const resolverIdx = packageHtmlContent.indexOf('package-image-resolver.js');
+    const galleryIdx = packageHtmlContent.indexOf('package-gallery.js');
+    expect(resolverIdx).toBeGreaterThan(-1);
+    expect(galleryIdx).toBeGreaterThan(-1);
+    expect(resolverIdx).toBeLessThan(galleryIdx);
+  });
+
+  it('loads package-image-resolver.js before package-init.js', () => {
+    const resolverIdx = packageHtmlContent.indexOf('package-image-resolver.js');
+    const initIdx = packageHtmlContent.indexOf('package-init.js');
+    expect(resolverIdx).toBeGreaterThan(-1);
+    expect(initIdx).toBeGreaterThan(-1);
+    expect(resolverIdx).toBeLessThan(initIdx);
+  });
+});
+
 // ─── package.html breadcrumb fix ─────────────────────────────────────────────
 
 describe('package.html — breadcrumb double-separator fix', () => {
-  let packageHtmlContent;
-
-  beforeAll(() => {
-    const htmlPath = path.join(__dirname, '../../public/package.html');
-    packageHtmlContent = fs.readFileSync(htmlPath, 'utf8');
-  });
-
   it('wraps the category crumb in a group hidden by default', () => {
     expect(packageHtmlContent).toContain('id="breadcrumb-category-group"');
     expect(packageHtmlContent).toContain('style="display:none;"');
@@ -148,5 +288,92 @@ describe('package.html — breadcrumb double-separator fix', () => {
   it('package.html OG/Twitter URL uses clean path without .html extension', () => {
     expect(packageHtmlContent).not.toContain('package.html"');
     expect(packageHtmlContent).toContain('event-flow.co.uk/package"');
+  });
+});
+
+// ─── package.html / package-init.js — category pill visual polish ────────────
+
+describe('package.html — category pill CSS class (teal design system)', () => {
+  it('defines .pkg-category-pill CSS class in the page <style> block', () => {
+    expect(packageHtmlContent).toContain('.pkg-category-pill');
+  });
+
+  it('.pkg-category-pill uses the teal background colour (#f0fdf9)', () => {
+    expect(packageHtmlContent).toContain('#f0fdf9');
+  });
+
+  it('.pkg-category-pill uses the teal ink colour (#0b8073) via explicit-specificity rule', () => {
+    // The teal text colour is set on the higher-specificity rule to beat the
+    // card link colour reset (#package-content .card a:not(.sp-btn))
+    const ruleIdx = packageHtmlContent.indexOf('a.pkg-category-pill');
+    expect(ruleIdx).toBeGreaterThan(-1);
+    const ruleBlock = packageHtmlContent.substring(ruleIdx, ruleIdx + 200);
+    expect(ruleBlock).toContain('#0b8073');
+  });
+
+  it('package-init.js uses class="pkg-category-pill" instead of gray inline styles', () => {
+    expect(packageInitContent).toContain('pkg-category-pill');
+    // Must NOT use the old gray inline style
+    expect(packageInitContent).not.toContain('background:#f8f9fa');
+    expect(packageInitContent).not.toContain('color:#6c757d');
+  });
+
+  it('#package-categories uses :not(:empty) so empty container adds no margin', () => {
+    expect(packageHtmlContent).toContain('#package-categories:not(:empty)');
+    expect(packageHtmlContent).toContain('margin-bottom: 12px');
+  });
+
+  it('#package-categories HTML element no longer has inline margin-bottom', () => {
+    // The div itself should not carry margin-bottom so empty state has no gap
+    expect(packageHtmlContent).not.toMatch(/id="package-categories"[^>]*margin-bottom/);
+  });
+});
+
+// ─── searchService.js — topPackages image fix ────────────────────────────────
+
+describe('services/searchService.js — topPackages image resolution', () => {
+  it('imports resolvePackageImage from utils/packageImageUtils', () => {
+    expect(searchServiceContent).toContain('packageImageUtils');
+    expect(searchServiceContent).toContain('resolvePackageImage');
+  });
+
+  it('uses resolvePackageImage(p) for topPackages image instead of p.image || null', () => {
+    expect(searchServiceContent).toContain('resolvePackageImage(p)');
+    // Must NOT use the old raw field access that skips gallery fallback
+    expect(searchServiceContent).not.toContain('image: p.image || null');
+  });
+});
+
+// ─── suppliers.html + suppliers-init.js — mini-card image fix ────────────────
+
+describe('public/suppliers.html — package-image-resolver.js loaded', () => {
+  it('loads package-image-resolver.js', () => {
+    expect(suppliersHtmlContent).toContain('package-image-resolver.js');
+  });
+
+  it('loads package-image-resolver.js before suppliers-init.js', () => {
+    const resolverIdx = suppliersHtmlContent.indexOf('package-image-resolver.js');
+    const initIdx = suppliersHtmlContent.indexOf('suppliers-init.js');
+    expect(resolverIdx).toBeGreaterThan(-1);
+    expect(initIdx).toBeGreaterThan(-1);
+    expect(resolverIdx).toBeLessThan(initIdx);
+  });
+});
+
+describe('public/assets/js/pages/suppliers-init.js — mini-card gallery fallback', () => {
+  it('uses resolvePackageImage() for mini-card image resolution', () => {
+    expect(suppliersInitContent).toContain('resolvePackageImage');
+  });
+
+  it('includes an inline gallery fallback chain when resolvePackageImage is unavailable', () => {
+    // The inline fallback must cover gallery items so the card degrades gracefully
+    // even if the global resolver has not yet loaded.
+    expect(suppliersInitContent).toContain('pkg.gallery');
+  });
+
+  it('does NOT use bare pkg.image check as sole image source for mini-cards', () => {
+    // Old code: `const imgHtml = pkg.image ? ...`
+    // New code: resolved via resolvePackageImage or inline fallback
+    expect(suppliersInitContent).not.toContain('const imgHtml = pkg.image');
   });
 });
