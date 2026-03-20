@@ -6,10 +6,87 @@ This document describes how the JadeAssist chat widget is configured and customi
 
 The JadeAssist widget is a chat assistant that helps users find venues and suppliers. It's positioned on the left side of the screen, aligned vertically with the back-to-top button (which is on the right side).
 
+JadeAssist is deployed as an **independently deployable service on Railway**, separate from EventFlow. EventFlow embeds the widget script and points it at the Railway backend API.
+
+## Architecture
+
+```
+event-flow.co.uk (EventFlow — Railway)
+  └─ embeds /assets/js/vendor/jade-widget.js  (self-hosted widget bundle)
+  └─ loads  /assets/js/jadeassist-init.v2.js  (init + teaser)
+       └─ calls JadeWidget.init({ apiBaseUrl: 'https://jadeassistbackend-production.up.railway.app' })
+                                                     │
+                                               JadeAssist Backend (Railway)
+                                               https://jadeassistbackend-production.up.railway.app
+```
+
+## Railway Deployment
+
+JadeAssist runs as two separate Railway services:
+
+| Service | Public URL |
+|---------|-----------|
+| Backend (API) | `https://jadeassistbackend-production.up.railway.app` |
+| Widget (serves widget bundle) | `https://jadeassistwidget-production.up.railway.app` |
+
+> **Note:** EventFlow self-hosts the widget bundle (see [Widget Library](#widget-library-self-hosted)) to avoid browser tracking prevention blocking CDN requests. The widget service URL above is for reference only — EventFlow does **not** load scripts from it.
+
+## Changing the Backend URL
+
+The backend URL is stored as a **single source of truth** in two places:
+
+### 1. Environment variable (recommended for Railway)
+
+Set `JADEASSIST_API_BASE_URL` in the EventFlow Railway service environment:
+
+```
+JADEASSIST_API_BASE_URL=https://jadeassistbackend-production.up.railway.app
+```
+
+The server exposes this via the `/api/config` endpoint (see `routes/system.js`).
+
+### 2. `window.JADEASSIST_CONFIG` override (optional, no redeploy needed)
+
+You can override the URL before the init script loads by injecting a config snippet:
+
+```html
+<script>window.JADEASSIST_CONFIG = { apiBaseUrl: 'https://your-backend.up.railway.app' };</script>
+<script src="/assets/js/vendor/jade-widget.js" defer></script>
+<script src="/assets/js/jadeassist-init.v2.js" defer></script>
+```
+
+### 3. Built-in default
+
+If neither of the above is set, `jadeassist-init.v2.js` falls back to the hardcoded Railway URL:
+
+```javascript
+const API_BASE_URL =
+  (window.JADEASSIST_CONFIG && window.JADEASSIST_CONFIG.apiBaseUrl) ||
+  'https://jadeassistbackend-production.up.railway.app';
+```
+
+To update this default: edit `API_BASE_URL` near the top of `public/assets/js/jadeassist-init.v2.js`.
+
 ## Configuration Files
 
 - **`public/assets/js/jadeassist-init.v2.js`** — **Current version** used across all pages. Features teaser bubble with A/B testing, full keyboard accessibility, analytics events, safe-area inset support, and debug diagnostics.
 - **`public/assets/js/jadeassist-init.js`** — Legacy version kept for reference. Not loaded by any HTML page.
+
+## Public Page Coverage
+
+The widget is loaded on **all public EventFlow pages** via the two script tags included in every public HTML file:
+
+```html
+<script src="/assets/js/vendor/jade-widget.js" defer></script>
+<script src="/assets/js/jadeassist-init.v2.js" defer></script>
+```
+
+Public pages include: `/` (homepage), `/start`, `/suppliers`, `/marketplace`, `/guides`, `/pricing`,
+`/faq`, `/contact`, `/for-suppliers`, `/articles/*`, `/supplier` (profile view), `/package`,
+`/category`, `/compare`, `/gallery`, `/legal`, `/privacy`, `/terms`, `/auth`, and more.
+
+Authenticated-only pages (dashboard, messenger, settings, admin) intentionally do not require the
+widget and are excluded.
 
 ## Debug Mode
 
@@ -17,7 +94,7 @@ Append `?jade-debug` to any page URL to enable diagnostic logs in the browser co
 
 ### What debug mode logs
 
-- Init config summary (colors, avatar URL, positioning offsets, scale)
+- Init config summary (including `apiBaseUrl`, colors, avatar URL, positioning offsets, scale)
 - Avatar load success or failure with the full URL tested
 - Widget initialized successfully ✅
 - Teaser triggered (method + variant + mobile flag)
@@ -407,6 +484,7 @@ This verifies:
 
 ```javascript
 {
+  apiBaseUrl: 'https://jadeassistbackend-production.up.railway.app', // JadeAssist backend URL
   primaryColor: '#00B2A9',           // Main brand color
   accentColor: '#008C85',            // Accent/hover color
   assistantName: 'Jade',             // Name shown in chat

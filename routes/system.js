@@ -176,6 +176,10 @@ router.get('/config', apiLimiter, async (req, res) => {
     version: APP_VERSION,
     sentryDsn: process.env.SENTRY_DSN_FRONTEND || '',
     altchaChallengeUrl: '/api/v1/altcha/challenge',
+    jadeAssistApiBaseUrl:
+      process.env.JADEASSIST_API_BASE_URL ||
+      // Keep this default in sync with API_BASE_URL in public/assets/js/jadeassist-init.v2.js
+      'https://jadeassistbackend-production.up.railway.app',
   });
 });
 
