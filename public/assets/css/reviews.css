@@ -314,6 +314,10 @@
 }
 
 .review-verified-filter input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  accent-color: #10b981;
   cursor: pointer;
 }
 
