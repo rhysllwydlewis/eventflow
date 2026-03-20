@@ -59,6 +59,7 @@ describe('isPlaceholderImage', () => {
       isPlaceholderImage('https://res.cloudinary.com/eventflow/image/upload/v123/photo.jpg')
     ).toBe(false);
   });
+});
 
 // ─── resolvePackageImage ───────────────────────────────────────────────────
 

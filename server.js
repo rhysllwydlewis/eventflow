@@ -357,6 +357,13 @@ app.use(configureSanitization());
 app.use(inputValidationMiddleware);
 
 //Body parsing and cookies
+// Package routes receive base64-encoded images in the JSON body (pkg-image field).
+// Base64 encoding adds ~33% overhead, so a 5 MB image becomes ~6.7 MB encoded.
+// Allow up to 10 MB on package paths so images up to ~7.5 MB can be submitted;
+// the client-side efSetupPhotoDropZone cap of 5 MB keeps most requests well under that.
+// The more-specific route parser must be registered BEFORE the global 2 MB parser;
+// body-parser skips re-parsing when req._body is already set.
+app.use(['/api/me/packages', '/api/v1/me/packages'], express.json({ limit: '10mb' }));
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 

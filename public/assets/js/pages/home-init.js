@@ -521,12 +521,23 @@ function renderPackageFallback(container, items) {
     return priceStr;
   };
 
+  // Use escapeHtml (defined in app.js) for safe HTML text content.
+  // Using the native escape() would URL-encode the strings (e.g. "&" → "%26"),
+  // producing garbled visible text and incorrect alt attributes.
+  // Define once before the map() to avoid recreating the function per-item.
+  const _esc =
+    typeof escapeHtml === 'function'
+      ? escapeHtml
+      : s =>
+          String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
   container.innerHTML = items
     .map(item => {
-      // Use escapeHtml (defined in app.js) for safe HTML text content.
-      // Using the native escape() would URL-encode the strings (e.g. "&" → "%26"),
-      // producing garbled visible text and incorrect alt attributes.
-      const _esc = typeof escapeHtml === 'function' ? escapeHtml : s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
       const title = _esc(item.title || 'Untitled Package');
       const supplierName = _esc(item.supplier_name || '');
       const description = _esc(item.description || '');
