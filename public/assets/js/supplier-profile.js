@@ -141,7 +141,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         // Founding Supplier
         if (supplier.isFoundingSupplier || supplier.isFounding) {
           badges.push(
-            '<span class="badge badge-founding" aria-label="Founding supplier" title="Founding Supplier - Original member since 2024">⭐ Founding</span>'
+            '<span class="badge badge-founding" aria-label="Founding supplier" title="Founding Supplier - Original member since 2024">Founding</span>'
           );
         }
 
@@ -159,7 +159,7 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
 
           if (isProActive) {
             badges.push(
-              '<span class="badge badge-pro" aria-label="Pro supplier" title="Pro - Enhanced features">✨ Pro</span>'
+              '<span class="badge badge-pro" aria-label="Pro supplier" title="Pro - Enhanced features">Pro</span>'
             );
           }
         }
@@ -171,21 +171,21 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
           supplier.verified
         ) {
           badges.push(
-            '<span class="badge badge-email-verified" aria-label="Email verified" title="Email address verified">✓ Email</span>'
+            '<span class="badge badge-email-verified" aria-label="Email verified" title="Email address verified">Email</span>'
           );
         }
 
         // Phone Verified
         if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
           badges.push(
-            '<span class="badge badge-phone-verified" aria-label="Phone verified" title="Phone number verified">✓ Phone</span>'
+            '<span class="badge badge-phone-verified" aria-label="Phone verified" title="Phone number verified">Phone</span>'
           );
         }
 
         // Business Verified
         if (supplier.businessVerified || supplier.verifications?.business?.verified) {
           badges.push(
-            '<span class="badge badge-business-verified" aria-label="Business verified" title="Business documents verified">✓ Business</span>'
+            '<span class="badge badge-business-verified" aria-label="Business verified" title="Business documents verified">Business</span>'
           );
         }
 
@@ -229,6 +229,16 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     if (heroMeta) {
       const metaItems = [];
 
+      // Category
+      if (supplier.category) {
+        metaItems.push(`
+          <div class="meta-item meta-category">
+            <span aria-hidden="true">🏷️</span>
+            <span>${escapeHtml(supplier.category)}</span>
+          </div>
+        `);
+      }
+
       // Rating
       if (supplier.rating && supplier.reviewCount) {
         const rating = Number(supplier.rating).toFixed(1);
@@ -264,7 +274,12 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
         `);
       }
 
-      heroMeta.innerHTML = metaItems.join('');
+      if (metaItems.length > 0) {
+        heroMeta.innerHTML = metaItems.join('');
+        heroMeta.style.display = '';
+      } else {
+        heroMeta.style.display = 'none';
+      }
     }
 
     // Setup CTA buttons
@@ -487,12 +502,12 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     const honorBadges = [];
     if (supplier.isFoundingSupplier || supplier.isFounding || supplier.founding) {
       honorBadges.push(
-        '<span class="badge badge-founding" title="Founding Supplier — One of our first partners" aria-label="Founding supplier">🏆 Founding</span>'
+        '<span class="badge badge-founding" title="Founding Supplier — One of our first partners" aria-label="Founding supplier">Founding</span>'
       );
     }
     if (supplier.featured || supplier.featuredSupplier) {
       honorBadges.push(
-        '<span class="badge badge-featured" title="Featured Supplier" aria-label="Featured supplier">★ Featured</span>'
+        '<span class="badge badge-featured" title="Featured Supplier" aria-label="Featured supplier">Featured</span>'
       );
     }
     if (honorBadges.length > 0) {
@@ -506,17 +521,17 @@ import { renderVerificationBadges, renderTierIcon } from '/assets/js/utils/verif
     const verifyBadges = [];
     if (supplier.emailVerified || supplier.verifications?.email?.verified || supplier.verified) {
       verifyBadges.push(
-        '<span class="badge badge-email-verified" title="Email address verified" aria-label="Email verified">✓ Email</span>'
+        '<span class="badge badge-email-verified" title="Email address verified" aria-label="Email verified">Email</span>'
       );
     }
     if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
       verifyBadges.push(
-        '<span class="badge badge-phone-verified" title="Phone number verified" aria-label="Phone verified">✓ Phone</span>'
+        '<span class="badge badge-phone-verified" title="Phone number verified" aria-label="Phone verified">Phone</span>'
       );
     }
     if (supplier.businessVerified || supplier.verifications?.business?.verified) {
       verifyBadges.push(
-        '<span class="badge badge-business-verified" title="Business documents verified" aria-label="Business verified">✓ Business</span>'
+        '<span class="badge badge-business-verified" title="Business documents verified" aria-label="Business verified">Business</span>'
       );
     }
     if (verifyBadges.length > 0) {

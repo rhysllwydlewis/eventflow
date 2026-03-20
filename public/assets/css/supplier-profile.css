@@ -1,160 +1,186 @@
 /**
  * Supplier Profile Public Page Styles
- * Enhanced hero section with badges, CTAs, and meta information
- * Liquid glass aesthetic polish
+ * Overhauled: single hero, compact layout, improved visual hierarchy,
+ * better contrast, polished cards and badges.
  */
 
 /* ============================================
-   Hero Section
+   CSS Tokens / Variables
+   ============================================ */
+
+:root {
+  --sp-hero-height: 300px;
+  --sp-hero-height-mobile: 200px;
+  --sp-section-gap: 1.5rem;
+  --sp-card-radius: 12px;
+  --sp-card-border: rgba(11, 128, 115, 0.1);
+  --sp-shadow-sm: 0 1px 4px rgba(0,0,0,0.06), 0 2px 8px rgba(11,128,115,0.06);
+  --sp-shadow-md: 0 4px 16px rgba(11,128,115,0.12), 0 2px 6px rgba(0,0,0,0.06);
+  --sp-shadow-lg: 0 8px 32px rgba(11,128,115,0.16), 0 2px 8px rgba(0,0,0,0.08);
+  --sp-text: #0b1220;
+  --sp-text-muted: #4b5563;
+  --sp-text-light: #9ca3af;
+  --sp-primary: #0b8073;
+  --sp-primary-hover: #0a6e63;
+  --sp-surface: #ffffff;
+  --sp-surface-subtle: #f8fafb;
+}
+
+/* ============================================
+   Hero Section — single, authoritative top
    ============================================ */
 
 .supplier-hero {
   position: relative;
-  background: linear-gradient(
-    135deg,
-    rgba(11, 128, 115, 0.03) 0%,
-    rgba(16, 185, 129, 0.02) 100%
-  );
-  padding: 2rem 0;
-  margin-bottom: 2rem;
+  margin-bottom: var(--sp-section-gap);
 }
 
 .hero-media {
   position: relative;
   width: 100%;
-  height: 400px;
-  border-radius: 16px;
+  height: var(--sp-hero-height);
   overflow: hidden;
-  margin-bottom: 1.5rem;
-  box-shadow:
-    0 8px 32px rgba(11, 128, 115, 0.18),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 0 0 var(--sp-card-radius) var(--sp-card-radius);
+  box-shadow: var(--sp-shadow-lg);
 }
 
 .hero-media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.5s ease;
+  display: block;
 }
 
 .hero-media:hover img {
-  transform: scale(1.015);
+  transform: scale(1.02);
 }
 
-/* Subtle bottom-fade so hero title reads cleanly over banner */
+/* Bottom gradient for readability */
 .hero-media::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
-    transparent 40%,
-    rgba(0, 0, 0, 0.22) 100%
+    transparent 35%,
+    rgba(0, 0, 0, 0.18) 100%
   );
   pointer-events: none;
 }
 
+/* Badge strip — top-right corner of banner */
 .hero-badges {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 0.875rem;
+  right: 0.875rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-end;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: flex-start;
+  justify-content: flex-end;
   z-index: 2;
+  max-width: 60%;
 }
 
 /* ============================================
-   Badges
+   Badges — override supplier-profile specifics
    ============================================ */
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.875rem;
-  border-radius: 20px;
-  font-size: 0.8125rem;
-  font-weight: 600;
+/* Hero badges need blur + contrast since they sit on the banner image */
+.hero-badges .badge {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.7rem;
 }
 
-.badge:hover {
-  transform: translateY(-2px);
+.hero-badges .badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
 }
 
-.badge-verified {
-  background: rgba(16, 185, 129, 0.95);
-  color: white;
+/* Ensure hero badge text is always readable regardless of theme */
+.hero-badges .badge-verified {
+  background: rgba(16, 185, 129, 0.92);
+  color: #ffffff;
 }
 
-.badge-pro {
+.hero-badges .badge-pro {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.95) 0%, rgba(217, 119, 6, 0.95) 100%);
-  color: white;
+  color: #fff8e1;
 }
 
-.badge-pro-plus {
+.hero-badges .badge-pro-plus {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.95) 100%);
-  color: white;
+  color: #ffffff;
+}
+
+.hero-badges .badge-founding {
+  background: rgba(245, 158, 11, 0.92);
+  color: #fff8e1;
+}
+
+.hero-badges .badge-featured {
+  background: rgba(139, 92, 246, 0.92);
+  color: #ffffff;
 }
 
 /* ============================================
-   Hero Content
+   Hero Content — sits below the banner
    ============================================ */
 
 .hero-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 1.25rem 1.5rem 0.25rem;
 }
 
 .hero-content h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--ef-text, #0b1220);
-  margin: 0 0 0.75rem 0;
+  color: var(--sp-text);
+  margin: 0 0 0.5rem 0;
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
 
 .supplier-tagline {
-  font-size: 1.125rem;
-  color: var(--ef-text-muted, #667085);
-  margin: 0 0 1.5rem 0;
-  line-height: 1.6;
+  font-size: 1rem;
+  color: var(--sp-text-muted);
+  margin: 0 0 1rem 0;
+  line-height: 1.55;
 }
 
 /* ============================================
-   Meta Information — liquid glass pill strip
+   Meta Information — compact pill strip
    ============================================ */
 
 .supplier-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-  padding: 0.875rem 1rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
-  border: 1px solid rgba(11, 128, 115, 0.12);
-  box-shadow: 0 2px 12px rgba(11, 128, 115, 0.06);
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border: 1px solid var(--sp-card-border);
+  box-shadow: var(--sp-shadow-sm);
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
-  color: var(--ef-text, #0b1220);
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--sp-text);
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
 }
 
 .meta-rating {
@@ -166,7 +192,7 @@
 
 .meta-rating .star-icon {
   color: #f59e0b;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .meta-location {
@@ -180,33 +206,34 @@
   align-items: center;
   gap: 0.375rem;
   font-weight: 600;
-  color: var(--ef-success, #10b981);
+  color: var(--sp-primary);
 }
 
 /* ============================================
-   CTA Buttons — polished with micro-interactions
+   CTA Buttons
    ============================================ */
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.625rem;
   align-items: center;
+  padding-bottom: 0.5rem;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.75rem;
+  gap: 0.4rem;
+  padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: 10px;
-  font-size: 0.9375rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   position: relative;
   overflow: hidden;
@@ -216,9 +243,9 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.18s;
 }
 
 .btn:hover::before {
@@ -227,48 +254,114 @@
 
 .btn-primary {
   background: linear-gradient(135deg, #0b8073 0%, #10b981 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(11, 128, 115, 0.35);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(11, 128, 115, 0.32);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(11, 128, 115, 0.45);
+  box-shadow: 0 6px 16px rgba(11, 128, 115, 0.42);
+  color: #ffffff;
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--ef-primary, #0b8073);
-  border: 1.5px solid rgba(11, 128, 115, 0.3);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.1);
+  background: var(--sp-surface);
+  color: var(--sp-primary);
+  border: 1.5px solid rgba(11, 128, 115, 0.28);
+  box-shadow: var(--sp-shadow-sm);
 }
 
 .btn-secondary:hover {
-  background: rgba(11, 128, 115, 0.08);
-  border-color: rgba(11, 128, 115, 0.5);
+  background: rgba(11, 128, 115, 0.06);
+  border-color: rgba(11, 128, 115, 0.46);
   transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(11, 128, 115, 0.18);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.14);
+  color: var(--sp-primary-hover);
 }
 
 .btn-tertiary {
-  background: rgba(11, 128, 115, 0.08);
-  color: var(--ef-primary, #0b8073);
-  border: 1px solid rgba(11, 128, 115, 0.2);
+  background: rgba(11, 128, 115, 0.07);
+  color: var(--sp-primary);
+  border: 1px solid rgba(11, 128, 115, 0.18);
 }
 
 .btn-tertiary:hover {
-  background: rgba(11, 128, 115, 0.15);
-  border-color: rgba(11, 128, 115, 0.3);
-  transform: translateY(-2px);
+  background: rgba(11, 128, 115, 0.13);
+  border-color: rgba(11, 128, 115, 0.28);
+  transform: translateY(-1px);
+  color: var(--sp-primary-hover);
 }
 
 .btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0) scale(0.97);
 }
 
-/* Preview banner pill — shown when in preview mode */
+/* ============================================
+   Content Container skeleton
+   ============================================ */
+
+.spc-skeleton {
+  padding: 0.25rem 0;
+}
+
+.spc-skeleton__section {
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-card-border);
+  border-radius: var(--sp-card-radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--sp-shadow-sm);
+}
+
+/* ============================================
+   Profile Content Sections (rendered by app.js)
+   ============================================ */
+
+/* Stats strip */
+.supplier-stats {
+  background: linear-gradient(135deg, #f6faf9 0%, #ebf5f4 100%);
+  border: 1px solid rgba(11, 128, 115, 0.1);
+  border-radius: var(--sp-card-radius);
+  padding: 1rem 1.5rem;
+  margin-bottom: var(--sp-section-gap);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--sp-primary);
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--sp-text-muted);
+  font-weight: 500;
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================
+   Badges Section (rendered by supplier-profile.js)
+   ============================================ */
+
+#supplier-badges-section .badges-section {
+  margin-bottom: var(--sp-section-gap);
+}
+
+/* ============================================
+   Preview Mode Banner
+   ============================================ */
+
 .preview-banner {
   position: fixed;
   top: 0;
@@ -279,16 +372,16 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  padding: 0.6rem 1.5rem;
+  padding: 0.5rem 1.5rem;
   background: linear-gradient(90deg, #7c3aed 0%, #6d28d9 100%);
-  color: white;
-  font-size: 0.875rem;
+  color: #ffffff;
+  font-size: 0.8125rem;
   font-weight: 600;
-  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
 }
 
 .preview-banner a {
-  color: white;
+  color: #ffffff;
   text-decoration: underline;
   opacity: 0.85;
   font-weight: 500;
@@ -304,43 +397,44 @@
 
 .supplier-breadcrumb {
   max-width: 1200px;
-  margin: 0 auto 1.5rem auto;
-  padding: 0 1.5rem;
+  margin: 0 auto 0.875rem auto;
+  padding: 0.625rem 1.5rem 0;
 }
 
 .supplier-breadcrumb ol {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   list-style: none;
   padding: 0;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .supplier-breadcrumb li {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .supplier-breadcrumb a {
-  color: var(--ef-primary, #0b8073);
+  color: var(--sp-primary);
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: opacity 0.18s;
 }
 
 .supplier-breadcrumb a:hover {
-  opacity: 0.7;
+  opacity: 0.72;
+  text-decoration: underline;
 }
 
 .supplier-breadcrumb .separator {
-  color: var(--ef-text-light, #9ca3af);
+  color: var(--sp-text-light);
 }
 
 .supplier-breadcrumb .current {
-  color: var(--ef-text-lighter, #6b7280);
+  color: var(--sp-text-muted);
   font-weight: 500;
 }
 
@@ -349,73 +443,29 @@
    ============================================ */
 
 @media (max-width: 768px) {
-  .supplier-hero {
-    padding: 1rem 0;
+  :root {
+    --sp-hero-height: var(--sp-hero-height-mobile);
+    --sp-section-gap: 1rem;
   }
 
   .hero-media {
-    height: 250px;
-    margin-bottom: 1rem;
+    border-radius: 0;
   }
 
   .hero-badges {
-    top: 0.75rem;
-    right: 0.75rem;
-    gap: 0.375rem;
+    top: 0.625rem;
+    right: 0.625rem;
+    gap: 0.3rem;
+    max-width: 70%;
   }
 
-  .badge {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.75rem;
+  .hero-badges .badge {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.7rem;
   }
 
   .hero-content {
-    padding: 0 1rem;
-  }
-
-  .hero-content h1 {
-    font-size: 1.75rem;
-  }
-
-  .supplier-tagline {
-    font-size: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .supplier-meta {
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .meta-item {
-    font-size: 0.875rem;
-  }
-
-  .hero-actions {
-    gap: 0.75rem;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.875rem;
-  }
-
-  .btn-tertiary {
-    width: auto;
-    flex: 1;
-  }
-
-  .supplier-breadcrumb {
-    padding: 0 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-media {
-    height: 200px;
-    border-radius: 8px;
+    padding: 1rem 1rem 0.25rem;
   }
 
   .hero-content h1 {
@@ -424,11 +474,65 @@
 
   .supplier-tagline {
     font-size: 0.9375rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .supplier-meta {
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .meta-item {
+    font-size: 0.8125rem;
+  }
+
+  .hero-actions {
+    gap: 0.5rem;
+  }
+
+  .btn {
+    padding: 0.5625rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .btn-tertiary {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .supplier-breadcrumb {
+    padding: 0.5rem 1rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content h1 {
+    font-size: 1.3125rem;
+  }
+
+  .supplier-tagline {
+    font-size: 0.875rem;
   }
 
   .supplier-meta {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .btn {
+    width: 100%;
   }
 }
 
@@ -437,17 +541,17 @@
    ============================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  .badge,
+  .hero-media img,
+  .hero-badges .badge,
   .btn,
   .supplier-breadcrumb a {
     transition: none;
   }
 }
 
-/* Focus visible styles for keyboard navigation */
 .btn:focus-visible,
 .supplier-breadcrumb a:focus-visible {
-  outline: 2px solid var(--ef-primary, #0b8073);
+  outline: 2px solid var(--sp-primary);
   outline-offset: 2px;
 }
 
@@ -462,12 +566,491 @@
   }
 
   .supplier-hero {
-    background: white;
-    padding: 1rem 0;
+    margin-bottom: 1rem;
   }
 
   .hero-media {
     box-shadow: none;
     border: 1px solid #e5e7eb;
+    height: 180px;
+  }
+
+  .hero-content {
+    padding: 0.75rem 0;
   }
 }
+
+/* ============================================
+   Profile Content Sections — shared classes
+   used by app.js rendered HTML
+   ============================================ */
+
+.spc-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--sp-text);
+  margin: 0 0 0.875rem 0;
+}
+
+.spc-about .spc-section-title {
+  font-size: 1rem;
+}
+
+.spc-description {
+  margin-top: 0.875rem;
+  line-height: 1.65;
+  color: var(--sp-text-muted);
+  font-size: 0.9375rem;
+}
+
+.spc-amenities .badge {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.6rem;
+  background: rgba(11, 128, 115, 0.08);
+  color: var(--sp-primary);
+  border: 1px solid rgba(11, 128, 115, 0.18);
+}
+
+.spc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.spc-actions .cta {
+  flex: 1;
+  min-width: 140px;
+}
+
+.spc-section {
+  margin-bottom: var(--sp-section-gap);
+}
+
+/* Trust card */
+.supplier-trust-card {
+  margin: 1rem 0 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--sp-surface-subtle);
+  border: 1px solid var(--sp-card-border);
+  border-radius: 8px;
+}
+
+.trust-card__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sp-text);
+  margin: 0 0 0.625rem 0;
+}
+
+.trust-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--sp-text-muted);
+}
+
+.trust-check {
+  color: #10b981;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Hero — theme color support
+   When supplier has no banner, their theme colour
+   tints the hero-media background.
+   ============================================ */
+
+.supplier-hero {
+  --supplier-theme: #0b8073;
+}
+
+.hero-media {
+  background: linear-gradient(
+    135deg,
+    var(--supplier-theme, #0b8073) 0%,
+    color-mix(in srgb, var(--supplier-theme, #0b8073) 80%, #10b981) 100%
+  );
+}
+
+/* ============================================
+   Meta pill — loading state hidden
+   ============================================ */
+
+/* When hero-meta has no children it auto-hides via JS;
+   ensure no ghost pill shows before JS runs */
+#hero-meta:empty {
+  display: none !important;
+}
+
+/* Category meta item */
+.meta-category {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--sp-primary);
+  font-weight: 600;
+}
+
+/* ============================================
+   Stats Section — more visual punch
+   ============================================ */
+
+.supplier-stats {
+  background: linear-gradient(135deg, #f0fdf8 0%, #d1fae5 100%);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  box-shadow: var(--sp-shadow-sm);
+}
+
+.supplier-stats + * {
+  /* Ensure a consistent gap after stats */
+  margin-top: 0;
+}
+
+.stat-item {
+  position: relative;
+}
+
+.stat-item + .stat-item::before {
+  content: '';
+  position: absolute;
+  left: -0.5rem;
+  top: 15%;
+  height: 70%;
+  width: 1px;
+  background: rgba(11, 128, 115, 0.15);
+}
+
+.stat-value {
+  background: linear-gradient(135deg, #0b8073 0%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   Highlights section — better visual design
+   ============================================ */
+
+.spc-highlights {
+  background: linear-gradient(135deg, #f0fdf8 0%, #ecfdf5 100%);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: var(--sp-card-radius);
+  padding: 1.125rem 1.5rem;
+  margin-bottom: var(--sp-section-gap);
+  animation: fadeInUp 0.4s ease-out backwards;
+}
+
+.spc-highlights__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #065f46;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.spc-highlights__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+.spc-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #065f46;
+}
+
+.spc-highlight-check {
+  color: #10b981;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 1rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .spc-highlights__list {
+    grid-template-columns: 1fr;
+  }
+
+  .spc-highlights {
+    padding: 1rem;
+  }
+}
+
+/* ============================================
+   About section polish
+   ============================================ */
+
+.spc-about {
+  animation: fadeInUp 0.4s ease-out 0.05s backwards;
+}
+
+.spc-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--sp-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.spc-facts a {
+  color: var(--sp-primary);
+  text-decoration: none;
+}
+
+.spc-facts a:hover {
+  text-decoration: underline;
+}
+
+/* Featured services tags */
+.spc-featured-services {
+  margin: 1rem 0 0.75rem;
+}
+
+.spc-featured-services__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sp-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem 0;
+}
+
+.spc-featured-services__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.spc-service-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(11, 128, 115, 0.07);
+  border: 1px solid rgba(11, 128, 115, 0.18);
+  color: var(--sp-primary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* Social links */
+.spc-social-links {
+  margin: 0.75rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.spc-social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.18s;
+  border: 1px solid transparent;
+}
+
+.spc-social-link:hover {
+  transform: translateY(-1px);
+}
+
+.spc-social-link--facebook {
+  background: #1877f2;
+  color: #ffffff;
+}
+
+.spc-social-link--facebook:hover {
+  background: #1565d8;
+  color: #ffffff;
+}
+
+.spc-social-link--instagram {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  color: #ffffff;
+}
+
+.spc-social-link--instagram:hover {
+  opacity: 0.92;
+  color: #ffffff;
+}
+
+.spc-social-link--twitter,
+.spc-social-link--x {
+  background: #000000;
+  color: #ffffff;
+}
+
+.spc-social-link--twitter:hover,
+.spc-social-link--x:hover {
+  background: #333333;
+  color: #ffffff;
+}
+
+.spc-social-link--linkedin {
+  background: #0a66c2;
+  color: #ffffff;
+}
+
+.spc-social-link--linkedin:hover {
+  background: #0854a3;
+  color: #ffffff;
+}
+
+.spc-social-link--youtube {
+  background: #ff0000;
+  color: #ffffff;
+}
+
+.spc-social-link--youtube:hover {
+  background: #cc0000;
+  color: #ffffff;
+}
+
+.spc-social-link--tiktok {
+  background: #010101;
+  color: #ffffff;
+}
+
+.spc-social-link--tiktok:hover {
+  background: #333333;
+  color: #ffffff;
+}
+
+.spc-social-link--website {
+  background: var(--sp-surface-subtle);
+  color: var(--sp-primary);
+  border-color: var(--sp-card-border);
+}
+
+.spc-social-link--website:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: var(--sp-primary-hover);
+}
+
+/* ============================================
+   Gallery section — better image cards
+   ============================================ */
+
+.spc-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.gallery-item {
+  border-radius: var(--sp-card-radius);
+  overflow: hidden;
+  box-shadow: var(--sp-shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.gallery-item:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: var(--sp-shadow-md);
+}
+
+.gallery-item img {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.gallery-overlay {
+  transition: opacity 0.2s !important;
+}
+
+.gallery-item:hover .gallery-overlay {
+  opacity: 1 !important;
+}
+
+/* ============================================
+   Package cards — enhanced
+   ============================================ */
+
+.sp-pkg-card {
+  border-radius: var(--sp-card-radius);
+  border: 1px solid var(--sp-card-border);
+  overflow: hidden;
+  background: var(--sp-surface);
+  box-shadow: var(--sp-shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sp-pkg-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sp-shadow-md);
+}
+
+/* ============================================
+   Error state in supplier-container
+   ============================================ */
+
+.error-state {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: var(--sp-card-radius);
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.error-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.error-state-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #991b1b;
+  margin-bottom: 0.5rem;
+}
+
+.error-state-description {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.error-state-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.5rem;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.error-state-action:hover {
+  background: #dc2626;
+}
+
