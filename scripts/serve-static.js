@@ -355,7 +355,7 @@ app.get('/api/v1/suppliers/:id', (req, res) => {
   res.json(MOCK_SUPPLIER_PROFILE);
 });
 
-app.get('/api/v1/reviews', (req, res) => {
+app.get('/api/suppliers/:id/reviews', (req, res) => {
   res.json({
     reviews: [
       {
@@ -365,6 +365,7 @@ app.get('/api/v1/reviews', (req, res) => {
         comment:
           'Absolutely stunning venue. The staff were incredible and made our wedding day perfect.',
         createdAt: new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(),
+        verified: true,
       },
       {
         id: 'rev-2',
@@ -373,8 +374,28 @@ app.get('/api/v1/reviews', (req, res) => {
         comment:
           'We held our company away-day here and it exceeded all expectations. Highly recommended!',
         createdAt: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
+        verified: true,
+      },
+      {
+        id: 'rev-3',
+        customerName: 'Emma W.',
+        rating: 4,
+        comment: 'Beautiful venue, very accommodating team. Would definitely book again.',
+        createdAt: new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString(),
+        verified: false,
       },
     ],
+    pagination: { total: 47, page: 1, perPage: 10 },
+    averageRating: 4.8,
+    distribution: { 5: 38, 4: 6, 3: 2, 2: 1, 1: 0 },
+  });
+});
+
+app.get('/api/reviews/supplier/:id/distribution', (req, res) => {
+  res.json({
+    distribution: { 5: 38, 4: 6, 3: 2, 2: 1, 1: 0 },
+    averageRating: 4.8,
+    totalReviews: 47,
   });
 });
 

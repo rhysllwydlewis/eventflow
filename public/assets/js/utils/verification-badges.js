@@ -99,7 +99,7 @@ export function renderVerificationBadges(supplier, options = {}) {
                    title="Featured Supplier" 
                    role="status"
                    aria-label="Featured supplier">
-               ★ Featured
+               Featured
              </span>`,
       priority: 2,
     });
@@ -122,12 +122,15 @@ export function renderVerificationBadges(supplier, options = {}) {
       }
       const cssClass =
         EARNED_TYPE_CLASS[badge.id] || EARNED_TYPE_CLASS[badge.type] || 'badge-custom';
+      // For custom badges (no CSS ::before icon), include badge.icon in text.
+      // For standard badge types, CSS ::before handles the icon — omit it here.
+      const iconText = cssClass === 'badge-custom' && badge.icon ? `${badge.icon} ` : '';
       badges.push({
         html: `<span class="badge ${cssClass} ${size === 'small' ? 'badge-sm' : ''}" 
                      title="${badge.description || badge.name}" 
                      role="status"
                      aria-label="${badge.name}">
-                 ${badge.icon ? `${badge.icon} ` : ''}${badge.name}
+                 ${iconText}${badge.name}
                </span>`,
         priority: 2,
       });

@@ -751,10 +751,6 @@ async function initSupplier() {
   } catch (error) {
     console.error('Error fetching supplier packages:', error);
   }
-  // Apply custom theme color if set (with validation)
-  const hexColorRegex = /^#[0-9A-F]{6}$/i;
-  const themeColor = s.themeColor && hexColorRegex.test(s.themeColor) ? s.themeColor : '#0B8073';
-
   // Create lightbox gallery HTML for photos (photosGallery is canonical — array of {url, approved, uploadedAt})
   const galleryPhotos = s.photosGallery ? s.photosGallery.map(p => p.url) : [];
   const gallery =
@@ -780,62 +776,43 @@ async function initSupplier() {
   // Render highlights if available
   const highlightsHtml =
     s.highlights && s.highlights.length > 0
-      ? `
-    <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #F6FAF9 0%, #EBF5F4 100%); border-radius: 12px;">
-      <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #0B1220;">✨ Key Highlights</h3>
-      <div style="display: grid; gap: 12px;">
-        ${s.highlights
-          .map(
-            h => `
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="color: ${themeColor}; font-size: 18px;">✓</span>
-            <span style="font-size: 15px; color: #374151;">${escapeHtml(h)}</span>
+      ? `<div class="spc-highlights">
+          <h3 class="spc-highlights__title">✨ Key Highlights</h3>
+          <div class="spc-highlights__list">
+            ${s.highlights
+              .map(
+                h =>
+                  `<div class="spc-highlight-item"><span class="spc-highlight-check" aria-hidden="true">✓</span><span>${escapeHtml(h)}</span></div>`
+              )
+              .join('')}
           </div>
-        `
-          )
-          .join('')}
-      </div>
-    </div>
-  `
+        </div>`
       : '';
 
   // Render featured services if available
   const featuredServicesHtml =
     s.featuredServices && s.featuredServices.length > 0
-      ? `
-    <div style="margin: 20px 0;">
-      <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #0B1220;">⭐ Featured Services</h3>
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-        ${s.featuredServices
-          .map(
-            service => `
-          <div style="padding: 12px 16px; background: white; border: 2px solid #E7EAF0; border-radius: 8px; font-size: 14px; color: #374151; transition: all 0.2s;">
-            ${escapeHtml(service)}
+      ? `<div class="spc-featured-services">
+          <h4 class="spc-featured-services__title">Featured Services</h4>
+          <div class="spc-featured-services__list">
+            ${s.featuredServices
+              .map(service => `<span class="spc-service-tag">${escapeHtml(service)}</span>`)
+              .join('')}
           </div>
-        `
-          )
-          .join('')}
-      </div>
-    </div>
-  `
+        </div>`
       : '';
 
   // Render social links if available
   const socialLinksHtml =
     s.socialLinks && Object.keys(s.socialLinks).length > 0
-      ? `
-    <div style="margin: 20px 0; padding: 20px; background: white; border: 2px solid #E7EAF0; border-radius: 12px;">
-      <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #0B1220;">🔗 Connect With Us</h3>
-      <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-        ${s.socialLinks.facebook ? `<a href="${escapeHtml(s.socialLinks.facebook)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #1877F2; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">📘 Facebook</a>` : ''}
-        ${s.socialLinks.instagram ? `<a href="${escapeHtml(s.socialLinks.instagram)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF); color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">📷 Instagram</a>` : ''}
-        ${s.socialLinks.twitter ? `<a href="${escapeHtml(s.socialLinks.twitter)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #1DA1F2; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">🐦 Twitter</a>` : ''}
-        ${s.socialLinks.linkedin ? `<a href="${escapeHtml(s.socialLinks.linkedin)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #0A66C2; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">💼 LinkedIn</a>` : ''}
-        ${s.socialLinks.youtube ? `<a href="${escapeHtml(s.socialLinks.youtube)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #FF0000; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">▶️ YouTube</a>` : ''}
-        ${s.socialLinks.tiktok ? `<a href="${escapeHtml(s.socialLinks.tiktok)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #000000; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">🎵 TikTok</a>` : ''}
-      </div>
-    </div>
-  `
+      ? `<div class="spc-social-links">
+          ${s.socialLinks.facebook ? `<a href="${escapeHtml(s.socialLinks.facebook)}" target="_blank" rel="noopener noreferrer" class="spc-social-link spc-social-link--facebook" aria-label="Facebook">📘 Facebook</a>` : ''}
+          ${s.socialLinks.instagram ? `<a href="${escapeHtml(s.socialLinks.instagram)}" target="_blank" rel="noopener noreferrer" class="spc-social-link spc-social-link--instagram" aria-label="Instagram">📷 Instagram</a>` : ''}
+          ${s.socialLinks.twitter ? `<a href="${escapeHtml(s.socialLinks.twitter)}" target="_blank" rel="noopener noreferrer" class="spc-social-link spc-social-link--twitter" aria-label="Twitter/X">𝕏 Twitter</a>` : ''}
+          ${s.socialLinks.linkedin ? `<a href="${escapeHtml(s.socialLinks.linkedin)}" target="_blank" rel="noopener noreferrer" class="spc-social-link spc-social-link--linkedin" aria-label="LinkedIn">💼 LinkedIn</a>` : ''}
+          ${s.socialLinks.youtube ? `<a href="${escapeHtml(s.socialLinks.youtube)}" target="_blank" rel="noopener noreferrer" class="spc-social-link spc-social-link--youtube" aria-label="YouTube">▶️ YouTube</a>` : ''}
+          ${s.socialLinks.tiktok ? `<a href="${escapeHtml(s.socialLinks.tiktok)}" target="_blank" rel="noopener noreferrer" class="spc-social-link spc-social-link--tiktok" aria-label="TikTok">🎵 TikTok</a>` : ''}
+        </div>`
       : '';
 
   const packagesHtml =
@@ -877,9 +854,7 @@ async function initSupplier() {
       : '',
   ].filter(Boolean);
   const statsHtml =
-    statsItems.length > 0
-      ? `<div class="supplier-stats">${statsItems.join('')}</div>`
-      : '';
+    statsItems.length > 0 ? `<div class="supplier-stats">${statsItems.join('')}</div>` : '';
 
   // Trust indicators
   const trustItems = [
