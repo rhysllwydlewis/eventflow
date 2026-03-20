@@ -919,7 +919,7 @@ async function initSupplier() {
       ${trustHtml}
       <div class="spc-actions">
         <button class="cta spc-cta-plan" id="add">Add to My Plan</button>
-        <button class="cta secondary spc-cta-save" id="save-supplier-btn" data-supplier-id="${escapeHtml(s.id)}" aria-label="Save supplier to favourites">♡ Save</button>
+        <button class="cta secondary spc-cta-save" id="save-supplier-btn" data-supplier-id="${escapeHtml(s.id)}" aria-label="Save supplier to favorites">♡ Save</button>
         <button class="cta secondary spc-cta-msg" id="start-thread">Start Conversation</button>
       </div>
     </div>
