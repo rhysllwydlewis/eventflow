@@ -26,7 +26,10 @@ const PLACEHOLDER_PACKAGE_IMAGE = '/assets/images/placeholders/package-event.svg
  * Extend this set if additional placeholder variants are added to the repo.
  * @type {Set<string>}
  */
-const KNOWN_PLACEHOLDERS = new Set(['/assets/images/placeholders/package-event.svg']);
+const KNOWN_PLACEHOLDERS = new Set([
+  '/assets/images/placeholders/package-event.svg',
+  '/assets/images/placeholder-package.jpg',
+]);
 
 /**
  * Return true when a URL is a known placeholder (or absent).
