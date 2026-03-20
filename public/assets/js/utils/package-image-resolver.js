@@ -37,7 +37,17 @@ function isPlaceholderImage(url) {
   if (!url || typeof url !== 'string') {
     return true;
   }
-  return KNOWN_PLACEHOLDERS.has(url);
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return true;
+  }
+  // data: URLs cannot be displayed in public homepage carousels — client-side
+  // sanitizers block them to prevent XSS, and they are too large for API
+  // responses.  Treat them as "no usable image" so the gallery fallback fires.
+  if (/^data:/i.test(trimmed)) {
+    return true;
+  }
+  return KNOWN_PLACEHOLDERS.has(trimmed);
 }
 
 /**

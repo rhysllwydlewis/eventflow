@@ -102,6 +102,12 @@ function isPlaceholderImage(url) {
   if (!trimmed) {
     return true;
   }
+  // data: URLs are not usable as public image URLs — they are large, blocked by
+  // client-side XSS sanitizers, and should not be stored in the DB long-term.
+  // Treat them as "no usable image" so gallery fallback is attempted instead.
+  if (/^data:/i.test(trimmed)) {
+    return true;
+  }
   return KNOWN_PLACEHOLDERS_SERVER.has(trimmed);
 }
 

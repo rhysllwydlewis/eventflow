@@ -2784,6 +2784,15 @@ async function initDashSupplier() {
       }
 
       if (!r.ok) {
+        // 413 Payload Too Large: body-parser limits exceeded (most likely a large base64 image).
+        // body-parser sends an HTML response for 413, so r.json() would fail — give a useful message.
+        // Note: the client-side efSetupPhotoDropZone already blocks files over 5 MB; this fallback
+        // handles edge cases where the combined JSON payload still exceeds the server limit.
+        if (r.status === 413) {
+          throw new Error(
+            'The uploaded image is too large. Please use an image smaller than 5 MB.'
+          );
+        }
         const errorData = await r.json().catch(() => ({ error: 'Request failed' }));
         throw new Error(errorData.error || `HTTP ${r.status}`);
       }
