@@ -181,8 +181,9 @@
     }
   }
 
-  /** Opens the chat panel and emits an analytics event. */
+  /** Opens the chat panel and emits an analytics event. Always dismisses the teaser first. */
   function openChat() {
+    dismissTeaser();
     if (window.JadeWidget && typeof window.JadeWidget.open === 'function') {
       window.JadeWidget.open();
       window.dispatchEvent(
@@ -211,7 +212,8 @@
         max-width: 280px;
         background: #fff;
         border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(0,0,0,.15);
+        border-left: 3px solid #00B2A9;
+        box-shadow: 0 8px 24px rgba(0,178,169,.18);
         padding: 0;
         z-index: ${Z_INDEX.TEASER};
         opacity: 0;
@@ -222,6 +224,7 @@
         will-change: opacity, transform;
         backface-visibility: hidden;
         -webkit-font-smoothing: antialiased;
+        font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       }
 
       .jade-teaser-visible {
@@ -231,7 +234,7 @@
 
       .jade-teaser:hover {
         transform: translateY(-2px) scale(1.01) translateZ(0);
-        box-shadow: 0 12px 32px rgba(0,0,0,.2);
+        box-shadow: 0 12px 32px rgba(0,178,169,.28);
         transition: all .2s ease;
       }
 
@@ -325,7 +328,7 @@
    * Creates and shows the teaser bubble.
    * Skipped if the user dismissed it within TEASER_EXPIRY_DAYS days.
    * Fully keyboard-accessible: Enter/Space opens chat, Escape dismisses.
-   * Auto-dismisses after 15 s.
+   * Auto-dismisses after 10 s.
    */
   function showTeaser() {
     if (isTeaserDismissed()) {
@@ -420,7 +423,7 @@
       }
     }, 50);
 
-    // Auto-dismiss after 15 s
+    // Auto-dismiss after 10 s
     const autoDismissTimeoutId = setTimeout(() => {
       if (teaserElement && teaserElement.parentNode) {
         window.dispatchEvent(
@@ -430,16 +433,66 @@
         );
         dismissTeaser();
         if (debug) {
-          console.log('[JadeAssist] Teaser auto-dismissed after 15 s');
+          console.log('[JadeAssist] Teaser auto-dismissed after 10 s');
         }
       }
-    }, 15000);
+    }, 10000);
 
     teaserElement.dataset.autoDismissTimeout = autoDismissTimeoutId.toString();
 
     if (debug) {
       console.log('[JadeAssist] Teaser shown — variant:', variant, '| mobile:', isMobile);
     }
+
+    // Start watcher to dismiss teaser if chat opens via launcher icon (shadow DOM path)
+    startChatOpenWatcher();
+  }
+
+  /**
+   * Polls for the chat panel becoming open and dismisses the teaser if detected.
+   * Serves as a fallback for opens triggered directly via the widget launcher icon
+   * (shadow DOM click), which bypass the openChat() function.
+   * Must be called after teaserElement is set (from within showTeaser()).
+   * Polling stops automatically once the teaser is dismissed.
+   */
+  function startChatOpenWatcher() {
+    const POLL_INTERVAL = 500;
+
+    const checkIsOpen = () => {
+      // Prefer the widget API if it exposes isOpen()
+      if (window.JadeWidget && typeof window.JadeWidget.isOpen === 'function') {
+        return window.JadeWidget.isOpen();
+      }
+      // Fallback: inspect the widget root's shadow DOM using precise ARIA/state selectors
+      try {
+        const root = document.querySelector('.jade-widget-root');
+        if (root && root.shadowRoot) {
+          const panel = root.shadowRoot.querySelector(
+            '[aria-expanded="true"], [role="dialog"][aria-hidden="false"], [data-state="open"]'
+          );
+          return !!panel;
+        }
+      } catch (_) {
+        // shadowRoot access denied — ignore
+      }
+      return false;
+    };
+
+    const pollId = setInterval(() => {
+      if (!teaserElement) {
+        // Teaser already gone — stop polling
+        clearInterval(pollId);
+        return;
+      }
+      if (checkIsOpen()) {
+        const debug = shouldEnableDebug();
+        if (debug) {
+          console.log('[JadeAssist] Chat open detected via watcher — dismissing teaser');
+        }
+        dismissTeaser();
+        clearInterval(pollId);
+      }
+    }, POLL_INTERVAL);
   }
 
   // ─── Widget initialization ────────────────────────────────────────────────
