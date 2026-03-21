@@ -11,10 +11,41 @@
   const isDevelopment =
     window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
+  // Escape user-supplied or server-supplied strings before injecting into innerHTML
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // Helper function to get headers with CSRF token
-  function getHeadersWithCsrf(additionalHeaders = {}) {
+  // Fetches a fresh CSRF token from the server if none is available
+  async function getHeadersWithCsrf(additionalHeaders = {}) {
     const headers = { ...additionalHeaders };
-    const csrfToken = window.__CSRF_TOKEN__;
+    let csrfToken = window.__CSRF_TOKEN__;
+
+    if (!csrfToken) {
+      try {
+        const r = await fetch('/api/csrf-token', { credentials: 'include' });
+        if (r.ok) {
+          const d = await r.json();
+          // /api/csrf-token returns { csrfToken, token } where token is a legacy alias.
+          // Prefer csrfToken; fall back to token for older server versions.
+          csrfToken = d.csrfToken || d.token || '';
+          if (csrfToken) {
+            window.__CSRF_TOKEN__ = csrfToken;
+          }
+        }
+      } catch (fetchErr) {
+        if (isDevelopment) {
+          console.warn('⚠️ Failed to fetch CSRF token:', fetchErr.message);
+        }
+      }
+    }
+
     if (csrfToken) {
       headers['X-CSRF-Token'] = csrfToken;
     }
@@ -63,14 +94,14 @@
     }
 
     const formHtml = `
-      <div style="margin-top: 24px; padding: 20px; background: #f9fafb; border-radius: 12px; border: 1px solid #e7eaf0;">
-        <p class="small" style="margin: 0 0 12px 0; font-weight: 600;">Need a new verification email?</p>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <div id="resend-form-wrapper" class="verify-resend-box">
+        <p class="small verify-resend-box__label">Need a new verification email?</p>
+        <div class="verify-resend-box__row">
           <input 
             type="email" 
             id="resend-email" 
+            class="verify-resend-box__input"
             placeholder="Enter your email address" 
-            style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px;"
             required
             autocomplete="email"
           >
@@ -78,12 +109,11 @@
             type="button" 
             id="resend-verify-btn" 
             class="cta"
-            style="white-space: nowrap;"
           >
             Send new link
           </button>
         </div>
-        <p class="small" style="margin: 12px 0 0 0; color: #6b7280;">
+        <p class="small verify-resend-box__note">
           The new link will be valid for 24 hours and will replace any previous verification links.
         </p>
       </div>
@@ -118,7 +148,7 @@
         try {
           const response = await fetch('/api/v1/auth/resend-verification', {
             method: 'POST',
-            headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
+            headers: await getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
             body: JSON.stringify({ email }),
           });
@@ -130,14 +160,16 @@
               data.message || 'Verification email sent! Please check your inbox.',
               'success'
             );
-            // Replace form with success message
-            container.querySelector('div[style*="margin-top"]').innerHTML = `
-              <div style="padding: 20px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
-                <p class="small" style="margin: 0; color: #166534;">
-                  ✓ ${data.message || 'A new verification email has been sent. Please check your inbox and spam folder.'}
+            // Replace form with success message using the stable id
+            const wrapper = document.getElementById('resend-form-wrapper');
+            if (wrapper) {
+              wrapper.className = 'verify-resend-box verify-resend-box--success';
+              wrapper.innerHTML = `
+                <p class="small">
+                  ✓ ${escapeHtml(data.message || 'A new verification email has been sent. Please check your inbox and spam folder.')}
                 </p>
-              </div>
-            `;
+              `;
+            }
           } else {
             showToast(
               data.error || 'Failed to send verification email. Please try again.',
@@ -244,7 +276,7 @@
       if (statusEl) {
         statusEl.innerHTML = `
           <p>No verification token was provided. Please check your email for the verification link, or request a new one below.</p>
-          <p class="small" style="margin-top: 12px; color: #6b7280;">
+          <p class="small verify-status__hint">
             If you just registered, the verification email should arrive within a few minutes. Don't forget to check your spam folder!
           </p>
         `;
@@ -314,8 +346,8 @@
 
         if (statusEl) {
           statusEl.innerHTML = `
-            <p><strong>Error:</strong> ${errorMessage}</p>
-            ${data.canResend ? '<p class="small" style="margin-top: 12px; color: #6b7280;">You can request a new verification email below.</p>' : ''}
+            <p><strong>Error:</strong> ${escapeHtml(errorMessage)}</p>
+            ${data.canResend ? '<p class="small verify-status__hint">You can request a new verification email below.</p>' : ''}
           `;
         }
 
@@ -341,10 +373,10 @@
         if (statusEl) {
           statusEl.innerHTML = `
             <p><strong>Success!</strong> Your email address has been verified.</p>
-            <p class="small" style="margin-top: 12px; opacity: 0.8;">
+            <p class="small verify-status__note">
               ${data.withinGracePeriod ? '⚠️ Note: Your verification link had expired, but we accepted it within the grace period.' : ''}
             </p>
-            <p class="small" style="margin-top: 8px; opacity: 0.8;">Redirecting you to your dashboard in a few seconds...</p>
+            <p class="small verify-status__redirect">Redirecting you to your dashboard in a few seconds...</p>
           `;
         }
 
@@ -392,16 +424,22 @@
       if (statusEl) {
         statusEl.innerHTML = `
           <p><strong>Connection Error:</strong> Unable to connect to the server. Please check your internet connection and try again.</p>
-          <p class="small" style="margin-top: 12px; color: #6b7280;">
+          <p class="small verify-status__hint">
             If the problem persists, please contact support or request a new verification email.
           </p>
         `;
       }
       if (actionsEl) {
         actionsEl.innerHTML = `
-          <button onclick="location.reload()" class="cta">Try Again</button>
+          <button id="verify-retry-btn" class="cta">Try Again</button>
           <a href="/auth" class="cta secondary">Go to Sign In</a>
         `;
+        const retryBtn = document.getElementById('verify-retry-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', () => {
+            location.reload();
+          });
+        }
       }
 
       // Show option to resend after connection error

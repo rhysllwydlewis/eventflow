@@ -1522,3 +1522,72 @@ body.auth-page .auth-card .checkbox-label-right {
     border: 2px solid #000;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   22. VERIFY PAGE — RESEND FORM
+───────────────────────────────────────────────────────────────*/
+.verify-resend-box {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e7eaf0;
+}
+
+.verify-resend-box__label {
+  margin: 0 0 12px 0;
+  font-weight: 600;
+}
+
+.verify-resend-box__row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.verify-resend-box__input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.verify-resend-box__note {
+  margin: 12px 0 0 0;
+  color: #6b7280;
+}
+
+.verify-resend-box--success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.verify-resend-box--success p {
+  margin: 0;
+  color: #166534;
+}
+
+/* Hint/secondary text below a verify status message */
+.verify-status__hint {
+  margin-top: 12px;
+  color: #6b7280;
+}
+
+/* Faded note below a verify status message (e.g. grace-period notice, redirect countdown) */
+.verify-status__note {
+  margin-top: 12px;
+  opacity: 0.8;
+}
+
+/* Slightly tighter note variant used for the redirect countdown */
+.verify-status__redirect {
+  margin-top: 8px;
+  opacity: 0.8;
+}
+
+/* Ensure the resend-form send button text does not wrap */
+.verify-resend-box .cta {
+  white-space: nowrap;
+}

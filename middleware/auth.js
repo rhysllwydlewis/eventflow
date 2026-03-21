@@ -249,6 +249,7 @@ function planOwnerOnly(req, res, next) {
 }
 
 module.exports = {
+  JWT_SECRET,
   setAuthCookie,
   clearAuthCookie,
   getUserFromCookie,
