@@ -196,7 +196,7 @@ router.post(
     }
     if (!email || !password) {
       return res.status(400).json({
-        error: 'Missing required fields (firstName, lastName, email, and password required)',
+        error: 'Email and password are required',
       });
     }
     if (!validator.isEmail(String(email))) {
