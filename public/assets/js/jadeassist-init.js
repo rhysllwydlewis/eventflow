@@ -287,19 +287,21 @@
         bottom: 8rem; /* Above widget (widget at 5rem + 3rem spacing) */
         left: 1.5rem;
         max-width: 280px;
-        background: white;
+        background: #fff;
         border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        border-left: 3px solid #00B2A9;
+        box-shadow: 0 8px 24px rgba(0, 178, 169, 0.18);
         padding: 0;
         z-index: ${Z_INDEX.TEASER}; /* Below widget, above back-to-top */
         opacity: 0;
         transform: translateY(10px) translateZ(0); /* GPU acceleration */
-        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
                     transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce easing */
         cursor: pointer;
         will-change: opacity, transform; /* Performance hint for browser */
         backface-visibility: hidden;
         -webkit-font-smoothing: antialiased;
+        font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       }
 
       .jade-teaser-visible {
@@ -309,54 +311,62 @@
 
       .jade-teaser:hover {
         transform: translateY(-2px) scale(1.01) translateZ(0);
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 12px 32px rgba(0, 178, 169, 0.28);
         transition: all 0.2s ease;
       }
 
-      .jade-teaser:focus {
+      .jade-teaser:focus-visible {
         outline: 2px solid #00B2A9;
-        outline-offset: 2px;
+        outline-offset: 3px;
       }
 
       .jade-teaser-content {
-        padding: 16px;
+        padding: 14px 14px 14px 12px;
         display: flex;
         align-items: flex-start;
-        gap: 12px;
+        gap: 10px;
       }
 
       .jade-teaser-text {
         flex: 1;
-        font-size: 14px;
-        line-height: 1.4;
-        color: #0B1220;
+        font-size: 13.5px;
+        line-height: 1.45;
+        color: #1a2332;
         font-weight: 500;
+        letter-spacing: -0.01em;
       }
 
       .jade-teaser-close {
         flex-shrink: 0;
         background: none;
         border: none;
-        font-size: 20px;
+        font-size: 18px;
         line-height: 1;
-        color: #667085;
+        color: #8a99ab;
         cursor: pointer;
-        padding: 0;
-        width: 24px;
-        height: 24px;
+        padding: 2px;
+        width: 22px;
+        height: 22px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 4px;
-        transition: background 0.2s ease, color 0.2s ease;
+        transition: background 0.15s ease, color 0.15s ease;
+        align-self: flex-start;
+        margin-top: 1px;
       }
 
       .jade-teaser-close:hover {
-        background: #F3F4F6;
-        color: #0B1220;
+        background: rgba(0, 178, 169, 0.1);
+        color: #00B2A9;
       }
 
-      /* Add a little arrow pointing to the button */
+      .jade-teaser-close:focus-visible {
+        outline: 2px solid #00B2A9;
+        outline-offset: 2px;
+      }
+
+      /* Tail arrow pointing down toward the widget launcher */
       .jade-teaser::after {
         content: '';
         position: absolute;
@@ -364,9 +374,9 @@
         left: 24px;
         width: 16px;
         height: 16px;
-        background: white;
+        background: #fff;
         transform: rotate(45deg);
-        box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 2px 2px 6px rgba(0, 178, 169, 0.15);
       }
 
       /* Mobile adjustments for teaser */
@@ -388,6 +398,9 @@
           line-height: 1.35;
         }
 
+        /* Close button: visually tiny ✕ (10px icon) inside a 28px touch target.
+           The transparent background makes it look like a bare small icon while
+           still giving a comfortable tap zone on mobile. */
         .jade-teaser-close {
           width: 28px;
           height: 28px;
