@@ -39,9 +39,13 @@ window.showEarningsComingSoon = function () {
 // Insert a styled alert inside the hero content area
 function showUrgentAlert(message, type = 'warning') {
   const heroContent = document.querySelector('#welcome-section .dashboard-hero__content');
-  if (!heroContent) return;
+  if (!heroContent) {
+    return;
+  }
   const existing = heroContent.querySelector('.sd-urgent-alert');
-  if (existing) existing.remove();
+  if (existing) {
+    existing.remove();
+  }
   const alert = document.createElement('div');
   alert.className = `sd-urgent-alert sd-urgent-alert--${type}`;
   alert.style.cssText =
@@ -128,7 +132,8 @@ async function initSupplierDashboardWidgets() {
     // Update profile count stat card
     const quickStatProfiles = document.getElementById('quick-stat-profiles');
     if (quickStatProfiles) {
-      const profileCount = summaryData?.profile?.profileCount ?? (summaryData?.profile?.topProfileName ? 1 : 0);
+      const profileCount =
+        summaryData?.profile?.profileCount ?? (summaryData?.profile?.topProfileName ? 1 : 0);
       quickStatProfiles.setAttribute('data-target', String(profileCount));
       quickStatProfiles.textContent = String(profileCount);
     }
@@ -137,17 +142,23 @@ async function initSupplierDashboardWidgets() {
     // Only target the enquiries stat card's trend element to avoid applying
     // enquiry trend data to unrelated cards (views, response rate, etc.)
     const enquiriesCard = document.getElementById('quick-stat-enquiries');
-    const enquiriesTrendWrapper = enquiriesCard?.closest('.dashboard-stat-card')?.querySelector('.dashboard-stat-card__trend');
+    const enquiriesTrendWrapper = enquiriesCard
+      ?.closest('.dashboard-stat-card')
+      ?.querySelector('.dashboard-stat-card__trend');
     const enquiriesTrendSpan = enquiriesTrendWrapper?.querySelector('span');
     const enquiriesTrend = summaryData?.analytics?.enquiriesTrend;
     if (enquiriesTrendWrapper) {
       if (enquiriesTrend !== undefined && enquiriesTrend !== null) {
         if (enquiriesTrend > 0) {
-          if (enquiriesTrendSpan) enquiriesTrendSpan.textContent = `+${enquiriesTrend}%`;
+          if (enquiriesTrendSpan) {
+            enquiriesTrendSpan.textContent = `+${enquiriesTrend}%`;
+          }
           enquiriesTrendWrapper.classList.remove('trend--down');
           enquiriesTrendWrapper.classList.add('trend--up');
         } else if (enquiriesTrend < 0) {
-          if (enquiriesTrendSpan) enquiriesTrendSpan.textContent = `${enquiriesTrend}%`;
+          if (enquiriesTrendSpan) {
+            enquiriesTrendSpan.textContent = `${enquiriesTrend}%`;
+          }
           enquiriesTrendWrapper.classList.remove('trend--up');
           enquiriesTrendWrapper.classList.add('trend--down');
         } else {
@@ -162,8 +173,12 @@ async function initSupplierDashboardWidgets() {
     if (summaryData?.profile?.topProfileName) {
       const titleMain = document.querySelector('.dashboard-hero__title-main');
       const titleHighlight = document.querySelector('.dashboard-hero__title-highlight');
-      if (titleMain) titleMain.textContent = 'Welcome back,';
-      if (titleHighlight) titleHighlight.textContent = summaryData.profile.topProfileName;
+      if (titleMain) {
+        titleMain.textContent = 'Welcome back,';
+      }
+      if (titleHighlight) {
+        titleHighlight.textContent = summaryData.profile.topProfileName;
+      }
     }
 
     // Create statistics widgets with real data
@@ -299,8 +314,12 @@ async function initSupplierDashboardWidgets() {
         if (!summaryData?.profile?.topProfileName && suppliers[0]?.name) {
           const titleMain = document.querySelector('.dashboard-hero__title-main');
           const titleHighlight = document.querySelector('.dashboard-hero__title-highlight');
-          if (titleMain) titleMain.textContent = 'Welcome back,';
-          if (titleHighlight) titleHighlight.textContent = suppliers[0].name;
+          if (titleMain) {
+            titleMain.textContent = 'Welcome back,';
+          }
+          if (titleHighlight) {
+            titleHighlight.textContent = suppliers[0].name;
+          }
         }
       }
     } catch (err) {
@@ -507,19 +526,22 @@ async function displaySubscriptionStatus() {
 
     if (currentTier !== 'free') {
       const planLabel = TIER_LABELS[currentTier] || currentTier;
-      const badge = TIER_BADGES[currentTier] || '';
       let billingHtml = '';
       if (activeSubscription?.subscriptionDetails?.currentPeriodEnd) {
         const endDate = new Date(activeSubscription.subscriptionDetails.currentPeriodEnd);
-        billingHtml = `<p class="small"><strong>Renews:</strong> ${endDate.toLocaleDateString('en-GB')}</p>`;
+        billingHtml = `<p class="sd-subscription-active__billing">Renews ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>`;
       }
 
       container.innerHTML = `
-            <p class="small"><strong>Active Plan:</strong> ${planLabel}${badge}</p>
-            ${billingHtml}
-            <p class="small"><strong>Status:</strong> <span class="subscription-status-active">✓ Active</span></p>
-            <a href="/supplier/subscription" class="btn btn-secondary subscription-action-btn">Manage Subscription</a>
-          `;
+        <div class="sd-subscription-active">
+          <div class="sd-subscription-active__plan-row">
+            <span class="sd-subscription-active__badge sd-subscription-active__badge--${currentTier}">${planLabel}</span>
+            <span class="sd-subscription-active__status">Active</span>
+          </div>
+          ${billingHtml}
+          <a href="/supplier/subscription" class="sd-subscription-manage-btn">Manage subscription →</a>
+        </div>
+      `;
     } else {
       container.innerHTML = `
         <div class="sd-subscription-free">
