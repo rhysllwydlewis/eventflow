@@ -12,9 +12,29 @@
     window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   // Helper function to get headers with CSRF token
-  function getHeadersWithCsrf(additionalHeaders = {}) {
+  // Fetches a fresh CSRF token from the server if none is available
+  async function getHeadersWithCsrf(additionalHeaders = {}) {
     const headers = { ...additionalHeaders };
-    const csrfToken = window.__CSRF_TOKEN__;
+    let csrfToken = window.__CSRF_TOKEN__;
+
+    if (!csrfToken) {
+      try {
+        const r = await fetch('/api/csrf-token', { credentials: 'include' });
+        if (r.ok) {
+          const d = await r.json();
+          // /api/csrf-token returns { csrfToken, token } — check both for safety
+          csrfToken = d.csrfToken || d.token || '';
+          if (csrfToken) {
+            window.__CSRF_TOKEN__ = csrfToken;
+          }
+        }
+      } catch (fetchErr) {
+        if (isDevelopment) {
+          console.warn('⚠️ Failed to fetch CSRF token:', fetchErr.message);
+        }
+      }
+    }
+
     if (csrfToken) {
       headers['X-CSRF-Token'] = csrfToken;
     }
@@ -63,14 +83,14 @@
     }
 
     const formHtml = `
-      <div style="margin-top: 24px; padding: 20px; background: #f9fafb; border-radius: 12px; border: 1px solid #e7eaf0;">
-        <p class="small" style="margin: 0 0 12px 0; font-weight: 600;">Need a new verification email?</p>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <div id="resend-form-wrapper" class="verify-resend-box">
+        <p class="small verify-resend-box__label">Need a new verification email?</p>
+        <div class="verify-resend-box__row">
           <input 
             type="email" 
             id="resend-email" 
+            class="verify-resend-box__input"
             placeholder="Enter your email address" 
-            style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px;"
             required
             autocomplete="email"
           >
@@ -83,7 +103,7 @@
             Send new link
           </button>
         </div>
-        <p class="small" style="margin: 12px 0 0 0; color: #6b7280;">
+        <p class="small verify-resend-box__note">
           The new link will be valid for 24 hours and will replace any previous verification links.
         </p>
       </div>
@@ -118,7 +138,7 @@
         try {
           const response = await fetch('/api/v1/auth/resend-verification', {
             method: 'POST',
-            headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
+            headers: await getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
             body: JSON.stringify({ email }),
           });
@@ -130,14 +150,16 @@
               data.message || 'Verification email sent! Please check your inbox.',
               'success'
             );
-            // Replace form with success message
-            container.querySelector('div[style*="margin-top"]').innerHTML = `
-              <div style="padding: 20px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
-                <p class="small" style="margin: 0; color: #166534;">
+            // Replace form with success message using the stable id
+            const wrapper = document.getElementById('resend-form-wrapper');
+            if (wrapper) {
+              wrapper.className = 'verify-resend-box verify-resend-box--success';
+              wrapper.innerHTML = `
+                <p class="small">
                   ✓ ${data.message || 'A new verification email has been sent. Please check your inbox and spam folder.'}
                 </p>
-              </div>
-            `;
+              `;
+            }
           } else {
             showToast(
               data.error || 'Failed to send verification email. Please try again.',

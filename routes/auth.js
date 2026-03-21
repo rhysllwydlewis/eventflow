@@ -14,6 +14,7 @@ const logger = require('../utils/logger');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 const {
+  JWT_SECRET,
   authRequired,
   setAuthCookie,
   clearAuthCookie,
@@ -29,8 +30,6 @@ const { validateToken } = require('../middleware/token');
 const domainAdmin = require('../middleware/domain-admin');
 
 const router = express.Router();
-
-const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
 
 // This will be set by the main server.js when mounting these routes (legacy compatibility)
 // eslint-disable-next-line no-unused-vars
@@ -187,20 +186,20 @@ router.post(
       }
     }
 
-    // Support both new (firstName/lastName) and legacy (name) formats
-    const userFirstName = firstName || '';
-    const userLastName = lastName || '';
-    const userFullName =
-      firstName && lastName ? `${firstName.trim()} ${lastName.trim()}`.trim() : (name || '').trim();
+    // firstName and lastName are required; name is accepted for backward compatibility
+    // but firstName/lastName take precedence
+    const userFirstName = (firstName || '').trim();
+    const userLastName = (lastName || '').trim();
+    const userFullName = userFirstName && userLastName ? `${userFirstName} ${userLastName}` : '';
 
-    // Required fields validation
-    if (!userFullName || !email || !password) {
-      return res.status(400).json({
-        error: 'Missing required fields (name or firstName/lastName, email, and password required)',
-      });
-    }
-    if (!firstName || !lastName) {
+    // Required fields validation — firstName and lastName are always required
+    if (!userFirstName || !userLastName) {
       return res.status(400).json({ error: 'First name and last name are required' });
+    }
+    if (!email || !password) {
+      return res.status(400).json({
+        error: 'Missing required fields (firstName, lastName, email, and password required)',
+      });
     }
     if (!validator.isEmail(String(email))) {
       return res.status(400).json({ error: 'Invalid email' });
@@ -1332,7 +1331,7 @@ router.get('/unsubscribe', async (req, res) => {
  * Resend verification email to user
  * Can be called by the user themselves or by an admin
  */
-router.post('/resend-verification', resendEmailLimiter, async (req, res) => {
+router.post('/resend-verification', resendEmailLimiter, csrfProtection, async (req, res) => {
   const { email } = req.body || {};
 
   if (!email) {
