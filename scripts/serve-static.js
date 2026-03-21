@@ -64,6 +64,7 @@ const protectedStaticPaths = [
   '/settings',
   '/plan',
   '/timeline',
+  '/budget',
   '/dashboard',
   '/dashboard/customer',
   '/dashboard/supplier',
@@ -73,9 +74,7 @@ const protectedStaticPaths = [
 
 app.use((req, res, next) => {
   const path = req.path.replace(/\.html$/, '');
-  const isProtected = protectedStaticPaths.some(
-    p => path === p || path.startsWith(`${p}/`)
-  );
+  const isProtected = protectedStaticPaths.some(p => path === p || path.startsWith(`${p}/`));
   if (!isProtected) {
     return next();
   }

@@ -591,10 +591,28 @@ const protectedHtmlPages = [
   'plan',
   'timeline',
   'my-marketplace-listings',
+  'budget',
 ];
 
 protectedHtmlPages.forEach(page => {
   app.get(`/${page}`, apiLimiter, (req, res, next) => {
+    const user = getUserFromCookie(req);
+    if (!user) {
+      return res.redirect(302, `/auth?redirect=${encodeURIComponent(req.originalUrl)}`);
+    }
+    next();
+  });
+});
+
+// ---------- Protected SPA Routes ----------
+// Server-side auth guard for SPA directories that require authentication.
+// app.use() matches the root path AND all subpaths (e.g. /messenger/,
+// /messenger/index.html) so the HTML shell is never served to unauthenticated
+// users — including crawling bots that reach deep links directly.
+// MUST come before express.static().
+const protectedSpaPrefixes = ['/messenger', '/chat'];
+protectedSpaPrefixes.forEach(prefix => {
+  app.use(prefix, apiLimiter, (req, res, next) => {
     const user = getUserFromCookie(req);
     if (!user) {
       return res.redirect(302, `/auth?redirect=${encodeURIComponent(req.originalUrl)}`);
