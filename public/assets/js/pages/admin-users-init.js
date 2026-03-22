@@ -649,11 +649,23 @@
     currentSubscriptionUserId = userId;
     const modal = document.getElementById('subscriptionModal');
     if (!modal) {
+      console.error(
+        '[AdminUsers] #subscriptionModal not found in DOM. Cannot open subscription modal.'
+      );
       return;
     }
 
+    // Show the modal. components.css uses opacity:0/visibility:hidden on .modal-overlay and
+    // only reveals it with the .active class. Setting display alone is not enough.
     modal.style.display = 'flex';
-    document.getElementById('subscriptionUserId').value = userId;
+    modal.classList.add('active');
+
+    const userIdInput = document.getElementById('subscriptionUserId');
+    if (userIdInput) {
+      userIdInput.value = userId;
+    } else {
+      console.error('[AdminUsers] #subscriptionUserId not found in DOM.');
+    }
 
     // Load current subscription status and history
     loadSubscriptionData(userId);
@@ -663,6 +675,7 @@
     const modal = document.getElementById('subscriptionModal');
     if (modal) {
       modal.style.display = 'none';
+      modal.classList.remove('active');
     }
     currentSubscriptionUserId = null;
 
@@ -678,6 +691,9 @@
     const historyDiv = document.getElementById('subscriptionHistory');
 
     if (!statusDiv || !historyDiv) {
+      console.error(
+        '[AdminUsers] Missing required DOM elements: #currentSubscriptionStatus or #subscriptionHistory. Cannot render subscription data.'
+      );
       return;
     }
 

@@ -348,10 +348,7 @@ describe('Admin Regression — Subscription management button works for admin-ro
     expect(listenerSetupIdx).toBeGreaterThan(-1);
 
     // Check the block of code around and after the listener setup
-    const listenerSection = usersInitContent.substring(
-      listenerSetupIdx,
-      listenerSetupIdx + 600
-    );
+    const listenerSection = usersInitContent.substring(listenerSetupIdx, listenerSetupIdx + 600);
     // The click handler must read from btn (the closure variable), not e.target
     expect(listenerSection).toContain('btn.getAttribute(');
     expect(listenerSection).not.toContain('e.target.getAttribute(');
@@ -398,5 +395,86 @@ describe('Admin Regression — Subscription management button works for admin-ro
     );
     expect(postSection).toContain('effectiveId');
     expect(postSection).toContain('{ id: effectiveId }');
+  });
+
+  // ── Modal visibility: .active class ──────────────────────────────────────────
+
+  it('openSubscriptionModal adds the .active class so components.css opacity/visibility are applied', () => {
+    // components.css defines .modal-overlay with opacity:0;visibility:hidden and only
+    // .modal-overlay.active makes the overlay visible. Without classList.add('active') the
+    // modal is technically display:flex but still invisible — the core bug that caused
+    // "Manage Subscription does nothing".
+    const openIdx = usersInitContent.indexOf('function openSubscriptionModal(');
+    expect(openIdx).toBeGreaterThan(-1);
+    // Grab the function body (up to the next top-level function)
+    const openSection = usersInitContent.substring(openIdx, openIdx + 600);
+    expect(openSection).toContain("classList.add('active')");
+  });
+
+  it('closeSubscriptionModal removes the .active class to properly hide the modal', () => {
+    const closeIdx = usersInitContent.indexOf('function closeSubscriptionModal(');
+    expect(closeIdx).toBeGreaterThan(-1);
+    const closeSection = usersInitContent.substring(closeIdx, closeIdx + 400);
+    expect(closeSection).toContain("classList.remove('active')");
+  });
+
+  it('openSubscriptionModal logs a console.error when #subscriptionModal is absent', () => {
+    // Silent early-return on missing DOM makes debugging impossible; a clear error message
+    // is required so developers can trace the issue in production DevTools.
+    const openIdx = usersInitContent.indexOf('function openSubscriptionModal(');
+    const openSection = usersInitContent.substring(openIdx, openIdx + 600);
+    expect(openSection).toContain('console.error');
+    expect(openSection).toContain('subscriptionModal');
+  });
+
+  it('loadSubscriptionData logs a console.error when status/history DOM nodes are absent', () => {
+    // Without this, the function silently returns and developers see no indication of why
+    // subscription status is never rendered (missing DOM = silent no-op).
+    const loadIdx = usersInitContent.indexOf('async function loadSubscriptionData(');
+    expect(loadIdx).toBeGreaterThan(-1);
+    const loadSection = usersInitContent.substring(loadIdx, loadIdx + 600);
+    expect(loadSection).toContain('console.error');
+    expect(loadSection).toContain('currentSubscriptionStatus');
+  });
+
+  it('loadSubscriptionData shows a visible error in historyDiv when API call fails', () => {
+    // On API failure the modal must remain open and display a human-readable error — not
+    // silently stay in "Loading..." state which is indistinguishable from a slow response.
+    const loadIdx = usersInitContent.indexOf('async function loadSubscriptionData(');
+    const closeIdx = usersInitContent.indexOf('function setupSubscriptionModal(');
+    const loadSection = usersInitContent.substring(loadIdx, closeIdx);
+    // catch block must write visible error text into historyDiv
+    expect(loadSection).toContain('text-error');
+    expect(loadSection).toContain('catch');
+  });
+});
+
+// ─── Subscription Modal DOM – admin-users.html ────────────────────────────────
+
+describe('Admin Regression — Subscription modal DOM present in admin-users.html', () => {
+  let adminUsersHtml;
+
+  beforeAll(() => {
+    adminUsersHtml = fs.readFileSync(path.join(__dirname, '../../public/admin-users.html'), 'utf8');
+  });
+
+  it('admin-users.html contains #subscriptionModal element', () => {
+    expect(adminUsersHtml).toContain('id="subscriptionModal"');
+  });
+
+  it('admin-users.html contains #currentSubscriptionStatus element', () => {
+    expect(adminUsersHtml).toContain('id="currentSubscriptionStatus"');
+  });
+
+  it('admin-users.html contains #subscriptionHistory element', () => {
+    expect(adminUsersHtml).toContain('id="subscriptionHistory"');
+  });
+
+  it('admin-users.html contains #subscriptionUserId hidden input', () => {
+    expect(adminUsersHtml).toContain('id="subscriptionUserId"');
+  });
+
+  it('admin-users.html loads admin-users-init.js', () => {
+    expect(adminUsersHtml).toContain('admin-users-init.js');
   });
 });
