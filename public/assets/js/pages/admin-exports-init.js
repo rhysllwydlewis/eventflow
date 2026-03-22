@@ -98,10 +98,14 @@
         }
       });
     } else {
-      // Fallback — native confirm is acceptable here since this is a deliberate user action
-      // to download sensitive data (not a UI-injected alert).
-      // AdminShared should always be present; this is a defensive path only.
-      triggerDownload(btn, cfg);
+      // Fallback to native confirm so large exports always require acknowledgement.
+      // AdminShared is loaded synchronously before this script; this path is
+      // purely defensive.
+      if (window.confirm(
+        'This will export ALL platform data.\n\nThis file may be large. Continue?'
+      )) {
+        triggerDownload(btn, cfg);
+      }
     }
   }
 
