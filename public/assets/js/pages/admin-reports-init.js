@@ -15,6 +15,18 @@
     }
   }
 
+  function buildResolutionInfo(report) {
+    if (report.status !== 'resolved' && report.status !== 'dismissed') {
+      return '<span class="small">—</span>';
+    }
+    return `<div class="small" style="color:#6b7280;margin-top:0.25rem;">
+      ${report.resolvedByEmail ? `By: ${AdminShared.escapeHtml(report.resolvedByEmail)}<br>` : ''}
+      ${report.resolvedAt ? `At: ${AdminShared.formatDate(report.resolvedAt)}<br>` : ''}
+      ${report.resolution ? `Resolution: ${AdminShared.escapeHtml(report.resolution)}<br>` : ''}
+      ${report.resolutionNotes ? `Notes: ${AdminShared.escapeHtml(report.resolutionNotes)}` : ''}
+    </div>`;
+  }
+
   function renderReports() {
     const container = document.getElementById('reportsContainer');
     if (!container) {
@@ -51,15 +63,7 @@
 
     filtered.forEach(report => {
       const createdAt = AdminShared.formatDate(report.createdAt);
-      const resolutionInfo =
-        report.status === 'resolved' || report.status === 'dismissed'
-          ? `<div class="small" style="color:#6b7280;margin-top:0.25rem;">
-            ${report.resolvedByEmail ? `By: ${AdminShared.escapeHtml(report.resolvedByEmail)}<br>` : ''}
-            ${report.resolvedAt ? `At: ${AdminShared.formatDate(report.resolvedAt)}<br>` : ''}
-            ${report.resolution ? `Resolution: ${AdminShared.escapeHtml(report.resolution)}<br>` : ''}
-            ${report.resolutionNotes ? `Notes: ${AdminShared.escapeHtml(report.resolutionNotes)}` : ''}
-           </div>`
-          : '<span class="small">—</span>';
+      const resolutionInfo = buildResolutionInfo(report);
 
       html += `
         <tr>

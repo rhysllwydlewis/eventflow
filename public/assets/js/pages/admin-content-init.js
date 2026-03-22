@@ -602,7 +602,7 @@
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (tab && KNOWN_TABS.includes(tab)) {
-      const btn = document.querySelector(`.tab-button[data-tab="${tab}"]`);
+      const btn = document.querySelector(`.tab-button[data-tab="${CSS.escape(tab)}"]`);
       if (btn) {
         btn.click();
       }
