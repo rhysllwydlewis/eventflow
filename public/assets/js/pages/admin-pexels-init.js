@@ -272,4 +272,9 @@
   }
 
   init();
+
+  // Compatibility redirect — this page has moved to /admin-media
+  setTimeout(() => {
+    window.location.href = '/admin-media';
+  }, 5000);
 })();
