@@ -262,6 +262,10 @@
     }
   });
 
+  document.getElementById('backToDashboard')?.addEventListener('click', () => {
+    window.location.href = '/admin';
+  });
+
   // Initialize
   async function init() {
     const isConfigured = await checkPexelsStatus();
