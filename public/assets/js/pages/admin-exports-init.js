@@ -14,7 +14,7 @@
   'use strict';
 
   // Mapping from data-export attribute → { label, url, fileType, confirmRequired }
-  var EXPORTS = {
+  const EXPORTS = {
     'users-csv': {
       label: 'Users CSV',
       url: '/api/v1/admin/users-export',
@@ -41,25 +41,25 @@
     },
   };
 
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', () => {
     initBackButton();
     initMetaTexts();
     initExportButtons();
   });
 
   function initBackButton() {
-    var btn = document.getElementById('backToDashboard');
+    const btn = document.getElementById('backToDashboard');
     if (btn) {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', () => {
         window.location.href = '/admin';
       });
     }
   }
 
   function initMetaTexts() {
-    Object.keys(EXPORTS).forEach(function (key) {
-      var cfg = EXPORTS[key];
-      var el = document.getElementById(cfg.metaId);
+    Object.keys(EXPORTS).forEach(key => {
+      const cfg = EXPORTS[key];
+      const el = document.getElementById(cfg.metaId);
       if (el) {
         el.textContent = cfg.metaText;
       }
@@ -67,12 +67,14 @@
   }
 
   function initExportButtons() {
-    var buttons = document.querySelectorAll('.export-btn[data-export]');
-    buttons.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var key = btn.getAttribute('data-export');
-        var cfg = EXPORTS[key];
-        if (!cfg) return;
+    const buttons = document.querySelectorAll('.export-btn[data-export]');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-export');
+        const cfg = EXPORTS[key];
+        if (!cfg) {
+          return;
+        }
 
         if (cfg.confirmRequired) {
           triggerWithConfirm(btn, cfg);
@@ -84,45 +86,37 @@
   }
 
   function triggerWithConfirm(btn, cfg) {
-    var confirmFn =
-      typeof AdminShared !== 'undefined' && typeof AdminShared.confirm === 'function'
-        ? AdminShared.confirm
-        : null;
+    if (typeof AdminShared === 'undefined' || typeof AdminShared.confirm !== 'function') {
+      // AdminShared is loaded synchronously before this script; if it's missing
+      // something is seriously wrong — disable the button to prevent an unconfirmed download.
+      btn.disabled = true;
+      btn.textContent = 'Unavailable (page error)';
+      showToast('Unable to confirm export — please reload the page.', 'error');
+      return;
+    }
 
-    if (confirmFn) {
-      confirmFn(
-        'This will export ALL platform data (users, suppliers, packages, events, messages).\n\nThis file may be large. Continue?'
-      ).then(function (confirmed) {
-        if (confirmed) {
-          triggerDownload(btn, cfg);
-        }
-      });
-    } else {
-      // Fallback to native confirm so large exports always require acknowledgement.
-      // AdminShared is loaded synchronously before this script; this path is
-      // purely defensive.
-      if (window.confirm(
-        'This will export ALL platform data.\n\nThis file may be large. Continue?'
-      )) {
+    AdminShared.confirm(
+      'This will export ALL platform data (users, suppliers, packages, events, messages).\n\nThis file may be large. Continue?'
+    ).then(confirmed => {
+      if (confirmed) {
         triggerDownload(btn, cfg);
       }
-    }
+    });
   }
 
   function triggerDownload(btn, cfg) {
     btn.disabled = true;
     btn.textContent = 'Downloading…';
 
-    showToast('Starting ' + cfg.label + ' download…', 'info');
+    showToast(`Starting ${cfg.label} download…`, 'info');
 
     // Navigate to the export URL — the browser will handle the file download
     window.location.href = cfg.url;
 
     // Re-enable after a short delay to allow repeat downloads
-    setTimeout(function () {
+    setTimeout(() => {
       btn.disabled = false;
-      btn.innerHTML =
-        '<span class="export-btn-icon" aria-hidden="true">⬇️</span> Download ' + cfg.fileType;
+      btn.innerHTML = `<span class="export-btn-icon" aria-hidden="true">⬇️</span> Download ${cfg.fileType}`;
     }, 3000);
   }
 

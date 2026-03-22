@@ -145,7 +145,7 @@ describe('Admin Page JS - No Native Dialogs', () => {
           return;
         }
         // Skip lines that are part of admin helper definitions/calls
-        if (/_adminConfirm|_adminToast|AdminShared\.show/.test(line)) {
+        if (/_adminConfirm|_adminToast|AdminShared\.show|AdminShared\.confirm/.test(line)) {
           return;
         }
         // Check for native dialog patterns
