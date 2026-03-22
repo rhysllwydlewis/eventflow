@@ -1501,6 +1501,37 @@
   margin-bottom: 36px;
 }
 
+/* Centred header block used in card-layout articles */
+article header > div {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* Category eyebrow label in article headers */
+article header .small:first-child {
+  color: var(--guides-teal);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Article title spacing in card-layout articles */
+article header h1 {
+  margin: 12px 0;
+}
+
+/* Lead text in article headers */
+article header .lead {
+  color: var(--muted, #667085);
+  font-size: 1.125rem;
+}
+
+/* Meta line in article headers */
+article header .small:not(:first-child) {
+  color: var(--muted, #667085);
+  margin-top: 16px;
+}
+
 .article-breadcrumb {
   display: flex;
   align-items: center;
@@ -1846,6 +1877,11 @@
 /* Article page layout */
 .section { padding: 32px 0 64px; background: #fff; }
 
+/* Constrain article reading width */
+article.container {
+  max-width: 800px;
+}
+
 /* Hero image for articles */
 .article-hero-image {
   width: 100%;
@@ -1991,6 +2027,46 @@
   padding: 2rem;
   margin: 2.5rem 0;
   border: 1px solid rgba(11,128,115,0.15);
+}
+
+/* Remove default paragraph bottom margin inside all callout variants */
+.callout p,
+.callout--tip p,
+.callout--info p,
+.callout--warning p,
+.callout--cta p {
+  margin-bottom: 0;
+}
+
+/* End-of-article CTA card (gradient teal, white text) */
+.article-cta-card {
+  background: linear-gradient(135deg, #0b8073 0%, #088770 100%);
+  color: #fff;
+  text-align: center;
+  margin-top: 32px;
+  border-radius: var(--guides-radius);
+  padding: 2rem;
+}
+
+.article-cta-card h2 {
+  color: #fff;
+  border-bottom: none;
+  margin-top: 0;
+}
+
+.article-cta-card p {
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 0;
+}
+
+.article-cta-card > div {
+  margin-top: 24px;
+}
+
+/* Inverted (white bg) CTA button for use on dark/coloured backgrounds */
+.cta.cta--inverted {
+  background: #fff;
+  color: var(--guides-teal);
 }
 
 /* Print button */
@@ -2328,4 +2404,21 @@
   font-size: 0.8rem;
   color: #6b7280;
   margin-left: 6px;
+}
+
+/* ============================================================
+   17. ARTICLE BYLINE
+   Author / date meta-info strip displayed below the article header.
+   ============================================================ */
+.article-byline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 20px 0 32px;
+  padding: 16px 20px;
+  background: var(--bg-secondary, #f8f9fa);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #667085;
 }
