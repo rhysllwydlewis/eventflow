@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  let activeFilters = new Set(['users', 'suppliers', 'packages', 'tickets', 'reports']);
+  const activeFilters = new Set(['users', 'suppliers', 'packages', 'tickets', 'reports']);
 
   // Toggle filter chips
   document.querySelectorAll('.search-filter-chip').forEach(chip => {
@@ -33,7 +33,9 @@
 
     try {
       const types = Array.from(activeFilters).join(',');
-      const data = await AdminShared.api(`/api/admin/search?q=${encodeURIComponent(q)}&types=${encodeURIComponent(types)}`);
+      const data = await AdminShared.api(
+        `/api/admin/search?q=${encodeURIComponent(q)}&types=${encodeURIComponent(types)}`
+      );
       renderResults(data.results, q);
     } catch (err) {
       container.innerHTML = `<div class="card"><p style="color:#ef4444;">Search failed: ${AdminShared.escapeHtml(err.message)}</p></div>`;
@@ -48,7 +50,9 @@
       sections.push(`
         <div class="card search-results-section">
           <h3>👥 Users (${results.users.length})</h3>
-          ${results.users.map(u => `
+          ${results.users
+            .map(
+              u => `
             <div class="search-result-item">
               <div>
                 <div class="search-result-primary">${AdminShared.escapeHtml(u.name || 'Unknown')}</div>
@@ -57,7 +61,9 @@
               <div class="search-result-meta">
                 <a href="/admin-user-detail?id=${encodeURIComponent(u.id)}" class="btn-sm btn-secondary">View</a>
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>`);
     }
 
@@ -65,7 +71,9 @@
       sections.push(`
         <div class="card search-results-section">
           <h3>🏢 Suppliers (${results.suppliers.length})</h3>
-          ${results.suppliers.map(s => `
+          ${results.suppliers
+            .map(
+              s => `
             <div class="search-result-item">
               <div>
                 <div class="search-result-primary">${AdminShared.escapeHtml(s.businessName || 'Unknown')}</div>
@@ -74,7 +82,9 @@
               <div class="search-result-meta">
                 <a href="/admin-supplier-detail?id=${encodeURIComponent(s.id)}" class="btn-sm btn-secondary">View</a>
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>`);
     }
 
@@ -82,16 +92,20 @@
       sections.push(`
         <div class="card search-results-section">
           <h3>📦 Packages (${results.packages.length})</h3>
-          ${results.packages.map(p => `
+          ${results.packages
+            .map(
+              p => `
             <div class="search-result-item">
               <div>
                 <div class="search-result-primary">${AdminShared.escapeHtml(p.title || 'Unknown')}</div>
-                <div class="search-result-secondary">${AdminShared.escapeHtml(p.supplierName || '')} · ${p.price ? '£' + p.price : ''}</div>
+                <div class="search-result-secondary">${AdminShared.escapeHtml(p.supplierName || '')} · ${p.price ? `£${p.price}` : ''}</div>
               </div>
               <div class="search-result-meta">
                 <span class="badge">${AdminShared.escapeHtml(p.status || 'active')}</span>
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>`);
     }
 
@@ -99,18 +113,22 @@
       sections.push(`
         <div class="card search-results-section">
           <h3>🎫 Tickets (${results.tickets.length})</h3>
-          ${results.tickets.map(t => `
+          ${results.tickets
+            .map(
+              t => `
             <div class="search-result-item">
               <div>
                 <div class="search-result-primary">${AdminShared.escapeHtml(t.subject || 'No subject')}</div>
-                <div class="search-result-secondary">${AdminShared.escapeHtml(t.senderEmail || '')} · ${AdminShared.formatDate ? AdminShared.formatDate(t.createdAt) : (t.createdAt || '')}</div>
+                <div class="search-result-secondary">${AdminShared.escapeHtml(t.senderEmail || '')} · ${AdminShared.formatDate ? AdminShared.formatDate(t.createdAt) : t.createdAt || ''}</div>
               </div>
               <div class="search-result-meta">
                 <span class="badge badge-${t.status || 'open'}">${AdminShared.escapeHtml(t.status || 'open')}</span>
                 <span class="badge badge-${t.priority || 'medium'}">${AdminShared.escapeHtml(t.priority || 'medium')}</span>
                 <a href="/admin-tickets" class="btn-sm btn-secondary">View Tickets</a>
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>`);
     }
 
@@ -118,7 +136,9 @@
       sections.push(`
         <div class="card search-results-section">
           <h3>📈 Reports (${results.reports.length})</h3>
-          ${results.reports.map(r => `
+          ${results.reports
+            .map(
+              r => `
             <div class="search-result-item">
               <div>
                 <div class="search-result-primary">${AdminShared.escapeHtml(r.type || 'unknown')} — ${AdminShared.escapeHtml(r.reason || '')}</div>
@@ -128,7 +148,9 @@
                 <span class="badge badge-${r.status || 'pending'}">${AdminShared.escapeHtml(r.status || 'pending')}</span>
                 <a href="/admin-reports" class="btn-sm btn-secondary">View Reports</a>
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>`);
     }
 
@@ -145,7 +167,9 @@
 
   document.getElementById('globalSearchBtn').addEventListener('click', performSearch);
   document.getElementById('globalSearchInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') performSearch();
+    if (e.key === 'Enter') {
+      performSearch();
+    }
   });
   document.getElementById('backToDashboard')?.addEventListener('click', () => {
     window.location.href = '/admin';
