@@ -427,12 +427,16 @@
 
   // ---- Legal Dates Tab ----
   (function setupLegalDates() {
-    function getCSRFToken() { return window.__CSRF_TOKEN__ || ''; }
+    function getCSRFToken() {
+      return window.__CSRF_TOKEN__ || '';
+    }
 
     async function loadContentDates() {
       try {
         const data = await AdminShared.api('/api/admin/content-dates');
-        if (!data.success) throw new Error(data.error || 'Failed to load content dates');
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load content dates');
+        }
 
         document.getElementById('cdStatusContent').innerHTML = `
           <div class="info-row"><span class="info-label">Automated Updates</span>
@@ -452,7 +456,9 @@
         const toggle = document.getElementById('cdAutoUpdateToggle');
         if (toggle) {
           toggle.checked = data.config.autoUpdateEnabled;
-          document.getElementById('cdAutoUpdateLabel').textContent = data.config.autoUpdateEnabled ? 'Enabled' : 'Disabled';
+          document.getElementById('cdAutoUpdateLabel').textContent = data.config.autoUpdateEnabled
+            ? 'Enabled'
+            : 'Disabled';
         }
 
         document.getElementById('cdScheduleInfo').innerHTML = data.status.scheduled
@@ -461,21 +467,32 @@
       } catch (err) {
         console.error('Failed to load content dates:', err);
         const el = document.getElementById('cdStatusContent');
-        if (el) el.innerHTML = `<p style="color:#ef4444;">Error: ${AdminShared.escapeHtml(err.message)}</p>`;
+        if (el) {
+          el.innerHTML = `<p style="color:#ef4444;">Error: ${AdminShared.escapeHtml(err.message)}</p>`;
+        }
       }
     }
 
     async function loadArticleDates() {
       try {
         const data = await AdminShared.api('/api/admin/content-dates/articles');
-        if (!data.success) throw new Error(data.error || 'Failed to load article dates');
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load article dates');
+        }
         const el = document.getElementById('cdArticleDatesContent');
-        if (!el) return;
-        if (!data.articles.length) { el.innerHTML = '<p class="small">No articles found</p>'; return; }
+        if (!el) {
+          return;
+        }
+        if (!data.articles.length) {
+          el.innerHTML = '<p class="small">No articles found</p>';
+          return;
+        }
         el.innerHTML = `<ul class="article-list">${data.articles.map(a => `<li class="article-item"><span class="article-name">${AdminShared.escapeHtml(a.name)}</span><span class="article-date">${AdminShared.escapeHtml(a.lastModifiedFormatted)}</span></li>`).join('')}</ul>`;
       } catch (err) {
         const el = document.getElementById('cdArticleDatesContent');
-        if (el) el.innerHTML = `<p style="color:#ef4444;">Error: ${AdminShared.escapeHtml(err.message)}</p>`;
+        if (el) {
+          el.innerHTML = `<p style="color:#ef4444;">Error: ${AdminShared.escapeHtml(err.message)}</p>`;
+        }
       }
     }
 
@@ -485,43 +502,60 @@
         e.preventDefault();
         const lastUpdated = document.getElementById('cdLastUpdated').value.trim();
         const effectiveDate = document.getElementById('cdEffectiveDate').value.trim();
-        if (!lastUpdated && !effectiveDate) { AdminShared.showToast('Please provide at least one date', 'warning'); return; }
+        if (!lastUpdated && !effectiveDate) {
+          AdminShared.showToast('Please provide at least one date', 'warning');
+          return;
+        }
         const btn = document.getElementById('cdUpdateBtn');
-        btn.disabled = true; btn.textContent = 'Updating...';
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
         try {
           const res = await fetch('/api/admin/content-dates', {
-            method: 'POST', credentials: 'include',
+            method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
             body: JSON.stringify({ lastUpdated, effectiveDate }),
           });
           const data = await res.json();
-          if (!res.ok || !data.success) throw new Error(data.message || data.error || 'Update failed');
+          if (!res.ok || !data.success) {
+            throw new Error(data.message || data.error || 'Update failed');
+          }
           AdminShared.showToast('✅ Dates updated successfully!', 'success');
           document.getElementById('cdLastUpdated').value = '';
           document.getElementById('cdEffectiveDate').value = '';
           await loadContentDates();
         } catch (err) {
           AdminShared.showToast(`Failed: ${err.message}`, 'error');
-        } finally { btn.disabled = false; btn.textContent = 'Update Dates'; }
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Update Dates';
+        }
       });
     }
 
     const checkBtn = document.getElementById('cdCheckNowBtn');
     if (checkBtn) {
       checkBtn.addEventListener('click', async () => {
-        checkBtn.disabled = true; checkBtn.textContent = 'Checking...';
+        checkBtn.disabled = true;
+        checkBtn.textContent = 'Checking...';
         try {
           const res = await fetch('/api/admin/content-dates/check-now', {
-            method: 'POST', credentials: 'include',
+            method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
           });
           const data = await res.json();
-          if (!res.ok || !data.success) throw new Error(data.message || data.error || 'Check failed');
+          if (!res.ok || !data.success) {
+            throw new Error(data.message || data.error || 'Check failed');
+          }
           AdminShared.showToast(`✅ ${data.message}`, 'success');
           await loadContentDates();
         } catch (err) {
           AdminShared.showToast(`Failed: ${err.message}`, 'error');
-        } finally { checkBtn.disabled = false; checkBtn.textContent = 'Check for Updates Now'; }
+        } finally {
+          checkBtn.disabled = false;
+          checkBtn.textContent = 'Check for Updates Now';
+        }
       });
     }
 
@@ -531,14 +565,19 @@
         const enabled = e.target.checked;
         try {
           const res = await fetch('/api/admin/content-dates/schedule', {
-            method: 'POST', credentials: 'include',
+            method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
             body: JSON.stringify({ enabled }),
           });
           const data = await res.json();
-          if (!res.ok || !data.success) throw new Error(data.message || data.error || 'Toggle failed');
+          if (!res.ok || !data.success) {
+            throw new Error(data.message || data.error || 'Toggle failed');
+          }
           AdminShared.showToast(`✅ Automation ${enabled ? 'enabled' : 'disabled'}`, 'success');
-          document.getElementById('cdAutoUpdateLabel').textContent = enabled ? 'Enabled' : 'Disabled';
+          document.getElementById('cdAutoUpdateLabel').textContent = enabled
+            ? 'Enabled'
+            : 'Disabled';
           await loadContentDates();
         } catch (err) {
           AdminShared.showToast(`Failed: ${err.message}`, 'error');
@@ -559,12 +598,14 @@
 
   // Support ?tab= query param to activate a specific tab on load
   (function activateTabFromQuery() {
+    const KNOWN_TABS = ['homepage', 'announcements', 'faqs', 'featured', 'legalDates'];
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab) {
-      const btn = document.querySelector(`.tab-button[data-tab="${CSS.escape(tab)}"]`);
-      if (btn) btn.click();
+    if (tab && KNOWN_TABS.includes(tab)) {
+      const btn = document.querySelector(`.tab-button[data-tab="${tab}"]`);
+      if (btn) {
+        btn.click();
+      }
     }
   })();
-
 })();
