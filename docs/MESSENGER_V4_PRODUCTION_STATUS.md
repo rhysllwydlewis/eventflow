@@ -74,24 +74,26 @@ future release.
 
 ## Canonical API
 
-| Resource                          | Method | Path                                           |
-| --------------------------------- | ------ | ---------------------------------------------- |
-| List conversations (user)         | GET    | `/api/v4/messenger/conversations`              |
-| Get conversation                  | GET    | `/api/v4/messenger/conversations/:id`          |
-| Update conversation               | PATCH  | `/api/v4/messenger/conversations/:id`          |
-| Delete conversation               | DELETE | `/api/v4/messenger/conversations/:id`          |
-| List messages                     | GET    | `/api/v4/messenger/conversations/:id/messages` |
-| Send message                      | POST   | `/api/v4/messenger/conversations/:id/messages` |
-| Edit message                      | PATCH  | `/api/v4/messenger/messages/:id`               |
-| Delete message                    | DELETE | `/api/v4/messenger/messages/:id`               |
-| Toggle reaction                   | POST   | `/api/v4/messenger/messages/:id/reactions`     |
-| Mark as read                      | POST   | `/api/v4/messenger/conversations/:id/read`     |
-| Typing indicator                  | POST   | `/api/v4/messenger/conversations/:id/typing`   |
-| Unread count                      | GET    | `/api/v4/messenger/unread-count`               |
-| Contacts                          | GET    | `/api/v4/messenger/contacts`                   |
-| Search                            | GET    | `/api/v4/messenger/search`                     |
-| **Admin: list all conversations** | GET    | `/api/v4/messenger/admin/conversations`        |
-| **Admin: metrics**                | GET    | `/api/v4/messenger/admin/metrics`              |
+| Resource                          | Method | Path                                                 |
+| --------------------------------- | ------ | ---------------------------------------------------- |
+| List conversations (user)         | GET    | `/api/v4/messenger/conversations`                    |
+| Get conversation                  | GET    | `/api/v4/messenger/conversations/:id`                |
+| Update conversation               | PATCH  | `/api/v4/messenger/conversations/:id`                |
+| Delete conversation               | DELETE | `/api/v4/messenger/conversations/:id`                |
+| List messages                     | GET    | `/api/v4/messenger/conversations/:id/messages`       |
+| Send message                      | POST   | `/api/v4/messenger/conversations/:id/messages`       |
+| Edit message                      | PATCH  | `/api/v4/messenger/messages/:id`                     |
+| Delete message                    | DELETE | `/api/v4/messenger/messages/:id`                     |
+| Toggle reaction                   | POST   | `/api/v4/messenger/messages/:id/reactions`           |
+| Mark as read                      | POST   | `/api/v4/messenger/conversations/:id/read`           |
+| Typing indicator                  | POST   | `/api/v4/messenger/conversations/:id/typing`         |
+| Unread count                      | GET    | `/api/v4/messenger/unread-count`                     |
+| Contacts                          | GET    | `/api/v4/messenger/contacts`                         |
+| Search                            | GET    | `/api/v4/messenger/search`                           |
+| **Admin: list all conversations** | GET    | `/api/v4/messenger/admin/conversations`              |
+| **Admin: get conversation**       | GET    | `/api/v4/messenger/admin/conversations/:id`          |
+| **Admin: get messages**           | GET    | `/api/v4/messenger/admin/conversations/:id/messages` |
+| **Admin: metrics**                | GET    | `/api/v4/messenger/admin/metrics`                    |
 
 ### Admin Conversations Endpoint
 
@@ -114,19 +116,61 @@ future release.
 }
 ```
 
+### Admin Get Conversation Endpoint
+
+`GET /api/v4/messenger/admin/conversations/:id`
+
+- Requires: authenticated session **and** `role === 'admin'`
+- Returns full conversation object including participants and context — **no participant membership check**.
+- Response shape:
+
+```json
+{
+  "success": true,
+  "conversation": { "_id": "...", "participants": [...], "type": "...", ... }
+}
+```
+
+### Admin Get Messages Endpoint
+
+`GET /api/v4/messenger/admin/conversations/:id/messages`
+
+- Requires: authenticated session **and** `role === 'admin'`
+- Returns messages for **any** conversation regardless of whether the admin is a participant. **Does not modify any participant read state.**
+- Query parameters:
+  - `cursor` (pagination cursor — message ObjectId)
+  - `limit` (default 50, max 100)
+- Response shape:
+
+```json
+{
+  "success": true,
+  "messages": [ ... ],
+  "hasMore": true,
+  "nextCursor": "..."
+}
+```
+
 ---
 
 ## Admin Moderation UI
 
-The **Message Moderation** section is embedded directly in `/admin.html`. It provides:
+The **Messenger Moderation** page at `/admin-messenger` lists all v4 conversations.
+Clicking **Open ↗** navigates to `/admin-messenger-view?conversation=<id>` — a
+dedicated read-only viewer that:
 
-- A search input (by participant name/email, or conversation ID)
-- Status filter (all / active / archived / blocked)
-- Paginated table with columns: Participants, Context, Last Message, Unread Count
-- **Open** action deep-linking to `/messenger/?conversation=<id>`
+- Loads conversation metadata (participants, type, context, timestamps) via the admin endpoint.
+- Loads the full message history in reverse-chronological pages using cursor pagination.
+- Supports "Load earlier messages" for long threads.
+- **Does not call the mark-as-read endpoint**, so participant unread counts are
+  preserved exactly as they were before the admin viewed the conversation.
 
-No separate admin page is required; the moderation panel is part of the main
-admin dashboard.
+The legacy "Message Moderation" section in `/admin.html` has also been updated to
+point to the same `/admin-messenger-view` viewer.
+
+Both `/admin-messenger-view` and `/admin-messenger-view.html` are included in the
+`ADMIN_PAGES` allowlist in `middleware/adminPages.js`, so server-side authentication
+and role checks are enforced before the HTML is served.
 
 ---
 

@@ -74,7 +74,7 @@
         `<td style="padding:0.5rem 0.75rem">${contextChips(conv) || '—'}</td>` +
         `<td style="padding:0.5rem 0.75rem;font-size:0.85rem;opacity:0.8">${formatDate(conv.updatedAt || (conv.lastMessage && conv.lastMessage.sentAt))}</td>` +
         `<td style="padding:0.5rem 0.75rem;text-align:center">${unread > 0 ? `<span class="mod-badge" style="background:rgba(239,68,68,.15);color:#dc2626">${unread}</span>` : '—'}</td>` +
-        `<td style="padding:0.5rem 0.75rem;text-align:center"><a href="/messenger/?conversation=${id}" class="btn-sm" style="text-decoration:none" target="_blank">Open</a></td>` +
+        `<td style="padding:0.5rem 0.75rem;text-align:center"><a href="/admin-messenger-view?conversation=${id}" class="btn-sm" style="text-decoration:none" target="_blank">Open</a></td>` +
         `</tr>`
       );
     });

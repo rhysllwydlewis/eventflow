@@ -109,7 +109,7 @@
           <td class="admin-messenger-cell">
             ${
               id
-                ? `<a href="/messenger/?conversation=${id}" target="_blank" rel="noopener"
+                ? `<a href="/admin-messenger-view?conversation=${id}" target="_blank" rel="noopener"
                       class="admin-messenger-link">Open ↗</a>`
                 : '—'
             }
