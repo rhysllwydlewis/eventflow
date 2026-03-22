@@ -27,6 +27,8 @@ const ADMIN_PAGES = [
   '/admin-marketplace.html',
   '/admin-messenger',
   '/admin-messenger.html',
+  '/admin-messenger-view',
+  '/admin-messenger-view.html',
   '/admin-packages',
   '/admin-packages.html',
   '/admin-payments',

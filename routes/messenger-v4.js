@@ -1187,6 +1187,75 @@ router.get('/admin/conversations', applyAuthRequired, async (req, res) => {
 });
 
 /**
+ * GET /api/v4/messenger/admin/conversations/:id
+ * Get a single conversation by ID for admin moderation (no participant check).
+ */
+router.get('/admin/conversations/:id', applyAuthRequired, async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: admin access required' });
+    }
+
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+
+    const conversation = await (await getMessengerService()).getConversationAsAdmin(id);
+
+    res.json({ success: true, conversation });
+  } catch (error) {
+    logger.error('Admin: error fetching conversation:', error);
+    const msg = error.message || '';
+    if (msg.includes('not found')) {
+      return res.status(404).json({ error: msg });
+    }
+    res.status(500).json({ error: 'Failed to fetch conversation' });
+  }
+});
+
+/**
+ * GET /api/v4/messenger/admin/conversations/:id/messages
+ * Get messages for any conversation for admin moderation (no participant check).
+ * Query params: cursor, limit
+ */
+router.get('/admin/conversations/:id/messages', applyAuthRequired, async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: admin access required' });
+    }
+
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+
+    const { cursor, limit } = req.query;
+    const options = {};
+    if (cursor && isValidObjectId(cursor)) {
+      options.cursor = cursor;
+    }
+    if (limit) {
+      const parsedLimit = parseInt(limit, 10);
+      if (!Number.isNaN(parsedLimit) && parsedLimit > 0) {
+        options.limit = parsedLimit;
+      }
+    }
+
+    const result = await (await getMessengerService()).getMessagesAsAdmin(id, options);
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('Admin: error fetching messages:', error);
+    const msg = error.message || '';
+    if (msg.includes('not found')) {
+      return res.status(404).json({ error: msg });
+    }
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+/**
  * GET /api/v4/messenger/admin/metrics
  * Return in-memory messenger v4 operational counters (admin only).
  */

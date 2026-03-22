@@ -1108,4 +1108,95 @@ describe('MessengerV4Service', () => {
       expect(updated.reactions).toHaveLength(0);
     });
   });
+
+  // ─── Admin override methods ─────────────────────────────────────────────────
+
+  describe('getConversationAsAdmin', () => {
+    let conversation;
+
+    beforeEach(async () => {
+      conversation = await service.createConversation({
+        type: 'direct',
+        participants: [
+          { userId: 'user1', displayName: 'Alice', role: 'customer' },
+          { userId: 'user2', displayName: 'Bob', role: 'supplier' },
+        ],
+      });
+    });
+
+    it('returns the conversation without a participant check', async () => {
+      const conv = await service.getConversationAsAdmin(conversation._id.toString());
+      expect(conv).toBeDefined();
+      expect(conv._id.toString()).toBe(conversation._id.toString());
+    });
+
+    it('throws "Conversation not found" for a non-existent id', async () => {
+      const fakeId = new (require('mongodb').ObjectId)().toString();
+      await expect(service.getConversationAsAdmin(fakeId)).rejects.toThrow(
+        'Conversation not found'
+      );
+    });
+  });
+
+  describe('getMessagesAsAdmin', () => {
+    let conversation;
+
+    beforeEach(async () => {
+      conversation = await service.createConversation({
+        type: 'direct',
+        participants: [
+          { userId: 'user1', displayName: 'Alice', role: 'customer' },
+          { userId: 'user2', displayName: 'Bob', role: 'supplier' },
+        ],
+      });
+
+      // Send a couple of messages as user1 and user2
+      await service.sendMessage(conversation._id.toString(), {
+        senderId: 'user1',
+        senderName: 'Alice',
+        content: 'Hello from Alice',
+      });
+      await service.sendMessage(conversation._id.toString(), {
+        senderId: 'user2',
+        senderName: 'Bob',
+        content: 'Hello from Bob',
+      });
+    });
+
+    it('returns messages without a participant check', async () => {
+      // user3 is NOT a participant — getMessages() would throw, getMessagesAsAdmin() must not
+      await expect(service.getMessages(conversation._id.toString(), 'user3')).rejects.toThrow();
+
+      const result = await service.getMessagesAsAdmin(conversation._id.toString());
+      expect(result.messages).toHaveLength(2);
+      const contents = result.messages.map(m => m.content);
+      expect(contents).toContain('Hello from Alice');
+      expect(contents).toContain('Hello from Bob');
+    });
+
+    it('returns hasMore and nextCursor when there are more messages', async () => {
+      // Fetch only 1 at a time
+      const result = await service.getMessagesAsAdmin(conversation._id.toString(), { limit: 1 });
+      expect(result.messages).toHaveLength(1);
+      expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBeTruthy();
+    });
+
+    it('throws "Conversation not found" for a non-existent id', async () => {
+      const fakeId = new (require('mongodb').ObjectId)().toString();
+      await expect(service.getMessagesAsAdmin(fakeId)).rejects.toThrow('Conversation not found');
+    });
+
+    it('does not modify any participant read state', async () => {
+      const before = await service.getConversationAsAdmin(conversation._id.toString());
+      const unreadBefore = before.participants.map(p => p.unreadCount);
+
+      await service.getMessagesAsAdmin(conversation._id.toString());
+
+      const after = await service.getConversationAsAdmin(conversation._id.toString());
+      const unreadAfter = after.participants.map(p => p.unreadCount);
+
+      expect(unreadAfter).toEqual(unreadBefore);
+    });
+  });
 });

@@ -225,6 +225,72 @@ class MessengerV4Service {
   }
 
   /**
+   * Get a single conversation by ID without participant check (admin use only).
+   * @param {string} conversationId - Conversation ID
+   * @returns {Object} Conversation object
+   */
+  async getConversationAsAdmin(conversationId) {
+    const conversation = await this.conversationsCollection.findOne({
+      _id: new ObjectId(conversationId),
+    });
+
+    if (!conversation) {
+      throw new Error('Conversation not found');
+    }
+
+    return conversation;
+  }
+
+  /**
+   * Get messages for a conversation without participant check (admin use only).
+   * Supports cursor-based pagination identical to getMessages().
+   * @param {string} conversationId - Conversation ID
+   * @param {Object} options - Pagination options
+   * @param {string} options.cursor - Cursor for pagination (message ID)
+   * @param {number} options.limit - Number of messages to return
+   * @returns {Object} Messages and pagination info
+   */
+  async getMessagesAsAdmin(conversationId, options = {}) {
+    // Verify conversation exists (no participant check)
+    await this.getConversationAsAdmin(conversationId);
+
+    const limit = Math.min(options.limit || 50, 100);
+    const query = {
+      conversationId: new ObjectId(conversationId),
+      isDeleted: false,
+    };
+
+    // Cursor-based pagination
+    if (options.cursor) {
+      const cursorMessage = await this.messagesCollection.findOne({
+        _id: new ObjectId(options.cursor),
+        conversationId: new ObjectId(conversationId),
+      });
+
+      if (cursorMessage) {
+        query.createdAt = { $lt: cursorMessage.createdAt };
+      }
+    }
+
+    const messages = await this.messagesCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit + 1)
+      .toArray();
+
+    const hasMore = messages.length > limit;
+    if (hasMore) {
+      messages.pop();
+    }
+
+    return {
+      messages: messages.reverse(), // Return in chronological order
+      hasMore,
+      nextCursor: hasMore && messages.length > 0 ? messages[0]._id.toString() : null,
+    };
+  }
+
+  /**
    * Update conversation settings
    * @param {string} conversationId - Conversation ID
    * @param {string} userId - User ID
