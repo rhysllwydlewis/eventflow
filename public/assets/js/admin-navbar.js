@@ -192,6 +192,13 @@
         link.removeAttribute('aria-current');
       }
     });
+
+    // Scroll the active nav link into view so it's always visible
+    // (the navbar overflows horizontally when there are many items)
+    const activeLink = document.querySelector('.admin-top-navbar .admin-nav-btn.active');
+    if (activeLink) {
+      activeLink.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' });
+    }
   }
 
   /**

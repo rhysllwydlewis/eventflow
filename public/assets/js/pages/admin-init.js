@@ -1519,6 +1519,8 @@
       setupNavButton('reportsQueueBtn', '/admin-reports');
       setupNavButton('auditLogBtn', '/admin-audit');
       setupNavButton('adminSettingsBtn', '/admin-settings');
+      setupNavButton('mediaCenterBtn', '/admin-media');
+      setupNavButton('globalSearchBtn', '/admin-search');
 
       // Moderation queue buttons
       setupNavButton('reviewPhotosBtn', '/admin-photos');

@@ -51,6 +51,10 @@ const ADMIN_PAGES = [
   '/admin-user-detail.html',
   '/admin-users',
   '/admin-users.html',
+  '/admin-media',
+  '/admin-media.html',
+  '/admin-search',
+  '/admin-search.html',
 ];
 
 /**

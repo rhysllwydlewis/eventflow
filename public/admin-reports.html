@@ -2,25 +2,26 @@
 <html lang="en-GB">
 <head>
   <script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Content Reports — EventFlow Admin</title>
-<meta name="robots" content="noindex,nofollow">
-<link rel="stylesheet" href="/assets/css/tokens.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/styles.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/utilities.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/components.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/animations.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/admin.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/admin-enhanced.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/admin-navbar.css?v=18.3.0">
-<link rel="stylesheet" href="/assets/css/admin-cards.css?v=18.3.0">
-<link rel="icon" href="/favicon.svg">
-<script src="/assets/js/components.js?v=18.3.0" defer></script>
-<script src="/assets/js/admin-navbar.js?v=18.3.0" defer></script>
-  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.3.0"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.3.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Content Reports — EventFlow Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/utilities.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/components.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/animations.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/admin.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/admin-enhanced.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/admin-navbar.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/admin-cards.css?v=18.3.0">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.3.0">
   <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.3.0">
+  <link rel="icon" href="/favicon.svg">
+  <script src="/assets/js/components.js?v=18.3.0" defer></script>
+  <script src="/assets/js/admin-navbar.js?v=18.3.0" defer></script>
 </head>
 <body class="has-admin-navbar admin">
 <!-- Modern Top Navbar -->
@@ -65,12 +66,16 @@
         <span class="nav-icon" aria-hidden="true">📸</span>
         <span class="nav-label">Photos</span>
       </a>
+      <a href="/admin-media" class="admin-nav-btn">
+        <span class="nav-icon" aria-hidden="true">🎨</span>
+        <span class="nav-label">Media</span>
+      </a>
       <a href="/admin-tickets" class="admin-nav-btn">
         <span class="nav-icon" aria-hidden="true">🎫</span>
         <span class="nav-label">Tickets</span>
         <span class="admin-nav-badge" id="openTicketsBadge" style="display:none;" aria-label="Open tickets"></span>
       </a>
-      <a href="/admin-reports" class="admin-nav-btn">
+      <a href="/admin-reports" class="admin-nav-btn active">
         <span class="nav-icon" aria-hidden="true">📈</span>
         <span class="nav-label">Reports</span>
       </a>
@@ -89,6 +94,10 @@
       <a href="/admin-content" class="admin-nav-btn">
         <span class="nav-icon" aria-hidden="true">✏️</span>
         <span class="nav-label">Content</span>
+      </a>
+      <a href="/admin-search" class="admin-nav-btn">
+        <span class="nav-icon" aria-hidden="true">🔍</span>
+        <span class="nav-label">Search</span>
       </a>
       <a href="/admin-settings" class="admin-nav-btn">
         <span class="nav-icon" aria-hidden="true">⚙️</span>

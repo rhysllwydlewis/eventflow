@@ -262,6 +262,10 @@
     }
   });
 
+  document.getElementById('backToDashboard')?.addEventListener('click', () => {
+    window.location.href = '/admin';
+  });
+
   // Initialize
   async function init() {
     const isConfigured = await checkPexelsStatus();
@@ -272,20 +276,4 @@
   }
 
   init();
-
-  // Compatibility redirect — this page has moved to /admin-media
-  const redirectTimer = setTimeout(() => {
-    window.location.href = '/admin-media';
-  }, 5000);
-  const cancelBtn = document.getElementById('cancelPexelsRedirect');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-      clearTimeout(redirectTimer);
-      const banner = cancelBtn.closest('div');
-      if (banner) {
-        banner.innerHTML =
-          '<strong>✅ Redirect cancelled.</strong> You can still visit the <a href="/admin-media" style="color:#d97706;font-weight:600;">Media Center</a> manually.';
-      }
-    });
-  }
 })();
