@@ -22,6 +22,7 @@
  * @property {string}   icon       - Emoji icon for the navbar
  * @property {string}   category   - Logical grouping (core | moderation | content | tools | compat)
  * @property {boolean}  inNav      - Whether to render a link in the admin navbar
+ * @property {string}   [desc]     - Short description shown in the Quick Nav tile
  * @property {string}   [badgeId]  - DOM id for the optional badge counter element
  * @property {string}   [redirect] - If set, canonical URL is a legacy alias → redirect here
  */
@@ -36,6 +37,7 @@ const REGISTRY = [
     icon: '📊',
     category: 'core',
     inNav: true,
+    desc: 'Overview & platform metrics',
   },
   {
     route: '/admin-settings',
@@ -44,6 +46,7 @@ const REGISTRY = [
     icon: '⚙️',
     category: 'core',
     inNav: true,
+    desc: 'Admin preferences & configuration',
   },
 
   // ── Users & Suppliers ─────────────────────────────────────────────────────
@@ -54,6 +57,7 @@ const REGISTRY = [
     icon: '👥',
     category: 'users',
     inNav: true,
+    desc: 'User accounts & management',
   },
   {
     route: '/admin-user-detail',
@@ -70,6 +74,8 @@ const REGISTRY = [
     icon: '🏢',
     category: 'users',
     inNav: true,
+    desc: 'Supplier approvals & profiles',
+    badgeId: 'navBadgeSuppliers',
   },
   {
     route: '/admin-supplier-detail',
@@ -88,6 +94,8 @@ const REGISTRY = [
     icon: '📦',
     category: 'catalogue',
     inNav: true,
+    desc: 'Package approvals & listings',
+    badgeId: 'navBadgePackages',
   },
   {
     route: '/admin-marketplace',
@@ -96,6 +104,7 @@ const REGISTRY = [
     icon: '🛒',
     category: 'catalogue',
     inNav: true,
+    desc: 'Marketplace management',
   },
   {
     route: '/admin-photos',
@@ -104,6 +113,8 @@ const REGISTRY = [
     icon: '📸',
     category: 'catalogue',
     inNav: true,
+    desc: 'Photo review & moderation',
+    badgeId: 'navBadgePhotos',
   },
   {
     route: '/admin-media',
@@ -112,6 +123,7 @@ const REGISTRY = [
     icon: '🎨',
     category: 'catalogue',
     inNav: true,
+    desc: 'Media asset management',
   },
 
   // ── Moderation ────────────────────────────────────────────────────────────
@@ -122,6 +134,7 @@ const REGISTRY = [
     icon: '🎫',
     category: 'moderation',
     inNav: true,
+    desc: 'Support ticket queue',
     badgeId: 'openTicketsBadge',
   },
   {
@@ -131,6 +144,8 @@ const REGISTRY = [
     icon: '📈',
     category: 'moderation',
     inNav: true,
+    desc: 'Platform analytics',
+    badgeId: 'navBadgeReports',
   },
   {
     route: '/admin-messenger',
@@ -139,6 +154,7 @@ const REGISTRY = [
     icon: '💬',
     category: 'moderation',
     inNav: true,
+    desc: 'Conversation moderation',
   },
   {
     route: '/admin-messenger-view',
@@ -157,6 +173,7 @@ const REGISTRY = [
     icon: '💳',
     category: 'operations',
     inNav: true,
+    desc: 'Payment records & billing',
   },
   {
     route: '/admin-audit',
@@ -165,6 +182,7 @@ const REGISTRY = [
     icon: '📋',
     category: 'operations',
     inNav: true,
+    desc: 'Admin activity log',
   },
   {
     route: '/admin-exports',
@@ -173,6 +191,7 @@ const REGISTRY = [
     icon: '📤',
     category: 'operations',
     inNav: true,
+    desc: 'Data export & downloads',
   },
 
   // ── Content ───────────────────────────────────────────────────────────────
@@ -183,6 +202,7 @@ const REGISTRY = [
     icon: '🏠',
     category: 'content',
     inNav: true,
+    desc: 'Homepage content & imagery',
   },
   {
     route: '/admin-content',
@@ -191,6 +211,7 @@ const REGISTRY = [
     icon: '✏️',
     category: 'content',
     inNav: true,
+    desc: 'Page content editor',
   },
 
   // ── Tools ─────────────────────────────────────────────────────────────────
@@ -201,6 +222,7 @@ const REGISTRY = [
     icon: '🔍',
     category: 'tools',
     inNav: true,
+    desc: 'Search index & configuration',
   },
   {
     route: '/admin-debug',
@@ -209,6 +231,7 @@ const REGISTRY = [
     icon: '🩺',
     category: 'tools',
     inNav: true,
+    desc: 'System diagnostics & checks',
   },
 
   // ── Compatibility stubs (legacy aliases — no nav link, server-side redirect) ──

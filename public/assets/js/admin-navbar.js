@@ -18,27 +18,151 @@
   'use strict';
 
   // ── Nav items registry (browser copy of config/adminRegistry.js getNavItems) ──
-  // Update config/adminRegistry.js first; then mirror inNav=true entries here
-  // keeping the same order so the navbar stays consistent across all pages.
+  // Update config/adminRegistry.js first; then mirror inNav=true entries here.
+  // `group` maps to category; `desc` is shown in the Quick Nav tile.
   const NAV_ITEMS = [
-    { href: '/admin', icon: '📊', label: 'Dashboard' },
-    { href: '/admin-users', icon: '👥', label: 'Users' },
-    { href: '/admin-suppliers', icon: '🏢', label: 'Suppliers' },
-    { href: '/admin-packages', icon: '📦', label: 'Packages' },
-    { href: '/admin-marketplace', icon: '🛒', label: 'Marketplace' },
-    { href: '/admin-photos', icon: '📸', label: 'Photos' },
-    { href: '/admin-media', icon: '🎨', label: 'Media' },
-    { href: '/admin-tickets', icon: '🎫', label: 'Tickets', badgeId: 'openTicketsBadge' },
-    { href: '/admin-reports', icon: '📈', label: 'Reports' },
-    { href: '/admin-messenger', icon: '💬', label: 'Messages' },
-    { href: '/admin-payments', icon: '💳', label: 'Payments' },
-    { href: '/admin-audit', icon: '📋', label: 'Audit' },
-    { href: '/admin-exports', icon: '📤', label: 'Exports' },
-    { href: '/admin-homepage', icon: '🏠', label: 'Homepage' },
-    { href: '/admin-content', icon: '✏️', label: 'Content' },
-    { href: '/admin-search', icon: '🔍', label: 'Search' },
-    { href: '/admin-debug', icon: '🩺', label: 'Debug' },
-    { href: '/admin-settings', icon: '⚙️', label: 'Settings' },
+    {
+      href: '/admin',
+      icon: '📊',
+      label: 'Dashboard',
+      group: 'core',
+      desc: 'Overview & platform metrics',
+    },
+    {
+      href: '/admin-settings',
+      icon: '⚙️',
+      label: 'Settings',
+      group: 'core',
+      desc: 'Admin preferences & configuration',
+    },
+    {
+      href: '/admin-users',
+      icon: '👥',
+      label: 'Users',
+      group: 'users',
+      desc: 'User accounts & management',
+    },
+    {
+      href: '/admin-suppliers',
+      icon: '🏢',
+      label: 'Suppliers',
+      group: 'users',
+      desc: 'Supplier approvals & profiles',
+      badgeId: 'navBadgeSuppliers',
+    },
+    {
+      href: '/admin-packages',
+      icon: '📦',
+      label: 'Packages',
+      group: 'catalogue',
+      desc: 'Package approvals & listings',
+      badgeId: 'navBadgePackages',
+    },
+    {
+      href: '/admin-marketplace',
+      icon: '🛒',
+      label: 'Marketplace',
+      group: 'catalogue',
+      desc: 'Marketplace management',
+    },
+    {
+      href: '/admin-photos',
+      icon: '📸',
+      label: 'Photos',
+      group: 'catalogue',
+      desc: 'Photo review & moderation',
+      badgeId: 'navBadgePhotos',
+    },
+    {
+      href: '/admin-media',
+      icon: '🎨',
+      label: 'Media',
+      group: 'catalogue',
+      desc: 'Media asset management',
+    },
+    {
+      href: '/admin-tickets',
+      icon: '🎫',
+      label: 'Tickets',
+      group: 'moderation',
+      desc: 'Support ticket queue',
+      badgeId: 'openTicketsBadge',
+    },
+    {
+      href: '/admin-reports',
+      icon: '📈',
+      label: 'Reports',
+      group: 'moderation',
+      desc: 'Platform analytics',
+      badgeId: 'navBadgeReports',
+    },
+    {
+      href: '/admin-messenger',
+      icon: '💬',
+      label: 'Messages',
+      group: 'moderation',
+      desc: 'Conversation moderation',
+    },
+    {
+      href: '/admin-payments',
+      icon: '💳',
+      label: 'Payments',
+      group: 'operations',
+      desc: 'Payment records & billing',
+    },
+    {
+      href: '/admin-audit',
+      icon: '📋',
+      label: 'Audit',
+      group: 'operations',
+      desc: 'Admin activity log',
+    },
+    {
+      href: '/admin-exports',
+      icon: '📤',
+      label: 'Exports',
+      group: 'operations',
+      desc: 'Data export & downloads',
+    },
+    {
+      href: '/admin-homepage',
+      icon: '🏠',
+      label: 'Homepage',
+      group: 'content',
+      desc: 'Homepage content & imagery',
+    },
+    {
+      href: '/admin-content',
+      icon: '✏️',
+      label: 'Content',
+      group: 'content',
+      desc: 'Page content editor',
+    },
+    {
+      href: '/admin-search',
+      icon: '🔍',
+      label: 'Search',
+      group: 'tools',
+      desc: 'Search index & configuration',
+    },
+    {
+      href: '/admin-debug',
+      icon: '🩺',
+      label: 'Debug',
+      group: 'tools',
+      desc: 'System diagnostics & checks',
+    },
+  ];
+
+  // ── Quick Nav group definitions (display order for the panel) ─────────────
+  const NAV_GROUPS = [
+    { id: 'core', label: 'Core', icon: '📊' },
+    { id: 'users', label: 'People', icon: '👥' },
+    { id: 'catalogue', label: 'Catalogue', icon: '🗂️' },
+    { id: 'moderation', label: 'Moderation', icon: '🔍' },
+    { id: 'operations', label: 'Operations', icon: '⚙️' },
+    { id: 'content', label: 'Content', icon: '✏️' },
+    { id: 'tools', label: 'Tools', icon: '🔧' },
   ];
 
   // Initialize when DOM is ready
@@ -58,6 +182,7 @@
     updateNavbarUser();
     initRefreshButton();
     initLogoutButton();
+    initQuickNav();
   }
 
   // ── Dynamic navbar rendering ───────────────────────────────────────────────
@@ -84,17 +209,23 @@
       '      <a href="/admin" class="admin-navbar-logo">EventFlow</a>',
       '      <span class="admin-navbar-title">Admin Panel</span>',
       '    </div>',
-      '    <!-- Mobile Hamburger -->',
-      '    <button class="admin-hamburger" id="adminHamburger"',
-      '            aria-label="Toggle navigation menu"',
+      '    <!-- Quick Nav Burger Button -->',
+      '    <button class="admin-qnav-btn" id="adminQuickNavBtn"',
+      '            aria-label="Open quick navigation"',
       '            aria-expanded="false"',
-      '            aria-controls="adminNavbarNav">',
-      '      <span></span><span></span><span></span>',
+      '            aria-controls="adminQuickNav"',
+      '            title="Quick Navigation — all admin sections">',
+      '      <svg class="admin-qnav-btn-icon" width="20" height="20" viewBox="0 0 20 20"',
+      '           fill="none" stroke="currentColor" stroke-width="2"',
+      '           stroke-linecap="round" aria-hidden="true">',
+      '        <line x1="3" y1="5" x2="17" y2="5"/>',
+      '        <line x1="3" y1="10" x2="13" y2="10"/>',
+      '        <line x1="3" y1="15" x2="17" y2="15"/>',
+      '      </svg>',
+      '      <span class="admin-qnav-btn-label">All Sections</span>',
       '    </button>',
-      '    <!-- Navigation Links -->',
-      '    <div class="admin-navbar-nav" id="adminNavbarNav">',
-      buildNavLinksHTML(),
-      '    </div>',
+      '    <!-- Spacer -->',
+      '    <div class="admin-navbar-spacer" aria-hidden="true"></div>',
       '    <!-- Right Actions -->',
       '    <div class="admin-navbar-actions">',
       '      <div class="db-status-badge db-loading" id="dbStatusBadge"',
@@ -146,27 +277,106 @@
       '    </div>',
       '  </div>',
       '</nav>',
+      '<!-- Quick Nav Backdrop -->',
+      '<div class="admin-qnav-backdrop" id="adminQnavBackdrop" aria-hidden="true"></div>',
+      '<!-- Quick Nav Panel -->',
+      buildQuickNavHTML(),
     ].join('\n');
   }
 
-  function buildNavLinksHTML() {
-    return NAV_ITEMS.map(item => {
-      const badge = item.badgeId
-        ? `<span class="admin-nav-badge" id="${item.badgeId}" style="display:none;" aria-label="${
-            item.label
-          } count"></span>`
-        : '';
-      return (
-        `      <a href="${item.href}" class="admin-nav-btn">\n` +
-        `        <span class="nav-icon" aria-hidden="true">${item.icon}</span>\n` +
-        `        <span class="nav-label">${item.label}</span>${badge}\n      </a>`
-      );
-    }).join('\n');
+  function buildQuickNavHTML() {
+    const groupsHtml = NAV_GROUPS.map(group => {
+      const items = NAV_ITEMS.filter(item => {
+        return item.group === group.id;
+      });
+      if (items.length === 0) {
+        return '';
+      }
+      const tilesHtml = items.map(buildTileHTML).join('\n');
+      return [
+        `      <div class="admin-qnav-group" data-group="${group.id}">`,
+        '        <h3 class="admin-qnav-group-label">',
+        `          <span class="admin-qnav-group-icon" aria-hidden="true">${group.icon}</span>`,
+        `          ${group.label}`,
+        '        </h3>',
+        '        <div class="admin-qnav-tiles">',
+        tilesHtml,
+        '        </div>',
+        '      </div>',
+      ].join('\n');
+    })
+      .filter(Boolean)
+      .join('\n');
+
+    return [
+      '<div class="admin-qnav-panel" id="adminQuickNav"',
+      '     role="dialog" aria-modal="true"',
+      '     aria-label="Quick Navigation" aria-hidden="true">',
+      '  <div class="admin-qnav-inner">',
+      '    <!-- Header -->',
+      '    <div class="admin-qnav-header">',
+      '      <div class="admin-qnav-header-left">',
+      '        <svg class="admin-qnav-spark" width="24" height="24" viewBox="0 0 24 24"',
+      '             fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">',
+      '          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>',
+      '        </svg>',
+      '        <h2 class="admin-qnav-title">Quick Nav</h2>',
+      '      </div>',
+      '      <button class="admin-qnav-close" id="adminQnavClose"',
+      '              aria-label="Close quick navigation">',
+      '        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"',
+      '             stroke="currentColor" stroke-width="2.5" aria-hidden="true">',
+      '          <line x1="18" y1="6" x2="6" y2="18"></line>',
+      '          <line x1="6" y1="6" x2="18" y2="18"></line>',
+      '        </svg>',
+      '      </button>',
+      '    </div>',
+      '    <!-- Search -->',
+      '    <div class="admin-qnav-search-wrap">',
+      '      <svg class="admin-qnav-search-icon" width="16" height="16" viewBox="0 0 24 24"',
+      '           fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">',
+      '        <circle cx="11" cy="11" r="8"></circle>',
+      '        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>',
+      '      </svg>',
+      '      <input type="search" class="admin-qnav-search" id="adminQnavSearch"',
+      '             placeholder="Filter sections\u2026"',
+      '             aria-label="Filter navigation sections"',
+      '             autocomplete="off">',
+      '    </div>',
+      '    <!-- Content -->',
+      '    <div class="admin-qnav-content" id="adminQnavContent">',
+      groupsHtml,
+      '      <p class="admin-qnav-no-results" id="adminQnavNoResults" aria-live="polite" hidden>',
+      '        No sections match your search.',
+      '      </p>',
+      '    </div>',
+      '  </div>',
+      '</div>',
+    ].join('\n');
+  }
+
+  function buildTileHTML(item) {
+    const badge = item.badgeId
+      ? `<span class="admin-qnav-tile-badge" id="${item.badgeId}" style="display:none;" aria-label="${item.label} count"></span>`
+      : '';
+    const desc = item.desc ? `<span class="admin-qnav-tile-desc">${item.desc}</span>` : '';
+    return [
+      `          <a href="${item.href}" class="admin-qnav-tile"`,
+      `             data-label="${item.label.toLowerCase()}">`,
+      badge,
+      `            <span class="admin-qnav-tile-icon" aria-hidden="true">${item.icon}</span>`,
+      '            <span class="admin-qnav-tile-body">',
+      `              <span class="admin-qnav-tile-label">${item.label}</span>`,
+      desc,
+      '            </span>',
+      '          </a>',
+    ].join('\n');
   }
 
   // ── Mobile hamburger menu toggle ───────────────────────────────────────────
   /**
-   * Mobile hamburger menu toggle
+   * Mobile hamburger menu toggle (backward-compatible — only acts when the
+   * legacy hardcoded navbar elements are present in the page).
    */
   function initMobileMenu() {
     const hamburger = document.getElementById('adminHamburger');
@@ -214,6 +424,177 @@
         });
       });
     }
+  }
+
+  // ── Quick Nav panel ────────────────────────────────────────────────────────
+
+  /**
+   * Wire up the Quick Nav burger button, panel open/close, focus trap,
+   * keyboard navigation, and tile search filter.
+   */
+  function initQuickNav() {
+    const btn = document.getElementById('adminQuickNavBtn');
+    const backdrop = document.getElementById('adminQnavBackdrop');
+    const panel = document.getElementById('adminQuickNav');
+    const closeBtn = document.getElementById('adminQnavClose');
+    const searchInput = document.getElementById('adminQnavSearch');
+
+    if (!btn || !panel) {
+      return;
+    }
+
+    function openPanel() {
+      panel.removeAttribute('aria-hidden');
+      panel.classList.add('qnav-open');
+      if (backdrop) {
+        backdrop.classList.add('qnav-open');
+      }
+      btn.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('admin-qnav-body-lock');
+      // Focus the search input after the slide-in starts
+      setTimeout(() => {
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }, 60);
+    }
+
+    function closePanel() {
+      panel.setAttribute('aria-hidden', 'true');
+      panel.classList.remove('qnav-open');
+      if (backdrop) {
+        backdrop.classList.remove('qnav-open');
+      }
+      btn.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('admin-qnav-body-lock');
+      // Reset search when closing
+      if (searchInput && searchInput.value) {
+        searchInput.value = '';
+        filterTiles('');
+      }
+      btn.focus();
+    }
+
+    // Burger button toggles panel
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (panel.classList.contains('qnav-open')) {
+        closePanel();
+      } else {
+        openPanel();
+      }
+    });
+
+    // Close button
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closePanel);
+    }
+
+    // Backdrop click closes
+    if (backdrop) {
+      backdrop.addEventListener('click', closePanel);
+    }
+
+    // Escape key closes
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && panel.classList.contains('qnav-open')) {
+        closePanel();
+      }
+    });
+
+    // Search filter
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        filterTiles(searchInput.value.trim().toLowerCase());
+      });
+      // Arrow-down from search focuses first visible tile
+      searchInput.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const firstTile = panel.querySelector('.admin-qnav-tile:not([hidden])');
+          if (firstTile) {
+            firstTile.focus();
+          }
+        }
+      });
+    }
+
+    // Focus trap inside panel
+    panel.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') {
+        return;
+      }
+      const focusable = Array.from(
+        panel.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])')
+      ).filter(el => {
+        return !el.hidden && el.offsetParent !== null;
+      });
+      if (focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+
+    // Mark the tile for the current page as active
+    highlightActiveTile();
+  }
+
+  /**
+   * Filter Quick Nav tiles by a search query string.
+   * Hides groups that have no matching tiles.
+   *
+   * @param {string} query - lower-case search term
+   */
+  function filterTiles(query) {
+    const groups = document.querySelectorAll('.admin-qnav-group');
+    const noResults = document.getElementById('adminQnavNoResults');
+    let visibleCount = 0;
+
+    groups.forEach(group => {
+      const tiles = group.querySelectorAll('.admin-qnav-tile');
+      let groupVisible = 0;
+      tiles.forEach(tile => {
+        const label = tile.getAttribute('data-label') || '';
+        const matches = !query || label.includes(query);
+        tile.hidden = !matches;
+        if (matches) {
+          groupVisible++;
+        }
+      });
+      group.hidden = groupVisible === 0;
+      visibleCount += groupVisible;
+    });
+
+    if (noResults) {
+      noResults.hidden = visibleCount > 0;
+    }
+  }
+
+  /**
+   * Add `.active` / `aria-current="page"` to the Quick Nav tile that
+   * corresponds to the current browser path.
+   */
+  function highlightActiveTile() {
+    const currentPath = window.location.pathname;
+    const tiles = document.querySelectorAll('.admin-qnav-tile');
+    tiles.forEach(tile => {
+      const href = tile.getAttribute('href');
+      const isActive = href ? currentPath === href || currentPath.startsWith(`${href}/`) : false;
+      tile.classList.toggle('active', isActive);
+      if (isActive) {
+        tile.setAttribute('aria-current', 'page');
+      } else {
+        tile.removeAttribute('aria-current');
+      }
+    });
   }
 
   /**

@@ -521,3 +521,476 @@ body.admin {
     transition: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QUICK NAV  —  liquid-glass drawer + tile grid
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Spacer (fills gap between burger and right actions) ──────────────── */
+
+.admin-navbar-spacer {
+  flex: 1;
+}
+
+/* ─── Quick Nav Burger Button ───────────────────────────────────────────── */
+
+.admin-qnav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(11, 128, 115, 0.07);
+  border: 1.5px solid rgba(11, 128, 115, 0.22);
+  border-radius: 10px;
+  color: #0B8073;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s, color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: -0.1px;
+}
+
+.admin-qnav-btn:hover {
+  background: rgba(11, 128, 115, 0.13);
+  border-color: rgba(11, 128, 115, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(11, 128, 115, 0.16);
+}
+
+.admin-qnav-btn:active {
+  transform: translateY(0);
+  background: rgba(11, 128, 115, 0.18);
+}
+
+.admin-qnav-btn[aria-expanded="true"] {
+  background: linear-gradient(135deg, #0B8073, #13B6A2);
+  border-color: #0B8073;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(11, 128, 115, 0.32);
+}
+
+.admin-qnav-btn-icon {
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .admin-qnav-btn-label {
+    display: none;
+  }
+}
+
+/* ─── Quick Nav Backdrop ────────────────────────────────────────────────── */
+
+.admin-qnav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1090;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.admin-qnav-backdrop.qnav-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ─── Quick Nav Panel — liquid glass drawer ─────────────────────────────── */
+
+.admin-qnav-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(420px, 90vw);
+  height: 100dvh;
+  height: 100vh; /* fallback */
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  /* Slide off-screen by default */
+  transform: translateX(calc(-1 * min(420px, 90vw)));
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Liquid glass */
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border-right: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    8px 0 48px rgba(0, 0, 0, 0.12),
+    2px 0 8px rgba(0, 0, 0, 0.06),
+    inset 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+.admin-qnav-panel.qnav-open {
+  transform: translateX(0);
+}
+
+/* Prevent body scroll while the panel is open */
+.admin-qnav-body-lock {
+  overflow: hidden;
+}
+
+/* Full-width on very small screens */
+@media (max-width: 420px) {
+  .admin-qnav-panel {
+    width: 100vw;
+    transform: translateX(-100vw);
+  }
+}
+
+/* Inner flex column that fills the panel */
+.admin-qnav-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Panel header ──────────────────────────────────────────────────────── */
+
+.admin-qnav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.admin-qnav-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-qnav-spark {
+  color: #0B8073;
+  filter: drop-shadow(0 0 6px rgba(11, 128, 115, 0.45));
+}
+
+.admin-qnav-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.admin-qnav-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.admin-qnav-close:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #ef4444;
+}
+
+.admin-qnav-close:focus-visible {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+}
+
+/* ─── Search bar ────────────────────────────────────────────────────────── */
+
+.admin-qnav-search-wrap {
+  position: relative;
+  padding: 14px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.45);
+}
+
+.admin-qnav-search-icon {
+  position: absolute;
+  left: 38px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.admin-qnav-search {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #374151;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-sizing: border-box;
+}
+
+.admin-qnav-search:focus {
+  border-color: #0B8073;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.13);
+}
+
+.admin-qnav-search::placeholder {
+  color: #9ca3af;
+}
+
+/* Remove built-in "x" clear button in some browsers */
+.admin-qnav-search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* ─── Scrollable content area ───────────────────────────────────────────── */
+
+.admin-qnav-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-qnav-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.admin-qnav-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-qnav-content::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.28);
+  border-radius: 3px;
+}
+
+.admin-qnav-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.48);
+}
+
+/* ─── Group ─────────────────────────────────────────────────────────────── */
+
+.admin-qnav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-qnav-group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #9ca3af;
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.admin-qnav-group-icon {
+  font-size: 12px;
+}
+
+/* ─── Tiles grid ────────────────────────────────────────────────────────── */
+
+.admin-qnav-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 340px) {
+  .admin-qnav-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ─── Individual tile ───────────────────────────────────────────────────── */
+
+.admin-qnav-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 7px;
+  padding: 14px 8px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid rgba(229, 231, 235, 0.75);
+  border-radius: 14px;
+  text-decoration: none;
+  color: #374151;
+  transition:
+    background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s;
+  cursor: pointer;
+  overflow: hidden;
+  /* Subtle shimmer layer */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Top-left glass shimmer */
+.admin-qnav-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, transparent 55%);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.admin-qnav-tile:hover {
+  background: rgba(11, 128, 115, 0.07);
+  border-color: rgba(11, 128, 115, 0.32);
+  color: #0B8073;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(11, 128, 115, 0.13);
+}
+
+.admin-qnav-tile:hover::before {
+  opacity: 1;
+}
+
+.admin-qnav-tile:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: none;
+}
+
+.admin-qnav-tile:focus-visible {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+}
+
+/* Active / current-page tile */
+.admin-qnav-tile.active,
+.admin-qnav-tile[aria-current="page"] {
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.12), rgba(19, 182, 162, 0.08));
+  border-color: rgba(11, 128, 115, 0.4);
+  color: #0B8073;
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.14);
+}
+
+/* Tile icon */
+.admin-qnav-tile-icon {
+  font-size: 24px;
+  line-height: 1;
+  display: block;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-qnav-tile:hover .admin-qnav-tile-icon {
+  transform: scale(1.18);
+}
+
+/* Tile text body */
+.admin-qnav-tile-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-qnav-tile-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: inherit;
+  letter-spacing: -0.1px;
+}
+
+.admin-qnav-tile-desc {
+  font-size: 9.5px;
+  color: #9ca3af;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.admin-qnav-tile:hover .admin-qnav-tile-desc {
+  color: rgba(11, 128, 115, 0.7);
+}
+
+/* Badge counter on tile */
+.admin-qnav-tile-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.42);
+  z-index: 1;
+}
+
+/* ─── "No results" message ──────────────────────────────────────────────── */
+
+.admin-qnav-no-results {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+  padding: 32px 0;
+  margin: 0;
+}
+
+/* Ensure hidden attribute works for tiles and groups (author flex overrides UA) */
+.admin-qnav-tile[hidden],
+.admin-qnav-group[hidden] {
+  display: none !important;
+}
+
+/* ─── Quick Nav reduced-motion overrides ────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-qnav-panel,
+  .admin-qnav-backdrop,
+  .admin-qnav-tile,
+  .admin-qnav-btn,
+  .admin-qnav-close {
+    transition: none;
+  }
+
+  .admin-qnav-tile:hover .admin-qnav-tile-icon {
+    transform: none;
+  }
+}
+
