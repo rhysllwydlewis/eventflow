@@ -503,7 +503,7 @@ router.post(
           // Auto-approve OFF: store as pending for moderation
           const pendingRecord = {
             ...photoRecord,
-            id: `photo_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+            id: `photo_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`,
             status: 'pending',
             approved: false,
             supplierId: supplier.id,
@@ -850,7 +850,7 @@ router.post(
           // Auto-approve OFF: store all as pending records
           const pendingRecords = uploadedPhotos.map(p => ({
             ...p,
-            id: `photo_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+            id: `photo_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`,
             status: 'pending',
             approved: false,
             supplierId: supplier.id,
@@ -1287,6 +1287,7 @@ router.get(
  */
 router.get(
   '/admin/photos/library',
+  apiLimiter,
   applyAuthRequired,
   applyRoleRequired('admin'),
   async (req, res) => {

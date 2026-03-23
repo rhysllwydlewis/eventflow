@@ -64,7 +64,10 @@
   }
 
   function formatFileSize(bytes) {
-    if (!bytes || bytes === 0) {
+    if (bytes === null || bytes === undefined || typeof bytes !== 'number' || bytes < 0) {
+      return '';
+    }
+    if (bytes === 0) {
       return '0 B';
     }
     const k = 1024;
@@ -73,15 +76,22 @@
     return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
   }
 
-  // Stable ID for gallery photos that don't have an explicit id
+  // Stable ID for gallery photos that don't have an explicit id.
+  // Uses a 32-bit FNV-1a-like hash over the full supplier+url string
+  // to minimise collision risk for library display purposes.
   function stablePhotoId(supplierId, url) {
-    // Simple hash: encode supplier + url into a deterministic string
     const raw = `${supplierId}:${url}`;
-    let hash = 0;
+    let h1 = 0x811c9dc5;
     for (let i = 0; i < raw.length; i++) {
-      hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0;
+      h1 ^= raw.charCodeAt(i);
+      h1 = Math.imul(h1, 0x01000193) >>> 0;
     }
-    return `gallery_${supplierId}_${Math.abs(hash).toString(36)}`;
+    let h2 = 0xcbf29ce4;
+    for (let i = raw.length - 1; i >= 0; i--) {
+      h2 ^= raw.charCodeAt(i);
+      h2 = Math.imul(h2, 0x01000193) >>> 0;
+    }
+    return `gallery_${supplierId}_${h1.toString(36)}${h2.toString(36)}`;
   }
 
   // ── Status banner ─────────────────────────────────────────────────────────
