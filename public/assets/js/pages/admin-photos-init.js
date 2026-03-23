@@ -77,8 +77,11 @@
   }
 
   // Stable ID for gallery photos that don't have an explicit id.
-  // Uses a 32-bit FNV-1a-like hash over the full supplier+url string
-  // to minimise collision risk for library display purposes.
+  // Two independent FNV-1a passes (one forward, one reverse) over the same
+  // `supplierId:url` string are combined into a single ID. Using two passes
+  // significantly reduces the collision probability compared to a single hash:
+  // each pass independently has ~1-in-4B odds of collision, so the combined
+  // result has ~1-in-18 quintillion odds — safe for a UI display deduplication.
   function stablePhotoId(supplierId, url) {
     const raw = `${supplierId}:${url}`;
     let h1 = 0x811c9dc5;

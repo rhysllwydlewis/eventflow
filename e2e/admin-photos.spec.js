@@ -139,8 +139,7 @@ test.describe('Admin Photos — page structure', () => {
   test('page loads with toggle and status banner', async ({ page }) => {
     await setupMocks(page, { autoApprove: true });
     await page.goto('/admin-photos.html');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle');
 
     // Toggle should be present
     const toggle = page.locator('#autoApproveToggle');
@@ -194,8 +193,7 @@ test.describe('Admin Photos — auto-approve ON (library mode)', () => {
       suppliers: SAMPLE_SUPPLIERS,
     });
     await page.goto('/admin-photos.html');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle');
   });
 
   test('toggle is checked when auto-approve is ON', async ({ page }) => {
@@ -246,8 +244,7 @@ test.describe('Admin Photos — auto-approve OFF (queue mode)', () => {
       suppliers: SAMPLE_SUPPLIERS,
     });
     await page.goto('/admin-photos.html');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle');
   });
 
   test('toggle is unchecked when auto-approve is OFF', async ({ page }) => {
@@ -287,8 +284,7 @@ test.describe('Admin Photos — empty states', () => {
   test('shows empty library message when no photos and auto-approve ON', async ({ page }) => {
     await setupMocks(page, { autoApprove: true, photos: [], suppliers: [] });
     await page.goto('/admin-photos.html');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle');
 
     const empty = page.locator('.photo-queue__empty');
     await expect(empty).toBeVisible();
@@ -300,8 +296,7 @@ test.describe('Admin Photos — empty states', () => {
   }) => {
     await setupMocks(page, { autoApprove: false, photos: [], suppliers: [] });
     await page.goto('/admin-photos.html');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle');
 
     const empty = page.locator('.photo-queue__empty');
     await expect(empty).toBeVisible();
@@ -337,12 +332,11 @@ test.describe('Admin Photos — toggle interaction', () => {
     });
 
     await page.goto('/admin-photos.html');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle');
 
     // Toggle OFF
     await page.locator('#autoApproveToggle').click();
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('#toggleStateLabel');
 
     expect(putCalled).toBe(true);
   });
