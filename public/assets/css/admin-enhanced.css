@@ -2848,3 +2848,192 @@ tbody tr.selected td {
   letter-spacing: 0.08em;
   color: #9ca3af;
 }
+
+/* ---- Admin Photos Page ---- */
+
+/* Status banners for auto-approve state */
+.ap-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.ap-status-banner--on {
+  background: #f0fdf9;
+  border: 1px solid #a7f3e4;
+  color: #065f46;
+}
+
+.ap-status-banner--off {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #92400e;
+}
+
+.ap-status-banner__icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.ap-status-banner__text {
+  flex: 1;
+}
+
+/* Toggle row for auto-approve control */
+.ap-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ap-toggle-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ap-toggle-label strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ap-toggle-label span {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.ap-toggle-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.ap-toggle-state {
+  font-size: 0.875rem;
+  font-weight: 600;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.ap-toggle-state--on {
+  color: #0d9488;
+}
+
+.ap-toggle-state--off {
+  color: #b45309;
+}
+
+/* Photo count display */
+.ap-photo-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+/* Photo item: checkbox positioned absolutely over image */
+.photo-queue__checkbox {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  z-index: 10;
+  accent-color: #3b82f6;
+}
+
+/* Approved badge */
+.photo-queue__badge--approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* Supplier dropdown item hover */
+.supplier-dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+/* Batch actions bar */
+.ap-batch-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.ap-batch-bar.active {
+  display: flex;
+}
+
+.ap-batch-bar__count {
+  font-weight: 600;
+  color: #1d4ed8;
+  font-size: 0.875rem;
+}
+
+.ap-batch-bar__buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Supplier filter with dropdown positioning */
+.ap-filter-supplier {
+  position: relative;
+}
+
+#supplierDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-top: 4px;
+  list-style: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+#supplierDropdown li {
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+#supplierDropdown li:last-child {
+  border-bottom: none;
+}
+
+#supplierDropdown li:hover,
+#supplierDropdown li[aria-selected="true"] {
+  background: #f3f4f6;
+}
+
+#supplierDropdown li .sd-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+#supplierDropdown li .sd-count {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
